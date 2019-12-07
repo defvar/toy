@@ -1,4 +1,4 @@
-use toy_file::Row;
+use toy_plugin_file::Row;
 
 #[test]
 fn empty() {

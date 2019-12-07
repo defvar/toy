@@ -7,8 +7,8 @@ use test::test::Bencher;
 
 use quick_csv::Csv;
 
-use toy_file::parse::{ReadResult, ReaderBuilder};
-use toy_file::{FileReaderBuilder, Row};
+use toy_plugin_file::parse::{ReadResult, ReaderBuilder};
+use toy_plugin_file::{FileReaderBuilder, Row};
 
 static CSV_DATA: &'static str = "./benches/bench.csv";
 // header:1, data:9999

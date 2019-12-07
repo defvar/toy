@@ -1,7 +1,7 @@
 use std::io::Error;
 
-use toy_file::config::{FileConfig, SinkConfig, SourceConfig};
-use toy_file::{FileReaderBuilder, FileWriterBuilder, Row};
+use toy_plugin_file::config::{FileConfig, SinkConfig, SourceConfig};
+use toy_plugin_file::{FileReaderBuilder, FileWriterBuilder, Row};
 
 fn main() {
     let config: FileConfig = toy_config::from_yaml("toy-file/src/bin/csv.yml").unwrap();

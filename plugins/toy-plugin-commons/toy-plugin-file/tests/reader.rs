@@ -1,4 +1,4 @@
-use toy_file::parse::{ReaderBuilder, ReadResult};
+use toy_plugin_file::parse::{ReaderBuilder, ReadResult};
 
 macro_rules! exp {
   ($([$($field:expr),*]),*) => {{
