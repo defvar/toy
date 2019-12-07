@@ -1,0 +1,13 @@
+[package]
+name = "toy-pack-derive-example"
+version = "0.1.0"
+authors = ["defvar <def.daisuke@gmail.com>"]
+edition = "2018"
+
+[[bin]]
+name = "derive"
+path = "src/derive.rs"
+
+[dependencies]
+toy-pack-derive = {path = "../toy-pack-derive"}
+toy-pack-mp = {path = "../toy-pack-mp"}

@@ -1,0 +1,19 @@
+[package]
+name = "toy-file"
+version = "0.1.0"
+authors = ["defvar <def.daisuke@gmail.com>"]
+edition = "2018"
+
+[[bin]]
+name = "toy-file"
+path = "src/bin/main.rs"
+
+[dependencies]
+log = "0.4"
+failure = "0.1.6"
+toy-config = {path = "../toy-config"}
+toy-pack = {path = "../toy-pack"}
+toy-pack-derive = {path = "../toy-pack-derive"}
+
+[dev-dependencies]
+quick-csv = "^0.1.6"

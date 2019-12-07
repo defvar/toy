@@ -1,0 +1,33 @@
+source:
+  kind: File
+  path: 'toy-file/benches/bench.csv'
+  option:
+    quoting: true
+    terminator: CRLF
+    escape:
+    double_quote: true
+    comment:
+    has_header: true
+    flexible: false
+    columns:
+      - {name: 'gameid'}
+      - {name: 'qtr'}
+      - {name: 'min'}
+      - {name: 'sec'}
+      - {name: 'off'}
+      - {name: 'def'}
+      - {name: 'down'}
+      - {name: 'togo'}
+      - {name: 'ydline'}
+      - {name: 'description'}
+      - {name: 'offscore'}
+      - {name: 'defscore'}
+      - {name: 'season'}
+sink:
+  kind: Stdout
+  path: null
+  option:
+    quote_style: Necessary
+    terminator: CRLF
+    escape: 92
+    double_quote: true

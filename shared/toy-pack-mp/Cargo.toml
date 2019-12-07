@@ -1,0 +1,18 @@
+[package]
+name = "toy-pack-mp"
+version = "0.1.0"
+authors = ["defvar <def.daisuke@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+lazy_static = "1.2.0"
+failure = "0.1.6"
+toy-pack = {path = "../toy-pack"}
+
+[dev-dependencies]
+toy-pack-derive = {path = "../toy-pack-derive"}
+rmp = "^0.8"
+rmpv = "0.4.0"
+rmp-serde = "^0.13"
+serde = "1"
+serde_derive = "1"
