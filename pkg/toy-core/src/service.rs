@@ -14,6 +14,9 @@ pub trait Service:
     > + Send
     + Sync
 {
+    fn start(&mut self) {}
+
+    fn completed(&mut self) {}
 }
 
 pub trait Handler {
