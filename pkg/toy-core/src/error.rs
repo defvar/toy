@@ -1,7 +1,7 @@
 use std::fmt::Display;
 
 use failure::Fail;
-use futures::channel::mpsc::SendError;
+use futures::channel::mpsc::{SendError, TrySendError};
 use futures::channel::oneshot;
 
 pub trait Error: Sized + Fail {
@@ -42,6 +42,14 @@ impl From<oneshot::Canceled> for MessagingError {
 impl From<SendError> for MessagingError {
     fn from(e: SendError) -> Self {
         MessagingError::ChannelSendError { inner: e }
+    }
+}
+
+impl<T> From<TrySendError<T>> for MessagingError {
+    fn from(e: TrySendError<T>) -> Self {
+        MessagingError::ChannelSendError {
+            inner: e.into_send_error(),
+        }
     }
 }
 

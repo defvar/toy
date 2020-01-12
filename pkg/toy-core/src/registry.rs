@@ -1,8 +1,7 @@
+use super::service::Service;
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::sync::Mutex;
-
-use super::service::Service;
 
 pub struct Registry {
     services: HashMap<String, Arc<Box<dyn Service>>>,

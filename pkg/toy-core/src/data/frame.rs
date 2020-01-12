@@ -1,9 +1,4 @@
 use super::value::Value;
-use super::Error;
-use core::pin::Pin;
-use core::task::{Context, Poll};
-use failure::_core::marker::PhantomData;
-use futures::Future;
 use std::borrow::Borrow;
 use std::collections::HashMap;
 
@@ -73,14 +68,6 @@ impl Frame {
         self
     }
 
-    #[inline]
-    pub fn into_future<E>(self) -> FrameFuture<E> {
-        FrameFuture {
-            inner: Some(self),
-            _e: PhantomData,
-        }
-    }
-
     pub fn is_end_frame(&self) -> bool {
         self.state == FrameState::End
     }
@@ -101,27 +88,5 @@ impl From<String> for Frame {
 impl From<HashMap<String, Value>> for Frame {
     fn from(v: HashMap<String, Value>) -> Self {
         Frame::from_value(Value::from(v))
-    }
-}
-
-pub struct FrameFuture<E> {
-    inner: Option<Frame>,
-    _e: PhantomData<E>,
-}
-
-impl<E> Unpin for FrameFuture<E> {}
-
-impl<E> Future for FrameFuture<E>
-where
-    E: Error,
-{
-    type Output = Result<Frame, E>;
-
-    fn poll(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Self::Output> {
-        Poll::Ready(Ok(self
-            .get_mut()
-            .inner
-            .take()
-            .expect("A future should never be polled after it returns Ready")))
     }
 }

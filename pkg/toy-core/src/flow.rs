@@ -1,5 +1,5 @@
 use super::channel;
-use super::context::Context;
+use super::context::ServiceContext;
 use super::data::Frame;
 use super::error::MessagingError;
 use super::registry::Registry;
@@ -125,7 +125,7 @@ impl Flow {
     ) -> Result<(), MessagingError> {
         //prepare handler and context
         let h = Registry::get(&service_name).unwrap();
-        let c = Context;
+        let mut c = ServiceContext::new(tx.clone());
 
         info!(
             "{:?} start serivce {:?}",
@@ -143,27 +143,11 @@ impl Flow {
                         service_name,
                         req
                     );
-                    let res = h.handle(&c, req).await;
-                    info!(
-                        "{:?} serivce:{:?} send value {:?}",
-                        thread::current().id(),
-                        service_name,
-                        res
-                    );
-                    let end = match res {
-                        Ok(ref r) => r.is_end_frame(),
-                        Err(_) => true,
-                    };
-
-                    let _ = tx.send(res).await?;
-                    if end {
-                        break;
-                    }
+                    let _ = h.handle(&mut c, req);
                 }
                 Err(e) => {
                     error!("error {:?}", e);
                     let _ = tx.send(Err(MessagingError::error(e))).await?;
-                    break;
                 }
             };
         }
