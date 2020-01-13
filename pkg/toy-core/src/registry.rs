@@ -1,34 +1,54 @@
-use super::service::Service;
+use crate::service_box::BoxServiceFactory;
+use std::any::TypeId;
 use std::collections::HashMap;
-use std::sync::Arc;
-use std::sync::Mutex;
 
-pub struct Registry {
-    services: HashMap<String, Arc<Box<dyn Service>>>,
+pub struct Registry<Req, Err, InitErr> {
+    services: HashMap<Key, BoxServiceFactory<Req, Err, InitErr>>,
 }
 
-lazy_static::lazy_static! {
-    pub static ref SERVICE_REG: Mutex<Registry> = {
-        Mutex::new(Registry{
-          services: HashMap::new(),
-        })
-    };
+#[derive(PartialEq, Eq, Hash, Debug)]
+struct Key {
+    kind: String,
+    req: TypeId,
+    err: TypeId,
+    init_err: TypeId,
 }
 
-impl Registry {
-    pub fn get(name: &str) -> Option<Arc<Box<dyn Service>>> {
-        let sreg = SERVICE_REG.lock().unwrap();
-        if let Some(arc) = sreg.services.get(name) {
-            Some(arc.clone())
-        } else {
-            None
+impl Key {
+    fn from<Req, Err, InitErr>(kind: String) -> Key
+    where
+        Req: 'static,
+        Err: 'static,
+        InitErr: 'static,
+    {
+        Key {
+            kind,
+            req: TypeId::of::<Req>(),
+            err: TypeId::of::<Err>(),
+            init_err: TypeId::of::<InitErr>(),
+        }
+    }
+}
+
+impl<Req, Err, InitErr> Registry<Req, Err, InitErr>
+where
+    Req: 'static,
+    Err: 'static,
+    InitErr: 'static,
+{
+    pub fn new() -> Registry<Req, Err, InitErr> {
+        Registry {
+            services: HashMap::new(),
         }
     }
 
-    pub fn set(name: &str, service: impl Service + 'static) {
-        let mut sreg = SERVICE_REG.lock().unwrap();
-        sreg.services
-            .entry(name.to_string())
-            .or_insert_with(|| Arc::new(Box::new(service)));
+    pub fn get(&self, kind: &str) -> Option<&BoxServiceFactory<Req, Err, InitErr>> {
+        let key = Key::from::<Req, Err, InitErr>(kind.to_string());
+        self.services.get(&key)
+    }
+
+    pub fn set(&mut self, kind: &str, factory: BoxServiceFactory<Req, Err, InitErr>) {
+        let key = Key::from::<Req, Err, InitErr>(kind.to_string());
+        self.services.entry(key).or_insert_with(|| factory);
     }
 }

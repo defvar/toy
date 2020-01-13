@@ -1,21 +1,10 @@
-use super::context::Context;
-use super::context::ServiceContext;
-use super::data::Frame;
-use super::error::Error;
-use super::error::MessagingError;
+use crate::channel::Outgoing;
 use futures::Future;
 use std::marker::PhantomData;
 
-pub trait Service:
-    Handler<Request = Frame, Error = MessagingError, Future = (), Context = ServiceContext>
-    + Send
-    + Sync
-{
-}
-
 pub fn fn_service<F, Ctx, Req, Fut, Err>(f: F) -> FnService<F, Ctx, Req, Fut, Err>
 where
-    F: FnMut(&mut Ctx, Req) -> Fut,
+    F: FnMut(&mut Ctx, Req, Outgoing<Req>) -> Fut,
     Fut: Future<Output = Result<(), Err>>,
 {
     FnService { f, _t: PhantomData }
@@ -23,25 +12,25 @@ where
 
 pub fn fn_service_factory<F, Fut, H, InitErr>(f: F) -> FnServiceFactory<F, Fut, H, InitErr>
 where
-    F: Fn() -> Fut,
+    F: Fn() -> Fut + Clone,
     Fut: Future<Output = Result<H, InitErr>>,
-    H: Handler2,
+    H: Service,
 {
     FnServiceFactory { f }
 }
 
 pub struct FnService<F, Ctx, Req, Fut, Err>
 where
-    F: FnMut(&mut Ctx, Req) -> Fut,
+    F: FnMut(&mut Ctx, Req, Outgoing<Req>) -> Fut,
     Fut: Future<Output = Result<(), Err>>,
 {
     f: F,
     _t: PhantomData<(Ctx, Req)>,
 }
 
-impl<F, Ctx, Req, Fut, Err> Handler2 for FnService<F, Ctx, Req, Fut, Err>
+impl<F, Ctx, Req, Fut, Err> Service for FnService<F, Ctx, Req, Fut, Err>
 where
-    F: FnMut(&mut Ctx, Req) -> Fut,
+    F: FnMut(&mut Ctx, Req, Outgoing<Req>) -> Fut,
     Fut: Future<Output = Result<(), Err>>,
 {
     type Context = Ctx;
@@ -49,14 +38,19 @@ where
     type Future = Fut;
     type Error = Err;
 
-    fn handle(&mut self, ctx: &mut Self::Context, req: Self::Request) -> Self::Future {
-        (self.f)(ctx, req)
+    fn handle(
+        &mut self,
+        ctx: &mut Self::Context,
+        req: Self::Request,
+        tx: Outgoing<Self::Request>,
+    ) -> Self::Future {
+        (self.f)(ctx, req, tx)
     }
 }
 
 pub trait ServiceFactory {
-    type Future: Future<Output = Result<Self::Handler, Self::InitError>>;
-    type Handler: Handler2<Request = Self::Request, Error = Self::Error, Context = Self::Context>;
+    type Future: Future<Output = Result<Self::Service, Self::InitError>>;
+    type Service: Service<Request = Self::Request, Error = Self::Error, Context = Self::Context>;
     type Context;
     type Request;
     type Error;
@@ -67,7 +61,7 @@ pub trait ServiceFactory {
 
 pub struct FnServiceFactory<F, Fut, H, InitErr>
 where
-    F: Fn() -> Fut,
+    F: Fn() -> Fut + Clone,
     Fut: Future<Output = Result<H, InitErr>>,
 {
     f: F,
@@ -75,12 +69,12 @@ where
 
 impl<F, Fut, H, InitErr> ServiceFactory for FnServiceFactory<F, Fut, H, InitErr>
 where
-    F: Fn() -> Fut,
+    F: Fn() -> Fut + Clone,
     Fut: Future<Output = Result<H, InitErr>>,
-    H: Handler2,
+    H: Service,
 {
     type Future = Fut;
-    type Handler = H;
+    type Service = H;
     type Context = H::Context;
     type Request = H::Request;
     type Error = H::Error;
@@ -91,28 +85,31 @@ where
     }
 }
 
-pub trait Handler2 {
+impl<F, Fut, H, InitErr> Clone for FnServiceFactory<F, Fut, H, InitErr>
+where
+    F: Fn() -> Fut + Clone,
+    Fut: Future<Output = Result<H, InitErr>>,
+    H: Service,
+{
+    fn clone(&self) -> Self {
+        FnServiceFactory { f: self.f.clone() }
+    }
+}
+
+pub trait Service {
     type Context;
     type Request;
     type Future: Future<Output = Result<(), Self::Error>>;
     type Error;
 
-    fn handle(&mut self, ctx: &mut Self::Context, req: Self::Request) -> Self::Future;
+    fn handle(
+        &mut self,
+        ctx: &mut Self::Context,
+        req: Self::Request,
+        tx: Outgoing<Self::Request>,
+    ) -> Self::Future;
 
     fn started(&mut self, _ctx: &mut Self::Context) {}
 
     fn completed(&mut self, _ctx: &mut Self::Context) {}
-}
-
-pub trait Handler {
-    type Request;
-    type Error: Error;
-    type Future;
-    type Context: Context;
-
-    fn handle(&self, ctx: &mut Self::Context, req: Self::Request) -> Self::Future;
-
-    fn start(&mut self) {}
-
-    fn completed(&mut self) {}
 }

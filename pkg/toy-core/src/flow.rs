@@ -1,31 +1,28 @@
 use super::channel;
-use super::context::ServiceContext;
 use super::data::Frame;
 use super::error::MessagingError;
-use super::registry::Registry;
-use futures::channel::mpsc::{Receiver, Sender};
+use crate::channel::{Incoming, Outgoing};
 use futures::executor::ThreadPool;
 use futures::future;
-use futures::{SinkExt, StreamExt};
 use log::{error, info};
 use std::thread;
 
 type R = Result<Frame, MessagingError>;
 
 enum SenderOrReceiver<T> {
-    Sender(Sender<T>),
-    Receiver(Receiver<T>),
+    Sender(Outgoing<T>),
+    Receiver(Incoming<T>),
 }
 
 impl<T> SenderOrReceiver<T> {
-    fn sender(self) -> Option<Sender<T>> {
+    fn sender(self) -> Option<Outgoing<T>> {
         match self {
             SenderOrReceiver::Sender(x) => Some(x),
             SenderOrReceiver::Receiver(_) => None,
         }
     }
 
-    fn receiver(self) -> Option<Receiver<T>> {
+    fn receiver(self) -> Option<Incoming<T>> {
         match self {
             SenderOrReceiver::Sender(_) => None,
             SenderOrReceiver::Receiver(x) => Some(x),
@@ -119,13 +116,13 @@ impl Flow {
     }
 
     async fn process0(
-        mut rx: Receiver<R>,
-        mut tx: Sender<R>,
+        mut rx: Incoming<R>,
+        mut tx: Outgoing<R>,
         service_name: String,
     ) -> Result<(), MessagingError> {
+        //
         //prepare handler and context
-        let h = Registry::get(&service_name).unwrap();
-        let mut c = ServiceContext::new(tx.clone());
+        //
 
         info!(
             "{:?} start serivce {:?}",
@@ -143,7 +140,7 @@ impl Flow {
                         service_name,
                         req
                     );
-                    let _ = h.handle(&mut c, req);
+                    //                    let _ = h.handle(&mut c, req);
                 }
                 Err(e) => {
                     error!("error {:?}", e);

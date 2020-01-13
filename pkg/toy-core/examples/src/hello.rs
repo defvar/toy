@@ -3,12 +3,14 @@ use futures::future::ok;
 use log::info;
 use std::any::Any;
 use std::thread;
+use toy_core::channel::Outgoing;
 use toy_core::context::{Context, ContextFactory};
 use toy_core::context_box;
 use toy_core::data::Frame;
 use toy_core::error::MessagingError;
-use toy_core::service::{self, Handler2};
-use toy_core::service_box::{self, BoxServiceFactory};
+use toy_core::registry::Registry;
+use toy_core::service::{self, Service};
+use toy_core::service_box;
 
 fn as_raw_bytes<T: ?Sized>(x: &T) -> &[u8] {
     unsafe { std::slice::from_raw_parts(x as *const T as *const u8, std::mem::size_of_val(x)) }
@@ -71,12 +73,9 @@ fn main() {
         "myEnd".to_string(),
     ];
 
-    //let ok = block_on(Flow::new(commands).start());
-    //let factory = fn_service_factory(|| ok::<_, ()>(fn_service(aiueo)));
-    //    let mut s = fn_service(aiueo);
     let factory = service::fn_service_factory(|| {
         ok::<_, ()>(service::fn_service(
-            |_ctx: &mut ServiceContext2, _req: Frame| {
+            |_ctx: &mut ServiceContext2, _req: Frame, _tx: Outgoing<Frame>| {
                 async {
                     println!("aiueo!");
                     Result::<(), MessagingError>::Ok(())
@@ -85,14 +84,15 @@ fn main() {
         ))
     });
 
-    let mut vec: Vec<BoxServiceFactory<Frame, MessagingError, ()>> = Vec::new();
-    vec.push(service_box::boxed(factory));
+    let mut regi = Registry::new();
+    regi.set("aaa", service_box::boxed(factory));
+    let f = regi.get("aaa");
 
     let ctx_factory = context_box::boxed(ServiceContext2Factory);
     let mut box_ctx = ctx_factory.new_context();
 
-    let mut service = block_on(vec.get(0).unwrap().new_handler()).unwrap();
-    //    let mut service2 = block_on(factory.new_handler()).unwrap();
-    let ok = block_on(service.handle(&mut box_ctx, Frame::none()));
+    let mut service = block_on(f.unwrap().new_handler()).unwrap();
+    let (tx, _) = toy_core::channel::stream(1);
+    let ok = block_on(service.handle(&mut box_ctx, Frame::none(), tx));
     info!("{:?}", ok);
 }

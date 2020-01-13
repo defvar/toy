@@ -3,6 +3,7 @@ use crate::context::ContextFactory;
 use std::any::Any;
 
 pub type BoxContext = Box<dyn Context>;
+
 pub type BoxContextFactory = Box<dyn ContextFactory<Context = BoxContext>>;
 
 pub fn boxed<T>(factory: T) -> BoxContextFactory
