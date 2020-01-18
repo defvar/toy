@@ -1,15 +1,16 @@
-use super::context_box::BoxContext;
+use super::context_box::{self, BoxContext};
 use super::service::{Service, ServiceFactory};
 use crate::channel::Outgoing;
+use crate::context::Context;
 use futures::future::{BoxFuture, FutureExt};
 
 pub type BoxService<Req, Err> = Box<
     dyn Service<
-        Request = Req,
-        Error = Err,
-        Future = BoxFuture<'static, Result<(), Err>>,
-        Context = BoxContext,
-    >,
+            Request = Req,
+            Error = Err,
+            Future = BoxFuture<'static, Result<BoxContext, Err>>,
+            Context = BoxContext,
+        > + Send,
 >;
 
 pub type BoxServiceFactory<Req, Err, InitErr> = Box<
@@ -20,8 +21,7 @@ pub type BoxServiceFactory<Req, Err, InitErr> = Box<
             Error = Err,
             InitError = InitErr,
             Context = BoxContext,
-        > + Send
-        + Sync,
+        > + Send,
 >;
 
 pub fn boxed<T>(factory: T) -> BoxServiceFactory<T::Request, T::Error, T::InitError>
@@ -32,19 +32,22 @@ where
     T::Request: 'static,
     T::Error: 'static,
     T::InitError: 'static,
+    T::Service: Send,
     <T::Service as Service>::Future: Send,
+    <T::Service as Service>::Context: Context + Default + Send + 'static,
 {
     Box::new(FactoryWrapper(factory))
 }
 
-pub struct FactoryWrapper<T: ServiceFactory>(T);
+struct FactoryWrapper<T: ServiceFactory>(T);
 
 impl<T, Req, Err, InitErr> ServiceFactory for FactoryWrapper<T>
 where
     T: ServiceFactory<Request = Req, Error = Err, InitError = InitErr>,
     T::Future: 'static + Send,
-    T::Service: 'static,
+    T::Service: 'static + Send,
     <T::Service as Service>::Future: 'static + Send,
+    <T::Service as Service>::Context: Context + Default + Send + 'static,
     Err: 'static,
     InitErr: 'static,
     Req: 'static,
@@ -71,7 +74,8 @@ where
 
 impl<T> ServiceWrapper<T>
 where
-    T: Service + 'static,
+    T: Service + 'static + Send,
+    T::Context: Context + Default + Send + 'static,
     T::Future: 'static + Send,
 {
     fn boxed(service: T) -> BoxService<T::Request, T::Error> {
@@ -83,21 +87,25 @@ impl<T, Req, Err> Service for ServiceWrapper<T>
 where
     T: Service<Request = Req, Error = Err>,
     T::Future: 'static + Send,
-    T::Context: 'static,
+    T::Context: Context + Send + Default + 'static,
 {
     type Context = BoxContext;
     type Request = Req;
-    type Future = BoxFuture<'static, Result<(), Err>>;
+    type Future = BoxFuture<'static, Result<BoxContext, Err>>;
     type Error = Err;
 
     fn handle(
         &mut self,
-        ctx: &mut Self::Context,
+        mut ctx: Self::Context,
         req: Self::Request,
-        tx: Outgoing<Self::Request>,
+        tx: Outgoing<Self::Request, Self::Error>,
     ) -> Self::Future {
         if let Some(ctx) = ctx.as_any_mut().downcast_mut::<T::Context>() {
-            Box::pin(self.0.handle(ctx, req, tx))
+            let ctx = std::mem::replace(ctx, T::Context::default());
+            Box::pin(self.0.handle(ctx, req, tx).map(|x| match x {
+                Ok(ctx) => Ok(context_box::boxed_context(ctx)),
+                Result::Err(e) => Result::Err(e),
+            }))
         } else {
             panic!("context couldn't downcast to concrete type")
         }
@@ -131,9 +139,9 @@ where
 
     fn handle(
         &mut self,
-        ctx: &mut Self::Context,
+        ctx: Self::Context,
         req: Self::Request,
-        tx: Outgoing<Self::Request>,
+        tx: Outgoing<Self::Request, Self::Error>,
     ) -> Self::Future {
         (**self).handle(ctx, req, tx)
     }

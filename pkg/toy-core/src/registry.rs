@@ -1,9 +1,10 @@
+use crate::context_box::BoxContextFactory;
 use crate::service_box::BoxServiceFactory;
 use std::any::TypeId;
 use std::collections::HashMap;
 
 pub struct Registry<Req, Err, InitErr> {
-    services: HashMap<Key, BoxServiceFactory<Req, Err, InitErr>>,
+    services: HashMap<Key, Entry<Req, Err, InitErr>>,
 }
 
 #[derive(PartialEq, Eq, Hash, Debug)]
@@ -30,6 +31,11 @@ impl Key {
     }
 }
 
+struct Entry<Req, Err, InitErr> {
+    service_factory: BoxServiceFactory<Req, Err, InitErr>,
+    context_factory: BoxContextFactory,
+}
+
 impl<Req, Err, InitErr> Registry<Req, Err, InitErr>
 where
     Req: 'static,
@@ -42,13 +48,25 @@ where
         }
     }
 
-    pub fn get(&self, kind: &str) -> Option<&BoxServiceFactory<Req, Err, InitErr>> {
+    pub fn get(
+        &self,
+        kind: &str,
+    ) -> Option<(&BoxServiceFactory<Req, Err, InitErr>, &BoxContextFactory)> {
         let key = Key::from::<Req, Err, InitErr>(kind.to_string());
-        self.services.get(&key)
+        let e = self.services.get(&key);
+        e.map(|x| (&x.service_factory, &x.context_factory))
     }
 
-    pub fn set(&mut self, kind: &str, factory: BoxServiceFactory<Req, Err, InitErr>) {
+    pub fn set(
+        &mut self,
+        kind: &str,
+        service_factory: BoxServiceFactory<Req, Err, InitErr>,
+        context_factory: BoxContextFactory,
+    ) {
         let key = Key::from::<Req, Err, InitErr>(kind.to_string());
-        self.services.entry(key).or_insert_with(|| factory);
+        self.services.entry(key).or_insert_with(|| Entry {
+            service_factory,
+            context_factory,
+        });
     }
 }

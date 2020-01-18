@@ -2,30 +2,15 @@ use super::value::Value;
 use std::borrow::Borrow;
 use std::collections::HashMap;
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq)]
-pub enum FrameState {
-    Data,
-    End,
-}
-
 #[derive(Debug, Clone)]
 pub struct Frame {
-    state: FrameState,
     payload: Box<Value>,
 }
 
 impl Frame {
     pub fn from_value(v: Value) -> Self {
         Frame {
-            state: FrameState::Data,
             payload: Box::new(v),
-        }
-    }
-
-    pub fn from_value_and_state<T: Into<Value>>(v: T, state: FrameState) -> Self {
-        Frame {
-            state,
-            payload: Box::new(v.into()),
         }
     }
 
@@ -54,23 +39,6 @@ impl Frame {
     pub fn get_value(&self) -> &Value {
         self.payload.borrow()
     }
-
-    #[inline]
-    pub fn to_end_frame(&self) -> Frame {
-        let mut r = self.clone();
-        r.state = FrameState::End;
-        r
-    }
-
-    #[inline]
-    pub fn into_end_frame(mut self) -> Frame {
-        self.state = FrameState::End;
-        self
-    }
-
-    pub fn is_end_frame(&self) -> bool {
-        self.state == FrameState::End
-    }
 }
 
 impl From<&String> for Frame {
@@ -85,8 +53,26 @@ impl From<String> for Frame {
     }
 }
 
+impl From<u32> for Frame {
+    fn from(v: u32) -> Self {
+        Frame::from_value(Value::from(v))
+    }
+}
+
 impl From<HashMap<String, Value>> for Frame {
     fn from(v: HashMap<String, Value>) -> Self {
         Frame::from_value(Value::from(v))
+    }
+}
+
+impl From<Vec<Value>> for Frame {
+    fn from(v: Vec<Value>) -> Self {
+        Frame::from_value(Value::from(v))
+    }
+}
+
+impl Default for Frame {
+    fn default() -> Self {
+        Frame::none()
     }
 }

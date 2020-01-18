@@ -8,30 +8,24 @@ use toy_core::context::{Context, ContextFactory};
 use toy_core::context_box;
 use toy_core::data::Frame;
 use toy_core::error::MessagingError;
+use toy_core::flow::Flow;
 use toy_core::registry::Registry;
-use toy_core::service::{self, Service};
+use toy_core::service;
 use toy_core::service_box;
 
-fn as_raw_bytes<T: ?Sized>(x: &T) -> &[u8] {
-    unsafe { std::slice::from_raw_parts(x as *const T as *const u8, std::mem::size_of_val(x)) }
-}
+#[derive(Clone, Debug, Default)]
+pub struct ServiceContext;
 
-pub async fn aiueo(_ctx: &mut ServiceContext2, _req: Frame) -> Result<(), MessagingError> {
-    println!("aiueo!");
-    Ok(())
-}
-
-pub async fn kakiku(_ctx: &mut ServiceContext3, _req: Frame) -> Result<(), MessagingError> {
-    println!("kakiku!");
-    Ok(())
-}
-
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct ServiceContext2 {
-    id: String,
+    count: u32,
 }
 
-pub struct ServiceContext3;
+impl Context for ServiceContext {
+    fn as_any_mut(&mut self) -> &mut dyn Any {
+        self
+    }
+}
 
 impl Context for ServiceContext2 {
     fn as_any_mut(&mut self) -> &mut dyn Any {
@@ -39,9 +33,13 @@ impl Context for ServiceContext2 {
     }
 }
 
-impl Context for ServiceContext3 {
-    fn as_any_mut(&mut self) -> &mut dyn Any {
-        self
+struct ServiceContextFactory;
+
+impl ContextFactory for ServiceContextFactory {
+    type Context = ServiceContext;
+
+    fn new_context(&self) -> Self::Context {
+        ServiceContext
     }
 }
 
@@ -51,7 +49,7 @@ impl ContextFactory for ServiceContext2Factory {
     type Context = ServiceContext2;
 
     fn new_context(&self) -> Self::Context {
-        ServiceContext2 { id: "1".to_owned() }
+        ServiceContext2 { count: 0 }
     }
 }
 
@@ -67,32 +65,44 @@ fn main() {
     info!("-----------------------------------");
     info!("main thread {:?}", thread::current().id());
 
-    let _commands = vec![
-        "myHello".to_string(),
-        "myBye".to_string(),
-        "myEnd".to_string(),
-    ];
-
     let factory = service::fn_service_factory(|| {
-        ok::<_, ()>(service::fn_service(
-            |_ctx: &mut ServiceContext2, _req: Frame, _tx: Outgoing<Frame>| {
-                async {
-                    println!("aiueo!");
-                    Result::<(), MessagingError>::Ok(())
+        ok::<_, MessagingError>(service::fn_service(
+            |ctx: ServiceContext, _req: Frame, mut tx: Outgoing<Frame, MessagingError>| {
+                async move {
+                    let _ = tx.send(Ok(Frame::from(1))).await?;
+                    let _ = tx.send(Ok(Frame::from(2))).await?;
+                    let _ = tx.send(Ok(Frame::from(3))).await?;
+                    let _ = tx.send(Ok(Frame::from(4))).await?;
+                    Ok(ctx)
+                }
+            },
+        ))
+    });
+
+    let factory2 = service::fn_service_factory(|| {
+        ok::<_, MessagingError>(service::fn_service(
+            |mut ctx: ServiceContext2, req: Frame, _tx: Outgoing<Frame, MessagingError>| {
+                async move {
+                    ctx.count += 1;
+                    info!("receive {:?}, ctx:{:?}", req, ctx);
+                    Ok(ctx)
                 }
             },
         ))
     });
 
     let mut regi = Registry::new();
-    regi.set("aaa", service_box::boxed(factory));
-    let f = regi.get("aaa");
+    regi.set(
+        "aaa",
+        service_box::boxed(factory),
+        context_box::boxed(ServiceContextFactory),
+    );
+    regi.set(
+        "bbb",
+        service_box::boxed(factory2),
+        context_box::boxed(ServiceContext2Factory),
+    );
 
-    let ctx_factory = context_box::boxed(ServiceContext2Factory);
-    let mut box_ctx = ctx_factory.new_context();
-
-    let mut service = block_on(f.unwrap().new_handler()).unwrap();
-    let (tx, _) = toy_core::channel::stream(1);
-    let ok = block_on(service.handle(&mut box_ctx, Frame::none(), tx));
+    let ok = block_on(Flow::new().start(regi, vec!["aaa".to_string(), "bbb".to_string()]));
     info!("{:?}", ok);
 }
