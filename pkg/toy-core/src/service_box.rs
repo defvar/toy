@@ -2,6 +2,7 @@ use super::context_box::{self, BoxContext};
 use super::service::{Service, ServiceFactory};
 use crate::channel::Outgoing;
 use crate::context::Context;
+use crate::service_id::ServiceId;
 use futures::future::{BoxFuture, FutureExt};
 
 pub type BoxService<Req, Err> = Box<
@@ -59,12 +60,16 @@ where
     type Error = Err;
     type InitError = InitErr;
 
-    fn new_handler(&self) -> Self::Future {
+    fn new_service(&self, id: ServiceId) -> Self::Future {
         Box::pin(
             self.0
-                .new_handler()
+                .new_service(id)
                 .map(|res| res.map(ServiceWrapper::boxed)),
         )
+    }
+
+    fn new_context(&self, id: ServiceId) -> Self::Context {
+        Box::new(self.0.new_context(id))
     }
 }
 
@@ -123,8 +128,12 @@ where
     type Error = T::Error;
     type InitError = T::InitError;
 
-    fn new_handler(&self) -> Self::Future {
-        (**self).new_handler()
+    fn new_service(&self, id: ServiceId) -> Self::Future {
+        (**self).new_service(id)
+    }
+
+    fn new_context(&self, id: ServiceId) -> Self::Context {
+        (**self).new_context(id)
     }
 }
 

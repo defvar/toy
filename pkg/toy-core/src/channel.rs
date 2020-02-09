@@ -2,7 +2,7 @@ use crate::error::Error;
 use futures::channel::mpsc::{self, Receiver, Sender};
 use futures::sink::SinkExt;
 use futures::stream::StreamExt;
-use futures::Future;
+use futures::{Future, FutureExt};
 
 pub fn stream<T, Err>(buffer: usize) -> (Outgoing<T, Err>, Incoming<T, Err>) {
     let (tx, rx) = mpsc::channel(buffer);
@@ -48,8 +48,11 @@ where
 {
     pub async fn send(&mut self, v: Result<T, Err>) -> Result<(), Err> {
         SinkExt::send(&mut self.inner, v)
+            .map(|x| match x {
+                Ok(()) => Ok(()),
+                Result::Err(e) => Result::Err(Error::custom(e)),
+            })
             .await
-            .map_err(|e| Error::custom(e))
     }
 }
 

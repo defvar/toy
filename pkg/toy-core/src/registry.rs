@@ -1,72 +1,124 @@
-use crate::context_box::BoxContextFactory;
-use crate::service_box::BoxServiceFactory;
-use std::any::TypeId;
-use std::collections::HashMap;
+use crate::data::Frame;
+use crate::error::{Error, ServiceError};
+use crate::executor::{DefaultExecutor, ServiceExecutor};
+use crate::service::{Service, ServiceFactory};
+use crate::service_id::ServiceId;
 
-pub struct Registry<Req, Err, InitErr> {
-    services: HashMap<Key, Entry<Req, Err, InitErr>>,
+#[derive(Clone)]
+pub struct Registry<F> {
+    id: ServiceId,
+    callback: F,
 }
 
-#[derive(PartialEq, Eq, Hash, Debug)]
-struct Key {
-    kind: String,
-    req: TypeId,
-    err: TypeId,
-    init_err: TypeId,
+impl<F> Registry<F> {
+    pub fn new(id: ServiceId, callback: F) -> Registry<F> {
+        Registry { id, callback }
+    }
 }
 
-impl Key {
-    fn from<Req, Err, InitErr>(kind: String) -> Key
+pub struct ServiceSet<T, F> {
+    id: ServiceId,
+    other: T,
+    callback: F,
+}
+
+pub trait ServiceSpawner {
+    type Request;
+    type Error: Error;
+    type InitError: Error;
+    type ServiceExecutor: ServiceExecutor;
+
+    fn spawn(&self, id: ServiceId, executor: &mut Self::ServiceExecutor)
+        -> Result<(), Self::Error>;
+}
+
+pub trait ServiceSpawnerExt: ServiceSpawner {
+    fn service<F, R>(self, id: ServiceId, other: F) -> ServiceSet<Self, F>
     where
-        Req: 'static,
-        Err: 'static,
-        InitErr: 'static,
+        Self: Sized,
+        F: Fn() -> R + Clone,
     {
-        Key {
-            kind,
-            req: TypeId::of::<Req>(),
-            err: TypeId::of::<Err>(),
-            init_err: TypeId::of::<InitErr>(),
+        ServiceSet {
+            id,
+            other: self,
+            callback: other,
         }
     }
 }
 
-struct Entry<Req, Err, InitErr> {
-    service_factory: BoxServiceFactory<Req, Err, InitErr>,
-    context_factory: BoxContextFactory,
-}
+impl<T: ServiceSpawner> ServiceSpawnerExt for T {}
 
-impl<Req, Err, InitErr> Registry<Req, Err, InitErr>
+impl<F, R> ServiceSpawner for Registry<F>
 where
-    Req: 'static,
-    Err: 'static,
-    InitErr: 'static,
+    F: Fn() -> R + Clone,
+    R: ServiceFactory<Request = Frame, Error = ServiceError, InitError = ServiceError>
+        + Send
+        + Sync
+        + 'static,
+    R::Future: Send + 'static,
+    <R as ServiceFactory>::Service: Send,
+    <<R as ServiceFactory>::Service as Service>::Future: Send + 'static,
+    R::Context: Send,
 {
-    pub fn new() -> Registry<Req, Err, InitErr> {
-        Registry {
-            services: HashMap::new(),
+    type Request = Frame;
+    type Error = ServiceError;
+    type InitError = ServiceError;
+    type ServiceExecutor = DefaultExecutor;
+
+    fn spawn(
+        &self,
+        id: ServiceId,
+        executor: &mut Self::ServiceExecutor,
+    ) -> Result<(), Self::Error> {
+        if self.id == id {
+            let f = (self.callback)();
+            executor.spawn(id, f);
+            Ok(())
+        } else {
+            Err(ServiceError::error("don't know"))
         }
     }
+}
 
-    pub fn get(
+impl<T, F, R> ServiceSpawner for ServiceSet<T, F>
+where
+    T: ServiceSpawner<
+        Request = Frame,
+        Error = ServiceError,
+        InitError = ServiceError,
+        ServiceExecutor = DefaultExecutor,
+    >,
+    F: Fn() -> R + Clone,
+    R: ServiceFactory<Request = Frame, Error = ServiceError, InitError = ServiceError>
+        + Send
+        + Sync
+        + 'static,
+    R::Future: Send + 'static,
+    <R as ServiceFactory>::Service: Send,
+    <<R as ServiceFactory>::Service as Service>::Future: Send + 'static,
+    R::Context: Send,
+{
+    type Request = Frame;
+    type Error = ServiceError;
+    type InitError = ServiceError;
+    type ServiceExecutor = DefaultExecutor;
+
+    fn spawn(
         &self,
-        kind: &str,
-    ) -> Option<(&BoxServiceFactory<Req, Err, InitErr>, &BoxContextFactory)> {
-        let key = Key::from::<Req, Err, InitErr>(kind.to_string());
-        let e = self.services.get(&key);
-        e.map(|x| (&x.service_factory, &x.context_factory))
-    }
-
-    pub fn set(
-        &mut self,
-        kind: &str,
-        service_factory: BoxServiceFactory<Req, Err, InitErr>,
-        context_factory: BoxContextFactory,
-    ) {
-        let key = Key::from::<Req, Err, InitErr>(kind.to_string());
-        self.services.entry(key).or_insert_with(|| Entry {
-            service_factory,
-            context_factory,
-        });
+        id: ServiceId,
+        executor: &mut Self::ServiceExecutor,
+    ) -> Result<(), Self::Error> {
+        match self.other.spawn(id.clone(), executor) {
+            Ok(_) => Ok(()),
+            Err(_) => {
+                if self.id == id {
+                    let f = (self.callback)();
+                    executor.spawn(id, f);
+                    Ok(())
+                } else {
+                    Err(ServiceError::error("don't know"))
+                }
+            }
+        }
     }
 }

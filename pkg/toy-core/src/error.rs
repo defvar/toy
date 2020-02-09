@@ -11,7 +11,7 @@ pub trait Error: Sized + Fail {
 }
 
 #[derive(Debug, Fail)]
-pub enum MessagingError {
+pub enum ServiceError {
     #[fail(display = "channel canceled")]
     ChannelCanceled,
 
@@ -22,43 +22,43 @@ pub enum MessagingError {
     Error { inner: String },
 }
 
-impl MessagingError {
-    pub fn error<T>(msg: T) -> MessagingError
+impl ServiceError {
+    pub fn error<T>(msg: T) -> ServiceError
     where
         T: Display,
     {
-        MessagingError::Error {
+        ServiceError::Error {
             inner: msg.to_string(),
         }
     }
 }
 
-impl From<oneshot::Canceled> for MessagingError {
-    fn from(_e: oneshot::Canceled) -> MessagingError {
-        MessagingError::ChannelCanceled
+impl From<oneshot::Canceled> for ServiceError {
+    fn from(_e: oneshot::Canceled) -> ServiceError {
+        ServiceError::ChannelCanceled
     }
 }
 
-impl From<SendError> for MessagingError {
+impl From<SendError> for ServiceError {
     fn from(e: SendError) -> Self {
-        MessagingError::ChannelSendError { inner: e }
+        ServiceError::ChannelSendError { inner: e }
     }
 }
 
-impl<T> From<TrySendError<T>> for MessagingError {
+impl<T> From<TrySendError<T>> for ServiceError {
     fn from(e: TrySendError<T>) -> Self {
-        MessagingError::ChannelSendError {
+        ServiceError::ChannelSendError {
             inner: e.into_send_error(),
         }
     }
 }
 
-impl Error for MessagingError {
+impl Error for ServiceError {
     fn custom<T>(msg: T) -> Self
     where
         T: Display,
     {
-        MessagingError::Error {
+        ServiceError::Error {
             inner: msg.to_string(),
         }
     }

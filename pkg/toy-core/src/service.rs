@@ -1,22 +1,35 @@
 use crate::channel::Outgoing;
-use futures::Future;
+use crate::service_id::ServiceId;
+use futures::future::Ready;
+use futures::{future, Future};
+use log::warn;
+use std::any;
+use std::fmt::{Debug, Error, Formatter};
 use std::marker::PhantomData;
 
-pub fn fn_service<F, Ctx, Req, Fut, Err>(f: F) -> FnService<F, Ctx, Req, Fut, Err>
+pub fn fn_service<F, Ctx, Req, Fut, Err>(id: ServiceId, f: F) -> FnService<F, Ctx, Req, Fut, Err>
 where
     F: FnMut(Ctx, Req, Outgoing<Req, Err>) -> Fut,
     Fut: Future<Output = Result<Ctx, Err>>,
 {
-    FnService { f, _t: PhantomData }
+    FnService {
+        id,
+        f,
+        _t: PhantomData,
+    }
 }
 
-pub fn fn_service_factory<F, Fut, H, InitErr>(f: F) -> FnServiceFactory<F, Fut, H, InitErr>
+pub fn fn_service_factory<F, Fut, S, InitErr, CtxF>(
+    f: F,
+    ctx_f: CtxF,
+) -> FnServiceFactory<F, Fut, S, InitErr, CtxF>
 where
-    F: Fn() -> Fut + Clone,
-    Fut: Future<Output = Result<H, InitErr>>,
-    H: Service,
+    F: Fn(ServiceId) -> Fut + Clone,
+    Fut: Future<Output = Result<S, InitErr>>,
+    S: Service,
+    CtxF: Fn(ServiceId) -> S::Context + Clone,
 {
-    FnServiceFactory { f }
+    FnServiceFactory { f, ctx_f }
 }
 
 pub trait ServiceFactory {
@@ -27,7 +40,9 @@ pub trait ServiceFactory {
     type Error;
     type InitError;
 
-    fn new_handler(&self) -> Self::Future;
+    fn new_service(&self, id: ServiceId) -> Self::Future;
+
+    fn new_context(&self, id: ServiceId) -> Self::Context;
 }
 
 pub trait Service {
@@ -57,6 +72,7 @@ where
     F: FnMut(Ctx, Req, Outgoing<Req, Err>) -> Fut,
     Fut: Future<Output = Result<Ctx, Err>>,
 {
+    id: ServiceId,
     f: F,
     _t: PhantomData<(Ctx, Req, Fut, Err)>,
 }
@@ -81,39 +97,118 @@ where
     }
 }
 
-pub struct FnServiceFactory<F, Fut, H, InitErr>
+impl<F, Ctx, Req, Fut, Err> Debug for FnService<F, Ctx, Req, Fut, Err>
 where
-    F: Fn() -> Fut + Clone,
-    Fut: Future<Output = Result<H, InitErr>>,
+    F: FnMut(Ctx, Req, Outgoing<Req, Err>) -> Fut,
+    Fut: Future<Output = Result<Ctx, Err>>,
 {
-    f: F,
-}
-
-impl<F, Fut, H, InitErr> ServiceFactory for FnServiceFactory<F, Fut, H, InitErr>
-where
-    F: Fn() -> Fut + Clone,
-    Fut: Future<Output = Result<H, InitErr>>,
-    H: Service,
-{
-    type Future = Fut;
-    type Service = H;
-    type Context = H::Context;
-    type Request = H::Request;
-    type Error = H::Error;
-    type InitError = InitErr;
-
-    fn new_handler(&self) -> Self::Future {
-        (self.f)()
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), Error> {
+        write!(f, "FnService {{ service_id:{:?} }}", self.id)
     }
 }
 
-impl<F, Fut, H, InitErr> Clone for FnServiceFactory<F, Fut, H, InitErr>
+pub struct NoopService;
+
+impl Service for NoopService {
+    type Context = ();
+    type Request = ();
+    type Future = Ready<Result<(), ()>>;
+    type Error = ();
+
+    fn handle(
+        &mut self,
+        _ctx: Self::Context,
+        _req: Self::Request,
+        _tx: Outgoing<Self::Request, Self::Error>,
+    ) -> Self::Future {
+        future::ready(Ok(()))
+    }
+}
+
+pub struct FnServiceFactory<F, Fut, S, InitErr, CtxF>
 where
-    F: Fn() -> Fut + Clone,
-    Fut: Future<Output = Result<H, InitErr>>,
-    H: Service,
+    F: Fn(ServiceId) -> Fut + Clone,
+    Fut: Future<Output = Result<S, InitErr>>,
+    S: Service,
+    CtxF: Fn(ServiceId) -> S::Context + Clone,
+{
+    f: F,
+    ctx_f: CtxF,
+}
+
+impl<F, Fut, S, InitErr, CtxF> ServiceFactory for FnServiceFactory<F, Fut, S, InitErr, CtxF>
+where
+    F: Fn(ServiceId) -> Fut + Clone,
+    Fut: Future<Output = Result<S, InitErr>>,
+    S: Service,
+    CtxF: Fn(ServiceId) -> S::Context + Clone,
+{
+    type Future = Fut;
+    type Service = S;
+    type Context = S::Context;
+    type Request = S::Request;
+    type Error = S::Error;
+    type InitError = InitErr;
+
+    fn new_service(&self, id: ServiceId) -> Self::Future {
+        (self.f)(id)
+    }
+
+    fn new_context(&self, id: ServiceId) -> Self::Context {
+        (self.ctx_f)(id)
+    }
+}
+
+impl<F, Fut, S, InitErr, CtxF> Clone for FnServiceFactory<F, Fut, S, InitErr, CtxF>
+where
+    F: Fn(ServiceId) -> Fut + Clone,
+    Fut: Future<Output = Result<S, InitErr>>,
+    S: Service,
+    CtxF: Fn(ServiceId) -> S::Context + Clone,
 {
     fn clone(&self) -> Self {
-        FnServiceFactory { f: self.f.clone() }
+        FnServiceFactory {
+            f: self.f.clone(),
+            ctx_f: self.ctx_f.clone(),
+        }
+    }
+}
+
+impl<F, Fut, S, InitErr, CtxF> Debug for FnServiceFactory<F, Fut, S, InitErr, CtxF>
+where
+    F: Fn(ServiceId) -> Fut + Clone,
+    Fut: Future<Output = Result<S, InitErr>>,
+    S: Service,
+    CtxF: Fn(ServiceId) -> S::Context + Clone,
+{
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), Error> {
+        write!(
+            f,
+            "FnServiceFactory {{ S:{:?} }}",
+            any::type_name::<S::Future>(),
+        )
+    }
+}
+
+pub struct NoopServiceFactory;
+
+impl ServiceFactory for NoopServiceFactory {
+    type Future = Ready<Result<NoopService, ()>>;
+    type Service = NoopService;
+    type Context = ();
+    type Request = ();
+    type Error = ();
+    type InitError = ();
+
+    fn new_service(&self, id: ServiceId) -> Self::Future {
+        warn!(
+            "create noop service. not found service? service id: {:?}",
+            id
+        );
+        future::ready(Ok(NoopService))
+    }
+
+    fn new_context(&self, _id: ServiceId) -> Self::Context {
+        ()
     }
 }
