@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Value {
     Bool(bool),
 
@@ -26,7 +26,6 @@ pub enum Value {
 
     Seq(Vec<Value>),
     Map(HashMap<String, Value>),
-    Tuple(String, Box<Value>),
 
     Unit,
 }
@@ -53,6 +52,7 @@ impl_from_to_value!(i64, I64);
 impl_from_to_value!(f32, F32);
 impl_from_to_value!(f64, F64);
 impl_from_to_value!(String, String);
+impl_from_to_value!(char, Char);
 
 impl From<&String> for Value {
     fn from(v: &String) -> Self {

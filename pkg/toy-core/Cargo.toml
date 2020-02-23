@@ -8,13 +8,14 @@ edition = "2018"
 
 [dependencies]
 futures = { version = "0.3", features = ["thread-pool"] }
-pin-utils = "0.1.0-alpha.4"
 lazy_static = "1.2.0"
 failure = "0.1.6"
 log = "0.4"
+toy-pack = {path = "../../shared/toy-pack"}
 
 [dev-dependencies]
 env_logger = "0.7.1"
+toy-pack-derive = {path = "../../shared/toy-pack-derive"}
 
 [[example]]
 name = "hello"

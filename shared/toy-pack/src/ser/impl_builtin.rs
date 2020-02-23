@@ -4,10 +4,14 @@ use super::{Error, Serializable, Serializer};
 
 ///////////////////////////////////////////////////
 
-impl<T> Serializable for Option<T> where T: Serializable {
+impl<T> Serializable for Option<T>
+where
+    T: Serializable,
+{
     #[inline]
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where S: Serializer,
+    where
+        S: Serializer,
     {
         match *self {
             Some(ref v) => serializer.serialize_some(v),
@@ -16,13 +20,28 @@ impl<T> Serializable for Option<T> where T: Serializable {
     }
 }
 
+///////////////////////////////////////////////////
+
+impl<T: ?Sized> Serializable for Box<T>
+where
+    T: Serializable,
+{
+    #[inline]
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        (**self).serialize(serializer)
+    }
+}
 
 ///////////////////////////////////////////////////
 
 impl Serializable for Path {
     #[inline]
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where S: Serializer,
+    where
+        S: Serializer,
     {
         match self.to_str() {
             Some(v) => v.serialize(serializer),
@@ -36,7 +55,8 @@ impl Serializable for Path {
 impl Serializable for PathBuf {
     #[inline]
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where S: Serializer,
+    where
+        S: Serializer,
     {
         self.as_path().serialize(serializer)
     }

@@ -10,7 +10,8 @@ pub trait Deserializable<'toy>: Sized {
     type Value;
 
     fn deserialize<D>(deserializer: D) -> Result<Self::Value, D::Error>
-        where D: Deserializer<'toy>;
+    where
+        D: Deserializer<'toy>;
 }
 
 /// A data structure that can be deserialized without borrowing any data from the deserializer.
@@ -20,7 +21,6 @@ pub trait Deserializable<'toy>: Sized {
 pub trait DeserializableOwned: for<'de> Deserializable<'de> {}
 
 impl<T> DeserializableOwned for T where T: for<'de> Deserializable<'de> {}
-
 
 /// The traits for deserialization processing.
 ///
@@ -76,27 +76,32 @@ pub trait Deserializer<'toy>: Sized {
     /// Deserialize `char`
     ///
     fn deserialize_char<V>(self, visitor: V) -> Result<V::Value, Self::Error>
-        where V: Visitor<'toy>;
+    where
+        V: Visitor<'toy>;
 
     /// Deserialize `&str`
     ///
     fn deserialize_str<V>(self, visitor: V) -> Result<V::Value, Self::Error>
-        where V: Visitor<'toy>;
+    where
+        V: Visitor<'toy>;
 
     /// Deserialize `String`
     ///
     fn deserialize_string<V>(self, visitor: V) -> Result<V::Value, Self::Error>
-        where V: Visitor<'toy>;
+    where
+        V: Visitor<'toy>;
 
     /// Deserialize the sequence.
     ///
     fn deserialize_seq<V>(self, visitor: V) -> Result<V::Value, Self::Error>
-        where V: Visitor<'toy>;
+    where
+        V: Visitor<'toy>;
 
     /// Deserialize the map.
     ///
     fn deserialize_map<V>(self, visitor: V) -> Result<V::Value, Self::Error>
-        where V: Visitor<'toy>;
+    where
+        V: Visitor<'toy>;
 
     /// Deserialize the structure.
     /// Depending on the specification of the serialization format, it may be a sequence or a map.
@@ -105,13 +110,14 @@ pub trait Deserializer<'toy>: Sized {
     /// シリアライズフォーマットの仕様によって、シーケンスだったりマップだったりするでしょう。
     ///
     fn deserialize_struct<V>(self, visitor: V) -> Result<V::Value, Self::Error>
-        where V: Visitor<'toy>;
+    where
+        V: Visitor<'toy>;
 
     /// Deserialize `enum`.
     ///
     fn deserialize_enum<V>(self, visitor: V) -> Result<V::Value, Self::Error>
-        where V: Visitor<'toy>;
-
+    where
+        V: Visitor<'toy>;
 
     /// Deserialize `Option`.
     /// Depending on the specification of the serialization format, the treatment of `Some (v)` and `None` will be different.
@@ -120,7 +126,14 @@ pub trait Deserializer<'toy>: Sized {
     /// シリアライズフォーマットの仕様によって、`Some(v)`や`None`の扱いは異なるでしょう。
     ///
     fn deserialize_option<V>(self, visitor: V) -> Result<V::Value, Self::Error>
-        where V: Visitor<'toy>;
+    where
+        V: Visitor<'toy>;
+
+    /// Deserialize any value.
+    ///
+    fn deserialize_any<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: Visitor<'toy>;
 
     /// Deserialize and discard the value.
     /// It is used when deserialization target is an unknown key etc.
@@ -129,5 +142,6 @@ pub trait Deserializer<'toy>: Sized {
     /// デシリアライズ対象が未知のキーだった場合等に利用します。
     ///
     fn discard<V>(self, visitor: V) -> Result<V::Value, Self::Error>
-        where V: Visitor<'toy>;
+    where
+        V: Visitor<'toy>;
 }

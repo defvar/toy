@@ -23,6 +23,22 @@ fn file_to_mem(fp: &str) -> Vec<u8> {
 }
 
 #[bench]
+fn read_rust_csv(b: &mut Bencher) {
+    let data = file_to_mem(CSV_DATA);
+    b.bytes = data.len() as u64;
+    let mut count = 0;
+    let mut record = csv::ByteRecord::new();
+    b.iter(|| {
+        let mut rdr = csv::Reader::from_reader(&*data);
+        while rdr.read_byte_record(&mut record).unwrap() {
+            count += 1;
+        }
+        assert_eq!(count, DATA_ROW_COUNT);
+        count = 0;
+    })
+}
+
+#[bench]
 fn read_quick_csv(b: &mut Bencher) {
     let data = file_to_mem(CSV_DATA);
     b.bytes = data.len() as u64;

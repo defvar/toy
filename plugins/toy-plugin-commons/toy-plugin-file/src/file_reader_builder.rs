@@ -8,7 +8,7 @@ use toy_config::utils::char_to_u8;
 
 #[derive(Clone)]
 pub struct FileReaderBuilder {
-    reader_builder: Box<ReaderBuilder>,
+    reader_builder: ReaderBuilder,
     capacity: usize,
     has_headers: bool,
     flexible: bool,
@@ -59,7 +59,7 @@ impl FileReaderBuilder {
 
     pub fn from_reader<R: io::Read>(&self, r: R) -> FileReader<R> {
         FileReader::new(
-            Box::new(self.reader_builder.build()),
+            self.reader_builder.build(),
             BufReader::with_capacity(self.capacity, r),
             FileReaderState::new(self.has_headers, self.flexible),
         )
@@ -110,7 +110,7 @@ impl FileReaderBuilder {
 impl Default for FileReaderBuilder {
     fn default() -> Self {
         Self {
-            reader_builder: Box::new(ReaderBuilder::default()),
+            reader_builder: ReaderBuilder::default(),
             capacity: default_capacity(),
             has_headers: true,
             flexible: false,

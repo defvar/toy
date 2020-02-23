@@ -1,9 +1,9 @@
-use toy_pack::deser::{Deserializer, Error, Visitor};
 use toy_pack::deser::from_primitive::FromPrimitive;
+use toy_pack::deser::{Deserializer, Error, Visitor};
 
-use super::{Decoder, Event};
 use super::deser_ops::DeserializeCompound;
 use super::error::YamlError;
+use super::{Decoder, Event};
 
 impl<'toy, 'a> Deserializer<'toy> for &'a mut Decoder {
     type Error = YamlError;
@@ -52,43 +52,66 @@ impl<'toy, 'a> Deserializer<'toy> for &'a mut Decoder {
         f64::from_i64(self.decode_int()?).ok_or_else(|| Error::invalid_type("f64"))
     }
 
-    fn deserialize_char<V>(self, visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'toy> {
+    fn deserialize_char<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: Visitor<'toy>,
+    {
         self.deserialize_str(visitor)
     }
 
-    fn deserialize_str<V>(self, visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'toy> {
-        self.decode_string().map(|x| {
-            visitor.visit_str(x.as_str())
-        })?
+    fn deserialize_str<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: Visitor<'toy>,
+    {
+        self.decode_string()
+            .map(|x| visitor.visit_str(x.as_str()))?
     }
 
-    fn deserialize_string<V>(self, visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'toy> {
+    fn deserialize_string<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: Visitor<'toy>,
+    {
         self.deserialize_str(visitor)
     }
 
-    fn deserialize_seq<V>(self, visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'toy> {
+    fn deserialize_seq<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: Visitor<'toy>,
+    {
         match self.next()?.0 {
             Event::SequenceStart => visitor.visit_seq(DeserializeCompound::new(self)),
-            _ => Err(Error::invalid_type("seq"))
+            _ => Err(Error::invalid_type("seq")),
         }
     }
 
-    fn deserialize_map<V>(self, visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'toy> {
+    fn deserialize_map<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: Visitor<'toy>,
+    {
         match self.next()?.0 {
             Event::MappingStart => visitor.visit_map(DeserializeCompound::new(self)),
-            _ => Err(Error::invalid_type("map"))
+            _ => Err(Error::invalid_type("map")),
         }
     }
 
-    fn deserialize_struct<V>(self, visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'toy> {
+    fn deserialize_struct<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: Visitor<'toy>,
+    {
         self.deserialize_map(visitor)
     }
 
-    fn deserialize_enum<V>(self, visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'toy> {
+    fn deserialize_enum<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: Visitor<'toy>,
+    {
         visitor.visit_enum(DeserializeCompound::new(self))
     }
 
-    fn deserialize_option<V>(self, visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'toy> {
+    fn deserialize_option<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: Visitor<'toy>,
+    {
         if self.peek_is_null()? {
             let _ = self.next()?; //discard marker
             visitor.visit_none()
@@ -97,27 +120,31 @@ impl<'toy, 'a> Deserializer<'toy> for &'a mut Decoder {
         }
     }
 
+    fn deserialize_any<V>(self, _visitor: V) -> Result<<V as Visitor<'toy>>::Value, Self::Error>
+    where
+        V: Visitor<'toy>,
+    {
+        unimplemented!()
+    }
+
     fn discard<V>(self, visitor: V) -> Result<V::Value, Self::Error>
-        where V: Visitor<'toy>
+    where
+        V: Visitor<'toy>,
     {
         match self.next()?.0 {
-            Event::MappingStart => {
-                loop {
-                    match self.next()?.0 {
-                        Event::MappingEnd => break,
-                        _ => (),
-                    }
+            Event::MappingStart => loop {
+                match self.next()?.0 {
+                    Event::MappingEnd => break,
+                    _ => (),
                 }
-            }
-            Event::SequenceStart => {
-                loop {
-                    match self.next()?.0 {
-                        Event::SequenceEnd => break,
-                        _ => (),
-                    }
+            },
+            Event::SequenceStart => loop {
+                match self.next()?.0 {
+                    Event::SequenceEnd => break,
+                    _ => (),
                 }
-            }
-            _ => ()
+            },
+            _ => (),
         };
         visitor.visit_none()
     }

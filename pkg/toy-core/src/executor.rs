@@ -26,9 +26,10 @@ pub trait ServiceExecutor {
             + Sync
             + 'static,
         F::Future: Send + 'static,
-        <F as ServiceFactory>::Service: Send,
+        F::Service: Send,
         <<F as ServiceFactory>::Service as Service>::Future: Send + 'static,
-        F::Context: Send;
+        F::Context: Send,
+        F::Config: Default;
 }
 
 pub struct DefaultExecutor {
@@ -66,7 +67,6 @@ impl DefaultExecutor {
         self.starter.send(Ok(start_frame)).await?;
         drop(self.starter);
 
-        log::info!("{:?} wait....", thread::current().id());
         self.awaiter
             .for_each(|x| {
                 match x {
@@ -98,9 +98,10 @@ impl ServiceExecutor for DefaultExecutor {
             + Sync
             + 'static,
         F::Future: Send + 'static,
-        <F as ServiceFactory>::Service: Send,
+        F::Service: Send,
         <<F as ServiceFactory>::Service as Service>::Future: Send + 'static,
         F::Context: Send,
+        F::Config: Default,
     {
         if let Some(tx) = self.channels.pop().map(|x| x.sender()).flatten() {
             if let Some(rx) = self.channels.pop().map(|x| x.receiver()).flatten() {
@@ -108,11 +109,10 @@ impl ServiceExecutor for DefaultExecutor {
                 self.pool.spawn_ok(async move {
                     match factory.new_service(service_id.clone()).await {
                         Ok(service) => {
-                            let ctx = factory.new_context(service_id);
+                            let ctx = factory.new_context(service_id.clone(), F::Config::default());
                             if let Err(e) = process(rx, tx, service, ctx).await {
                                 log::error!("an error occured; error = {:?}", e);
                             }
-                            log::info!("{:?} spawn task end", thread::current().id())
                         }
                         Err(e) => {
                             log::error!("service initialize error = {:?}", e);
@@ -168,7 +168,7 @@ where
             }
         };
     }
-    log::info!("{:?} end serivce", thread::current().id());
+    log::info!("{:?} end serivce", thread::current().id(),);
 
     Ok(())
 }

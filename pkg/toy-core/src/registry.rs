@@ -25,7 +25,6 @@ pub struct ServiceSet<T, F> {
 pub trait ServiceSpawner {
     type Request;
     type Error: Error;
-    type InitError: Error;
     type ServiceExecutor: ServiceExecutor;
 
     fn spawn(&self, id: ServiceId, executor: &mut Self::ServiceExecutor)
@@ -56,13 +55,13 @@ where
         + Sync
         + 'static,
     R::Future: Send + 'static,
-    <R as ServiceFactory>::Service: Send,
+    R::Service: Send,
     <<R as ServiceFactory>::Service as Service>::Future: Send + 'static,
     R::Context: Send,
+    R::Config: Default,
 {
     type Request = Frame;
     type Error = ServiceError;
-    type InitError = ServiceError;
     type ServiceExecutor = DefaultExecutor;
 
     fn spawn(
@@ -82,25 +81,20 @@ where
 
 impl<T, F, R> ServiceSpawner for ServiceSet<T, F>
 where
-    T: ServiceSpawner<
-        Request = Frame,
-        Error = ServiceError,
-        InitError = ServiceError,
-        ServiceExecutor = DefaultExecutor,
-    >,
+    T: ServiceSpawner<Request = Frame, Error = ServiceError, ServiceExecutor = DefaultExecutor>,
     F: Fn() -> R + Clone,
     R: ServiceFactory<Request = Frame, Error = ServiceError, InitError = ServiceError>
         + Send
         + Sync
         + 'static,
     R::Future: Send + 'static,
-    <R as ServiceFactory>::Service: Send,
+    R::Service: Send,
     <<R as ServiceFactory>::Service as Service>::Future: Send + 'static,
     R::Context: Send,
+    R::Config: Default,
 {
     type Request = Frame;
     type Error = ServiceError;
-    type InitError = ServiceError;
     type ServiceExecutor = DefaultExecutor;
 
     fn spawn(

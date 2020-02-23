@@ -5,7 +5,7 @@ use super::Row;
 
 #[derive(Debug)]
 pub struct FileReader<R> {
-    reader: Box<ByteReader>,
+    reader: ByteReader,
     src: BufReader<R>,
     state: FileReaderState,
 }
@@ -34,10 +34,9 @@ impl FileReaderState {
 }
 
 impl<R: Read> FileReader<R> {
-
     /// Create a new Source given a built `ByteReader` and a source underlying IO reader.
     ///
-    pub fn new(reader: Box<ByteReader>, src: BufReader<R>, state: FileReaderState) -> FileReader<R> {
+    pub fn new(reader: ByteReader, src: BufReader<R>, state: FileReaderState) -> FileReader<R> {
         FileReader { reader, src, state }
     }
 
@@ -96,7 +95,8 @@ impl<R: Read> FileReader<R> {
             let (state, in_size, out_size, col) = {
                 let input = self.src.fill_buf()?;
                 let (buf, edges) = row.parts();
-                self.reader.read_record(input, &mut buf[out_pos..], &mut edges[column..])
+                self.reader
+                    .read_record(input, &mut buf[out_pos..], &mut edges[column..])
             };
 
             self.src.consume(in_size);
@@ -134,7 +134,10 @@ pub struct RowIterator<'a, R: 'a> {
 
 impl<'a, R: Read> RowIterator<'a, R> {
     fn new(src: &'a mut FileReader<R>) -> RowIterator<'a, R> {
-        RowIterator { src, row: Row::new() }
+        RowIterator {
+            src,
+            row: Row::new(),
+        }
     }
 }
 

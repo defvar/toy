@@ -17,3 +17,4 @@ toy-pack-derive = {path = "../../../shared/toy-pack-derive"}
 
 [dev-dependencies]
 quick-csv = "^0.1.6"
+csv = "1.1"

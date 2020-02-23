@@ -117,6 +117,7 @@ impl Dfa {
         self.new_state_of_value_class(State::StartRecord)
     }
 
+    #[inline(always)]
     fn transition(&self, state: State, c: u8) -> (State, Action) {
         match state {
             State::End => (State::End, Action::None),
@@ -227,6 +228,7 @@ impl Dfa {
         self.final_field
     }
 
+    #[inline(always)]
     pub fn consume_in_field(
         &self,
         state: DfaState,
@@ -236,7 +238,10 @@ impl Dfa {
         out_pos: &mut usize,
     ) {
         if state == self.in_field || state == self.in_quoted {
-            while *in_pos < input.len() && *out_pos < output.len() && self.classes.0[input[*in_pos] as usize] == 0 {
+            while *in_pos < input.len()
+                && *out_pos < output.len()
+                && self.classes.0[input[*in_pos] as usize] == 0
+            {
                 output[*out_pos] = input[*in_pos];
                 *in_pos += 1;
                 *out_pos += 1;
