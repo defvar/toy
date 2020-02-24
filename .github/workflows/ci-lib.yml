@@ -1,0 +1,55 @@
+name: ci-lib
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'pkg/**'
+      - 'shared/**'
+      - 'plugins/**'
+
+jobs:
+  build:
+    name: build toy lib
+    runs-on: ubuntu-latest
+    steps:
+    - name: checkout
+      uses: actions/checkout@v2
+    
+    - name: install rust
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: nightly
+        profile: minimal
+        override: true
+    
+    - name: test-pkg-core
+      uses: actions-rs/cargo@v1
+      with:
+        command: test
+        args: --manifest-path ${{ github.workspace }}/pkg/toy-core/Cargo.toml
+        
+    - name: test-shared-pack
+      uses: actions-rs/cargo@v1
+      with:
+        command: test
+        args: --manifest-path ${{ github.workspace }}/shared/toy-pack/Cargo.toml
+    
+    - name: test-shared-pack-mp
+      uses: actions-rs/cargo@v1
+      with:
+        command: test
+        args: --manifest-path ${{ github.workspace }}/shared/toy-pack-mp/Cargo.toml
+    
+    - name: test-shared-pack-derive
+      uses: actions-rs/cargo@v1
+      with:
+        command: test
+        args: --manifest-path ${{ github.workspace }}/shared/toy-pack-derive/Cargo.toml
+    
+    - name: test-plugins-file
+      uses: actions-rs/cargo@v1
+      with:
+        command: test
+        args: --manifest-path ${{ github.workspace }}/plugins/toy-plugin-commons/Cargo.toml
