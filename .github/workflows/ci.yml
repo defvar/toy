@@ -12,7 +12,7 @@ jobs:
         path: pkg/toy-core
     
     - name: Install Rust
-    - uses: actions-rs/toolchain@v1
+      uses: actions-rs/toolchain@v1
       with:
         toolchain: nightly
         profile: minimal
