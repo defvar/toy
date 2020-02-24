@@ -22,5 +22,5 @@ jobs:
       uses: actions-rs/cargo@v1
       with:
         command: test
-        args: --manifest-path ./pkg/toy-core/Cargo.toml 
+        args: --manifest-path $GITHUB_WORKSPACE/pkg/toy-core/Cargo.toml 
       
