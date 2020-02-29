@@ -11,7 +11,7 @@ path = "src/bin/main.rs"
 [dependencies]
 log = "0.4"
 failure = "0.1.6"
-toy-config = {path = "../../../shared/toy-config"}
+toy-core = {path = "../../../pkg/toy-core"}
 toy-pack = {path = "../../../shared/toy-pack"}
 toy-pack-derive = {path = "../../../shared/toy-pack-derive"}
 

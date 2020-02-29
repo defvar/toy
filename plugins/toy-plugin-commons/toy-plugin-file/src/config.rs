@@ -1,12 +1,17 @@
 use std::path::PathBuf;
 
-use toy_config::{error::ConfigError, Config};
 use toy_pack_derive::*;
 
 use super::{QuoteStyle, Terminator};
 
 pub const fn default_capacity() -> usize {
     8 * (1 << 10)
+}
+
+pub fn char_to_u8(v: char) -> u8 {
+    let mut dest = [0u8; 4];
+    let _ = v.encode_utf8(&mut dest);
+    dest[0]
 }
 
 #[derive(Debug, Clone, UnPack)]
@@ -16,18 +21,16 @@ pub struct FileConfig {
 }
 
 impl FileConfig {
+    pub fn new(source: Option<SourceConfig>, sink: Option<SinkConfig>) -> Self {
+        Self { source, sink }
+    }
+
     pub fn get_source_config(&self) -> Option<&SourceConfig> {
         self.source.as_ref()
     }
 
     pub fn get_sink_config(&self) -> Option<&SinkConfig> {
         self.sink.as_ref()
-    }
-}
-
-impl Config for FileConfig {
-    fn validate(&self) -> Result<(), ConfigError> {
-        Ok(())
     }
 }
 

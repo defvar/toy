@@ -1,10 +1,9 @@
-use super::config::{default_capacity, SourceConfig, SourceType};
+use super::config::{char_to_u8, default_capacity, SourceConfig, SourceType};
 use super::parse::ReaderBuilder;
 use super::{FileReader, FileReaderState, Terminator};
 use std::fs::File;
 use std::io::{self, BufReader, Error, ErrorKind};
 use std::path::Path;
-use toy_config::utils::char_to_u8;
 
 #[derive(Clone)]
 pub struct FileReaderBuilder {

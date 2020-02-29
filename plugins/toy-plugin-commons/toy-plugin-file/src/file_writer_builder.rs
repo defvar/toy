@@ -2,9 +2,8 @@ use std::fs::File;
 use std::io::{self, BufWriter, Error, ErrorKind};
 use std::path::Path;
 
-use super::config::{self, SinkConfig, SinkType};
+use super::config::{self, char_to_u8, SinkConfig, SinkType};
 use super::{FileWriter, QuoteStyle, Terminator};
-use toy_config::utils::char_to_u8;
 
 #[derive(Clone)]
 pub struct FileWriterBuilder {

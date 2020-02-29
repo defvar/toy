@@ -7,6 +7,7 @@ use toy_core::channel::Outgoing;
 use toy_core::data::{Frame, Value};
 use toy_core::error::ServiceError;
 use toy_core::executor::DefaultExecutor;
+use toy_core::factory;
 use toy_core::graph::Graph;
 use toy_core::registry::{Registry, ServiceSpawner, ServiceSpawnerExt};
 use toy_core::service;
@@ -72,17 +73,6 @@ async fn service_1(
     let _ = tx.send(Ok(Frame::from(3))).await?;
     let _ = tx.send(Ok(Frame::from(4))).await?;
     Ok(ctx)
-}
-
-macro_rules! factory {
-    ($f:expr, $cfg: ident, $ctx_f:expr) => {{
-        || {
-            service::fn_service_factory(
-                |id: ServiceId| ok::<_, ServiceError>(service::fn_service(id, $f)),
-                |id: ServiceId, config: $cfg| $ctx_f(id, config),
-            )
-        }
-    }};
 }
 
 async fn unboxed() -> Result<(), ()> {

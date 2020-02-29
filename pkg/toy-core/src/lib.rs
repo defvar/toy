@@ -7,6 +7,7 @@ pub mod data;
 pub mod error;
 pub mod executor;
 pub mod graph;
+mod macros;
 pub mod registry;
 pub mod service;
 pub mod service_id;

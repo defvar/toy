@@ -4,11 +4,15 @@ use toy_plugin_file::config::{FileConfig, SinkConfig, SourceConfig};
 use toy_plugin_file::{FileReaderBuilder, FileWriterBuilder, Row};
 
 fn main() {
-    let config: FileConfig = toy_config::from_yaml("toy-file/src/bin/csv.yml").unwrap();
+    let config: FileConfig = FileConfig::new(None, None);
+    //toy_config::from_yaml("toy-file/src/bin/csv.yml").unwrap();
 
     println!("config {:?}", config);
 
-    match file(config.get_source_config().unwrap(), config.get_sink_config().unwrap()) {
+    match file(
+        config.get_source_config().unwrap(),
+        config.get_sink_config().unwrap(),
+    ) {
         Ok(()) => println!("end"),
         Err(e) => println!("error! {}", e),
     };
