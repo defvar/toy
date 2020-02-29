@@ -5,7 +5,6 @@ use futures::channel::mpsc::{SendError, TrySendError};
 use futures::channel::oneshot;
 use std::io;
 use std::str::Utf8Error;
-use test::ColorConfig;
 
 pub trait Error: Sized + Fail {
     fn custom<T>(msg: T) -> Self
