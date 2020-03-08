@@ -1,29 +1,29 @@
 use std::fmt::{Debug, Error, Formatter};
 
 #[derive(Clone, PartialEq, Eq, Hash)]
-pub struct ServiceId {
+pub struct ServiceType {
     id: String,
 }
 
-impl From<&str> for ServiceId {
+impl From<&str> for ServiceType {
     fn from(v: &str) -> Self {
-        ServiceId { id: v.to_string() }
+        ServiceType { id: v.to_string() }
     }
 }
 
-impl From<String> for ServiceId {
+impl From<String> for ServiceType {
     fn from(v: String) -> Self {
-        ServiceId { id: v }
+        ServiceType { id: v }
     }
 }
 
-impl From<&String> for ServiceId {
+impl From<&String> for ServiceType {
     fn from(v: &String) -> Self {
-        ServiceId { id: v.to_string() }
+        ServiceType { id: v.to_string() }
     }
 }
 
-impl Debug for ServiceId {
+impl Debug for ServiceType {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), Error> {
         write!(f, "{}", self.id.to_string())
     }

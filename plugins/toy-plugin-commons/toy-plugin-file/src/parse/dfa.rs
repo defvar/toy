@@ -224,6 +224,7 @@ impl Dfa {
         self.final_record = self.new_state_of_value_class(State::EndRecord);
     }
 
+    #[inline(always)]
     pub fn get_final_field(&self) -> DfaState {
         self.final_field
     }

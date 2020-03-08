@@ -30,6 +30,19 @@ pub enum Value {
     Unit,
 }
 
+impl Value {
+    pub fn is_map(&self) -> bool {
+        self.as_map().is_some()
+    }
+
+    pub fn as_map(&self) -> Option<&HashMap<String, Value>> {
+        match *self {
+            Value::Map(ref map) => Some(map),
+            _ => None,
+        }
+    }
+}
+
 macro_rules! impl_from_to_value {
     ($t:ident, $variant: ident) => {
         impl From<$t> for Value {

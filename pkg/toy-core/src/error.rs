@@ -77,23 +77,61 @@ impl Error for ServiceError {
 
 #[derive(Debug, Fail)]
 pub enum ConfigError {
-    #[fail(display = "config error:validation error:{:?}", inner)]
+    #[fail(display = "config validation failed. error:{:?}", inner)]
     ValidationError { inner: String },
 
-    #[fail(display = "config error:invalid utf8 sequence. sequence:{:?}", inner)]
+    #[fail(display = "invalid config. {:?}", inner)]
     Utf8Error { inner: Utf8Error },
 
-    #[fail(display = "config error:io error:{:?}", inner)]
+    #[fail(display = "config load failed. {:?}", inner)]
     IOError { inner: io::Error },
+
+    #[fail(display = "invalid config. not found key:{:?}", inner)]
+    NotFoundKey { inner: String },
+
+    #[fail(display = "invalid config key type. {:?} must be {:?}", key, expected)]
+    InvalidKeyType { key: String, expected: String },
+
+    #[fail(display = "error: {:?}", inner)]
+    Error { inner: String },
 }
 
 impl ConfigError {
+    pub fn error<T>(msg: T) -> ConfigError
+    where
+        T: Display,
+    {
+        ConfigError::Error {
+            inner: msg.to_string(),
+        }
+    }
+
     pub fn validation_error<T>(msg: T) -> ConfigError
     where
         T: Display,
     {
         ConfigError::ValidationError {
             inner: msg.to_string(),
+        }
+    }
+
+    pub fn not_found_key<T>(key: T) -> ConfigError
+    where
+        T: Display,
+    {
+        ConfigError::NotFoundKey {
+            inner: key.to_string(),
+        }
+    }
+
+    pub fn invalid_key_type<T1, T2>(key: T1, expected: T2) -> ConfigError
+    where
+        T1: Display,
+        T2: Display,
+    {
+        ConfigError::InvalidKeyType {
+            key: key.to_string(),
+            expected: expected.to_string(),
         }
     }
 }

@@ -2,22 +2,24 @@ use crate::data::Frame;
 use crate::error::{Error, ServiceError};
 use crate::executor::{DefaultExecutor, ServiceExecutor};
 use crate::service::{Service, ServiceFactory};
-use crate::service_id::ServiceId;
+use crate::service_type::ServiceType;
+use crate::service_uri::Uri;
+use toy_pack::deser::DeserializableOwned;
 
 #[derive(Clone)]
 pub struct Registry<F> {
-    id: ServiceId,
+    tp: ServiceType,
     callback: F,
 }
 
 impl<F> Registry<F> {
-    pub fn new(id: ServiceId, callback: F) -> Registry<F> {
-        Registry { id, callback }
+    pub fn new(tp: ServiceType, callback: F) -> Registry<F> {
+        Registry { tp, callback }
     }
 }
 
 pub struct ServiceSet<T, F> {
-    id: ServiceId,
+    tp: ServiceType,
     other: T,
     callback: F,
 }
@@ -27,18 +29,22 @@ pub trait ServiceSpawner {
     type Error: Error;
     type ServiceExecutor: ServiceExecutor;
 
-    fn spawn(&self, id: ServiceId, executor: &mut Self::ServiceExecutor)
-        -> Result<(), Self::Error>;
+    fn spawn(
+        &self,
+        tp: ServiceType,
+        uri: Uri,
+        executor: &mut Self::ServiceExecutor,
+    ) -> Result<(), Self::Error>;
 }
 
 pub trait ServiceSpawnerExt: ServiceSpawner {
-    fn service<F, R>(self, id: ServiceId, other: F) -> ServiceSet<Self, F>
+    fn service<F, R>(self, tp: ServiceType, other: F) -> ServiceSet<Self, F>
     where
         Self: Sized,
         F: Fn() -> R + Clone,
     {
         ServiceSet {
-            id,
+            tp,
             other: self,
             callback: other,
         }
@@ -58,7 +64,7 @@ where
     R::Service: Send,
     <<R as ServiceFactory>::Service as Service>::Future: Send + 'static,
     R::Context: Send,
-    R::Config: Default,
+    R::Config: DeserializableOwned<Value = R::Config> + Send,
 {
     type Request = Frame;
     type Error = ServiceError;
@@ -66,12 +72,13 @@ where
 
     fn spawn(
         &self,
-        id: ServiceId,
+        tp: ServiceType,
+        uri: Uri,
         executor: &mut Self::ServiceExecutor,
     ) -> Result<(), Self::Error> {
-        if self.id == id {
+        if self.tp == tp {
             let f = (self.callback)();
-            executor.spawn(id, f);
+            executor.spawn(tp, uri, f);
             Ok(())
         } else {
             Err(ServiceError::error("don't know"))
@@ -91,7 +98,7 @@ where
     R::Service: Send,
     <<R as ServiceFactory>::Service as Service>::Future: Send + 'static,
     R::Context: Send,
-    R::Config: Default,
+    R::Config: DeserializableOwned<Value = R::Config> + Send,
 {
     type Request = Frame;
     type Error = ServiceError;
@@ -99,15 +106,16 @@ where
 
     fn spawn(
         &self,
-        id: ServiceId,
+        tp: ServiceType,
+        uri: Uri,
         executor: &mut Self::ServiceExecutor,
     ) -> Result<(), Self::Error> {
-        match self.other.spawn(id.clone(), executor) {
+        match self.other.spawn(tp.clone(), uri.clone(), executor) {
             Ok(_) => Ok(()),
             Err(_) => {
-                if self.id == id {
+                if self.tp == tp {
                     let f = (self.callback)();
-                    executor.spawn(id, f);
+                    executor.spawn(tp, uri, f);
                     Ok(())
                 } else {
                     Err(ServiceError::error("don't know"))

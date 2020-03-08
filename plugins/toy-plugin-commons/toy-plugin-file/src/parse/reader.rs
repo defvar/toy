@@ -53,7 +53,9 @@ impl ByteReader {
     ) -> (ReadResult, usize, usize, usize) {
         if input.is_empty() {
             let s = self.dfa.transition_final_dfa(self.current_state);
-            let res = self.dfa.new_read_record_result(s, true, false, false, false);
+            let res = self
+                .dfa
+                .new_read_record_result(s, true, false, false, false);
             return match res {
                 ReadResult::Record => {
                     if edges.is_empty() {
@@ -116,11 +118,12 @@ impl ByteReader {
     }
 
     fn strip_utf8_bom<'a>(&self, input: &'a [u8]) -> (&'a [u8], usize) {
-        let (input, nin) = if { !self.has_read && input.len() >= 3 && &input[0..3] == b"\xef\xbb\xbf" } {
-            (&input[3..], 3)
-        } else {
-            (input, 0)
-        };
+        let (input, nin) =
+            if { !self.has_read && input.len() >= 3 && &input[0..3] == b"\xef\xbb\xbf" } {
+                (&input[3..], 3)
+            } else {
+                (input, 0)
+            };
         (input, nin)
     }
 }

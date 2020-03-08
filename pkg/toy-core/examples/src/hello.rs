@@ -9,26 +9,30 @@ use toy_core::error::ServiceError;
 use toy_core::executor::DefaultExecutor;
 use toy_core::factory;
 use toy_core::graph::Graph;
-use toy_core::registry::{Registry, ServiceSpawner, ServiceSpawnerExt};
+use toy_core::registry::{Registry, ServiceSpawnerExt};
 use toy_core::service;
-use toy_core::service_id::ServiceId;
+use toy_core::service_type::ServiceType;
+use toy_pack_derive::*;
 
 #[derive(Clone, Debug, Default)]
 pub struct ServiceContext;
-#[derive(Clone, Debug, Default)]
-pub struct ServiceContextConfig;
+#[derive(Clone, Debug, Default, UnPack)]
+pub struct ServiceContextConfig {}
 
 #[derive(Clone, Debug, Default)]
 pub struct ServiceContext2 {
     count: u32,
 }
-#[derive(Clone, Debug, Default)]
-pub struct ServiceContext2Config;
+#[derive(Clone, Debug, Default, UnPack)]
+pub struct ServiceContext2Config {
+    uri: String,
+    prop1: u32,
+}
 
 struct ServiceContextFactory;
 
 impl ServiceContextFactory {
-    fn new_context<T: Into<ServiceId>>(_id: T, _config: ServiceContextConfig) -> ServiceContext {
+    fn new_context<T: Into<ServiceType>>(_id: T, _config: ServiceContextConfig) -> ServiceContext {
         ServiceContext
     }
 }
@@ -36,17 +40,23 @@ impl ServiceContextFactory {
 struct ServiceContext2Factory;
 
 impl ServiceContext2Factory {
-    fn new_context<T: Into<ServiceId>>(_id: T, _config: ServiceContext2Config) -> ServiceContext2 {
-        ServiceContext2::default()
+    fn new_context<T: Into<ServiceType>>(_id: T, config: ServiceContext2Config) -> ServiceContext2 {
+        ServiceContext2 {
+            count: config.prop1,
+        }
     }
 }
 
 async fn service_3(
-    ctx: ServiceContext2,
-    _req: Frame,
+    mut ctx: ServiceContext2,
+    req: Frame,
     mut tx: Outgoing<Frame, ServiceError>,
 ) -> Result<ServiceContext2, ServiceError> {
-    info!("service3 !");
+    match req.get_value() {
+        Value::U32(v) => ctx.count += *v,
+        _ => (),
+    };
+    info!("service3 receive {:?}, ctx:{:?}", req, ctx);
     let _ = tx.send(Ok(Frame::default())).await?;
     Ok(ctx)
 }
@@ -58,7 +68,7 @@ async fn service_2(
 ) -> Result<ServiceContext2, ServiceError> {
     ctx.count += 1;
     info!("service2 receive {:?}, ctx:{:?}", req, ctx);
-    let _ = tx.send(Ok(Frame::default())).await?;
+    let _ = tx.send(Ok(Frame::from(ctx.count))).await?;
     Ok(ctx)
 }
 
@@ -101,14 +111,41 @@ async fn unboxed() -> Result<(), ()> {
         ),
     );
 
-    let mut e = DefaultExecutor::new(vec!["1".to_string(), "2".to_string(), "3".to_string()]);
-    // need to reverse ....
-    let _ = c.spawn("3".into(), &mut e);
-    let _ = c.spawn("2".into(), &mut e);
-    let _ = c.spawn("1".into(), &mut e);
-    let _ = e.run(Frame::default()).await;
+    let g = graph();
+    let e = DefaultExecutor::new(g.clone());
+    let _ = e.run(c, Frame::default()).await;
 
     Ok(())
+}
+
+fn graph() -> Graph {
+    let mut s1 = HashMap::new();
+    s1.insert("type".to_string(), Value::from("1".to_string()));
+    s1.insert("uri".to_string(), Value::from("a".to_string()));
+    s1.insert("prop1".to_string(), Value::from(0u32));
+    s1.insert("wires".to_string(), Value::from("c"));
+    let s1 = Value::from(s1);
+
+    let mut s2 = HashMap::new();
+    s2.insert("type".to_string(), Value::from("2".to_string()));
+    s2.insert("uri".to_string(), Value::from("b".to_string()));
+    s2.insert("prop1".to_string(), Value::from(0u32));
+    s2.insert("wires".to_string(), Value::from("c"));
+    let s2 = Value::from(s2);
+
+    let mut s3 = HashMap::new();
+    s3.insert("type".to_string(), Value::from("3".to_string()));
+    s3.insert("uri".to_string(), Value::from("c".to_string()));
+    s3.insert("prop1".to_string(), Value::from(0u32));
+    s3.insert("wires".to_string(), Value::None);
+    let s3 = Value::from(s3);
+
+    let seq = Value::Seq(vec![s1, s2, s3]);
+
+    let mut services = HashMap::new();
+    services.insert("services".to_string(), seq);
+
+    Graph::from(Value::Map(services)).unwrap()
 }
 
 fn main() {
@@ -122,24 +159,6 @@ fn main() {
 
     info!("-----------------------------------");
     info!("main thread {:?}", thread::current().id());
-    //    let _ = block_on(unboxed());
-    let mut s1 = HashMap::new();
-    s1.insert("kind".to_string(), Value::from("aaaa".to_string()));
-    s1.insert("uri".to_string(), Value::from("http://aaaa".to_string()));
-    s1.insert("prop1".to_string(), Value::from(1u32));
-    let s1 = Value::from(s1);
-
-    let mut s2 = HashMap::new();
-    s2.insert("kind".to_string(), Value::from("bbbb".to_string()));
-    s2.insert("uri".to_string(), Value::from("http://bbbb".to_string()));
-    s2.insert("prop1".to_string(), Value::from(2u32));
-    let s2 = Value::from(s2);
-
-    let mut seq = Value::Seq(vec![s1, s2]);
-
-    let mut services = HashMap::new();
-    services.insert("services".to_string(), seq);
-
-    let r = Graph::from(Value::Map(services));
-    info!("{:?}", r);
+    let _ = block_on(unboxed());
+    // info!("{:?}", graph());
 }
