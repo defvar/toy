@@ -1,5 +1,4 @@
-use std::collections::HashMap;
-use toy_core::data::{self, Value};
+use toy_core::data::{self, Map, Value};
 use toy_pack_derive::*;
 
 #[test]
@@ -18,15 +17,15 @@ fn de_struct() {
     };
 
     // inner struct
-    let mut inner = HashMap::new();
+    let mut inner = Map::new();
     inner.insert("v_u8".to_string(), Value::from(src.inner.v_u8));
 
     // enum
-    let mut terminator = HashMap::new();
+    let mut terminator = Map::new();
     terminator.insert("CRLF".to_string(), Value::None);
 
     // struct
-    let mut map = HashMap::new();
+    let mut map = Map::new();
     map.insert("v_u8".to_string(), Value::from(src.v_u8));
     map.insert("v_u16".to_string(), Value::from(src.v_u16));
     map.insert("v_u32".to_string(), Value::from(src.v_u32));

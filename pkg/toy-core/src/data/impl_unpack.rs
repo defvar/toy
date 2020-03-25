@@ -11,9 +11,8 @@ use toy_pack::deser::{
 /// # Exapmle
 ///
 /// ```edition2018
-/// use std::collections::HashMap;
 /// use toy_pack_derive::*;
-/// use toy_core::data::{self, Value};
+/// use toy_core::data::{self, Map, Value};
 ///
 /// #[derive(UnPack)]
 /// struct User {
@@ -24,7 +23,7 @@ use toy_pack::deser::{
 /// fn main(){
 ///
 ///   // struct is defined by map.
-///   let mut map = HashMap::new();
+///   let mut map = Map::new();
 ///   map.insert("id".to_string(), Value::from(123u32));
 ///   map.insert("name".to_string(), Value::from("aiueo".to_string()));
 ///
