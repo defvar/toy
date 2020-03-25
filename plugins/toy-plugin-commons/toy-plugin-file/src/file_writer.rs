@@ -1,7 +1,28 @@
 use std::fmt;
-use std::io::{BufWriter, Error, Write};
+use std::io::{BufWriter, Error, IntoInnerError, Write};
 
 use super::{QuoteStyle, Row, Terminator};
+use toy_core::data::Value;
+
+macro_rules! itoa_write {
+    ($tp: ident, $fun_name: ident) => {
+       fn $fun_name(&mut self, v: $tp, need_delimiter: bool) -> Result<(), Error> {
+           let mut buf = itoa::Buffer::new();
+           let b = buf.format(v).as_bytes();
+           self.write_column(b, need_delimiter)
+        }
+    };
+}
+
+macro_rules! ryu_write {
+    ($tp: ident, $fun_name: ident) => {
+       fn $fun_name(&mut self, v: $tp, need_delimiter: bool) -> Result<(), Error> {
+           let mut buf = ryu::Buffer::new();
+           let b = buf.format(v).as_bytes();
+           self.write_column(b, need_delimiter)
+        }
+    };
+}
 
 pub struct FileWriter<W: Write> {
     raw: BufWriter<W>,
@@ -17,18 +38,22 @@ pub struct FileWriter<W: Write> {
 
 #[derive(Debug)]
 pub struct FileWriterState {
+    has_headers: bool,
     wrote_bytes: u64,
     wrote_row: u64,
 }
 
 impl<W: Write> FileWriter<W> {
-    pub fn new(raw: BufWriter<W>,
-               delimiter: u8,
-               quote: u8,
-               quote_style: QuoteStyle,
-               terminator: Terminator,
-               escape: u8,
-               double_quote: bool) -> FileWriter<W> {
+    pub fn new(
+        raw: BufWriter<W>,
+        has_headers: bool,
+        delimiter: u8,
+        quote: u8,
+        quote_style: QuoteStyle,
+        terminator: Terminator,
+        escape: u8,
+        double_quote: bool,
+    ) -> FileWriter<W> {
         let mut requires_quotes = [false; 256];
         requires_quotes[delimiter as usize] = true;
         requires_quotes[quote as usize] = true;
@@ -53,6 +78,7 @@ impl<W: Write> FileWriter<W> {
             escape,
             double_quote,
             state: FileWriterState {
+                has_headers,
                 wrote_bytes: 0,
                 wrote_row: 0,
             },
@@ -60,7 +86,9 @@ impl<W: Write> FileWriter<W> {
     }
 
     pub fn write_iter<I, T>(&mut self, iter: I) -> Result<(), Error>
-        where I: IntoIterator<Item=T>, T: AsRef<[u8]>
+    where
+        I: IntoIterator<Item = T>,
+        T: AsRef<[u8]>,
     {
         let mut need_delimiter = false;
 
@@ -82,12 +110,114 @@ impl<W: Write> FileWriter<W> {
         self.raw.flush()
     }
 
+    pub fn into_inner(self) -> Result<W, IntoInnerError<BufWriter<W>>> {
+        self.raw.into_inner()
+    }
+
     pub fn get_wrote_bytes(&self) -> u64 {
         self.state.wrote_bytes
     }
 
     pub fn get_wrote_row(&self) -> u64 {
         self.state.wrote_row
+    }
+
+    itoa_write!(u8, write_value_u8);
+    itoa_write!(u16, write_value_u16);
+    itoa_write!(u32, write_value_u32);
+    itoa_write!(u64, write_value_u64);
+    itoa_write!(i8, write_value_i8);
+    itoa_write!(i16, write_value_i16);
+    itoa_write!(i32, write_value_i32);
+    itoa_write!(i64, write_value_i64);
+    ryu_write!(f32, write_value_f32);
+    ryu_write!(f64, write_value_f64);
+
+    pub fn write_value(&mut self, value: &Value) -> Result<(), Error> {
+        if self.state.has_headers && self.state.wrote_row == 0 {
+            self.write_value_headers(value, false, None)?;
+            self.write_terminator()?;
+            self.state.wrote_row += 1;
+        }
+        self.write_value_0(value, false)?;
+
+        self.write_terminator()?;
+        self.state.wrote_row += 1;
+        Ok(())
+    }
+
+    fn write_value_0(&mut self, value: &Value, need_delimiter: bool) -> Result<(), Error> {
+        match value {
+            Value::Bool(v) => {
+                self.write_column(if *v { b"true" } else { b"false" }, need_delimiter)
+            }
+            Value::U8(v) => self.write_value_u8(*v, need_delimiter),
+            Value::U16(v) => self.write_value_u16(*v, need_delimiter),
+            Value::U32(v) => self.write_value_u32(*v, need_delimiter),
+            Value::U64(v) => self.write_value_u64(*v, need_delimiter),
+            Value::I8(v) => self.write_value_i8(*v, need_delimiter),
+            Value::I16(v) => self.write_value_i16(*v, need_delimiter),
+            Value::I32(v) => self.write_value_i32(*v, need_delimiter),
+            Value::I64(v) => self.write_value_i64(*v, need_delimiter),
+            Value::F32(v) => self.write_value_f32(*v, need_delimiter),
+            Value::F64(v) => self.write_value_f64(*v, need_delimiter),
+            Value::Char(v) => self.write_column(v.to_string().as_bytes(), need_delimiter),
+            Value::String(v) => self.write_column(v.as_bytes(), need_delimiter),
+            Value::Bytes(v) => self.write_column(v.as_slice(), need_delimiter),
+            Value::Map(map) => self.write_inner_values(map.values(), need_delimiter),
+            Value::Seq(seq) => self.write_inner_values(seq.iter(), need_delimiter),
+            Value::Some(v) => self.write_value_0(v, need_delimiter),
+            Value::None | Value::Unit => Ok(()),
+        }
+    }
+
+    fn write_inner_values<'a, I>(&mut self, values: I, need_delimiter: bool) -> Result<(), Error>
+    where
+        I: Iterator<Item = &'a Value>,
+    {
+        let mut need_delimiter = need_delimiter;
+        for col in values {
+            self.write_value_0(col, need_delimiter)?;
+            need_delimiter = true;
+        }
+        Ok(())
+    }
+
+    fn write_value_headers(
+        &mut self,
+        value: &Value,
+        need_delimiter: bool,
+        parent: Option<String>,
+    ) -> Result<(), Error> {
+        match value {
+            Value::Map(map) => {
+                let mut need_delimiter = need_delimiter;
+                for (k, v) in map {
+                    let text = parent
+                        .clone()
+                        .map_or(k.to_string(), |x| format!("{}.{}", x, k));
+                    self.write_value_headers(v, need_delimiter, Some(text))?;
+                    need_delimiter = true;
+                }
+                Ok(())
+            }
+            Value::Seq(seq) => {
+                let mut need_delimiter = need_delimiter;
+                for (idx, v) in seq.iter().enumerate() {
+                    let text = parent
+                        .clone()
+                        .map_or(idx.to_string(), |x| format!("{}.{}", x, idx.to_string()));
+                    self.write_value_headers(v, need_delimiter, Some(text))?;
+                    need_delimiter = true;
+                }
+                Ok(())
+            }
+            Value::Some(v) => self.write_value_headers(v, need_delimiter, None),
+            _ => {
+                let text = parent.unwrap_or("unknown".to_string());
+                self.write_column(text.as_bytes(), need_delimiter)
+            }
+        }
     }
 
     fn write_column(&mut self, col: &[u8], need_delimiter: bool) -> Result<(), Error> {
@@ -131,7 +261,7 @@ impl<W: Write> FileWriter<W> {
             }
         }
 
-        if wrote < col.len() - 1 {
+        if wrote < col.len() {
             wrote_size += self.raw.write(&col[wrote..])?;
         }
 
@@ -150,7 +280,7 @@ impl<W: Write> FileWriter<W> {
                 self.state.wrote_bytes += s as u64;
                 Ok(())
             }
-            Err(e) => Err(e)
+            Err(e) => Err(e),
         }
     }
 
@@ -159,11 +289,7 @@ impl<W: Write> FileWriter<W> {
         match self.quote_style {
             QuoteStyle::Always => true,
             QuoteStyle::Never => false,
-            QuoteStyle::Necessary => {
-                input.iter().any(|&b| {
-                    self.requires_quotes[b as usize]
-                })
-            }
+            QuoteStyle::Necessary => input.iter().any(|&b| self.requires_quotes[b as usize]),
         }
     }
 }

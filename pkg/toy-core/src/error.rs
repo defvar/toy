@@ -24,6 +24,9 @@ pub enum ServiceError {
     ConfigInitFailed { inner: ConfigError },
 
     #[fail(display = "error: {:?}", inner)]
+    IOError { inner: io::Error },
+
+    #[fail(display = "error: {:?}", inner)]
     Error { inner: String },
 }
 
@@ -61,6 +64,12 @@ impl<T> From<TrySendError<T>> for ServiceError {
 impl From<ConfigError> for ServiceError {
     fn from(e: ConfigError) -> Self {
         ServiceError::ConfigInitFailed { inner: e }
+    }
+}
+
+impl From<io::Error> for ServiceError {
+    fn from(e: io::Error) -> Self {
+        ServiceError::IOError { inner: e }
     }
 }
 

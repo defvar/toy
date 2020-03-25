@@ -24,10 +24,10 @@ pub fn fn_service_factory<F, Fut, S, InitErr, CtxF, Cfg>(
     ctx_f: CtxF,
 ) -> FnServiceFactory<F, Fut, S, InitErr, CtxF, Cfg>
 where
-    F: Fn(ServiceType) -> Fut + Clone,
+    F: Fn(ServiceType) -> Fut,
     Fut: Future<Output = Result<S, InitErr>>,
     S: Service,
-    CtxF: Fn(ServiceType, Cfg) -> S::Context + Clone,
+    CtxF: Fn(ServiceType, Cfg) -> Result<S::Context, InitErr>,
 {
     FnServiceFactory {
         f,
@@ -47,7 +47,11 @@ pub trait ServiceFactory {
 
     fn new_service(&self, tp: ServiceType) -> Self::Future;
 
-    fn new_context(&self, tp: ServiceType, config: Self::Config) -> Self::Context;
+    fn new_context(
+        &self,
+        tp: ServiceType,
+        config: Self::Config,
+    ) -> Result<Self::Context, Self::InitError>;
 }
 
 pub trait Service {
@@ -114,10 +118,10 @@ where
 
 pub struct FnServiceFactory<F, Fut, S, InitErr, CtxF, Cfg>
 where
-    F: Fn(ServiceType) -> Fut + Clone,
+    F: Fn(ServiceType) -> Fut,
     Fut: Future<Output = Result<S, InitErr>>,
     S: Service,
-    CtxF: Fn(ServiceType, Cfg) -> S::Context + Clone,
+    CtxF: Fn(ServiceType, Cfg) -> Result<S::Context, InitErr>,
 {
     f: F,
     ctx_f: CtxF,
@@ -127,10 +131,10 @@ where
 impl<F, Fut, S, InitErr, CtxF, Cfg> ServiceFactory
     for FnServiceFactory<F, Fut, S, InitErr, CtxF, Cfg>
 where
-    F: Fn(ServiceType) -> Fut + Clone,
+    F: Fn(ServiceType) -> Fut,
     Fut: Future<Output = Result<S, InitErr>>,
     S: Service,
-    CtxF: Fn(ServiceType, Cfg) -> S::Context + Clone,
+    CtxF: Fn(ServiceType, Cfg) -> Result<S::Context, InitErr>,
 {
     type Future = Fut;
     type Service = S;
@@ -144,7 +148,11 @@ where
         (self.f)(tp)
     }
 
-    fn new_context(&self, tp: ServiceType, config: Self::Config) -> Self::Context {
+    fn new_context(
+        &self,
+        tp: ServiceType,
+        config: Self::Config,
+    ) -> Result<Self::Context, Self::InitError> {
         (self.ctx_f)(tp, config)
     }
 }
@@ -154,7 +162,7 @@ where
     F: Fn(ServiceType) -> Fut + Clone,
     Fut: Future<Output = Result<S, InitErr>>,
     S: Service,
-    CtxF: Fn(ServiceType, Cfg) -> S::Context + Clone,
+    CtxF: Fn(ServiceType, Cfg) -> Result<S::Context, InitErr> + Clone,
 {
     fn clone(&self) -> Self {
         FnServiceFactory {
@@ -170,7 +178,7 @@ where
     F: Fn(ServiceType) -> Fut + Clone,
     Fut: Future<Output = Result<S, InitErr>>,
     S: Service,
-    CtxF: Fn(ServiceType, Cfg) -> S::Context + Clone,
+    CtxF: Fn(ServiceType, Cfg) -> Result<S::Context, InitErr>,
 {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), Error> {
         write!(
@@ -222,7 +230,11 @@ impl ServiceFactory for NoopServiceFactory {
         future::ready(Ok(NoopService))
     }
 
-    fn new_context(&self, _tp: ServiceType, _config: Self::Config) -> Self::Context {
-        NoopContext
+    fn new_context(
+        &self,
+        _tp: ServiceType,
+        _config: Self::Config,
+    ) -> Result<Self::Context, Self::InitError> {
+        Ok(NoopContext)
     }
 }

@@ -2,12 +2,13 @@ use std::fs::File;
 use std::io::{self, BufWriter, Error, ErrorKind};
 use std::path::Path;
 
-use super::config::{self, char_to_u8, SinkConfig, SinkType};
+use super::config::{self, char_to_u8, FileWriteConfig, SinkType};
 use super::{FileWriter, QuoteStyle, Terminator};
 
 #[derive(Clone)]
 pub struct FileWriterBuilder {
     capacity: usize,
+    has_headers: bool,
     delimiter: u8,
     quote: u8,
     quote_style: QuoteStyle,
@@ -17,7 +18,7 @@ pub struct FileWriterBuilder {
 }
 
 impl FileWriterBuilder {
-    pub fn configure(config: &SinkConfig) -> Result<FileWriter<Box<dyn io::Write>>, Error> {
+    pub fn configure(config: &FileWriteConfig) -> Result<FileWriter<Box<dyn io::Write>>, Error> {
         if config.kind == SinkType::File && config.path.is_none() {
             return Err(Error::new(
                 ErrorKind::InvalidInput,
@@ -26,6 +27,7 @@ impl FileWriterBuilder {
         }
 
         let b = FileWriterBuilder::default()
+            .has_headers(config.option.has_headers)
             .delimiter(char_to_u8(config.option.delimiter))
             .quote(char_to_u8(config.option.quote))
             .quote_style(config.option.quote_style)
@@ -43,6 +45,11 @@ impl FileWriterBuilder {
 
     pub fn capacity(&mut self, cap: usize) -> &mut Self {
         self.capacity = cap;
+        self
+    }
+
+    pub fn has_headers(&mut self, yes: bool) -> &mut Self {
+        self.has_headers = yes;
         self
     }
 
@@ -79,6 +86,7 @@ impl FileWriterBuilder {
     pub fn from_writer<W: io::Write>(&self, w: W) -> FileWriter<W> {
         FileWriter::new(
             BufWriter::with_capacity(self.capacity, w),
+            self.has_headers,
             self.delimiter,
             self.quote,
             self.quote_style,
@@ -97,6 +105,7 @@ impl Default for FileWriterBuilder {
     fn default() -> Self {
         Self {
             capacity: config::default_capacity(),
+            has_headers: true,
             delimiter: b',',
             quote: b'"',
             quote_style: QuoteStyle::default(),

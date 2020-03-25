@@ -52,10 +52,15 @@ impl<R: Read> FileReader<R> {
         RowIntoIterator::new(self)
     }
 
+    /// Returns true if reader configured to first row as a header.
+    ///
+    pub fn has_headers(&self) -> bool {
+        self.state.has_headers
+    }
+
     /// Returns a reference to the first row.
     ///
     /// If has been read yet, then this will force parsing of the first row.
-    /// `has_header`
     ///
     pub fn headers(&mut self) -> Result<&Row, Error> {
         if self.state.headers.is_none() {

@@ -1,6 +1,6 @@
 use crate::data::error::DeserializeError;
+use crate::data::map::Map;
 use crate::data::Value;
-use std::collections::HashMap;
 use toy_pack::deser::{
     Deserializable, DeserializeMapOps, DeserializeSeqOps, DeserializeVariantOps, Deserializer,
     Error, Visitor,
@@ -110,7 +110,7 @@ impl<'toy: 'a, 'a> Deserializable<'toy> for Value {
                 A: DeserializeMapOps<'a>,
             {
                 let size = map.size_hint().unwrap_or(256);
-                let mut values: HashMap<String, Value> = HashMap::with_capacity(size);
+                let mut values: Map<String, Value> = Map::with_capacity(size);
                 while let Some(key) = map.next_key::<String>()? {
                     let v = map.next_value::<Value>()?;
                     values.insert(key, v);

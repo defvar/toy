@@ -134,7 +134,7 @@ impl DefaultExecutor {
     }
 
     async fn run_0(self, start_frame: Frame) -> Result<(), ServiceError> {
-        log::info!("{:?} start flow", thread::current().id());
+        log::info!("{:?} run executor", thread::current().id());
 
         for (_, mut tx) in self.starters {
             tx.send(Ok(start_frame.clone())).await?
@@ -178,25 +178,33 @@ impl ServiceExecutor for DefaultExecutor {
     {
         let (tx, rx) = self.pop_channels(&uri);
         let service_type = service_type.clone();
-        if let Some(config_value) = self.graph.by_uri(&uri) {
-            match data::unpack::<F::Config>(config_value.config()) {
-                Ok(config) => {
-                    self.pool.spawn_ok(async move {
-                        match factory.new_service(service_type.clone()).await {
-                            Ok(service) => {
-                                let ctx = factory.new_context(service_type.clone(), config);
-                                if let Err(e) = process(rx, tx, service, ctx).await {
-                                    log::error!("an error occured; error = {:?}", e);
+
+        let config_value = self.graph.by_uri(&uri);
+        if config_value.is_none() {
+            log::error!("not found service. uri:{:?}", uri);
+            return;
+        }
+        match data::unpack::<F::Config>(config_value.unwrap().config()) {
+            Ok(config) => {
+                self.pool.spawn_ok(async move {
+                    match factory.new_service(service_type.clone()).await {
+                        Ok(service) => match factory.new_context(service_type.clone(), config) {
+                            Ok(ctx) => {
+                                if let Err(e) = process(rx, tx, service, ctx, uri.clone()).await {
+                                    log::error!("an error occured; uri:{:?}, error:{:?}", uri, e);
                                 }
                             }
                             Err(e) => {
-                                log::error!("service initialize error = {:?}", e);
+                                log::error!("an error occured; uri:{:?}, error:{:?}", uri, e);
                             }
+                        },
+                        Err(e) => {
+                            log::error!("service initialize failed. uri:{:?}, error:{:?}", uri, e);
                         }
-                    });
-                }
-                Err(e) => log::error!("config initialize error = {:?}", e),
+                    }
+                });
             }
+            Err(e) => log::error!("config initialize failed. uri:{:?}, error:{:?}", uri, e),
         }
     }
 }
@@ -206,11 +214,12 @@ async fn process<S, Ctx>(
     mut tx: Outgoing<Frame, ServiceError>,
     mut service: S,
     mut context: Ctx,
+    uri: Uri,
 ) -> Result<(), ServiceError>
 where
     S: Service<Request = Frame, Error = ServiceError, Context = Ctx>,
 {
-    log::info!("{:?} start serivce", thread::current().id());
+    log::info!("{:?} uri:{:?} start", thread::current().id(), uri);
     context = service.started(context);
 
     //main loop, receive on message
@@ -227,7 +236,7 @@ where
     }
 
     let _ = service.completed(context);
-    log::info!("{:?} end serivce", thread::current().id());
+    log::info!("{:?} uri:{:?} end", thread::current().id(), uri);
 
     Ok(())
 }

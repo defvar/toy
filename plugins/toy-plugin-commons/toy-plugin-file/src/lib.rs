@@ -16,6 +16,7 @@ mod file_writer;
 mod file_writer_builder;
 pub mod parse;
 mod row;
+pub mod service;
 
 #[derive(Clone, Copy, Debug, UnPack)]
 pub enum QuoteStyle {

@@ -1,6 +1,9 @@
 #[macro_use]
 extern crate failure;
 
+pub use self::service_type::ServiceType;
+pub use self::service_uri::Uri;
+
 pub mod channel;
 pub mod data;
 pub mod error;
@@ -9,5 +12,5 @@ pub mod graph;
 mod macros;
 pub mod registry;
 pub mod service;
-pub mod service_type;
-pub mod service_uri;
+mod service_type;
+mod service_uri;

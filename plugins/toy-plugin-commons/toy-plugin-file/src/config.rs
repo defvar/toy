@@ -14,35 +14,15 @@ pub fn char_to_u8(v: char) -> u8 {
     dest[0]
 }
 
-#[derive(Debug, Clone, UnPack)]
-pub struct FileConfig {
-    pub(crate) source: Option<SourceConfig>,
-    pub(crate) sink: Option<SinkConfig>,
-}
-
-impl FileConfig {
-    pub fn new(source: Option<SourceConfig>, sink: Option<SinkConfig>) -> Self {
-        Self { source, sink }
-    }
-
-    pub fn get_source_config(&self) -> Option<&SourceConfig> {
-        self.source.as_ref()
-    }
-
-    pub fn get_sink_config(&self) -> Option<&SinkConfig> {
-        self.sink.as_ref()
-    }
-}
-
 #[derive(Debug, Clone, UnPack, Default)]
-pub struct SourceConfig {
+pub struct FileReadConfig {
     pub(crate) kind: SourceType,
     pub(crate) path: Option<PathBuf>,
-    pub(crate) option: SourceOption,
+    pub(crate) option: ReadOption,
 }
 
 #[derive(Debug, Clone, UnPack)]
-pub struct SourceOption {
+pub struct ReadOption {
     #[toy(default = ',')]
     pub(crate) delimiter: char,
     #[toy(default = '"')]
@@ -52,16 +32,17 @@ pub struct SourceOption {
     pub(crate) escape: Option<u8>,
     pub(crate) double_quote: bool,
     pub(crate) comment: Option<u8>,
-    pub(crate) has_header: bool,
+    #[toy(default = true)]
+    pub(crate) has_headers: bool,
     pub(crate) flexible: bool,
     #[toy(default_expr = "default_capacity")]
     pub(crate) capacity: usize,
     pub(crate) columns: Option<Vec<Column>>,
 }
 
-impl Default for SourceOption {
-    fn default() -> SourceOption {
-        SourceOption {
+impl Default for ReadOption {
+    fn default() -> ReadOption {
+        ReadOption {
             delimiter: ',',
             quote: '"',
             quoting: true,
@@ -70,7 +51,7 @@ impl Default for SourceOption {
             double_quote: true,
             comment: None,
             capacity: default_capacity(),
-            has_header: true,
+            has_headers: true,
             flexible: false,
             columns: None,
         }
@@ -83,14 +64,16 @@ pub struct Column {
 }
 
 #[derive(Debug, Clone, UnPack, Default)]
-pub struct SinkConfig {
+pub struct FileWriteConfig {
     pub(crate) kind: SinkType,
     pub(crate) path: Option<PathBuf>,
-    pub(crate) option: SinkOption,
+    pub(crate) option: WriteOption,
 }
 
 #[derive(Debug, Clone, UnPack)]
-pub struct SinkOption {
+pub struct WriteOption {
+    #[toy(default = true)]
+    pub(crate) has_headers: bool,
     #[toy(default = ',')]
     pub(crate) delimiter: char,
     #[toy(default = '"')]
@@ -103,9 +86,10 @@ pub struct SinkOption {
     pub(crate) capacity: usize,
 }
 
-impl Default for SinkOption {
-    fn default() -> SinkOption {
-        SinkOption {
+impl Default for WriteOption {
+    fn default() -> WriteOption {
+        WriteOption {
+            has_headers: true,
             capacity: default_capacity(),
             delimiter: ',',
             quote: '"',

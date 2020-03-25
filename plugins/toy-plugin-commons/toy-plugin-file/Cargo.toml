@@ -4,16 +4,14 @@ version = "0.1.0"
 authors = ["defvar <def.daisuke@gmail.com>"]
 edition = "2018"
 
-[[bin]]
-name = "toy-plugin-file"
-path = "src/bin/main.rs"
-
 [dependencies]
 log = "0.4"
 failure = "0.1.6"
 toy-core = {path = "../../../pkg/toy-core"}
 toy-pack = {path = "../../../shared/toy-pack"}
 toy-pack-derive = {path = "../../../shared/toy-pack-derive"}
+itoa = "0.4"
+ryu = "1.0"
 
 [dev-dependencies]
 quick-csv = "^0.1.6"

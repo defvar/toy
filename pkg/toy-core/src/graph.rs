@@ -12,6 +12,16 @@ pub struct Graph {
     inputs: HashMap<Uri, InputWire>,
 }
 
+#[derive(Debug, Clone)]
+pub struct Node(Inner);
+
+#[derive(Debug, Clone)]
+struct Inner {
+    tp: ServiceType,
+    uri: Uri,
+    config_value: Value,
+}
+
 impl Graph {
     pub fn from(v: Value) -> Result<Graph, ConfigError> {
         let seq = match v {
@@ -185,16 +195,6 @@ impl<'a> DoubleEndedIterator for NodeIterator<'a> {
     }
 }
 
-#[derive(Debug, Clone)]
-pub struct Node(Inner);
-
-#[derive(Debug, Clone)]
-struct Inner {
-    tp: ServiceType,
-    uri: Uri,
-    config_value: Value,
-}
-
 impl Node {
     pub fn new(tp: ServiceType, uri: Uri, config_value: Value) -> Node {
         Node(Inner {
@@ -219,15 +219,33 @@ impl Node {
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum OutputWire {
+    /// Wire of "One to One".
+    /// Sender is "0" Value of Tuple.
+    ///
     Single(Uri, Uri),
+
+    /// Wire of "One To Many".
+    ///
     Fanout(Uri, Vec<Uri>),
+
+    /// Without output.
+    ///
     None,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum InputWire {
+    /// Wire of "One to One".
+    /// Sender is "0" Value of Tuple.
+    ///
     Single(Uri, Uri),
+
+    /// Wire of "Many to One".
+    ///
     Fanin(Vec<Uri>, Uri),
+
+    /// Without Input.
+    ///
     None,
 }
 

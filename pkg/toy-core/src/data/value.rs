@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use crate::data::map::Map;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Value {
@@ -25,7 +25,7 @@ pub enum Value {
     Some(Box<Value>),
 
     Seq(Vec<Value>),
-    Map(HashMap<String, Value>),
+    Map(Map<String, Value>),
 
     Unit,
 }
@@ -35,7 +35,7 @@ impl Value {
         self.as_map().is_some()
     }
 
-    pub fn as_map(&self) -> Option<&HashMap<String, Value>> {
+    pub fn as_map(&self) -> Option<&Map<String, Value>> {
         match *self {
             Value::Map(ref map) => Some(map),
             _ => None,
@@ -79,8 +79,8 @@ impl From<&str> for Value {
     }
 }
 
-impl From<HashMap<String, Value>> for Value {
-    fn from(v: HashMap<String, Value>) -> Self {
+impl From<Map<String, Value>> for Value {
+    fn from(v: Map<String, Value>) -> Self {
         Value::Map(v)
     }
 }

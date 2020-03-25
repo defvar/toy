@@ -13,8 +13,14 @@ pub struct Registry<F> {
 }
 
 impl<F> Registry<F> {
-    pub fn new(tp: ServiceType, callback: F) -> Registry<F> {
-        Registry { tp, callback }
+    pub fn new<T>(tp: T, callback: F) -> Registry<F>
+    where
+        ServiceType: From<T>,
+    {
+        Registry {
+            tp: From::from(tp),
+            callback,
+        }
     }
 }
 
@@ -38,13 +44,14 @@ pub trait ServiceSpawner {
 }
 
 pub trait ServiceSpawnerExt: ServiceSpawner {
-    fn service<F, R>(self, tp: ServiceType, other: F) -> ServiceSet<Self, F>
+    fn service<F, R, St>(self, tp: St, other: F) -> ServiceSet<Self, F>
     where
         Self: Sized,
         F: Fn() -> R + Clone,
+        ServiceType: From<St>,
     {
         ServiceSet {
-            tp,
+            tp: From::from(tp),
             other: self,
             callback: other,
         }

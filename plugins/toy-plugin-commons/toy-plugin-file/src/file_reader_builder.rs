@@ -1,4 +1,4 @@
-use super::config::{char_to_u8, default_capacity, SourceConfig, SourceType};
+use super::config::{char_to_u8, default_capacity, FileReadConfig, SourceType};
 use super::parse::ReaderBuilder;
 use super::{FileReader, FileReaderState, Terminator};
 use std::fs::File;
@@ -14,7 +14,7 @@ pub struct FileReaderBuilder {
 }
 
 impl FileReaderBuilder {
-    pub fn configure(config: &SourceConfig) -> Result<FileReader<Box<dyn io::Read>>, Error> {
+    pub fn configure(config: &FileReadConfig) -> Result<FileReader<Box<dyn io::Read>>, Error> {
         if config.kind == SourceType::File && config.path.is_none() {
             return Err(Error::new(
                 ErrorKind::InvalidInput,
@@ -30,7 +30,7 @@ impl FileReaderBuilder {
             .escape(config.option.escape)
             .double_quote(config.option.double_quote)
             .comment(config.option.comment)
-            .has_headers(config.option.has_header)
+            .has_headers(config.option.has_headers)
             .flexible(config.option.flexible)
             .capacity(config.option.capacity)
             .clone();
