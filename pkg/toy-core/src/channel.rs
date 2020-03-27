@@ -1,8 +1,5 @@
 use crate::error::Error;
-use futures::channel::mpsc::{self, Receiver, Sender};
-use futures::sink::SinkExt;
-use futures::stream::StreamExt;
-use futures::{Future, FutureExt};
+use tokio::sync::mpsc::{self, Receiver, Sender};
 
 pub fn stream<T, Err>(buffer: usize) -> (Outgoing<T, Err>, Incoming<T, Err>) {
     let (tx, rx) = mpsc::channel(buffer);
@@ -19,16 +16,7 @@ impl<T, Err> Incoming<T, Err> {
     }
 
     pub async fn next(&mut self) -> Option<Result<T, Err>> {
-        StreamExt::next(&mut self.inner).await
-    }
-
-    pub async fn for_each<Fut, F>(self, f: F) -> ()
-    where
-        F: FnMut(Result<T, Err>) -> Fut,
-        Fut: Future<Output = ()>,
-        Self: Sized,
-    {
-        StreamExt::for_each(self.inner, f).await
+        self.inner.recv().await
     }
 }
 
@@ -47,12 +35,11 @@ where
     Err: Error,
 {
     pub async fn send(&mut self, v: Result<T, Err>) -> Result<(), Err> {
-        SinkExt::send(&mut self.inner, v)
-            .map(|x| match x {
-                Ok(()) => Ok(()),
-                Result::Err(e) => Result::Err(Error::custom(e)),
-            })
-            .await
+        if let Result::Err(e) = self.inner.send(v).await {
+            Result::Err(Error::custom(e))
+        } else {
+            Ok(())
+        }
     }
 }
 

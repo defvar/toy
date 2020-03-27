@@ -3,18 +3,24 @@ use crate::channel::{Incoming, Outgoing};
 use crate::data::{self, Frame};
 use crate::error::{Error, ServiceError};
 use crate::graph::{Graph, InputWire, OutputWire};
-use crate::registry::ServiceSpawner;
+use crate::registry::Delegator;
 use crate::service::{Service, ServiceFactory};
 use crate::service_type::ServiceType;
 use crate::service_uri::Uri;
-use futures::executor::ThreadPool;
-use futures::future;
 use log;
 use std::collections::HashMap;
+use std::future::Future;
 use std::thread;
 use toy_pack::deser::DeserializableOwned;
 
 const DEFAULT_CHANNEL_BUFFER_SIZE: usize = 128;
+
+pub trait AsyncRuntime {
+    fn spawn<F>(&self, future: F)
+    where
+        F: Future + Send + 'static,
+        F::Output: Send + 'static;
+}
 
 pub trait ServiceExecutor {
     type Request;
@@ -37,8 +43,11 @@ pub trait ServiceExecutor {
         F::Config: DeserializableOwned<Value = F::Config> + Send;
 }
 
-pub struct DefaultExecutor {
-    pool: ThreadPool,
+pub struct Executor<T>
+where
+    T: AsyncRuntime,
+{
+    rt: T,
     starters: HashMap<Uri, Outgoing<Frame, ServiceError>>,
     awaiter: Incoming<Frame, ServiceError>,
     graph: Graph,
@@ -46,8 +55,11 @@ pub struct DefaultExecutor {
     outputs: HashMap<Uri, Outgoing<Frame, ServiceError>>,
 }
 
-impl DefaultExecutor {
-    pub fn new(graph: Graph) -> Self {
+impl<T> Executor<T>
+where
+    T: AsyncRuntime,
+{
+    pub fn new(rt: T, graph: Graph) -> Self {
         let mut inputs: HashMap<Uri, Incoming<Frame, ServiceError>> = HashMap::new();
         let mut outputs: HashMap<Uri, Outgoing<Frame, ServiceError>> = HashMap::new();
 
@@ -92,7 +104,7 @@ impl DefaultExecutor {
         }
 
         Self {
-            pool: ThreadPool::new().unwrap(),
+            rt,
             starters,
             awaiter: l_rx,
             graph,
@@ -115,7 +127,7 @@ impl DefaultExecutor {
 
     pub async fn run(
         mut self,
-        spawner: impl ServiceSpawner<ServiceExecutor = Self>,
+        delegator: impl Delegator<Request = Frame, Error = ServiceError, InitError = ServiceError>,
         start_frame: Frame,
     ) -> Result<(), ServiceError> {
         // need to reverse ....
@@ -127,36 +139,34 @@ impl DefaultExecutor {
             .collect::<Vec<_>>();
 
         for (stype, uri) in nodes {
-            let _ = spawner.spawn(stype, uri, &mut self);
+            let _ = delegator.delegate(stype, uri, &mut self);
         }
 
         self.run_0(start_frame).await
     }
 
-    async fn run_0(self, start_frame: Frame) -> Result<(), ServiceError> {
+    async fn run_0(mut self, start_frame: Frame) -> Result<(), ServiceError> {
         log::info!("{:?} run executor", thread::current().id());
 
         for (_, mut tx) in self.starters {
             tx.send(Ok(start_frame.clone())).await?
         }
 
-        self.awaiter
-            .for_each(|x| {
-                match x {
-                    Err(e) => {
-                        log::error!("error {:?}", e);
-                    }
-                    _ => (),
-                };
-                future::ready(())
-            })
-            .await;
+        while let Some(x) = self.awaiter.next().await {
+            match x {
+                Err(e) => log::error!("error {:?}", e),
+                _ => (),
+            }
+        }
 
         Ok(())
     }
 }
 
-impl ServiceExecutor for DefaultExecutor {
+impl<T> ServiceExecutor for Executor<T>
+where
+    T: AsyncRuntime,
+{
     type Request = Frame;
     type Error = ServiceError;
     type InitError = ServiceError;
@@ -186,7 +196,7 @@ impl ServiceExecutor for DefaultExecutor {
         }
         match data::unpack::<F::Config>(config_value.unwrap().config()) {
             Ok(config) => {
-                self.pool.spawn_ok(async move {
+                self.rt.spawn(async move {
                     match factory.new_service(service_type.clone()).await {
                         Ok(service) => match factory.new_context(service_type.clone(), config) {
                             Ok(ctx) => {

@@ -1,6 +1,6 @@
 use crate::data::Frame;
 use crate::error::{Error, ServiceError};
-use crate::executor::{DefaultExecutor, ServiceExecutor};
+use crate::executor::ServiceExecutor;
 use crate::service::{Service, ServiceFactory};
 use crate::service_type::ServiceType;
 use crate::service_uri::Uri;
@@ -24,26 +24,27 @@ impl<F> Registry<F> {
     }
 }
 
-pub struct ServiceSet<T, F> {
+pub struct ServiceSet<S, F> {
     tp: ServiceType,
-    other: T,
+    other: S,
     callback: F,
 }
 
-pub trait ServiceSpawner {
+pub trait Delegator {
     type Request;
     type Error: Error;
-    type ServiceExecutor: ServiceExecutor;
+    type InitError: Error;
 
-    fn spawn(
-        &self,
-        tp: ServiceType,
-        uri: Uri,
-        executor: &mut Self::ServiceExecutor,
-    ) -> Result<(), Self::Error>;
+    fn delegate<T>(&self, tp: ServiceType, uri: Uri, executor: &mut T) -> Result<(), Self::Error>
+    where
+        T: ServiceExecutor<
+            Request = Self::Request,
+            Error = Self::Error,
+            InitError = Self::InitError,
+        >;
 }
 
-pub trait ServiceSpawnerExt: ServiceSpawner {
+pub trait DelegatorExt: Delegator {
     fn service<F, R, St>(self, tp: St, other: F) -> ServiceSet<Self, F>
     where
         Self: Sized,
@@ -58,9 +59,9 @@ pub trait ServiceSpawnerExt: ServiceSpawner {
     }
 }
 
-impl<T: ServiceSpawner> ServiceSpawnerExt for T {}
+impl<T: Delegator> DelegatorExt for T {}
 
-impl<F, R> ServiceSpawner for Registry<F>
+impl<F, R> Delegator for Registry<F>
 where
     F: Fn() -> R + Clone,
     R: ServiceFactory<Request = Frame, Error = ServiceError, InitError = ServiceError>
@@ -75,14 +76,16 @@ where
 {
     type Request = Frame;
     type Error = ServiceError;
-    type ServiceExecutor = DefaultExecutor;
+    type InitError = ServiceError;
 
-    fn spawn(
-        &self,
-        tp: ServiceType,
-        uri: Uri,
-        executor: &mut Self::ServiceExecutor,
-    ) -> Result<(), Self::Error> {
+    fn delegate<T>(&self, tp: ServiceType, uri: Uri, executor: &mut T) -> Result<(), Self::Error>
+    where
+        T: ServiceExecutor<
+            Request = Self::Request,
+            Error = Self::Error,
+            InitError = Self::InitError,
+        >,
+    {
         if self.tp == tp {
             let f = (self.callback)();
             executor.spawn(tp, uri, f);
@@ -93,9 +96,9 @@ where
     }
 }
 
-impl<T, F, R> ServiceSpawner for ServiceSet<T, F>
+impl<S, F, R> Delegator for ServiceSet<S, F>
 where
-    T: ServiceSpawner<Request = Frame, Error = ServiceError, ServiceExecutor = DefaultExecutor>,
+    S: Delegator<Request = Frame, Error = ServiceError, InitError = ServiceError>,
     F: Fn() -> R + Clone,
     R: ServiceFactory<Request = Frame, Error = ServiceError, InitError = ServiceError>
         + Send
@@ -109,15 +112,17 @@ where
 {
     type Request = Frame;
     type Error = ServiceError;
-    type ServiceExecutor = DefaultExecutor;
+    type InitError = ServiceError;
 
-    fn spawn(
-        &self,
-        tp: ServiceType,
-        uri: Uri,
-        executor: &mut Self::ServiceExecutor,
-    ) -> Result<(), Self::Error> {
-        match self.other.spawn(tp.clone(), uri.clone(), executor) {
+    fn delegate<T>(&self, tp: ServiceType, uri: Uri, executor: &mut T) -> Result<(), Self::Error>
+    where
+        T: ServiceExecutor<
+            Request = Self::Request,
+            Error = Self::Error,
+            InitError = Self::InitError,
+        >,
+    {
+        match self.other.delegate(tp.clone(), uri.clone(), executor) {
             Ok(_) => Ok(()),
             Err(_) => {
                 if self.tp == tp {

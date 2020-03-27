@@ -1,17 +1,32 @@
-use futures::executor::block_on;
-use futures::future::ok;
+use futures::executor::{block_on, ThreadPool};
+use futures::FutureExt;
 use log::info;
+use std::future::Future;
 use std::thread;
 use toy_core::channel::Outgoing;
 use toy_core::data::{Frame, Map, Value};
 use toy_core::error::ServiceError;
-use toy_core::executor::DefaultExecutor;
+use toy_core::executor::{AsyncRuntime, Executor};
 use toy_core::factory;
 use toy_core::graph::Graph;
-use toy_core::registry::{Registry, ServiceSpawnerExt};
+use toy_core::registry::{DelegatorExt, Registry};
 use toy_core::service;
 use toy_core::ServiceType;
 use toy_pack_derive::*;
+
+struct FutureRsRuntime {
+    pool: ThreadPool,
+}
+
+impl AsyncRuntime for FutureRsRuntime {
+    fn spawn<F>(&self, future: F)
+    where
+        F: Future + Send + 'static,
+        F::Output: Send + 'static,
+    {
+        self.pool.spawn_ok(future.map(|_| ()));
+    }
+}
 
 #[derive(Clone, Debug, Default)]
 pub struct ServiceContext;
@@ -116,8 +131,11 @@ async fn unboxed() -> Result<(), ()> {
         ),
     );
 
+    let rt = FutureRsRuntime {
+        pool: ThreadPool::new().unwrap(),
+    };
     let g = graph();
-    let e = DefaultExecutor::new(g);
+    let e = Executor::new(rt, g);
     let _ = e.run(c, Frame::default()).await;
 
     Ok(())

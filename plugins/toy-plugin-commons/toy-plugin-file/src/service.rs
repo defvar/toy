@@ -90,8 +90,6 @@ pub async fn read(
         tx.send(Ok(v)).await?;
         ctx.line += 1;
     }
-
-    tx.send(Ok(Frame::none())).await?;
     Ok(ctx)
 }
 

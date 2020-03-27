@@ -9,4 +9,5 @@ name = "hello"
 path = "src/hello.rs"
 
 [dependencies]
-toy-core = { path = "../toy-core"}
+toy-core = { path = "../../toy-core"}
+futures = { version = "0.3", features = ["thread-pool"] }
