@@ -9,13 +9,13 @@ use toy_core::ServiceType;
 
 pub struct FileReadContext {
     line: u32,
-    reader: FileReader<Box<dyn io::Read>>,
+    reader: FileReader<Box<dyn io::Read + Send>>,
     buf: Row,
 }
 
 pub struct FileWriteContext {
     line: u32,
-    writer: FileWriter<Box<dyn io::Write>>,
+    writer: FileWriter<Box<dyn io::Write + Send>>,
 }
 
 impl std::fmt::Debug for FileWriteContext {

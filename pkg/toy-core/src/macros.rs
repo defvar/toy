@@ -3,11 +3,13 @@
 macro_rules! factory {
     ($f:expr, $cfg: ident, $ctx_f:expr) => {{
         || {
-            service::fn_service_factory(
-                |tp: ServiceType| {
-                    crate::service::ok::<_, ServiceError>(service::fn_service(tp, $f))
+            $crate::service::fn_service_factory(
+                |tp: $crate::ServiceType| {
+                    $crate::service::ok::<_, $crate::error::ServiceError>(
+                        $crate::service::fn_service(tp, $f),
+                    )
                 },
-                |tp: ServiceType, config: $cfg| $ctx_f(tp, config),
+                |tp: $crate::ServiceType, config: $cfg| $ctx_f(tp, config),
             )
         }
     }};

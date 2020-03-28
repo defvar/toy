@@ -18,7 +18,9 @@ pub struct FileWriterBuilder {
 }
 
 impl FileWriterBuilder {
-    pub fn configure(config: &FileWriteConfig) -> Result<FileWriter<Box<dyn io::Write>>, Error> {
+    pub fn configure(
+        config: &FileWriteConfig,
+    ) -> Result<FileWriter<Box<dyn io::Write + Send>>, Error> {
         if config.kind == SinkType::File && config.path.is_none() {
             return Err(Error::new(
                 ErrorKind::InvalidInput,

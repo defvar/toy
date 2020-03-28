@@ -3,15 +3,7 @@ use futures::FutureExt;
 use log::info;
 use std::future::Future;
 use std::thread;
-use toy_core::channel::Outgoing;
-use toy_core::data::{Frame, Map, Value};
-use toy_core::error::ServiceError;
-use toy_core::executor::{AsyncRuntime, Executor};
-use toy_core::factory;
-use toy_core::graph::Graph;
-use toy_core::registry::{DelegatorExt, Registry};
-use toy_core::service;
-use toy_core::ServiceType;
+use toy_core::prelude::*;
 use toy_pack_derive::*;
 
 struct FutureRsRuntime {
@@ -28,12 +20,12 @@ impl AsyncRuntime for FutureRsRuntime {
     }
 }
 
-#[derive(Clone, Debug, Default)]
+#[derive(Debug)]
 pub struct ServiceContext;
 #[derive(Clone, Debug, Default, UnPack)]
 pub struct ServiceContextConfig {}
 
-#[derive(Clone, Debug, Default)]
+#[derive(Debug)]
 pub struct ServiceContext2 {
     count: u32,
 }
@@ -43,35 +35,46 @@ pub struct ServiceContext2Config {
     prop1: u32,
 }
 
-struct ServiceContextFactory;
-
-impl ServiceContextFactory {
-    fn new_context<T: Into<ServiceType>>(
-        _id: T,
-        _config: ServiceContextConfig,
-    ) -> Result<ServiceContext, ServiceError> {
-        Ok(ServiceContext)
-    }
+#[derive(Debug)]
+pub struct ServiceContext3 {
+    count: u32,
+}
+#[derive(Clone, Debug, Default, UnPack)]
+pub struct ServiceContext3Config {
+    uri: String,
+    prop1: u32,
 }
 
-struct ServiceContext2Factory;
+fn new_context(
+    _tp: ServiceType,
+    _config: ServiceContextConfig,
+) -> Result<ServiceContext, ServiceError> {
+    Ok(ServiceContext)
+}
 
-impl ServiceContext2Factory {
-    fn new_context<T: Into<ServiceType>>(
-        _id: T,
-        config: ServiceContext2Config,
-    ) -> Result<ServiceContext2, ServiceError> {
-        Ok(ServiceContext2 {
-            count: config.prop1,
-        })
-    }
+fn new_context2(
+    _tp: ServiceType,
+    config: ServiceContext2Config,
+) -> Result<ServiceContext2, ServiceError> {
+    Ok(ServiceContext2 {
+        count: config.prop1,
+    })
+}
+
+fn new_context3(
+    _tp: ServiceType,
+    config: ServiceContext3Config,
+) -> Result<ServiceContext3, ServiceError> {
+    Ok(ServiceContext3 {
+        count: config.prop1,
+    })
 }
 
 async fn service_3(
-    mut ctx: ServiceContext2,
+    mut ctx: ServiceContext3,
     req: Frame,
     mut tx: Outgoing<Frame, ServiceError>,
-) -> Result<ServiceContext2, ServiceError> {
+) -> Result<ServiceContext3, ServiceError> {
     match req.value() {
         Value::U32(v) => ctx.count += *v,
         _ => (),
@@ -106,30 +109,15 @@ async fn service_1(
 }
 
 async fn unboxed() -> Result<(), ()> {
-    let c = Registry::new(
-        "1",
-        factory!(
-            service_1,
-            ServiceContextConfig,
-            ServiceContextFactory::new_context
-        ),
-    )
-    .service(
-        "2",
-        factory!(
-            service_2,
-            ServiceContext2Config,
-            ServiceContext2Factory::new_context
-        ),
-    )
-    .service(
-        "3",
-        factory!(
-            service_3,
-            ServiceContext2Config,
-            ServiceContext2Factory::new_context
-        ),
-    );
+    let c = Registry::new("1", factory!(service_1, ServiceContextConfig, new_context))
+        .service(
+            "2",
+            factory!(service_2, ServiceContext2Config, new_context2),
+        )
+        .service(
+            "3",
+            factory!(service_3, ServiceContext3Config, new_context3),
+        );
 
     let rt = FutureRsRuntime {
         pool: ThreadPool::new().unwrap(),

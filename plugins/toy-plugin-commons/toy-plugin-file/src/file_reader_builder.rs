@@ -14,7 +14,9 @@ pub struct FileReaderBuilder {
 }
 
 impl FileReaderBuilder {
-    pub fn configure(config: &FileReadConfig) -> Result<FileReader<Box<dyn io::Read>>, Error> {
+    pub fn configure(
+        config: &FileReadConfig,
+    ) -> Result<FileReader<Box<dyn io::Read + Send>>, Error> {
         if config.kind == SourceType::File && config.path.is_none() {
             return Err(Error::new(
                 ErrorKind::InvalidInput,

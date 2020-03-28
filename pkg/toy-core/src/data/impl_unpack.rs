@@ -276,7 +276,7 @@ impl<'toy> Deserializer<'toy> for Value {
         match self {
             Value::Some(v) => visitor.visit_some(*v),
             Value::None => visitor.visit_none(),
-            _ => Err(DeserializeError::invalid_type("option", self)),
+            other => visitor.visit_some(other),
         }
     }
 
