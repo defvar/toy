@@ -41,6 +41,10 @@ where
             Ok(())
         }
     }
+
+    pub async fn send_ok(&mut self, v: T) -> Result<(), Err> {
+        self.send(Ok(v)).await
+    }
 }
 
 impl<T, Err> Clone for Outgoing<T, Err> {

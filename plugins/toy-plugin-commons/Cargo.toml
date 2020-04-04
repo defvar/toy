@@ -1,5 +1,6 @@
 [workspace]
 members = [
     "examples",
-    "toy-plugin-file"
+    "toy-plugin-file",
+    "toy-plugin-map"
 ]

@@ -20,9 +20,10 @@ pub mod prelude {
     pub use super::data::{Frame, Map, Value};
     pub use super::error::ServiceError;
     pub use super::executor::{AsyncRuntime, Executor};
-    pub use super::factory;
     pub use super::graph::Graph;
     pub use super::registry::{DelegatorExt, Registry};
     pub use super::service_type::ServiceType;
     pub use super::service_uri::Uri;
+    pub use super::{factory, map_value, seq_value};
+    pub use toy_pack::deser::from_primitive::FromPrimitive;
 }

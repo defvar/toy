@@ -161,7 +161,6 @@ impl<W: Write> FileWriter<W> {
             Value::I64(v) => self.write_value_i64(*v, need_delimiter),
             Value::F32(v) => self.write_value_f32(*v, need_delimiter),
             Value::F64(v) => self.write_value_f64(*v, need_delimiter),
-            Value::Char(v) => self.write_column(v.to_string().as_bytes(), need_delimiter),
             Value::String(v) => self.write_column(v.as_bytes(), need_delimiter),
             Value::Bytes(v) => self.write_column(v.as_slice(), need_delimiter),
             Value::Map(map) => self.write_inner_values(map.values(), need_delimiter),

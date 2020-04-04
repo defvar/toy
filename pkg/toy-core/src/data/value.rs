@@ -1,4 +1,6 @@
 use crate::data::map::Map;
+use std::str::FromStr;
+use toy_pack::deser::from_primitive::FromPrimitive;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Value {
@@ -17,7 +19,6 @@ pub enum Value {
     F32(f32),
     F64(f64),
 
-    Char(char),
     String(String),
     Bytes(Vec<u8>),
 
@@ -68,6 +69,68 @@ impl Value {
             _ => None,
         }
     }
+
+    pub fn parse_number<T>(&self) -> Option<Value>
+    where
+        T: FromStr + FromPrimitive,
+        Value: From<T>,
+    {
+        match self {
+            Value::String(ref s) => s.parse::<T>().map(Value::from).ok(),
+            Value::U8(v) => T::from_u8(*v).map(Value::from),
+            Value::U16(v) => T::from_u16(*v).map(Value::from),
+            Value::U32(v) => T::from_u32(*v).map(Value::from),
+            Value::U64(v) => T::from_u64(*v).map(Value::from),
+            Value::I8(v) => T::from_i8(*v).map(Value::from),
+            Value::I16(v) => T::from_i16(*v).map(Value::from),
+            Value::I32(v) => T::from_i32(*v).map(Value::from),
+            Value::I64(v) => T::from_i64(*v).map(Value::from),
+            Value::Some(v) => Value::parse_number::<T>(v),
+            _ => None,
+        }
+    }
+
+    pub fn parse_str(&self) -> Option<Value> {
+        match self {
+            Value::Bool(v) => Some(if *v {
+                Value::from("true")
+            } else {
+                Value::from("false")
+            }),
+            Value::String(ref s) => Some(Value::from(s)),
+            Value::Bytes(bytes) => std::str::from_utf8(bytes.as_slice()).map(Value::from).ok(),
+            Value::U8(v) => parse_str_from_integer(*v),
+            Value::U16(v) => parse_str_from_integer(*v),
+            Value::U32(v) => parse_str_from_integer(*v),
+            Value::U64(v) => parse_str_from_integer(*v),
+            Value::I8(v) => parse_str_from_integer(*v),
+            Value::I16(v) => parse_str_from_integer(*v),
+            Value::I32(v) => parse_str_from_integer(*v),
+            Value::I64(v) => parse_str_from_integer(*v),
+            Value::F32(v) => parse_str_from_float(*v),
+            Value::F64(v) => parse_str_from_float(*v),
+            Value::Some(v) => Value::parse_str(v),
+            _ => None,
+        }
+    }
+}
+
+#[inline]
+fn parse_str_from_integer<T: itoa::Integer>(v: T) -> Option<Value> {
+    let mut s = String::new();
+    itoa::fmt(&mut s, v).map(|_| Value::from(s)).ok()
+}
+
+#[inline]
+fn parse_str_from_float<T: ryu::Float>(v: T) -> Option<Value> {
+    let mut buf = ryu::Buffer::new();
+    Some(Value::from(buf.format(v)))
+}
+
+impl Default for Value {
+    fn default() -> Self {
+        Value::None
+    }
 }
 
 //
@@ -96,7 +159,6 @@ impl_from_to_value!(i64, I64);
 impl_from_to_value!(f32, F32);
 impl_from_to_value!(f64, F64);
 impl_from_to_value!(String, String);
-impl_from_to_value!(char, Char);
 
 impl From<&String> for Value {
     fn from(v: &String) -> Self {
@@ -116,9 +178,21 @@ impl From<Map<String, Value>> for Value {
     }
 }
 
+impl From<&mut Map<String, Value>> for Value {
+    fn from(v: &mut Map<String, Value>) -> Self {
+        Value::Map(v.clone())
+    }
+}
+
 impl From<Vec<Value>> for Value {
     fn from(v: Vec<Value>) -> Self {
         Value::Seq(v)
+    }
+}
+
+impl From<&mut Vec<Value>> for Value {
+    fn from(v: &mut Vec<Value>) -> Self {
+        Value::Seq(v.clone())
     }
 }
 

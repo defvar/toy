@@ -20,30 +20,29 @@ impl AsyncRuntime for FutureRsRuntime {
 }
 
 fn graph() -> Graph {
-    let mut r = Map::new();
-    let mut kind = Map::new();
-    kind.insert("File".to_string(), Value::None);
-    r.insert("type".to_string(), Value::from("read".to_string()));
-    r.insert("uri".to_string(), Value::from("reader".to_string()));
-    r.insert("kind".to_string(), Value::from(kind.clone()));
-    r.insert("path".to_string(), Value::from(IN.to_string()));
-    r.insert("wires".to_string(), Value::from("writer".to_string()));
-    let r = Value::from(r);
+    let r = map_value! {
+      "type" => "read",
+      "uri" => "reader",
+      "kind" => "File",
+      "path" => IN.to_string(),
+      "wires" => "writer"
+    };
 
-    let mut w = Map::new();
-    w.insert("type".to_string(), Value::from("write".to_string()));
-    w.insert("uri".to_string(), Value::from("writer".to_string()));
-    w.insert("kind".to_string(), Value::from(kind.clone()));
-    w.insert("path".to_string(), Value::from(OUT.to_string()));
-    w.insert("wires".to_string(), Value::None);
-    let w = Value::from(w);
+    let w = map_value! {
+      "type" => "write",
+      "uri" => "writer",
+      "kind" => "File",
+      "path" => OUT.to_string(),
+      "wires" => Value::None
+    };
 
-    let seq = Value::Seq(vec![r, w]);
+    let seq = seq_value![r, w];
 
-    let mut services = Map::new();
-    services.insert("services".to_string(), seq);
+    let services = map_value! {
+      "services" => seq
+    };
 
-    Graph::from(Value::Map(services)).unwrap()
+    Graph::from(services).unwrap()
 }
 
 async fn go() -> Result<(), ServiceError> {

@@ -43,6 +43,15 @@ impl Map<String, Value> {
     }
 
     #[inline]
+    pub fn get_mut<Q>(&mut self, key: &Q) -> Option<&mut Value>
+    where
+        String: Borrow<Q>,
+        Q: ?Sized + Ord + Eq + Hash,
+    {
+        self.map.get_mut(key)
+    }
+
+    #[inline]
     pub fn contains_key<Q: ?Sized>(&self, key: &Q) -> bool
     where
         String: Borrow<Q>,

@@ -181,7 +181,7 @@ impl<'toy> Deserializer<'toy> for Value {
         V: Visitor<'toy>,
     {
         match self {
-            Value::Char(v) => visitor.visit_char(v),
+            Value::String(v) => visitor.visit_string(v),
             _ => Err(DeserializeError::invalid_type("char", self)),
         }
     }
@@ -263,6 +263,10 @@ impl<'toy> Deserializer<'toy> for Value {
                     )))
                 }
             }
+            Value::String(variant) => {
+                let iter = std::iter::once((variant, Value::None));
+                visitor.visit_enum(DeserializeMap::new(iter, 1))
+            }
             _ => Err(DeserializeError::error(
                 "deserialize enum, must be a map type.",
             )),
@@ -296,7 +300,6 @@ impl<'toy> Deserializer<'toy> for Value {
             Value::I64(v) => visitor.visit_i64(v),
             Value::F32(v) => visitor.visit_f32(v),
             Value::F64(v) => visitor.visit_f64(v),
-            Value::Char(v) => visitor.visit_char(v),
             Value::String(v) => visitor.visit_string(v),
             Value::Bytes(_) => unimplemented!(),
             Value::None | Value::Some(_) => self.deserialize_option(visitor),

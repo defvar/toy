@@ -1,6 +1,6 @@
 use super::value::Value;
 use crate::data::map::Map;
-use std::borrow::Borrow;
+use std::borrow::{Borrow, BorrowMut};
 
 #[derive(Debug, Clone)]
 pub struct Frame {
@@ -22,6 +22,11 @@ impl Frame {
     #[inline]
     pub fn value(&self) -> &Value {
         self.payload.borrow()
+    }
+
+    #[inline]
+    pub fn value_mut(&mut self) -> &mut Value {
+        self.payload.borrow_mut()
     }
 }
 
@@ -47,7 +52,6 @@ impl_from_to_frame!(i64);
 impl_from_to_frame!(f32);
 impl_from_to_frame!(f64);
 impl_from_to_frame!(String);
-impl_from_to_frame!(char);
 
 impl From<&String> for Frame {
     fn from(v: &String) -> Self {

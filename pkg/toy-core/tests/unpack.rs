@@ -8,12 +8,14 @@ fn de_struct() {
         v_u16: 16,
         v_u32: 32,
         v_u64: 64,
+        v_i8_opt: Some(80),
         v_f32: 3.2,
         v_f64: 6.4,
         name: "aiueo".to_string(),
         vec: vec![Value::from(0u8), Value::from(1u8), Value::from(2u8)],
         inner: Inner { v_u8: 8 },
         terminator: Terminator::CRLF,
+        terminator_from_str: Terminator::CRLF,
     };
 
     // inner struct
@@ -30,12 +32,14 @@ fn de_struct() {
     map.insert("v_u16".to_string(), Value::from(src.v_u16));
     map.insert("v_u32".to_string(), Value::from(src.v_u32));
     map.insert("v_u64".to_string(), Value::from(src.v_u64));
+    map.insert("v_i8_opt".to_string(), Value::from(src.v_i8_opt));
     map.insert("v_f32".to_string(), Value::from(src.v_f32));
     map.insert("v_f64".to_string(), Value::from(src.v_f64));
     map.insert("name".to_string(), Value::from(src.name.clone()));
     map.insert("vec".to_string(), Value::from(src.vec.clone()));
     map.insert("inner".to_string(), Value::from(inner.clone()));
     map.insert("terminator".to_string(), Value::from(terminator));
+    map.insert("terminator_from_str".to_string(), Value::from("CRLF"));
 
     let v = Value::from(map);
     let dest = data::unpack::<Dum>(v).unwrap();
@@ -48,12 +52,14 @@ struct Dum {
     v_u16: u16,
     v_u32: u32,
     v_u64: u64,
+    v_i8_opt: Option<i8>,
     v_f32: f32,
     v_f64: f64,
     name: String,
     vec: Vec<Value>,
     inner: Inner,
     terminator: Terminator,
+    terminator_from_str: Terminator,
 }
 
 #[derive(Debug, PartialEq, Default, UnPack)]
