@@ -3,12 +3,10 @@
 #[macro_use]
 extern crate failure;
 
-pub use self::decoder::{
-    Decoder,
-    Event,
-};
-
-pub mod error;
 mod decoder;
-mod deserializer;
+pub mod deser;
 mod deser_ops;
+mod deserializer;
+pub mod error;
+
+pub use self::deser::unpack;

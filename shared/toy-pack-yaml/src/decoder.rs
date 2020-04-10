@@ -93,7 +93,8 @@ impl Decoder {
     }
 
     pub fn next(&mut self) -> Result<(&Event, Marker), YamlError> {
-        self.opt_next().ok_or_else(|| YamlError::error("end of stream"))
+        self.opt_next()
+            .ok_or_else(|| YamlError::error("end of stream"))
     }
 
     fn opt_next(&mut self) -> Option<(&Event, Marker)> {
@@ -109,30 +110,36 @@ impl Decoder {
 
     pub fn decode_bool(&mut self) -> Result<bool, YamlError> {
         self.next().and_then(|x| match Decoder::scalar(x.0) {
-            Ok(v) => v.as_bool().ok_or_else(|| YamlError::invalid_value(x.0, "bool")),
+            Ok(v) => v
+                .as_bool()
+                .ok_or_else(|| YamlError::invalid_value(x.0, "bool")),
             Err(e) => Err(e),
         })
     }
 
     pub fn decode_int(&mut self) -> Result<i64, YamlError> {
         self.next().and_then(|x| match Decoder::scalar(x.0) {
-            Ok(v) => v.as_i64().ok_or_else(|| YamlError::invalid_value(x.0, "i64")),
+            Ok(v) => v
+                .as_i64()
+                .ok_or_else(|| YamlError::invalid_value(x.0, "i64")),
             Err(e) => Err(e),
         })
     }
 
     pub fn decode_float(&mut self) -> Result<f64, YamlError> {
         self.next().and_then(|x| match Decoder::scalar(x.0) {
-            Ok(v) => v.as_f64().ok_or_else(|| YamlError::invalid_value(x.0, "float")),
+            Ok(v) => v
+                .as_f64()
+                .ok_or_else(|| YamlError::invalid_value(x.0, "float")),
             Err(e) => Err(e),
         })
     }
 
     pub fn decode_string(&mut self) -> Result<String, YamlError> {
         self.next().and_then(|x| match Decoder::scalar(x.0) {
-            Ok(v) => v
-                .into_string()
-                .ok_or_else(|| YamlError::invalid_value(format!("{{ event:{}, marker:{:?} }}", x.0, x.1), "string")),
+            Ok(v) => v.into_string().ok_or_else(|| {
+                YamlError::invalid_value(format!("{{ event:{}, marker:{:?} }}", x.0, x.1), "string")
+            }),
             Err(e) => Err(e),
         })
     }
@@ -146,7 +153,7 @@ impl Decoder {
         }
     }
 
-    fn scalar(ev: &Event) -> Result<Yaml, YamlError> {
+    pub(crate) fn scalar(ev: &Event) -> Result<Yaml, YamlError> {
         let r = match *ev {
             Event::Scalar(ref v, style, ref tag) => {
                 if style != TScalarStyle::Plain {
@@ -184,13 +191,18 @@ impl Decoder {
                     Yaml::from_str(&v)
                 }
             }
-            _ => return Err(Error::invalid_type(format!("not scalar type. event:{:?}", *ev))),
+            _ => {
+                return Err(Error::invalid_type(format!(
+                    "not scalar type. event:{:?}",
+                    *ev
+                )))
+            }
         };
         Ok(r)
     }
 }
 
-fn parse_f64(v: &str) -> Option<f64> {
+pub(crate) fn parse_f64(v: &str) -> Option<f64> {
     match v {
         ".inf" | ".Inf" | ".INF" | "+.inf" | "+.Inf" | "+.INF" => Some(f64::INFINITY),
         "-.inf" | "-.Inf" | "-.INF" => Some(f64::NEG_INFINITY),

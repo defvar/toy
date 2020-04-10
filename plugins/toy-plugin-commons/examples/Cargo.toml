@@ -6,11 +6,24 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dev-dependencies]
-env_logger = "0.7.1"
-futures = { version = "0.3", features = ["thread-pool"] }
-toy-core = {path = "../../../pkg/toy-core"}
-toy-plugin-file = {path = "../toy-plugin-file"}
 log = "0.4"
+env_logger = "0.7.1"
+failure = "0.1.6"
+
+# runtime
+futures = { version = "0.3", features = ["thread-pool"] }
+
+# core module
+toy-core = {path = "../../../pkg/toy-core"}
+toy-pack = {path = "../../../shared/toy-pack"}
+toy-pack-derive = {path = "../../../shared/toy-pack-derive"}
+
+# config
+toy-pack-yaml = {path = "../../../shared/toy-pack-yaml"}
+
+# plugin
+toy-plugin-file = {path = "../toy-plugin-file"}
+toy-plugin-map = {path = "../toy-plugin-map"}
 
 [[example]]
 name = "file"

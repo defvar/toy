@@ -58,16 +58,16 @@ pub fn convert(v: &mut Value, config: &TypedConfig) {
 
 pub(crate) fn cast(v: &Value, tp: &str) -> Option<Value> {
     match tp {
-        TYPE_NAME_U8 => v.parse_number::<u8>(),
-        TYPE_NAME_U16 => v.parse_number::<u16>(),
-        TYPE_NAME_U32 => v.parse_number::<u32>(),
-        TYPE_NAME_U64 => v.parse_number::<u64>(),
-        TYPE_NAME_I8 => v.parse_number::<i8>(),
-        TYPE_NAME_I16 => v.parse_number::<i16>(),
-        TYPE_NAME_I32 => v.parse_number::<i32>(),
-        TYPE_NAME_I64 => v.parse_number::<i64>(),
-        TYPE_NAME_F32 => v.parse_number::<f32>(),
-        TYPE_NAME_F64 => v.parse_number::<f64>(),
+        TYPE_NAME_U8 => v.parse_integer::<u8>(),
+        TYPE_NAME_U16 => v.parse_integer::<u16>(),
+        TYPE_NAME_U32 => v.parse_integer::<u32>(),
+        TYPE_NAME_U64 => v.parse_integer::<u64>(),
+        TYPE_NAME_I8 => v.parse_integer::<i8>(),
+        TYPE_NAME_I16 => v.parse_integer::<i16>(),
+        TYPE_NAME_I32 => v.parse_integer::<i32>(),
+        TYPE_NAME_I64 => v.parse_integer::<i64>(),
+        TYPE_NAME_F32 => v.parse_integer::<f32>(),
+        TYPE_NAME_F64 => v.parse_integer::<f64>(),
         TYPE_NAME_STR | TYPE_NAME_STRING => v.parse_str(),
         _ => None,
     }

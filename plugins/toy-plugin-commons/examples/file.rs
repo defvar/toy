@@ -1,6 +1,7 @@
 use futures::executor::{block_on, ThreadPool};
 use futures::FutureExt;
 use std::future::Future;
+use std::io::Read;
 use toy_core::prelude::*;
 use toy_plugin_file::config::*;
 use toy_plugin_file::service::*;
@@ -19,33 +20,7 @@ impl AsyncRuntime for FutureRsRuntime {
     }
 }
 
-fn graph() -> Graph {
-    let r = map_value! {
-      "type" => "read",
-      "uri" => "reader",
-      "kind" => "File",
-      "path" => IN.to_string(),
-      "wires" => "writer"
-    };
-
-    let w = map_value! {
-      "type" => "write",
-      "uri" => "writer",
-      "kind" => "File",
-      "path" => OUT.to_string(),
-      "wires" => Value::None
-    };
-
-    let seq = seq_value![r, w];
-
-    let services = map_value! {
-      "services" => seq
-    };
-
-    Graph::from(services).unwrap()
-}
-
-async fn go() -> Result<(), ServiceError> {
+async fn go(graph: Graph) -> Result<(), ServiceError> {
     let c = Registry::new("write", factory!(write, FileWriteConfig, new_write_context))
         .service("read", factory!(read, FileReadConfig, new_read_context));
 
@@ -53,15 +28,13 @@ async fn go() -> Result<(), ServiceError> {
         pool: ThreadPool::new().unwrap(),
     };
 
-    let g = graph();
-    let e = Executor::new(rt, g);
+    let e = Executor::new(rt, graph);
     let _ = e.run(c, Frame::default()).await;
 
     Ok(())
 }
 
-static IN: &'static str = "./examples/file.csv";
-static OUT: &'static str = "./examples/file.out.rs.bk";
+static CONFIG: &'static str = "./examples/file.yml";
 
 fn main() {
     let env = env_logger::Env::default()
@@ -72,5 +45,12 @@ fn main() {
     builder.format_timestamp_nanos();
     builder.init();
 
-    let _ = block_on(go());
+    let mut f = std::fs::File::open(CONFIG).unwrap();
+    let mut s = String::new();
+    f.read_to_string(&mut s).unwrap();
+
+    if let Ok(config) = toy_pack_yaml::unpack::<Value>(s.as_str()) {
+        let g = Graph::from(config).unwrap();
+        let _ = block_on(go(g));
+    }
 }

@@ -1,6 +1,5 @@
-use toy_pack::deser::Deserializable;
 use toy_pack_derive::*;
-use toy_pack_yaml::Decoder;
+use toy_pack_yaml::deser;
 
 #[derive(Debug, UnPack, PartialEq, Default)]
 struct Config {
@@ -14,7 +13,7 @@ struct Config {
 
 #[derive(Debug, UnPack, Default, PartialEq)]
 struct Column {
-    name: String
+    name: String,
 }
 
 #[derive(Debug, UnPack, PartialEq)]
@@ -53,14 +52,20 @@ columns:
   - {name: 'b'}
 ";
 
-    let mut p = Decoder::from_str(s).unwrap();
-    let a = Config::deserialize(&mut p).unwrap();
+    let a = deser::unpack::<Config>(s).unwrap();
     let expected = Config {
         id: 1,
         name: "aiueo".to_owned(),
         age: None,
         numbers: vec![1, 2, 3],
-        columns: Some(vec![Column { name: "a".to_owned() }, Column { name: "b".to_owned() }]),
+        columns: Some(vec![
+            Column {
+                name: "a".to_owned(),
+            },
+            Column {
+                name: "b".to_owned(),
+            },
+        ]),
         terminator: Terminator::LF,
     };
     assert_eq!(a, expected);

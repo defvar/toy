@@ -1,6 +1,33 @@
 use toy_core::data::{self, Map, Value};
 use toy_pack_derive::*;
 
+macro_rules! pass_de_integer {
+    ($func: ident, $t: ident,  $expected: expr) => {
+        #[test]
+        fn $func() {
+            assert_eq!($expected, data::unpack::<$t>(Value::from(1i8)).unwrap());
+            assert_eq!($expected, data::unpack::<$t>(Value::from(1i16)).unwrap());
+            assert_eq!($expected, data::unpack::<$t>(Value::from(1i32)).unwrap());
+            assert_eq!($expected, data::unpack::<$t>(Value::from(1i64)).unwrap());
+
+            assert_eq!($expected, data::unpack::<$t>(Value::from(1u8)).unwrap());
+            assert_eq!($expected, data::unpack::<$t>(Value::from(1u16)).unwrap());
+            assert_eq!($expected, data::unpack::<$t>(Value::from(1u32)).unwrap());
+            assert_eq!($expected, data::unpack::<$t>(Value::from(1u64)).unwrap());
+        }
+    };
+}
+
+pass_de_integer!(de_u8, u8, 1u8);
+pass_de_integer!(de_u16, u16, 1u16);
+pass_de_integer!(de_u32, u32, 1u32);
+pass_de_integer!(de_u64, u64, 1u64);
+
+pass_de_integer!(de_i8, i8, 1i8);
+pass_de_integer!(de_i16, i16, 1i16);
+pass_de_integer!(de_i32, i32, 1i32);
+pass_de_integer!(de_i64, i64, 1i64);
+
 #[test]
 fn de_struct() {
     let src = Dum {

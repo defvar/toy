@@ -150,11 +150,14 @@ impl<'toy: 'a, 'a> Deserializable<'toy> for Value {
     }
 }
 
-macro_rules! de_value {
+macro_rules! de_value_number {
     ($t: ident, $func: ident, $variant: ident, $expected: literal) => {
        fn $func(self) -> Result<$t, Self::Error> {
-           match self {
-               Value::$variant(v) => Ok(v),
+           match self.parse_integer::<$t>() {
+               Some(v) => match v {
+                   Value::$variant(x) => Ok(x),
+                   _ => Err(DeserializeError::invalid_type($expected, self)),
+               },
                _ => Err(DeserializeError::invalid_type($expected, self)),
            }
         }
@@ -164,17 +167,41 @@ macro_rules! de_value {
 impl<'toy> Deserializer<'toy> for Value {
     type Error = DeserializeError;
 
-    de_value!(bool, deserialize_bool, Bool, "bool");
-    de_value!(u8, deserialize_u8, U8, "u8");
-    de_value!(u16, deserialize_u16, U16, "u16");
-    de_value!(u32, deserialize_u32, U32, "u32");
-    de_value!(u64, deserialize_u64, U64, "u64");
-    de_value!(i8, deserialize_i8, I8, "i8");
-    de_value!(i16, deserialize_i16, I16, "i16");
-    de_value!(i32, deserialize_i32, I32, "i32");
-    de_value!(i64, deserialize_i64, I64, "i64");
-    de_value!(f32, deserialize_f32, F32, "f32");
-    de_value!(f64, deserialize_f64, F64, "f64");
+    de_value_number!(u8, deserialize_u8, U8, "u8");
+    de_value_number!(u16, deserialize_u16, U16, "u16");
+    de_value_number!(u32, deserialize_u32, U32, "u32");
+    de_value_number!(u64, deserialize_u64, U64, "u64");
+    de_value_number!(i8, deserialize_i8, I8, "i8");
+    de_value_number!(i16, deserialize_i16, I16, "i16");
+    de_value_number!(i32, deserialize_i32, I32, "i32");
+    de_value_number!(i64, deserialize_i64, I64, "i64");
+
+    fn deserialize_bool(self) -> Result<bool, Self::Error> {
+        match self {
+            Value::Bool(v) => Ok(v),
+            _ => Err(DeserializeError::invalid_type("bool", self)),
+        }
+    }
+
+    fn deserialize_f32(self) -> Result<f32, Self::Error> {
+        match self.parse_f32() {
+            Some(v) => match v {
+                Value::F32(x) => Ok(x),
+                _ => Err(DeserializeError::invalid_type("f32", self)),
+            },
+            _ => Err(DeserializeError::invalid_type("f32", self)),
+        }
+    }
+
+    fn deserialize_f64(self) -> Result<f64, Self::Error> {
+        match self.parse_f64() {
+            Some(v) => match v {
+                Value::F64(x) => Ok(x),
+                _ => Err(DeserializeError::invalid_type("f64", self)),
+            },
+            _ => Err(DeserializeError::invalid_type("f64", self)),
+        }
+    }
 
     fn deserialize_char<V>(self, visitor: V) -> Result<V::Value, Self::Error>
     where

@@ -2,42 +2,6 @@ use crate::transform::{PutValue, Transform};
 use std::collections::HashMap;
 use toy_pack_derive::*;
 
-/*
-
-# transform vec from map value.
-indexed = ["id", "name", "age"]
-
-# reorder element for vec.
-# drop unused index.
-reorder = [5, 4, 3]
-
-# transform map from vec value.
-named = { id = 5, name = 4, age = 3 }
-
-# if value is seq then put by tail.
-[put]
-aaa = { value = "put aaa", tp = "str" }
-event_time = { tp = "$event_time$" } }
-
-# remove element by index.
-remove_by_index = [1,2]
-
-# remove element by name.
-remove_by_name = ["age"]
-
-*/
-
-/*
-
-# cast as "type_name"
-[typed]
-id = { tp = "u32" }
-name = { tp = "String", default_value = "aiueo" }
-age = { tp = "u32" }
-"child.id" = { tp = "u32" }
-
-*/
-
 #[derive(Debug, Clone, Default, UnPack)]
 pub struct TypedConfig {
     pub typed: HashMap<String, TypedConfigOption>,

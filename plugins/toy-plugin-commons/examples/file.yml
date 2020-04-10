@@ -1,0 +1,11 @@
+services:
+    - type: read
+      uri: "reader"
+      kind: File
+      path: "./examples/file.csv"
+      wires: writer
+    - type: write
+      uri: "writer"
+      kind: File
+      path: "./examples/file.out.rs.bk"
+      wires:

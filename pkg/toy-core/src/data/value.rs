@@ -70,7 +70,7 @@ impl Value {
         }
     }
 
-    pub fn parse_number<T>(&self) -> Option<Value>
+    pub fn parse_integer<T>(&self) -> Option<Value>
     where
         T: FromStr + FromPrimitive,
         Value: From<T>,
@@ -85,7 +85,43 @@ impl Value {
             Value::I16(v) => T::from_i16(*v).map(Value::from),
             Value::I32(v) => T::from_i32(*v).map(Value::from),
             Value::I64(v) => T::from_i64(*v).map(Value::from),
-            Value::Some(v) => Value::parse_number::<T>(v),
+            Value::Some(v) => Value::parse_integer::<T>(v),
+            _ => None,
+        }
+    }
+
+    pub fn parse_f32(&self) -> Option<Value> {
+        match self {
+            Value::String(ref s) => s.parse::<f32>().map(Value::from).ok(),
+            Value::U8(v) => f32::from_u8(*v).map(Value::from),
+            Value::U16(v) => f32::from_u16(*v).map(Value::from),
+            Value::U32(v) => f32::from_u32(*v).map(Value::from),
+            Value::U64(v) => f32::from_u64(*v).map(Value::from),
+            Value::I8(v) => f32::from_i8(*v).map(Value::from),
+            Value::I16(v) => f32::from_i16(*v).map(Value::from),
+            Value::I32(v) => f32::from_i32(*v).map(Value::from),
+            Value::I64(v) => f32::from_i64(*v).map(Value::from),
+            Value::F32(v) => Some(Value::from(*v)),
+            Value::F64(v) => Some(Value::from(*v as f32)),
+            Value::Some(v) => Value::parse_f32(v),
+            _ => None,
+        }
+    }
+
+    pub fn parse_f64(&self) -> Option<Value> {
+        match self {
+            Value::String(ref s) => s.parse::<f64>().map(Value::from).ok(),
+            Value::U8(v) => f64::from_u8(*v).map(Value::from),
+            Value::U16(v) => f64::from_u16(*v).map(Value::from),
+            Value::U32(v) => f64::from_u32(*v).map(Value::from),
+            Value::U64(v) => f64::from_u64(*v).map(Value::from),
+            Value::I8(v) => f64::from_i8(*v).map(Value::from),
+            Value::I16(v) => f64::from_i16(*v).map(Value::from),
+            Value::I32(v) => f64::from_i32(*v).map(Value::from),
+            Value::I64(v) => f64::from_i64(*v).map(Value::from),
+            Value::F32(v) => Some(Value::from(*v)),
+            Value::F64(v) => Some(Value::from(*v as f64)),
+            Value::Some(v) => Value::parse_f64(v),
             _ => None,
         }
     }

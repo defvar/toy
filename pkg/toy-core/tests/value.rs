@@ -1,25 +1,129 @@
 use toy_core::data::Value;
 
-#[test]
-fn parse_str_u64() {
-    assert_eq!(Value::from(1u64).parse_str(), Some(Value::from("1")))
+macro_rules! pass_parse_integer {
+    ($func: ident, $t: ident, $actual: expr, $expected: expr) => {
+        #[test]
+        fn $func() {
+            assert_eq!(
+                Value::from($actual).parse_integer::<$t>(),
+                Some(Value::from($expected))
+            )
+        }
+    };
 }
 
-#[test]
-fn parse_number_u64() {
-    assert_eq!(
-        Value::from("123").parse_number::<u64>(),
-        Some(Value::from(123u64))
-    )
+macro_rules! none_parse_integer {
+    ($func: ident, $t: ident, $actual: expr) => {
+        #[test]
+        fn $func() {
+            assert_eq!(Value::from($actual).parse_integer::<$t>(), None)
+        }
+    };
 }
 
-#[test]
-fn parse_number_f32() {
-    assert_eq!(
-        Value::from("123").parse_number::<f32>(),
-        Some(Value::from(123f32))
-    )
-}
+///////////////////////////////////
+// u8 /////////////////////////////
+///////////////////////////////////
+pass_parse_integer!(parse_u8_from_u8_0, u8, 0u8, 0u8);
+pass_parse_integer!(parse_u8_from_u8_max, u8, u8::max_value(), u8::max_value());
+
+pass_parse_integer!(parse_u8_from_u16_0, u8, 0u16, 0u8);
+none_parse_integer!(parse_u8_from_u16_max, u8, u16::max_value());
+
+pass_parse_integer!(parse_u8_from_u32_0, u8, 0u32, 0u8);
+none_parse_integer!(parse_u8_from_u32_max, u8, u32::max_value());
+
+pass_parse_integer!(parse_u8_from_u64_0, u8, 0u64, 0u8);
+none_parse_integer!(parse_u8_from_u64_max, u8, u64::max_value());
+
+////////////////////////////////////
+// u16 /////////////////////////////
+////////////////////////////////////
+pass_parse_integer!(parse_u16_from_u8_0, u16, 0u8, 0u16);
+pass_parse_integer!(
+    parse_u16_from_u8_max,
+    u16,
+    u8::max_value(),
+    u8::max_value() as u16
+);
+
+pass_parse_integer!(parse_u16_from_u16_0, u16, 0u16, 0u16);
+pass_parse_integer!(
+    parse_u16_from_u16_max,
+    u16,
+    u16::max_value(),
+    u16::max_value()
+);
+
+pass_parse_integer!(parse_u16_from_u32_0, u16, 0u32, 0u16);
+none_parse_integer!(parse_u16_from_u32_max, u16, u32::max_value());
+
+pass_parse_integer!(parse_u16_from_u64_0, u16, 0u64, 0u16);
+none_parse_integer!(parse_u16_from_u64_max, u16, u64::max_value());
+
+////////////////////////////////////
+// u32 /////////////////////////////
+////////////////////////////////////
+pass_parse_integer!(parse_u32_from_u8_0, u32, 0u8, 0u32);
+pass_parse_integer!(
+    parse_u32_from_u8_max,
+    u32,
+    u8::max_value(),
+    u8::max_value() as u32
+);
+
+pass_parse_integer!(parse_u32_from_u16_0, u32, 0u16, 0u32);
+pass_parse_integer!(
+    parse_u32_from_u16_max,
+    u32,
+    u16::max_value(),
+    u16::max_value() as u32
+);
+
+pass_parse_integer!(parse_u32_from_u32_0, u32, 0u32, 0u32);
+pass_parse_integer!(
+    parse_u32_from_u32_max,
+    u32,
+    u32::max_value(),
+    u32::max_value()
+);
+
+pass_parse_integer!(parse_u32_from_u64_0, u32, 0u64, 0u32);
+none_parse_integer!(parse_u32_from_u64_max, u32, u64::max_value());
+
+////////////////////////////////////
+// u64 /////////////////////////////
+////////////////////////////////////
+pass_parse_integer!(parse_u64_from_u8_0, u64, 0u8, 0u64);
+pass_parse_integer!(
+    parse_u64_from_u8_max,
+    u64,
+    u8::max_value(),
+    u8::max_value() as u64
+);
+
+pass_parse_integer!(parse_u64_from_u16_0, u64, 0u16, 0u64);
+pass_parse_integer!(
+    parse_u64_from_u16_max,
+    u64,
+    u16::max_value(),
+    u16::max_value() as u64
+);
+
+pass_parse_integer!(parse_u64_from_u32_0, u64, 0u32, 0u64);
+pass_parse_integer!(
+    parse_u64_from_u32_max,
+    u64,
+    u32::max_value(),
+    u32::max_value() as u64
+);
+
+pass_parse_integer!(
+    parse_u64_from_u64_max,
+    u64,
+    u64::max_value(),
+    u64::max_value()
+);
 
 #[test]
 fn partial_eq_u64() {

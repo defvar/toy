@@ -1,9 +1,10 @@
 use toy_pack::deser::from_primitive::FromPrimitive;
 use toy_pack::deser::{Deserializer, Error, Visitor};
 
+use super::decoder::{Decoder, Event};
 use super::deser_ops::DeserializeCompound;
 use super::error::YamlError;
-use super::{Decoder, Event};
+use yaml_rust::Yaml;
 
 impl<'toy, 'a> Deserializer<'toy> for &'a mut Decoder {
     type Error = YamlError;
@@ -120,11 +121,32 @@ impl<'toy, 'a> Deserializer<'toy> for &'a mut Decoder {
         }
     }
 
-    fn deserialize_any<V>(self, _visitor: V) -> Result<<V as Visitor<'toy>>::Value, Self::Error>
+    fn deserialize_any<V>(self, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: Visitor<'toy>,
     {
-        unimplemented!()
+        let (e, _) = self.peek()?;
+        match e {
+            Event::Alias(_) => unimplemented!(),
+            Event::Scalar(_, _, _) => match Decoder::scalar(e) {
+                Ok(v) => match v {
+                    Yaml::String(_) => self.deserialize_str(visitor),
+                    Yaml::Integer(_) => visitor.visit_i64(self.decode_int()?),
+                    Yaml::Boolean(_) => visitor.visit_bool(self.decode_bool()?),
+                    Yaml::Real(_) => visitor.visit_f64(self.decode_float()?),
+                    Yaml::Null => {
+                        self.decode_null()?;
+                        visitor.visit_none()
+                    }
+                    _ => unreachable!(),
+                },
+                Err(e) => Err(e),
+            },
+            Event::SequenceStart => self.deserialize_seq(visitor),
+            Event::SequenceEnd => unimplemented!(),
+            Event::MappingStart => self.deserialize_map(visitor),
+            Event::MappingEnd => unimplemented!(),
+        }
     }
 
     fn discard<V>(self, visitor: V) -> Result<V::Value, Self::Error>
