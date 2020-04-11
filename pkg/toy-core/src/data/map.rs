@@ -13,7 +13,10 @@ pub struct Map<K, V> {
     map: IndexMap<K, V>,
 }
 
-impl Map<String, Value> {
+impl<K, V> Map<K, V>
+where
+    K: Eq + Hash,
+{
     #[inline]
     pub fn new() -> Self {
         Map {
@@ -34,42 +37,47 @@ impl Map<String, Value> {
     }
 
     #[inline]
-    pub fn get<Q: ?Sized>(&self, key: &Q) -> Option<&Value>
+    pub fn get<Q: ?Sized>(&self, key: &Q) -> Option<&V>
     where
-        String: Borrow<Q>,
+        K: Borrow<Q>,
         Q: Ord + Eq + Hash,
     {
         self.map.get(key)
     }
 
     #[inline]
-    pub fn get_mut<Q>(&mut self, key: &Q) -> Option<&mut Value>
+    pub fn get_mut<Q>(&mut self, key: &Q) -> Option<&mut V>
     where
-        String: Borrow<Q>,
+        K: Borrow<Q>,
         Q: ?Sized + Ord + Eq + Hash,
     {
         self.map.get_mut(key)
     }
 
     #[inline]
-    pub fn contains_key<Q: ?Sized>(&self, key: &Q) -> bool
+    pub fn get_or_insert(&mut self, key: K, default: V) -> &mut V {
+        self.map.entry(key).or_insert(default)
+    }
+
+    #[inline]
+    pub fn contains_key<Q>(&self, key: &Q) -> bool
     where
-        String: Borrow<Q>,
-        Q: Ord + Eq + Hash,
+        K: Borrow<Q>,
+        Q: ?Sized + Ord + Eq + Hash,
     {
         self.map.contains_key(key)
     }
 
     #[inline]
-    pub fn insert(&mut self, k: String, v: Value) -> Option<Value> {
+    pub fn insert(&mut self, k: K, v: V) -> Option<V> {
         self.map.insert(k, v)
     }
 
     #[inline]
-    pub fn remove<Q: ?Sized>(&mut self, key: &Q) -> Option<Value>
+    pub fn remove<Q>(&mut self, key: &Q) -> Option<V>
     where
-        String: Borrow<Q>,
-        Q: Ord + Eq + Hash,
+        K: Borrow<Q>,
+        Q: ?Sized + Ord + Eq + Hash,
     {
         return self.map.swap_remove(key);
     }
@@ -85,17 +93,22 @@ impl Map<String, Value> {
     }
 
     #[inline]
-    pub fn iter(&self) -> impl Iterator<Item = (&String, &Value)> {
+    pub fn iter(&self) -> impl Iterator<Item = (&K, &V)> {
         self.map.iter()
     }
 
     #[inline]
-    pub fn keys(&self) -> impl ExactSizeIterator<Item = &String> {
+    pub fn iter_mut(&mut self) -> impl Iterator<Item = (&K, &mut V)> {
+        self.map.iter_mut()
+    }
+
+    #[inline]
+    pub fn keys(&self) -> impl ExactSizeIterator<Item = &K> {
         self.map.keys()
     }
 
     #[inline]
-    pub fn values(&self) -> impl Iterator<Item = &Value> {
+    pub fn values(&self) -> impl Iterator<Item = &V> {
         self.map.values()
     }
 }
@@ -166,6 +179,26 @@ impl IntoIterator for Map<String, Value> {
     fn into_iter(self) -> Self::IntoIter {
         IntoIter {
             iter: self.map.into_iter(),
+        }
+    }
+}
+
+///////////////////////////////////////////////////////////////////////////////////
+
+pub struct IterMut<'a> {
+    iter: indexmap::map::IterMut<'a, String, Value>,
+}
+
+delegate_iterator!((IterMut<'a>) => (&'a String, &'a mut Value));
+
+impl<'a> IntoIterator for &'a mut Map<String, Value> {
+    type Item = (&'a String, &'a mut Value);
+    type IntoIter = IterMut<'a>;
+
+    #[inline]
+    fn into_iter(self) -> Self::IntoIter {
+        IterMut {
+            iter: self.map.iter_mut(),
         }
     }
 }

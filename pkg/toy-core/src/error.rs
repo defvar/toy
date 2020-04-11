@@ -20,6 +20,9 @@ pub enum ServiceError {
 
     #[fail(display = "error: {:?}", inner)]
     Error { inner: String },
+
+    #[fail(display = "error: {:?}", inner)]
+    ContextInitFailed { inner: String },
 }
 
 impl ServiceError {
@@ -28,6 +31,15 @@ impl ServiceError {
         T: Display,
     {
         ServiceError::Error {
+            inner: msg.to_string(),
+        }
+    }
+
+    pub fn context_init_failed<T>(msg: T) -> ServiceError
+    where
+        T: Display,
+    {
+        ServiceError::ContextInitFailed {
             inner: msg.to_string(),
         }
     }

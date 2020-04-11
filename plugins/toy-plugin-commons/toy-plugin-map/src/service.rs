@@ -1,5 +1,5 @@
-use crate::config::{IndexedConfig, NamedConfig, ToTransform, TypedConfig};
-use crate::transform::Transform;
+use crate::config::{IndexedConfig, NamedConfig, ReorderConfig, ToTransform, TypedConfig};
+use crate::transform::{Indexed, Named, Reorder, Transformer};
 use crate::typed::convert;
 use toy_core::prelude::*;
 
@@ -25,63 +25,41 @@ pub async fn typed(
     Ok(ctx)
 }
 
-// transform
-pub struct TransformContext {
-    t: Option<Transform>,
+// transformer
+
+pub struct NamedContext {
+    transformer: Named,
 }
 
-pub fn new_named_context(
-    _tp: ServiceType,
-    config: NamedConfig,
-) -> Result<TransformContext, ServiceError> {
-    transform_context(config)
+pub struct IndexedContext {
+    transformer: Indexed,
 }
 
-pub fn new_indexed_context(
-    _tp: ServiceType,
-    config: IndexedConfig,
-) -> Result<TransformContext, ServiceError> {
-    transform_context(config)
+pub struct ReorderContext {
+    transformer: Reorder,
 }
 
-pub async fn named(
-    ctx: TransformContext,
-    req: Frame,
-    tx: Outgoing<Frame, ServiceError>,
-) -> Result<TransformContext, ServiceError> {
-    transform(ctx, req, tx).await
+macro_rules! transform {
+    ($service_func:ident, $new_context_func:ident, $config: ident, $ctx: ident) => {
+        pub fn $new_context_func(_tp: ServiceType, config: $config) -> Result<$ctx, ServiceError> {
+            config
+                .into_transform()
+                .map(|transformer| $ctx { transformer })
+                .ok_or(ServiceError::context_init_failed(""))
+        }
+
+        pub async fn $service_func(
+            ctx: $ctx,
+            mut req: Frame,
+            mut tx: Outgoing<Frame, ServiceError>,
+        ) -> Result<$ctx, ServiceError> {
+            let _ = ctx.transformer.transform(&mut req.value_mut());
+            tx.send_ok(req).await?;
+            Ok(ctx)
+        }
+    };
 }
 
-pub async fn indexed(
-    ctx: TransformContext,
-    req: Frame,
-    tx: Outgoing<Frame, ServiceError>,
-) -> Result<TransformContext, ServiceError> {
-    transform(ctx, req, tx).await
-}
-
-fn transform_context<T: ToTransform>(t: T) -> Result<TransformContext, ServiceError> {
-    Ok(TransformContext {
-        t: t.into_transform(),
-    })
-}
-
-async fn transform(
-    ctx: TransformContext,
-    mut req: Frame,
-    mut tx: Outgoing<Frame, ServiceError>,
-) -> Result<TransformContext, ServiceError> {
-    let x = ctx
-        .t
-        .as_ref()
-        .map(|x| x.transform(&mut req.value_mut()))
-        .flatten();
-
-    if let Some(v) = x {
-        tx.send_ok(Frame::from_value(v)).await?;
-    } else {
-        // no transform ...
-        tx.send_ok(req).await?;
-    }
-    Ok(ctx)
-}
+transform!(named, new_named_context, NamedConfig, NamedContext);
+transform!(indexed, new_indexed_context, IndexedConfig, IndexedContext);
+transform!(reorder, new_reorder_context, ReorderConfig, ReorderContext);

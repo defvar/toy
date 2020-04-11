@@ -1,6 +1,6 @@
 pub mod config;
 pub mod service;
-mod transform;
+pub mod transform;
 pub mod typed;
 
-pub use self::transform::{PutValue, Transform};
+pub use self::transform::{PutValue, Transformer};

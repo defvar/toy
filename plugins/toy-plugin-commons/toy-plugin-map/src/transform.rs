@@ -3,15 +3,30 @@ use std::collections::HashMap;
 use toy_core::data::{Map, Value};
 use toy_pack_derive::*;
 
-#[derive(Debug)]
-pub enum Transform {
-    Named(HashMap<String, u32>),
-    Indexed(Vec<String>),
-    Reorder(Vec<u32>),
-    Put(HashMap<String, PutValue>),
-    RemoveByName(Vec<String>),
-    RemoveByIndex(Vec<u32>),
+pub trait Transformer {
+    fn transform(&self, value: &mut Value) -> Result<(), ()>;
 }
+
+#[derive(Debug)]
+pub struct Named(pub HashMap<String, u32>);
+
+#[derive(Debug)]
+pub struct Indexed(pub Vec<String>);
+
+#[derive(Debug)]
+pub struct Reorder(pub Vec<u32>);
+
+#[derive(Debug)]
+pub struct Rename(pub HashMap<String, String>);
+
+#[derive(Debug)]
+pub struct Put(pub HashMap<String, PutValue>);
+
+#[derive(Debug)]
+pub struct RemoveByName(pub Vec<String>);
+
+#[derive(Debug)]
+pub struct RemoveByIndex(pub Vec<u32>);
 
 #[derive(Debug, Clone, PartialEq, UnPack)]
 pub struct PutValue {
@@ -20,75 +35,118 @@ pub struct PutValue {
     tp: String,
 }
 
-impl Transform {
-    pub fn transform(&self, value: &mut Value) -> Option<Value> {
-        match self {
-            Transform::Named(named) => match value {
-                Value::Seq(src) => {
-                    let mut r = Map::new();
-                    for (k, v) in named {
-                        r.insert(
-                            k.clone(),
-                            src.get(*v as usize).map_or(Value::None, |x| x.clone()),
-                        );
-                    }
-                    Some(Value::from(r))
+impl Transformer for Named {
+    fn transform(&self, value: &mut Value) -> Result<(), ()> {
+        match value {
+            Value::Seq(src) => {
+                let mut r = Map::with_capacity(self.0.len());
+                for (k, v) in &self.0 {
+                    r.insert(
+                        k.clone(),
+                        src.get(*v as usize).map_or(Value::None, |x| x.clone()),
+                    );
                 }
-                _ => None,
-            },
-            Transform::Indexed(indexed) => match value {
-                Value::Map(src) => {
-                    let mut r = Vec::new();
-                    for k in indexed {
-                        r.push(src.get(k.as_str()).map_or(Value::None, |x| x.clone()));
-                    }
-                    Some(Value::from(r))
+                *value = Value::from(r);
+                Ok(())
+            }
+            _ => Err(()),
+        }
+    }
+}
+
+impl Transformer for Indexed {
+    fn transform(&self, value: &mut Value) -> Result<(), ()> {
+        match value {
+            Value::Map(_) => {
+                let mut r = Vec::with_capacity(self.0.len());
+                for k in &self.0 {
+                    r.push(value.path(k.as_str()).map_or(Value::None, |x| x.clone()));
                 }
-                _ => None,
-            },
-            Transform::Reorder(reorder) => match value {
-                Value::Seq(src) => {
-                    let mut r = Vec::new();
-                    for i in reorder {
-                        r.push(src.get(*i as usize).map_or(Value::None, |x| x.clone()));
-                    }
-                    Some(Value::from(r))
+                *value = Value::from(r);
+                Ok(())
+            }
+            _ => Err(()),
+        }
+    }
+}
+
+impl Transformer for Reorder {
+    fn transform(&self, value: &mut Value) -> Result<(), ()> {
+        match value {
+            Value::Seq(src) => {
+                let mut r = Vec::with_capacity(self.0.len());
+                for i in &self.0 {
+                    r.push(src.get(*i as usize).map_or(Value::None, |x| x.clone()));
                 }
-                _ => None,
-            },
-            Transform::Put(put) => match value {
-                Value::Map(src) => {
-                    for (k, vt) in put {
-                        src.insert(k.clone(), vt.value());
-                    }
-                    Some(Value::from(src))
+                *value = Value::from(r);
+                Ok(())
+            }
+            _ => Err(()),
+        }
+    }
+}
+
+impl Transformer for Rename {
+    fn transform(&self, value: &mut Value) -> Result<(), ()> {
+        match value {
+            Value::Map(src) => {
+                let mut r = Map::with_capacity(self.0.len());
+                for (k, v) in src {
+                    let new_key = self.0.get(k).unwrap_or(k);
+                    r.insert(new_key.clone(), v.clone());
                 }
-                Value::Seq(src) => {
-                    for (_, vt) in put {
-                        src.push(vt.value());
-                    }
-                    Some(Value::from(src))
+                *value = Value::from(r);
+                Ok(())
+            }
+            _ => Err(()),
+        }
+    }
+}
+
+impl Transformer for Put {
+    fn transform(&self, value: &mut Value) -> Result<(), ()> {
+        match value {
+            Value::Map(src) => {
+                for (k, vt) in &self.0 {
+                    src.insert(k.clone(), vt.value());
                 }
-                _ => None,
-            },
-            Transform::RemoveByName(remove_names) => match value {
-                Value::Map(src) => {
-                    for k in remove_names {
-                        src.remove(k.as_str());
-                    }
-                    Some(Value::from(src))
+                Ok(())
+            }
+            Value::Seq(src) => {
+                for (_, vt) in &self.0 {
+                    src.push(vt.value());
                 }
-                _ => None,
-            },
-            Transform::RemoveByIndex(remove_idx) => match value {
-                Value::Seq(src) => {
-                    for i in remove_idx {
-                        src.remove(*i as usize);
-                    }
-                    Some(Value::from(src))
+                Ok(())
+            }
+            _ => Err(()),
+        }
+    }
+}
+
+impl Transformer for RemoveByName {
+    fn transform(&self, value: &mut Value) -> Result<(), ()> {
+        match value {
+            Value::Map(src) => {
+                for k in &self.0 {
+                    src.remove(k.as_str());
                 }
-                _ => None,
-            },
+                Ok(())
+            }
+            _ => Err(()),
+        }
+    }
+}
+
+impl Transformer for RemoveByIndex {
+    fn transform(&self, value: &mut Value) -> Result<(), ()> {
+        match value {
+            Value::Seq(src) => {
+                for i in &self.0 {
+                    src.remove(*i as usize);
+                }
+                Ok(())
+            }
+            _ => Err(()),
         }
     }
 }

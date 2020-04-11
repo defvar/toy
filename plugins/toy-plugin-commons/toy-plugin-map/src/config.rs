@@ -1,20 +1,35 @@
-use crate::transform::{PutValue, Transform};
+use crate::transform::{
+    Indexed, Named, Put, PutValue, RemoveByIndex, RemoveByName, Rename, Reorder, Transformer,
+};
 use std::collections::HashMap;
 use toy_pack_derive::*;
 
+/// config for type convert.
+///
 #[derive(Debug, Clone, Default, UnPack)]
 pub struct TypedConfig {
+    /// key: field name, value: option
     pub typed: HashMap<String, TypedConfigOption>,
 }
 
+/// config detail for type convert.
+///
 #[derive(Debug, Clone, Default, UnPack)]
 pub struct TypedConfigOption {
+    /// type name string
+    /// e.g.) "u32"
     pub tp: String,
+
+    /// default value string
+    /// e.g.) "123"
     pub default_value: Option<String>,
 }
 
-pub trait ToTransform {
-    fn into_transform(self) -> Option<Transform>;
+pub trait ToTransform<T>
+where
+    T: Transformer,
+{
+    fn into_transform(self) -> Option<T>;
 }
 
 #[derive(Debug, Clone, Default, UnPack)]
@@ -33,6 +48,11 @@ pub struct NamedConfig {
 }
 
 #[derive(Debug, Clone, Default, UnPack)]
+pub struct RenameConfig {
+    pub rename: Option<HashMap<String, String>>,
+}
+
+#[derive(Debug, Clone, Default, UnPack)]
 pub struct PutConfig {
     pub put: Option<HashMap<String, PutValue>>,
 }
@@ -47,44 +67,50 @@ pub struct RemoveByNameConfig {
     pub remove_by_name: Option<Vec<String>>,
 }
 
-impl ToTransform for IndexedConfig {
-    fn into_transform(self) -> Option<Transform> {
-        self.indexed.map(Transform::Indexed)
+impl ToTransform<Indexed> for IndexedConfig {
+    fn into_transform(self) -> Option<Indexed> {
+        self.indexed.map(Indexed)
     }
 }
 
-impl ToTransform for ReorderConfig {
-    fn into_transform(self) -> Option<Transform> {
-        self.reorder.map(Transform::Reorder)
+impl ToTransform<Reorder> for ReorderConfig {
+    fn into_transform(self) -> Option<Reorder> {
+        self.reorder.map(Reorder)
     }
 }
 
-impl ToTransform for NamedConfig {
-    fn into_transform(self) -> Option<Transform> {
-        self.named.map(Transform::Named)
+impl ToTransform<Named> for NamedConfig {
+    fn into_transform(self) -> Option<Named> {
+        self.named.map(Named)
     }
 }
 
-impl ToTransform for PutConfig {
-    fn into_transform(self) -> Option<Transform> {
-        self.put.map(Transform::Put)
+impl ToTransform<Rename> for RenameConfig {
+    fn into_transform(self) -> Option<Rename> {
+        self.rename.map(Rename)
     }
 }
 
-impl ToTransform for RemoveByIndexConfig {
-    fn into_transform(self) -> Option<Transform> {
+impl ToTransform<Put> for PutConfig {
+    fn into_transform(self) -> Option<Put> {
+        self.put.map(Put)
+    }
+}
+
+impl ToTransform<RemoveByIndex> for RemoveByIndexConfig {
+    fn into_transform(self) -> Option<RemoveByIndex> {
         self.remove_by_index
             .map(|mut x| {
                 x.sort();
                 x.reverse();
                 x
             })
-            .map(Transform::RemoveByIndex)
+            .map(RemoveByIndex)
     }
 }
 
-impl ToTransform for RemoveByNameConfig {
-    fn into_transform(self) -> Option<Transform> {
-        self.remove_by_name.map(Transform::RemoveByName)
+impl ToTransform<RemoveByName> for RemoveByNameConfig {
+    fn into_transform(self) -> Option<RemoveByName> {
+        self.remove_by_name.map(RemoveByName)
     }
 }

@@ -1,4 +1,64 @@
 use toy_core::data::Value;
+use toy_core::prelude::*;
+
+#[test]
+fn path() {
+    let v = map_value! {
+        "a" => 1,
+        "b" => 2,
+        "c" => map_value! {
+            "ca" => 31,
+            "cb" => 32,
+        },
+        "d" => seq_value![41,42,43]
+    };
+
+    assert_eq!(v.path("xxx"), None);
+    assert_eq!(v.path("a").unwrap(), &Value::from(1));
+    assert_eq!(v.path("c.ca").unwrap(), &Value::from(31));
+    assert_eq!(v.path("d.2").unwrap(), &Value::from(43));
+}
+
+#[test]
+fn insert_by_path() {
+    let mut v = map_value! {
+        "a" => 1,
+    };
+
+    let expected_1 = map_value! {
+        "a" => 1,
+        "b" => 2,
+    };
+
+    let expected_2 = map_value! {
+        "a" => 1,
+        "b" => 2,
+        "c" => map_value! {
+            "ca" => 31,
+        },
+    };
+
+    assert_eq!(v.insert_by_path("b", Value::from(2)), None);
+    assert_eq!(v, expected_1);
+    assert_eq!(v.insert_by_path("c.ca", Value::from(31)), None);
+    assert_eq!(v, expected_2);
+}
+
+#[test]
+fn insert_by_path_overwrite() {
+    let mut v = Value::from(1);
+
+    let expected_1 = map_value! {
+        "a" => 1,
+    };
+
+    assert_eq!(v.insert_by_path("a", Value::from(1)), None);
+    assert_eq!(v, expected_1);
+    assert_eq!(
+        v.insert_by_path("a", Value::from(2)).unwrap(),
+        Value::from(1)
+    );
+}
 
 macro_rules! pass_parse_integer {
     ($func: ident, $t: ident, $actual: expr, $expected: expr) => {

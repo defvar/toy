@@ -59,6 +59,20 @@ impl Value {
         }
     }
 
+    pub fn is_integer(&self) -> bool {
+        match *self {
+            Value::U8(_)
+            | Value::U16(_)
+            | Value::U32(_)
+            | Value::U64(_)
+            | Value::I8(_)
+            | Value::I16(_)
+            | Value::I32(_)
+            | Value::I64(_) => true,
+            _ => false,
+        }
+    }
+
     pub fn is_string(&self) -> bool {
         self.as_str().is_some()
     }
@@ -67,6 +81,116 @@ impl Value {
         match *self {
             Value::String(ref s) => Some(s),
             _ => None,
+        }
+    }
+
+    /// Looks up a value by path.
+    /// path is a Unicode string with the reference tokens separated by `.`
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use toy_core::data::Value;
+    /// # use toy_core::{map_value, seq_value};
+    ///
+    /// let v = map_value! {
+    ///     "a" => 1,
+    ///     "b" => map_value! {
+    ///         "x" => 2,
+    ///         "y" => seq_value![100, 200],
+    ///     }
+    /// };
+    ///
+    /// assert_eq!(v.path("a").unwrap(), &Value::from(1));
+    /// assert_eq!(v.path("b.x").unwrap(), &Value::from(2));
+    /// assert_eq!(v.path("b.y.1").unwrap(), &Value::from(200));
+    /// ```
+    pub fn path(&self, path: &str) -> Option<&Value> {
+        if path == "" {
+            return Some(self);
+        }
+        let tokens = path.split('.');
+        let mut target = self;
+
+        for token in tokens {
+            let target_opt = match *target {
+                Value::Map(ref map) => map.get(token),
+                Value::Seq(ref list) => parse_index(&token).and_then(|x| list.get(x)),
+                _ => return None,
+            };
+            if let Some(t) = target_opt {
+                target = t;
+            } else {
+                return None;
+            }
+        }
+        Some(target)
+    }
+
+    /// Insert a key value pair.
+    /// path is a Unicode string with the reference tokens separated by `.`.
+    ///
+    /// If the map did not have this key present, [`None`] is returned.
+    /// If the map did have this key present, the value is updated, and the old value is returned.
+    ///
+    /// [`None`]: https://doc.rust-lang.org/std/option/enum.Option.html#variant.None
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use toy_core::data::Value;
+    /// # use toy_core::map_value;
+    ///
+    /// let mut v = map_value! {
+    ///     "a" => 1,
+    /// };
+    ///
+    /// let expected = map_value! {
+    ///     "a" => 1,
+    ///     "b" => map_value! {
+    ///         "x" => 2,
+    ///     }
+    /// };
+    ///
+    /// let _ = v.insert_by_path("b.x", Value::from(2));
+    ///
+    /// assert_eq!(v, expected);
+    /// ```
+    pub fn insert_by_path(&mut self, path: &str, v: Value) -> Option<Value> {
+        if path == "" {
+            return None;
+        }
+        let tokens = path.split('.').skip(1);
+        let mut last_key = path.split('.').next().unwrap();
+        let mut target = self;
+
+        for token in tokens {
+            let target_once = target;
+            let target_opt = match *target_once {
+                Value::Map(ref mut map) => {
+                    Some(map.get_or_insert(last_key.to_string(), Value::from(Map::new())))
+                }
+                ref mut other => {
+                    *other = Value::Map(Map::new());
+                    Some(other)
+                }
+            };
+            if let Some(t) = target_opt {
+                target = t;
+            } else {
+                return None;
+            }
+            last_key = token;
+        }
+
+        match target {
+            Value::Map(ref mut map) => map.insert(last_key.to_string(), v),
+            other => {
+                let mut map = Map::new();
+                map.insert(last_key.to_string(), v);
+                *other = Value::Map(map);
+                None
+            }
         }
     }
 
@@ -161,6 +285,13 @@ fn parse_str_from_integer<T: itoa::Integer>(v: T) -> Option<Value> {
 fn parse_str_from_float<T: ryu::Float>(v: T) -> Option<Value> {
     let mut buf = ryu::Buffer::new();
     Some(Value::from(buf.format(v)))
+}
+
+fn parse_index(s: &str) -> Option<usize> {
+    if s.starts_with('+') || (s.starts_with('0') && s.len() != 1) {
+        return None;
+    }
+    s.parse().ok()
 }
 
 impl Default for Value {
