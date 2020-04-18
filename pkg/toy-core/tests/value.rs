@@ -64,10 +64,7 @@ macro_rules! pass_parse_integer {
     ($func: ident, $t: ident, $actual: expr, $expected: expr) => {
         #[test]
         fn $func() {
-            assert_eq!(
-                Value::from($actual).parse_integer::<$t>(),
-                Some(Value::from($expected))
-            )
+            assert_eq!(Value::from($actual).parse_integer::<$t>(), Some($expected))
         }
     };
 }

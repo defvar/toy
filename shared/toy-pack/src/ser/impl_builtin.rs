@@ -1,6 +1,8 @@
 use std::path::{Path, PathBuf};
 
 use super::{Error, Serializable, Serializer};
+use crate::ser::SerializeStructOps;
+use failure::_core::time::Duration;
 
 ///////////////////////////////////////////////////
 
@@ -59,5 +61,19 @@ impl Serializable for PathBuf {
         S: Serializer,
     {
         self.as_path().serialize(serializer)
+    }
+}
+
+///////////////////////////////////////////////////
+
+impl Serializable for Duration {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let mut ser = serializer.serialize_struct("Duration", 2)?;
+        ser.field("secs", &self.as_secs())?;
+        ser.field("nanos", &self.subsec_nanos())?;
+        ser.end()
     }
 }

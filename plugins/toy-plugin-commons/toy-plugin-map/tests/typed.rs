@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use toy_core::prelude::*;
 use toy_plugin_map::config::{TypedConfig, TypedConfigOption};
-use toy_plugin_map::typed::convert;
+use toy_plugin_map::{convert, AllowedTypes};
 
 #[test]
 fn typed() {
@@ -20,21 +20,21 @@ fn typed() {
         map.insert(
             "a".to_string(),
             TypedConfigOption {
-                tp: "u8".to_string(),
+                tp: AllowedTypes::U8,
                 default_value: None,
             },
         );
         map.insert(
             "b".to_string(),
             TypedConfigOption {
-                tp: "u32".to_string(),
+                tp: AllowedTypes::U32,
                 default_value: None,
             },
         );
         map.insert(
             "xxxxxxx".to_string(),
             TypedConfigOption {
-                tp: "u32".to_string(),
+                tp: AllowedTypes::U32,
                 default_value: None,
             },
         );
@@ -59,7 +59,7 @@ fn typed_default_value() {
         map.insert(
             "a".to_string(),
             TypedConfigOption {
-                tp: "u8".to_string(),
+                tp: AllowedTypes::U8,
                 default_value: Some("0".to_string()),
             },
         );

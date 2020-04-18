@@ -1,4 +1,5 @@
 use crate::typed;
+use crate::typed::AllowedTypes;
 use std::collections::HashMap;
 use toy_core::data::{Map, Value};
 use toy_pack_derive::*;
@@ -8,10 +9,13 @@ pub trait Transformer {
 }
 
 #[derive(Debug)]
-pub struct Named(pub HashMap<String, u32>);
+pub struct Mapping(pub HashMap<String, String>);
 
 #[derive(Debug)]
-pub struct Indexed(pub Vec<String>);
+pub struct Naming(pub HashMap<String, u32>);
+
+#[derive(Debug)]
+pub struct Indexing(pub Vec<String>);
 
 #[derive(Debug)]
 pub struct Reorder(pub Vec<u32>);
@@ -32,21 +36,19 @@ pub struct RemoveByIndex(pub Vec<u32>);
 pub struct PutValue {
     value: Option<String>,
     v: Value, // string
-    tp: String,
+    tp: AllowedTypes,
 }
 
-impl Transformer for Named {
+impl Transformer for Mapping {
     fn transform(&self, value: &mut Value) -> Result<(), ()> {
         match value {
-            Value::Seq(src) => {
-                let mut r = Map::with_capacity(self.0.len());
+            Value::Map(_) => {
+                let map = Map::with_capacity(self.0.len());
+                let mut r = Value::from(map);
                 for (k, v) in &self.0 {
-                    r.insert(
-                        k.clone(),
-                        src.get(*v as usize).map_or(Value::None, |x| x.clone()),
-                    );
+                    r.insert_by_path(v, value.path(k).map_or(Value::None, |x| x.clone()));
                 }
-                *value = Value::from(r);
+                *value = r;
                 Ok(())
             }
             _ => Err(()),
@@ -54,7 +56,24 @@ impl Transformer for Named {
     }
 }
 
-impl Transformer for Indexed {
+impl Transformer for Naming {
+    fn transform(&self, value: &mut Value) -> Result<(), ()> {
+        match value {
+            Value::Seq(src) => {
+                let map = Map::with_capacity(self.0.len());
+                let mut r = Value::from(map);
+                for (k, v) in &self.0 {
+                    r.insert_by_path(k, src.get(*v as usize).map_or(Value::None, |x| x.clone()));
+                }
+                *value = r;
+                Ok(())
+            }
+            _ => Err(()),
+        }
+    }
+}
+
+impl Transformer for Indexing {
     fn transform(&self, value: &mut Value) -> Result<(), ()> {
         match value {
             Value::Map(_) => {
@@ -152,16 +171,12 @@ impl Transformer for RemoveByIndex {
 }
 
 impl PutValue {
-    pub fn new(value: Option<String>, tp: &str) -> PutValue {
+    pub fn new(value: Option<String>, tp: AllowedTypes) -> PutValue {
         let v = value.clone().map(|x| Value::from(x)).unwrap_or(Value::None);
-        PutValue {
-            value,
-            v,
-            tp: tp.to_string(),
-        }
+        PutValue { value, v, tp }
     }
 
     pub fn value(&self) -> Value {
-        typed::cast(&self.v, self.tp.as_str()).unwrap_or(Value::None)
+        typed::cast(&self.v, self.tp).unwrap_or(Value::None)
     }
 }

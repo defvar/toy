@@ -1,6 +1,8 @@
-use crate::config::{IndexedConfig, NamedConfig, ReorderConfig, ToTransform, TypedConfig};
-use crate::transform::{Indexed, Named, Reorder, Transformer};
+use crate::config::{
+    IndexingConfig, MappingConfig, NamingConfig, ReorderConfig, ToTransform, TypedConfig,
+};
 use crate::typed::convert;
+use crate::{Indexing, Mapping, Naming, Reorder, Transformer};
 use toy_core::prelude::*;
 
 // typed
@@ -26,13 +28,16 @@ pub async fn typed(
 }
 
 // transformer
-
-pub struct NamedContext {
-    transformer: Named,
+pub struct MappingContext {
+    transformer: Mapping,
 }
 
-pub struct IndexedContext {
-    transformer: Indexed,
+pub struct NamingContext {
+    transformer: Naming,
+}
+
+pub struct IndexingContext {
+    transformer: Indexing,
 }
 
 pub struct ReorderContext {
@@ -42,10 +47,9 @@ pub struct ReorderContext {
 macro_rules! transform {
     ($service_func:ident, $new_context_func:ident, $config: ident, $ctx: ident) => {
         pub fn $new_context_func(_tp: ServiceType, config: $config) -> Result<$ctx, ServiceError> {
-            config
-                .into_transform()
-                .map(|transformer| $ctx { transformer })
-                .ok_or(ServiceError::context_init_failed(""))
+            Ok($ctx {
+                transformer: config.into_transform(),
+            })
         }
 
         pub async fn $service_func(
@@ -60,6 +64,12 @@ macro_rules! transform {
     };
 }
 
-transform!(named, new_named_context, NamedConfig, NamedContext);
-transform!(indexed, new_indexed_context, IndexedConfig, IndexedContext);
+transform!(mapping, new_mapping_context, MappingConfig, MappingContext);
+transform!(naming, new_naming_context, NamingConfig, NamingContext);
+transform!(
+    indexing,
+    new_indexing_context,
+    IndexingConfig,
+    IndexingContext
+);
 transform!(reorder, new_reorder_context, ReorderConfig, ReorderContext);

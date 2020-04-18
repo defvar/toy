@@ -166,6 +166,7 @@ impl<W: Write> FileWriter<W> {
             Value::Map(map) => self.write_inner_values(map.values(), need_delimiter),
             Value::Seq(seq) => self.write_inner_values(seq.iter(), need_delimiter),
             Value::Some(v) => self.write_value_0(v, need_delimiter),
+            Value::TimeStamp(_) => Ok(()),
             Value::None | Value::Unit => Ok(()),
         }
     }

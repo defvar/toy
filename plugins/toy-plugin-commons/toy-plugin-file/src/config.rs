@@ -37,7 +37,6 @@ pub struct ReadOption {
     pub(crate) flexible: bool,
     #[toy(default_expr = "default_capacity")]
     pub(crate) capacity: usize,
-    pub(crate) columns: Option<Vec<Column>>,
 }
 
 impl Default for ReadOption {
@@ -53,7 +52,6 @@ impl Default for ReadOption {
             capacity: default_capacity(),
             has_headers: true,
             flexible: false,
-            columns: None,
         }
     }
 }

@@ -1,4 +1,5 @@
 use crate::data::map::Map;
+use failure::_core::time::Duration;
 use std::str::FromStr;
 use toy_pack::deser::from_primitive::FromPrimitive;
 
@@ -27,6 +28,8 @@ pub enum Value {
 
     Seq(Vec<Value>),
     Map(Map<String, Value>),
+
+    TimeStamp(Map<String, Value>),
 
     Unit,
 }
@@ -80,6 +83,47 @@ impl Value {
     pub fn as_str(&self) -> Option<&str> {
         match *self {
             Value::String(ref s) => Some(s),
+            _ => None,
+        }
+    }
+
+    pub fn is_u32(&self) -> bool {
+        self.as_u32().is_some()
+    }
+
+    pub fn as_u32(&self) -> Option<u32> {
+        match *self {
+            Value::U32(v) => Some(v),
+            _ => None,
+        }
+    }
+
+    pub fn is_u64(&self) -> bool {
+        self.as_u64().is_some()
+    }
+
+    pub fn as_u64(&self) -> Option<u64> {
+        match *self {
+            Value::U64(v) => Some(v),
+            _ => None,
+        }
+    }
+
+    pub fn is_timestamp(&self) -> bool {
+        self.as_timestamp().is_some()
+    }
+
+    pub fn as_timestamp(&self) -> Option<Duration> {
+        match self {
+            Value::TimeStamp(map) => {
+                let secs = map.get("secs").map(|x| x.as_u64()).flatten();
+                let nanos = map.get("nanos").map(|x| x.as_u32()).flatten();
+                if secs.is_some() && nanos.is_some() {
+                    Some(Duration::new(secs.unwrap(), nanos.unwrap()))
+                } else {
+                    None
+                }
+            }
             _ => None,
         }
     }
@@ -194,71 +238,73 @@ impl Value {
         }
     }
 
-    pub fn parse_integer<T>(&self) -> Option<Value>
+    pub fn parse_integer<T>(&self) -> Option<T>
     where
         T: FromStr + FromPrimitive,
         Value: From<T>,
     {
         match self {
-            Value::String(ref s) => s.parse::<T>().map(Value::from).ok(),
-            Value::U8(v) => T::from_u8(*v).map(Value::from),
-            Value::U16(v) => T::from_u16(*v).map(Value::from),
-            Value::U32(v) => T::from_u32(*v).map(Value::from),
-            Value::U64(v) => T::from_u64(*v).map(Value::from),
-            Value::I8(v) => T::from_i8(*v).map(Value::from),
-            Value::I16(v) => T::from_i16(*v).map(Value::from),
-            Value::I32(v) => T::from_i32(*v).map(Value::from),
-            Value::I64(v) => T::from_i64(*v).map(Value::from),
+            Value::String(ref s) => s.parse::<T>().ok(),
+            Value::U8(v) => T::from_u8(*v),
+            Value::U16(v) => T::from_u16(*v),
+            Value::U32(v) => T::from_u32(*v),
+            Value::U64(v) => T::from_u64(*v),
+            Value::I8(v) => T::from_i8(*v),
+            Value::I16(v) => T::from_i16(*v),
+            Value::I32(v) => T::from_i32(*v),
+            Value::I64(v) => T::from_i64(*v),
             Value::Some(v) => Value::parse_integer::<T>(v),
             _ => None,
         }
     }
 
-    pub fn parse_f32(&self) -> Option<Value> {
+    pub fn parse_f32(&self) -> Option<f32> {
         match self {
-            Value::String(ref s) => s.parse::<f32>().map(Value::from).ok(),
-            Value::U8(v) => f32::from_u8(*v).map(Value::from),
-            Value::U16(v) => f32::from_u16(*v).map(Value::from),
-            Value::U32(v) => f32::from_u32(*v).map(Value::from),
-            Value::U64(v) => f32::from_u64(*v).map(Value::from),
-            Value::I8(v) => f32::from_i8(*v).map(Value::from),
-            Value::I16(v) => f32::from_i16(*v).map(Value::from),
-            Value::I32(v) => f32::from_i32(*v).map(Value::from),
-            Value::I64(v) => f32::from_i64(*v).map(Value::from),
-            Value::F32(v) => Some(Value::from(*v)),
-            Value::F64(v) => Some(Value::from(*v as f32)),
+            Value::String(ref s) => s.parse::<f32>().ok(),
+            Value::U8(v) => f32::from_u8(*v),
+            Value::U16(v) => f32::from_u16(*v),
+            Value::U32(v) => f32::from_u32(*v),
+            Value::U64(v) => f32::from_u64(*v),
+            Value::I8(v) => f32::from_i8(*v),
+            Value::I16(v) => f32::from_i16(*v),
+            Value::I32(v) => f32::from_i32(*v),
+            Value::I64(v) => f32::from_i64(*v),
+            Value::F32(v) => Some(*v),
+            Value::F64(v) => Some(*v as f32),
             Value::Some(v) => Value::parse_f32(v),
             _ => None,
         }
     }
 
-    pub fn parse_f64(&self) -> Option<Value> {
+    pub fn parse_f64(&self) -> Option<f64> {
         match self {
-            Value::String(ref s) => s.parse::<f64>().map(Value::from).ok(),
-            Value::U8(v) => f64::from_u8(*v).map(Value::from),
-            Value::U16(v) => f64::from_u16(*v).map(Value::from),
-            Value::U32(v) => f64::from_u32(*v).map(Value::from),
-            Value::U64(v) => f64::from_u64(*v).map(Value::from),
-            Value::I8(v) => f64::from_i8(*v).map(Value::from),
-            Value::I16(v) => f64::from_i16(*v).map(Value::from),
-            Value::I32(v) => f64::from_i32(*v).map(Value::from),
-            Value::I64(v) => f64::from_i64(*v).map(Value::from),
-            Value::F32(v) => Some(Value::from(*v)),
-            Value::F64(v) => Some(Value::from(*v as f64)),
+            Value::String(ref s) => s.parse::<f64>().ok(),
+            Value::U8(v) => f64::from_u8(*v),
+            Value::U16(v) => f64::from_u16(*v),
+            Value::U32(v) => f64::from_u32(*v),
+            Value::U64(v) => f64::from_u64(*v),
+            Value::I8(v) => f64::from_i8(*v),
+            Value::I16(v) => f64::from_i16(*v),
+            Value::I32(v) => f64::from_i32(*v),
+            Value::I64(v) => f64::from_i64(*v),
+            Value::F32(v) => Some(*v as f64),
+            Value::F64(v) => Some(*v),
             Value::Some(v) => Value::parse_f64(v),
             _ => None,
         }
     }
 
-    pub fn parse_str(&self) -> Option<Value> {
+    pub fn parse_str(&self) -> Option<String> {
         match self {
             Value::Bool(v) => Some(if *v {
-                Value::from("true")
+                "true".to_string()
             } else {
-                Value::from("false")
+                "false".to_string()
             }),
-            Value::String(ref s) => Some(Value::from(s)),
-            Value::Bytes(bytes) => std::str::from_utf8(bytes.as_slice()).map(Value::from).ok(),
+            Value::String(ref s) => Some(s.to_string()),
+            Value::Bytes(bytes) => std::str::from_utf8(bytes.as_slice())
+                .map(|x| x.to_string())
+                .ok(),
             Value::U8(v) => parse_str_from_integer(*v),
             Value::U16(v) => parse_str_from_integer(*v),
             Value::U32(v) => parse_str_from_integer(*v),
@@ -276,15 +322,15 @@ impl Value {
 }
 
 #[inline]
-fn parse_str_from_integer<T: itoa::Integer>(v: T) -> Option<Value> {
+fn parse_str_from_integer<T: itoa::Integer>(v: T) -> Option<String> {
     let mut s = String::new();
-    itoa::fmt(&mut s, v).map(|_| Value::from(s)).ok()
+    itoa::fmt(&mut s, v).map(|_| s).ok()
 }
 
 #[inline]
-fn parse_str_from_float<T: ryu::Float>(v: T) -> Option<Value> {
+fn parse_str_from_float<T: ryu::Float>(v: T) -> Option<String> {
     let mut buf = ryu::Buffer::new();
-    Some(Value::from(buf.format(v)))
+    Some(buf.format(v).to_string())
 }
 
 fn parse_index(s: &str) -> Option<usize> {
@@ -300,9 +346,9 @@ impl Default for Value {
     }
 }
 
-//
+///////////////////////////////////////////
 // from ///////////////////////////////////
-//
+///////////////////////////////////////////
 
 macro_rules! impl_from_to_value {
     ($t:ident, $variant: ident) => {
@@ -363,6 +409,15 @@ impl From<&mut Vec<Value>> for Value {
     }
 }
 
+impl From<Duration> for Value {
+    fn from(v: Duration) -> Self {
+        let mut m = Map::with_capacity(2);
+        m.insert("secs".to_string(), Value::from(v.as_secs()));
+        m.insert("nanos".to_string(), Value::from(v.subsec_nanos()));
+        Value::TimeStamp(m)
+    }
+}
+
 impl<T> From<Option<T>> for Value
 where
     T: Into<Value>,
@@ -375,10 +430,12 @@ where
     }
 }
 
-//
-// partial_eq///////////////////////////////////////
-//
+////////////////////////////////////////////////
+// partial_eq///////////////////////////////////
+////////////////////////////////////////////////
 
+////////////////////////////////////////////////
+// string / str
 impl PartialEq<str> for Value {
     fn eq(&self, other: &str) -> bool {
         self.as_str().map_or(false, |x| x == other)
@@ -414,6 +471,24 @@ impl PartialEq<Value> for String {
         other.as_str().map_or(false, |x| x == self.as_str())
     }
 }
+
+////////////////////////////////////////////////
+// duration
+
+impl PartialEq<Duration> for Value {
+    fn eq(&self, other: &Duration) -> bool {
+        self.as_timestamp().map_or(false, |x| x == other)
+    }
+}
+
+impl PartialEq<Value> for Duration {
+    fn eq(&self, other: &Value) -> bool {
+        other.as_timestamp().map_or(false, |x| x == self)
+    }
+}
+
+////////////////////////////////////////////////
+// number
 
 macro_rules! impl_partial_eq_number {
     ($t:ident, $variant: ident) => {

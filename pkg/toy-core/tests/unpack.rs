@@ -1,3 +1,4 @@
+use failure::_core::time::Duration;
 use toy_core::data::{self, Map, Value};
 use toy_pack_derive::*;
 
@@ -27,6 +28,13 @@ pass_de_integer!(de_i8, i8, 1i8);
 pass_de_integer!(de_i16, i16, 1i16);
 pass_de_integer!(de_i32, i32, 1i32);
 pass_de_integer!(de_i64, i64, 1i64);
+
+#[test]
+fn de_timestamp() {
+    let src = Duration::new(3, 4);
+    let dest = data::unpack::<Duration>(Value::from(src)).unwrap();
+    assert_eq!(src, dest);
+}
 
 #[test]
 fn de_struct() {

@@ -153,13 +153,7 @@ impl<'toy: 'a, 'a> Deserializable<'toy> for Value {
 macro_rules! de_value_number {
     ($t: ident, $func: ident, $variant: ident, $expected: literal) => {
        fn $func(self) -> Result<$t, Self::Error> {
-           match self.parse_integer::<$t>() {
-               Some(v) => match v {
-                   Value::$variant(x) => Ok(x),
-                   _ => Err(DeserializeError::invalid_type($expected, self)),
-               },
-               _ => Err(DeserializeError::invalid_type($expected, self)),
-           }
+           self.parse_integer::<$t>().ok_or(DeserializeError::invalid_type($expected, self))
         }
     };
 }
@@ -184,23 +178,13 @@ impl<'toy> Deserializer<'toy> for Value {
     }
 
     fn deserialize_f32(self) -> Result<f32, Self::Error> {
-        match self.parse_f32() {
-            Some(v) => match v {
-                Value::F32(x) => Ok(x),
-                _ => Err(DeserializeError::invalid_type("f32", self)),
-            },
-            _ => Err(DeserializeError::invalid_type("f32", self)),
-        }
+        self.parse_f32()
+            .ok_or(DeserializeError::invalid_type("f32", self))
     }
 
     fn deserialize_f64(self) -> Result<f64, Self::Error> {
-        match self.parse_f64() {
-            Some(v) => match v {
-                Value::F64(x) => Ok(x),
-                _ => Err(DeserializeError::invalid_type("f64", self)),
-            },
-            _ => Err(DeserializeError::invalid_type("f64", self)),
-        }
+        self.parse_f64()
+            .ok_or(DeserializeError::invalid_type("f64", self))
     }
 
     fn deserialize_char<V>(self, visitor: V) -> Result<V::Value, Self::Error>
@@ -251,7 +235,7 @@ impl<'toy> Deserializer<'toy> for Value {
         V: Visitor<'toy>,
     {
         match self {
-            Value::Map(map) => {
+            Value::Map(map) | Value::TimeStamp(map) => {
                 let len = map.keys().len();
                 let iter = map.into_iter();
                 visitor.visit_map(DeserializeMap::new(iter, len))
@@ -267,8 +251,9 @@ impl<'toy> Deserializer<'toy> for Value {
         match self {
             Value::Seq(_) => self.deserialize_seq(visitor),
             Value::Map(_) => self.deserialize_map(visitor),
+            Value::TimeStamp(_) => self.deserialize_map(visitor),
             _ => Err(DeserializeError::error(
-                "deserialize struct, must be a map type or array type.",
+                "deserialize struct, must be a map or array type.",
             )),
         }
     }
@@ -332,6 +317,7 @@ impl<'toy> Deserializer<'toy> for Value {
             Value::None | Value::Some(_) => self.deserialize_option(visitor),
             Value::Seq(_) => self.deserialize_seq(visitor),
             Value::Map(_) => self.deserialize_map(visitor),
+            Value::TimeStamp(_) => self.deserialize_map(visitor),
             Value::Unit => visitor.visit_unit(),
         }
     }

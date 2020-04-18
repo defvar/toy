@@ -5,6 +5,8 @@ use std::io::Read;
 use toy_core::prelude::*;
 use toy_plugin_file::config::*;
 use toy_plugin_file::service::*;
+use toy_plugin_map::config::*;
+use toy_plugin_map::service::*;
 
 struct FutureRsRuntime {
     pool: ThreadPool,
@@ -22,7 +24,11 @@ impl AsyncRuntime for FutureRsRuntime {
 
 async fn go(graph: Graph) -> Result<(), ServiceError> {
     let c = Registry::new("write", factory!(write, FileWriteConfig, new_write_context))
-        .service("read", factory!(read, FileReadConfig, new_read_context));
+        .service("read", factory!(read, FileReadConfig, new_read_context))
+        .service(
+            "mapping",
+            factory!(mapping, MappingConfig, new_mapping_context),
+        );
 
     let rt = FutureRsRuntime {
         pool: ThreadPool::new().unwrap(),
