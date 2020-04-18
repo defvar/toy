@@ -477,13 +477,13 @@ impl PartialEq<Value> for String {
 
 impl PartialEq<Duration> for Value {
     fn eq(&self, other: &Duration) -> bool {
-        self.as_timestamp().map_or(false, |x| x == other)
+        self.as_timestamp().map_or(false, |x| x == *other)
     }
 }
 
 impl PartialEq<Value> for Duration {
     fn eq(&self, other: &Value) -> bool {
-        other.as_timestamp().map_or(false, |x| x == self)
+        other.as_timestamp().map_or(false, |x| x == *self)
     }
 }
 
