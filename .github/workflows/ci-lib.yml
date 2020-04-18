@@ -24,11 +24,11 @@ jobs:
         profile: minimal
         override: true
 
-    - name: test-pkg-core
+    - name: test-pkg
       uses: actions-rs/cargo@v1
       with:
         command: test
-        args: --manifest-path ${{ github.workspace }}/pkg/toy-core/Cargo.toml
+        args: --manifest-path ${{ github.workspace }}/pkg/Cargo.toml
 
     - name: test-shared-pack
       uses: actions-rs/cargo@v1

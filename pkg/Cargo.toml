@@ -1,0 +1,5 @@
+[workspace]
+members = [
+    "toy-core",
+    "toy-api-server"
+]
