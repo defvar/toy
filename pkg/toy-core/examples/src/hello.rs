@@ -154,6 +154,7 @@ fn graph() -> Graph {
     let seq = Value::Seq(vec![s1, s2, s3]);
 
     let mut services = Map::new();
+    services.insert("name".to_string(), Value::from("example"));
     services.insert("services".to_string(), seq);
 
     Graph::from(Value::Map(services)).unwrap()

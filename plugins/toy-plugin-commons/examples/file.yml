@@ -1,3 +1,4 @@
+name: "file sample"
 services:
   - type: read
     uri: "reader"

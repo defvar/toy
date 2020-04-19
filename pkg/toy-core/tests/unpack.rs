@@ -1,4 +1,4 @@
-use failure::_core::time::Duration;
+use core::time::Duration;
 use toy_core::data::{self, Map, Value};
 use toy_pack_derive::*;
 
@@ -105,12 +105,11 @@ struct Inner {
 #[derive(Debug, UnPack, PartialEq)]
 enum Terminator {
     CRLF,
-    CR,
     LF,
 }
 
 impl std::default::Default for Terminator {
     fn default() -> Self {
-        Terminator::CRLF
+        Terminator::LF
     }
 }

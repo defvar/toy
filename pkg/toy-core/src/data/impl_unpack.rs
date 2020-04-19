@@ -11,24 +11,27 @@ use toy_pack::deser::{
 /// # Exapmle
 ///
 /// ```edition2018
-/// use toy_pack_derive::*;
-/// use toy_core::data::{self, Map, Value};
+/// use toy_pack_derive::UnPack;
+/// use toy_core::prelude::*;
 ///
-/// #[derive(UnPack)]
+/// #[derive(Debug, PartialEq, UnPack)]
 /// struct User {
-///   id: u32,
-///   name: String
+///     id: u32,
+///     name: String
 /// }
 ///
 /// fn main(){
 ///
-///   // struct is defined by map.
-///   let mut map = Map::new();
-///   map.insert("id".to_string(), Value::from(123u32));
-///   map.insert("name".to_string(), Value::from("aiueo".to_string()));
+///     // struct is defined by map.
+///     let mut map = Map::new();
+///     map.insert("id".to_string(), Value::from(123u32));
+///     map.insert("name".to_string(), Value::from("aiueo".to_string()));
 ///
-///   let v = Value::from(map);
-///   data::unpack::<User>(v).unwrap();
+///     let src = Value::from(map);
+///
+///     let dest = data::unpack::<User>(src).unwrap();
+///
+///     assert_eq!(dest, User { id: 123u32, name: "aiueo".to_string()})
 /// }
 /// ```
 #[inline]

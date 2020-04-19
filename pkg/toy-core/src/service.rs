@@ -113,7 +113,7 @@ where
     Fut: Future<Output = Result<Ctx, Err>>,
 {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), Error> {
-        write!(f, "FnService {{ service_id:{:?} }}", self.tp)
+        write!(f, "FnService {{ service_type:{:?} }}", self.tp)
     }
 }
 
@@ -225,7 +225,7 @@ impl ServiceFactory for NoopServiceFactory {
 
     fn new_service(&self, tp: ServiceType) -> Self::Future {
         warn!(
-            "create noop service. not found service? service id: {:?}",
+            "create noop service. not found service? service_type: {:?}",
             tp
         );
         ok(NoopService)

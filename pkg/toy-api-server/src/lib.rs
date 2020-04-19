@@ -1,7 +1,5 @@
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn it_works() {
-        assert_eq!(2 + 2, 4);
-    }
-}
+mod graph;
+mod service;
+
+pub use graph::{graphs, GraphRegistry};
+pub use service::{services, ServiceRegistry};

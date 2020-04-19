@@ -3,11 +3,12 @@ use crate::error::ConfigError;
 use crate::service_type::ServiceType;
 use crate::service_uri::Uri;
 use std::collections::HashMap;
-use std::rc::Rc;
+use std::sync::Arc;
 
 #[derive(Debug, Clone)]
 pub struct Graph {
-    nodes: Vec<Rc<Node>>,
+    name: String,
+    nodes: Vec<Arc<Node>>,
     outputs: HashMap<Uri, OutputWire>,
     inputs: HashMap<Uri, InputWire>,
 }
@@ -24,6 +25,17 @@ struct Inner {
 
 impl Graph {
     pub fn from(v: Value) -> Result<Graph, ConfigError> {
+        let name = match v {
+            Value::Map(ref map) => match map.get("name") {
+                Some(name) => name.as_str().unwrap(),
+                None => return Err(ConfigError::not_found_key("name")),
+            },
+            _ => {
+                return Err(ConfigError::error(
+                    "invalid config. config value must be map type.",
+                ))
+            }
+        };
         let seq = match v {
             Value::Map(ref map) => match map.get("services") {
                 Some(services) => Graph::try_traverse_services(services)?,
@@ -36,13 +48,14 @@ impl Graph {
             }
         };
         Ok(Graph {
-            nodes: Vec::<Rc<Node>>::from(seq.0),
+            name: name.to_string(),
+            nodes: Vec::<Arc<Node>>::from(seq.0),
             outputs: HashMap::<Uri, OutputWire>::from(seq.1),
             inputs: HashMap::<Uri, InputWire>::from(seq.2),
         })
     }
 
-    pub fn by_uri<U: AsRef<Uri>>(&self, uri: U) -> Option<Rc<Node>> {
+    pub fn by_uri<U: AsRef<Uri>>(&self, uri: U) -> Option<Arc<Node>> {
         self.nodes
             .iter()
             .find(|x| x.uri() == *uri.as_ref())
@@ -70,13 +83,13 @@ impl Graph {
         v: &Value,
     ) -> Result<
         (
-            Vec<Rc<Node>>,
+            Vec<Arc<Node>>,
             HashMap<Uri, OutputWire>,
             HashMap<Uri, InputWire>,
         ),
         ConfigError,
     > {
-        let mut nodes: Vec<Rc<Node>> = Vec::new();
+        let mut nodes: Vec<Arc<Node>> = Vec::new();
         let mut output_wires: HashMap<Uri, OutputWire> = HashMap::new();
         let mut input_wires: HashMap<Uri, InputWire> = HashMap::new();
         match v {
@@ -97,7 +110,7 @@ impl Graph {
                         OutputWire::Fanout(_, _) => unimplemented!(),
                         _ => (),
                     };
-                    nodes.push(Rc::new(n));
+                    nodes.push(Arc::new(n));
                 }
             }
             _ => (),
@@ -170,7 +183,7 @@ pub struct NodeIterator<'a> {
 }
 
 impl<'a> Iterator for NodeIterator<'a> {
-    type Item = Rc<Node>;
+    type Item = Arc<Node>;
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.cur == self.len {
@@ -185,7 +198,7 @@ impl<'a> Iterator for NodeIterator<'a> {
 
 impl<'a> DoubleEndedIterator for NodeIterator<'a> {
     #[inline]
-    fn next_back(&mut self) -> Option<Rc<Node>> {
+    fn next_back(&mut self) -> Option<Arc<Node>> {
         if self.cur == self.len {
             None
         } else {

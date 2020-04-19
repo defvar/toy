@@ -4,6 +4,7 @@ use crate::executor::ServiceExecutor;
 use crate::service::{Service, ServiceFactory};
 use crate::service_type::ServiceType;
 use crate::service_uri::Uri;
+use std::fmt::{self, Debug};
 use toy_pack::deser::DeserializableOwned;
 
 #[derive(Clone)]
@@ -22,12 +23,61 @@ impl<F> Registry<F> {
             callback,
         }
     }
+
+    pub fn service<F2, R, St>(self, tp: St, other: F2) -> ServiceSet<Self, F2>
+    where
+        Self: Sized,
+        F2: Fn() -> R + Clone,
+        ServiceType: From<St>,
+    {
+        let tp: ServiceType = From::from(tp);
+        let self_tp = self.tp.clone();
+        ServiceSet {
+            tp: tp.clone(),
+            other: self,
+            callback: other,
+            tps: vec![self_tp, tp],
+        }
+    }
 }
 
 pub struct ServiceSet<S, F> {
     tp: ServiceType,
     other: S,
     callback: F,
+    // debug use
+    tps: Vec<ServiceType>,
+}
+
+impl<S, F> ServiceSet<S, F> {
+    pub fn service<F2, R, St>(self, tp: St, other: F2) -> ServiceSet<Self, F2>
+    where
+        Self: Sized,
+        F2: Fn() -> R + Clone,
+        ServiceType: From<St>,
+    {
+        let tp: ServiceType = From::from(tp);
+        let mut tps = self.tps.clone();
+        tps.push(tp.clone());
+        ServiceSet {
+            tp: tp.clone(),
+            other: self,
+            callback: other,
+            tps,
+        }
+    }
+}
+
+impl<F> Debug for Registry<F> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Registry {{ services:[{:?}] }}", self.tp)
+    }
+}
+
+impl<S, F> Debug for ServiceSet<S, F> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "ServiceSet {{ services:{:?} }}", self.tps)
+    }
 }
 
 pub trait Delegator {
@@ -43,23 +93,6 @@ pub trait Delegator {
             InitError = Self::InitError,
         >;
 }
-
-pub trait DelegatorExt: Delegator {
-    fn service<F, R, St>(self, tp: St, other: F) -> ServiceSet<Self, F>
-    where
-        Self: Sized,
-        F: Fn() -> R + Clone,
-        ServiceType: From<St>,
-    {
-        ServiceSet {
-            tp: From::from(tp),
-            other: self,
-            callback: other,
-        }
-    }
-}
-
-impl<T: Delegator> DelegatorExt for T {}
 
 impl<F, R> Delegator for Registry<F>
 where
