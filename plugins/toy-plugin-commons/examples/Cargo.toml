@@ -15,8 +15,7 @@ futures = { version = "0.3", features = ["thread-pool"] }
 
 # core module
 toy-core = {path = "../../../pkg/toy-core"}
-toy-pack = {path = "../../../shared/toy-pack"}
-toy-pack-derive = {path = "../../../shared/toy-pack-derive"}
+toy-pack = {path = "../../../shared/toy-pack", features = ["derive"]}
 
 # config
 toy-pack-yaml = {path = "../../../shared/toy-pack-yaml"}

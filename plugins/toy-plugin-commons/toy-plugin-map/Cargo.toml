@@ -8,6 +8,5 @@ edition = "2018"
 
 [dependencies]
 toy-core = { path = "../../../pkg/toy-core" }
-toy-pack = { path = "../../../shared/toy-pack" }
-toy-pack-derive = { path = "../../../shared/toy-pack-derive" }
+toy-pack = { path = "../../../shared/toy-pack", features = ["derive"] }
 log = "0.4"

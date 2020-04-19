@@ -1,4 +1,4 @@
-use toy_pack_derive::*;
+use toy_pack::UnPack;
 
 use self::edges::Edges;
 use self::file_reader::FileReaderState;

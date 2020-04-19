@@ -4,7 +4,7 @@ use crate::transform::{
 };
 use crate::typed::AllowedTypes;
 use std::collections::HashMap;
-use toy_pack_derive::*;
+use toy_pack::UnPack;
 
 /// config for type convert.
 ///

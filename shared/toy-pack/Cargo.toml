@@ -8,3 +8,8 @@ edition = "2018"
 
 [dependencies]
 failure = "0.1.6"
+toy-pack-derive = { optional = true, path = "../toy-pack-derive" }
+
+[features]
+# Provide derive(Pack, UnPack) macros.
+derive = ["toy-pack-derive"]

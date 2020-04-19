@@ -1,6 +1,6 @@
 use crate::config::TypedConfig;
 use toy_core::data::Value;
-use toy_pack_derive::*;
+use toy_pack::UnPack;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, UnPack)]
 pub enum AllowedTypes {

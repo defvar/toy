@@ -1,16 +1,16 @@
 #![feature(test)]
 
 extern crate serde;
-#[macro_use]
-extern crate serde_derive;
+
 extern crate test;
 
 use test::black_box;
 use test::test::Bencher;
 
+use serde::{Deserialize, Serialize};
 use toy_pack_derive::*;
-use toy_pack_mp::{pack, unpack};
 use toy_pack_mp::marker::marker_from_byte;
+use toy_pack_mp::{pack, unpack};
 
 #[derive(Pack, UnPack, Deserialize, Serialize)]
 struct TestData<'a> {

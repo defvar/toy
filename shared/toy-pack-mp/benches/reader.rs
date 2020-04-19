@@ -8,7 +8,7 @@ use test::test::Bencher;
 
 use toy_pack_mp::{decoder_from_reader, DecoderOps};
 
-static TEST_DATA: &'static str = "./benches/reader.txt";
+static TEST_DATA: &'static str = "benches/reader.txt";
 
 #[bench]
 fn reader_no_buf(b: &mut Bencher) {

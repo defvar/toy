@@ -2,7 +2,7 @@ use crate::typed;
 use crate::typed::AllowedTypes;
 use std::collections::HashMap;
 use toy_core::data::{Map, Value};
-use toy_pack_derive::*;
+use toy_pack::UnPack;
 
 pub trait Transformer {
     fn transform(&self, value: &mut Value) -> Result<(), ()>;

@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use toy_pack_derive::*;
+use toy_pack::UnPack;
 
 use super::{QuoteStyle, Terminator};
 
