@@ -27,7 +27,7 @@ pub trait ServiceExecutor {
     type Error;
     type InitError;
 
-    fn spawn<F>(&mut self, service_type: ServiceType, uri: Uri, factory: F)
+    fn spawn<F>(&mut self, service_type: &ServiceType, uri: &Uri, factory: F)
     where
         F: ServiceFactory<
                 Request = Self::Request,
@@ -135,10 +135,10 @@ where
             .graph
             .iter()
             .rev()
-            .map(|x| (x.service_type().clone(), x.uri().clone()))
+            .map(|x| (x.service_type(), x.uri()))
             .collect::<Vec<_>>();
 
-        for (stype, uri) in nodes {
+        for (stype, uri) in &nodes {
             let _ = delegator.delegate(stype, uri, &mut self);
         }
 
@@ -171,7 +171,7 @@ where
     type Error = ServiceError;
     type InitError = ServiceError;
 
-    fn spawn<F>(&mut self, service_type: ServiceType, uri: Uri, factory: F)
+    fn spawn<F>(&mut self, service_type: &ServiceType, uri: &Uri, factory: F)
     where
         F: ServiceFactory<
                 Request = Self::Request,
@@ -186,7 +186,8 @@ where
         F::Context: Send,
         F::Config: DeserializableOwned<Value = F::Config> + Send,
     {
-        let (tx, rx) = self.pop_channels(&uri);
+        let (tx, rx) = self.pop_channels(uri);
+        let uri = uri.clone();
         let service_type = service_type.clone();
 
         let config_value = self.graph.by_uri(&uri);
@@ -200,7 +201,7 @@ where
                     match factory.new_service(service_type.clone()).await {
                         Ok(service) => match factory.new_context(service_type.clone(), config) {
                             Ok(ctx) => {
-                                if let Err(e) = process(rx, tx, service, ctx, uri.clone()).await {
+                                if let Err(e) = process(rx, tx, service, ctx, &uri).await {
                                     log::error!("an error occured; uri:{:?}, error:{:?}", uri, e);
                                 }
                             }
@@ -224,7 +225,7 @@ async fn process<S, Ctx>(
     mut tx: Outgoing<Frame, ServiceError>,
     mut service: S,
     mut context: Ctx,
-    uri: Uri,
+    uri: &Uri,
 ) -> Result<(), ServiceError>
 where
     S: Service<Request = Frame, Error = ServiceError, Context = Ctx>,

@@ -85,7 +85,7 @@ pub trait Delegator {
     type Error: Error;
     type InitError: Error;
 
-    fn delegate<T>(&self, tp: ServiceType, uri: Uri, executor: &mut T) -> Result<(), Self::Error>
+    fn delegate<T>(&self, tp: &ServiceType, uri: &Uri, executor: &mut T) -> Result<(), Self::Error>
     where
         T: ServiceExecutor<
             Request = Self::Request,
@@ -111,7 +111,7 @@ where
     type Error = ServiceError;
     type InitError = ServiceError;
 
-    fn delegate<T>(&self, tp: ServiceType, uri: Uri, executor: &mut T) -> Result<(), Self::Error>
+    fn delegate<T>(&self, tp: &ServiceType, uri: &Uri, executor: &mut T) -> Result<(), Self::Error>
     where
         T: ServiceExecutor<
             Request = Self::Request,
@@ -119,7 +119,7 @@ where
             InitError = Self::InitError,
         >,
     {
-        if self.tp == tp {
+        if self.tp == *tp {
             let f = (self.callback)();
             executor.spawn(tp, uri, f);
             Ok(())
@@ -147,7 +147,7 @@ where
     type Error = ServiceError;
     type InitError = ServiceError;
 
-    fn delegate<T>(&self, tp: ServiceType, uri: Uri, executor: &mut T) -> Result<(), Self::Error>
+    fn delegate<T>(&self, tp: &ServiceType, uri: &Uri, executor: &mut T) -> Result<(), Self::Error>
     where
         T: ServiceExecutor<
             Request = Self::Request,
@@ -155,10 +155,10 @@ where
             InitError = Self::InitError,
         >,
     {
-        match self.other.delegate(tp.clone(), uri.clone(), executor) {
+        match self.other.delegate(tp, uri, executor) {
             Ok(_) => Ok(()),
             Err(_) => {
-                if self.tp == tp {
+                if self.tp == *tp {
                     let f = (self.callback)();
                     executor.spawn(tp, uri, f);
                     Ok(())

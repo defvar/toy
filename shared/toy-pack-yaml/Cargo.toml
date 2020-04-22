@@ -8,6 +8,7 @@ edition = "2018"
 failure = "0.1.6"
 yaml-rust = "0.4"
 toy-pack = {path = "../toy-pack"}
+ryu = "1.0"
 
 [dev-dependencies]
 toy-pack-derive = {path = "../toy-pack-derive"}

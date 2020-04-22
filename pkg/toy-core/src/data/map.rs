@@ -9,6 +9,8 @@ use std::borrow::Borrow;
 use std::hash::Hash;
 use std::{fmt, fmt::Debug, ops};
 
+/// A map which preserves insertion order.
+/// By default the map is backed by a [`IndexMap`].
 pub struct Map<K, V> {
     map: IndexMap<K, V>,
 }

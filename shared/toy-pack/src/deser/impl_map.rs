@@ -1,46 +1,70 @@
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use std::hash::Hash;
 use std::marker::PhantomData;
 
 use super::{Deserializable, DeserializeMapOps, Deserializer, Visitor};
 
-// Implementation `Deserializable` for `HashMap<K, V>`
-//
-impl<'toy, K, V> Deserializable<'toy> for HashMap<K, V>
-    where K: Deserializable<'toy>,
-          V: Deserializable<'toy>,
-          K::Value: Eq + Hash
-{
-    type Value = HashMap<K::Value, V::Value>;
-
-    fn deserialize<D>(deserializer: D) -> Result<Self::Value, D::Error> where D: Deserializer<'toy> {
-        struct __Visitor<K, V> {
-            t: PhantomData<HashMap<K, V>>,
-        }
-
-        impl<'toy, K, V> Visitor<'toy> for __Visitor<K, V>
-            where K: Deserializable<'toy>,
-                  V: Deserializable<'toy>,
-                  K::Value: Eq + Hash
+macro_rules! map_impl {
+    (
+        $ty: ident < K, V >,
+        $kbound1: ident $(+ $kbound2:ident)*,
+        $access: ident,
+        $with_capacity: expr
+    ) => {
+        impl<'toy, K, V> Deserializable<'toy> for $ty<K, V>
+        where
+            K: Deserializable<'toy>,
+            V: Deserializable<'toy>,
+            K::Value: $kbound1 $(+ $kbound2)*,
         {
-            type Value = HashMap<K::Value, V::Value>;
+            type Value = $ty<K::Value, V::Value>;
 
-            fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error>
-                where A: DeserializeMapOps<'toy>
+            fn deserialize<D>(deserializer: D) -> Result<Self::Value, D::Error>
+            where
+                D: Deserializer<'toy>,
             {
-                let size = map.size_hint().unwrap_or(256);
-                let mut values: HashMap<K::Value, V::Value> = HashMap::with_capacity(size);
-                while let Some(key) = map.next_key::<K>()? {
-                    let v = map.next_value::<V>()?;
-                    values.insert(key, v);
+                struct __Visitor<K, V> {
+                    t: PhantomData<$ty<K, V>>,
                 }
-                Ok(values)
+
+                impl<'toy, K, V> Visitor<'toy> for __Visitor<K, V>
+                where
+                    K: Deserializable<'toy>,
+                    V: Deserializable<'toy>,
+                    K::Value: $kbound1 $(+ $kbound2)*,
+                {
+                    type Value = $ty<K::Value, V::Value>;
+
+                    fn visit_map<A>(self, mut $access: A) -> Result<Self::Value, A::Error>
+                    where
+                        A: DeserializeMapOps<'toy>,
+                    {
+                        let mut values = $with_capacity;
+                        while let Some(key) = $access.next_key::<K>()? {
+                            let v = $access.next_value::<V>()?;
+                            values.insert(key, v);
+                        }
+                        Ok(values)
+                    }
+                }
+
+                let visitor: __Visitor<K, V> = __Visitor { t: PhantomData };
+                deserializer.deserialize_map(visitor)
             }
         }
-
-        let visitor: __Visitor<K, V> = __Visitor {
-            t: PhantomData,
-        };
-        deserializer.deserialize_map(visitor)
-    }
+    };
 }
+
+map_impl!(
+ BTreeMap<K, V>,
+ Ord,
+ map,
+ BTreeMap::new()
+);
+
+map_impl!(
+ HashMap<K, V>,
+ Eq + Hash,
+ map,
+ HashMap::with_capacity(map.size_hint().unwrap_or(256))
+);

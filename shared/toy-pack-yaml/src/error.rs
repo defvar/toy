@@ -1,12 +1,16 @@
 use std::fmt::{self, Display};
 
 use failure::{Backtrace, Context, Fail};
-use toy_pack::deser::Error;
+use toy_pack::deser::Error as DeserError;
+use toy_pack::ser::Error as SerError;
 
 #[derive(Debug, Fail)]
 pub enum YamlErrorKind {
     #[fail(display = "yaml error: {:?}", inner)]
     ScanError { inner: yaml_rust::ScanError },
+
+    #[fail(display = "yaml error: {:?}", inner)]
+    EmmitError { inner: yaml_rust::EmitError },
 
     #[fail(display = "yaml error: {:?}", inner)]
     Error { inner: String },
@@ -75,7 +79,22 @@ impl From<yaml_rust::ScanError> for YamlError {
     }
 }
 
-impl Error for YamlError {
+impl From<yaml_rust::EmitError> for YamlError {
+    fn from(e: yaml_rust::EmitError) -> Self {
+        YamlErrorKind::EmmitError { inner: e }.into()
+    }
+}
+
+impl DeserError for YamlError {
+    fn custom<T>(msg: T) -> Self
+    where
+        T: Display,
+    {
+        YamlError::error(msg)
+    }
+}
+
+impl SerError for YamlError {
     fn custom<T>(msg: T) -> Self
     where
         T: Display,
