@@ -2,7 +2,7 @@ use std::io;
 
 use toy_pack::ser::Serializable;
 
-use super::encode::{EncodeError, encoder_from_writer};
+use super::encode::{encoder_from_writer, EncodeError};
 
 /// Serialize from data structure to [`Vec<u8>`].
 ///
@@ -31,7 +31,8 @@ use super::encode::{EncodeError, encoder_from_writer};
 /// ```
 #[inline]
 pub fn pack<T>(item: &T) -> Result<Vec<u8>, EncodeError>
-    where T: Serializable
+where
+    T: Serializable,
 {
     let mut writer = Vec::with_capacity(128);
     pack_to_writer(&mut writer, item)?;
@@ -44,8 +45,9 @@ pub fn pack<T>(item: &T) -> Result<Vec<u8>, EncodeError>
 ///
 #[inline]
 pub fn pack_to_writer<W, T>(writer: W, item: &T) -> Result<(), EncodeError>
-    where W: io::Write,
-          T: Serializable
+where
+    W: io::Write,
+    T: Serializable,
 {
     let mut w = encoder_from_writer(writer);
     item.serialize(&mut w)?;

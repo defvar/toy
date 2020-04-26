@@ -2,21 +2,23 @@ use super::{Serializable, Serializer};
 
 macro_rules! primitive_serializer_impl {
     ($t: ident, $method: ident) => {
-      impl Serializable for $t {
-          #[inline]
-          fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-              where S: Serializer,
-          {
-              serializer.$method(*self)
-          }
-      }
+        impl Serializable for $t {
+            #[inline]
+            fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+            where
+                S: Serializer,
+            {
+                serializer.$method(*self)
+            }
+        }
     };
 }
 
 impl Serializable for str {
     #[inline]
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where S: Serializer,
+    where
+        S: Serializer,
     {
         serializer.serialize_str(self)
     }
@@ -25,7 +27,8 @@ impl Serializable for str {
 impl Serializable for String {
     #[inline]
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where S: Serializer,
+    where
+        S: Serializer,
     {
         serializer.serialize_str(self)
     }
@@ -34,7 +37,8 @@ impl Serializable for String {
 impl Serializable for char {
     #[inline]
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where S: Serializer,
+    where
+        S: Serializer,
     {
         serializer.serialize_char(*self)
     }
@@ -43,7 +47,8 @@ impl Serializable for char {
 impl Serializable for usize {
     #[inline]
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where S: Serializer,
+    where
+        S: Serializer,
     {
         serializer.serialize_u64(*self as u64)
     }
@@ -52,7 +57,8 @@ impl Serializable for usize {
 impl Serializable for isize {
     #[inline]
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where S: Serializer,
+    where
+        S: Serializer,
     {
         serializer.serialize_i64(*self as i64)
     }

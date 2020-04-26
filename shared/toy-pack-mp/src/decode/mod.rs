@@ -7,10 +7,10 @@ pub use self::decoder_ops::{DecoderOps, Reference};
 pub use self::error::DecodeError;
 pub use self::reader::Reader;
 
-mod decoder_ops;
-mod reader;
 mod decoder;
+mod decoder_ops;
 mod error;
+mod reader;
 
 pub type Result<T> = result::Result<T, DecodeError>;
 

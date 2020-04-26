@@ -18,7 +18,6 @@ enum TestEnum {
 
     //tuple variant
     C(u32, u32),
-
 }
 
 impl Default for TestEnum {
@@ -28,14 +27,19 @@ impl Default for TestEnum {
 }
 
 #[derive(Debug, Pack, UnPack)]
-struct Gen<T> where T: std::default::Default + toy_pack::deser::DeserializableOwned<Value=T> + toy_pack::ser::Serializable {
+struct Gen<T>
+where
+    T: std::default::Default
+        + toy_pack::deser::DeserializableOwned<Value = T>
+        + toy_pack::ser::Serializable,
+{
     value: T,
 }
 
 #[derive(Pack)]
 struct User {
     id: u32,
-    name: String
+    name: String,
 }
 
 fn main() {
@@ -70,8 +74,10 @@ fn main() {
     let r = unpack::<Gen<u32>>(vec.as_slice()).unwrap();
     println!("{:?}", r);
 
-
-    let src = User { id: 1, name: "a".to_string() };
+    let src = User {
+        id: 1,
+        name: "a".to_string(),
+    };
     let vec = pack(&src).unwrap();
     println!("{:?}", vec);
 }

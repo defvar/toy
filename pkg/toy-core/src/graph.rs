@@ -11,6 +11,7 @@ pub struct Graph {
     nodes: Vec<Arc<Node>>,
     outputs: HashMap<Uri, OutputWire>,
     inputs: HashMap<Uri, InputWire>,
+    config_value: Value,
 }
 
 #[derive(Debug, Clone)]
@@ -52,7 +53,12 @@ impl Graph {
             nodes: Vec::<Arc<Node>>::from(seq.0),
             outputs: HashMap::<Uri, OutputWire>::from(seq.1),
             inputs: HashMap::<Uri, InputWire>::from(seq.2),
+            config_value: v,
         })
+    }
+
+    pub fn name(&self) -> &str {
+        &self.name
     }
 
     pub fn by_uri<U: AsRef<Uri>>(&self, uri: U) -> Option<Arc<Node>> {
@@ -77,6 +83,10 @@ impl Graph {
 
     pub fn inputs(&self) -> &HashMap<Uri, InputWire> {
         &self.inputs
+    }
+
+    pub fn config(&self) -> Value {
+        self.config_value.clone()
     }
 
     fn try_traverse_services(

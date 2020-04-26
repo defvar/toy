@@ -1,2 +1,2 @@
-mod int;
 mod bool;
+mod int;

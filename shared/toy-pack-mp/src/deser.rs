@@ -2,7 +2,7 @@ use std::io;
 
 use toy_pack::deser::{Deserializable, DeserializableOwned};
 
-use super::decode::{DecodeError, decoder_from_reader, decoder_from_slice};
+use super::decode::{decoder_from_reader, decoder_from_slice, DecodeError};
 
 /// Deserialize from byte slice.
 ///
@@ -25,7 +25,8 @@ use super::decode::{DecodeError, decoder_from_reader, decoder_from_slice};
 /// ```
 #[inline]
 pub fn unpack<'toy, T>(slice: &'toy [u8]) -> Result<T::Value, DecodeError>
-    where T: Deserializable<'toy>
+where
+    T: Deserializable<'toy>,
 {
     T::deserialize(&mut decoder_from_slice(slice))
 }
@@ -34,8 +35,9 @@ pub fn unpack<'toy, T>(slice: &'toy [u8]) -> Result<T::Value, DecodeError>
 ///
 #[inline]
 pub fn unpack_from_reader<R, T>(reader: R) -> Result<T, DecodeError>
-    where R: io::Read,
-          T: DeserializableOwned<Value=T>
+where
+    R: io::Read,
+    T: DeserializableOwned<Value = T>,
 {
     T::deserialize(&mut decoder_from_reader(reader))
 }

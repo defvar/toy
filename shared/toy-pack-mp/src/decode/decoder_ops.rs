@@ -166,11 +166,11 @@ pub trait DecoderOps<'toy> {
     fn decode_integer<T: FromPrimitive>(&mut self) -> Result<T> {
         let r = match self.peek_marker_and_byte()? {
             (Marker::FixPos, fb) => {
-                let _ = self.get_marker()?;//consume
+                let _ = self.get_marker()?; //consume
                 T::from_u8(fb)
             }
             (Marker::FixNeg, fb) => {
-                let _ = self.get_marker()?;//consume
+                let _ = self.get_marker()?; //consume
                 T::from_i8(fb as i8)
             }
             (Marker::U8, _) => T::from_u8(self.decode_u8()?),
@@ -183,7 +183,7 @@ pub trait DecoderOps<'toy> {
             (Marker::I64, _) => T::from_i64(self.decode_i64()?),
             (other, _) => return Err(DecodeError::from(other)),
         };
-        r.ok_or_else(|| { DecodeError::OutOfRange })
+        r.ok_or_else(|| DecodeError::OutOfRange)
     }
 
     fn decode_array_len(&mut self) -> Result<u32> {

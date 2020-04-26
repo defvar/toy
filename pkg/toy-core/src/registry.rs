@@ -41,11 +41,11 @@ impl<F> Registry<F> {
     }
 }
 
+#[derive(Clone)]
 pub struct ServiceSet<S, F> {
     tp: ServiceType,
     other: S,
     callback: F,
-    // debug use
     tps: Vec<ServiceType>,
 }
 
@@ -65,6 +65,10 @@ impl<S, F> ServiceSet<S, F> {
             callback: other,
             tps,
         }
+    }
+
+    pub fn service_types(&self) -> &Vec<ServiceType> {
+        &self.tps
     }
 }
 
@@ -124,7 +128,7 @@ where
             executor.spawn(tp, uri, f);
             Ok(())
         } else {
-            Err(ServiceError::error("don't know"))
+            Err(ServiceError::service_not_found(tp))
         }
     }
 }
@@ -163,7 +167,7 @@ where
                     executor.spawn(tp, uri, f);
                     Ok(())
                 } else {
-                    Err(ServiceError::error("don't know"))
+                    Err(ServiceError::service_not_found(tp))
                 }
             }
         }

@@ -1,5 +1,7 @@
 [workspace]
 members = [
     "toy-core",
-    "toy-api-server"
+    "toy-rt",
+    "toy-api-server",
+    "examples"
 ]

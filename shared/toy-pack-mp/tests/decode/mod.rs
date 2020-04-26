@@ -1,3 +1,3 @@
-mod int;
 mod bool;
 mod discard;
+mod int;

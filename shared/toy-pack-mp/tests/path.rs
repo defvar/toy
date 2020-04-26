@@ -4,9 +4,7 @@ use toy_pack_mp::{pack, unpack};
 
 #[test]
 fn path_buf_values() {
-    let data: &[(path::PathBuf, usize)] = &[
-        (path::PathBuf::from("a"), 2)
-    ];
+    let data: &[(path::PathBuf, usize)] = &[(path::PathBuf::from("a"), 2)];
 
     for (d, l) in data {
         let vec = pack(d).unwrap();
@@ -19,9 +17,7 @@ fn path_buf_values() {
 
 #[test]
 fn path_values() {
-    let data: &[(&path::Path, usize)] = &[
-        (path::Path::new("a"), 2)
-    ];
+    let data: &[(&path::Path, usize)] = &[(path::Path::new("a"), 2)];
 
     for (d, l) in data {
         let vec = pack(d).unwrap();

@@ -1,4 +1,4 @@
-use crate::marker::{Marker, marker_to_byte};
+use crate::marker::{marker_to_byte, Marker};
 
 use super::Result;
 
@@ -133,7 +133,9 @@ pub trait EncoderOps {
             v if -(1 << 5) <= v && v < 0 => self.encode_fix_neg(v as i8).and(Ok(Marker::FixNeg)),
             v if -(1 << 7) <= v && v < -(1 << 5) => self.encode_i8(v as i8).and(Ok(Marker::I8)),
             v if -(1 << 15) <= v && v < -(1 << 7) => self.encode_i16(v as i16).and(Ok(Marker::I16)),
-            v if -(1 << 31) <= v && v < -(1 << 15) => self.encode_i32(v as i32).and(Ok(Marker::I32)),
+            v if -(1 << 31) <= v && v < -(1 << 15) => {
+                self.encode_i32(v as i32).and(Ok(Marker::I32))
+            }
             v if v < -(1 << 31) => self.encode_i64(v).and(Ok(Marker::I64)),
             v if 0 <= v && v < (1 << 7) => self.encode_fix_pos(v as u8).and(Ok(Marker::FixPos)),
             v if v < (1 << 8) => self.encode_u8(v as u8).and(Ok(Marker::U8)),

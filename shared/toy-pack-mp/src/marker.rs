@@ -1,13 +1,13 @@
 #![allow(unreachable_patterns)]
 
 lazy_static! {
-  static ref MARKERS_FROM_BYTE: [Marker; 256] = {
-      let mut buf = [Marker::Nil; 256];
-      for b in 0..256 {
-          buf[b] = Marker::from_u8(b as u8);
-      }
-      buf
-  };
+    static ref MARKERS_FROM_BYTE: [Marker; 256] = {
+        let mut buf = [Marker::Nil; 256];
+        for b in 0..256 {
+            buf[b] = Marker::from_u8(b as u8);
+        }
+        buf
+    };
 }
 
 const FIX_STR_SIZE: u8 = 0x1f;

@@ -55,7 +55,8 @@ pub fn derive_unpack_core(input: DeriveInput) -> Result<TokenStream, Vec<syn::Er
     };
 
     let visitor_impl_block = match model.data {
-        Data::Struct(s, ref f) => match struct_visitor_impl(&model, &model.input.ident, s, f, None) {
+        Data::Struct(s, ref f) => match struct_visitor_impl(&model, &model.input.ident, s, f, None)
+        {
             Ok(v) => v,
             Err(e) => return Err(vec![e]),
         },
@@ -98,7 +99,8 @@ fn deser_impl(target: &Model) -> Result<TokenStream, syn::Error> {
     let visitor_name = visitor_name();
     let name = &target.input.ident;
 
-    let (impl_generics, _, ty_generics, where_clause) = generics_and_lifetimes(&target.input, &target.borrowed);
+    let (impl_generics, _, ty_generics, where_clause) =
+        generics_and_lifetimes(&target.input, &target.borrowed);
     let toy_life = target.borrowed.toy_lifetime();
 
     let method = match target.data {

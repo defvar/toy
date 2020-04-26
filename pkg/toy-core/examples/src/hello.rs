@@ -123,8 +123,8 @@ async fn unboxed() -> Result<(), ()> {
         pool: ThreadPool::new().unwrap(),
     };
     let g = graph();
-    let e = Executor::new(rt, g);
-    let _ = e.run(c, Frame::default()).await;
+    let e = Executor::new(&rt, g);
+    let _ = e.run(&c, Frame::default()).await;
 
     Ok(())
 }

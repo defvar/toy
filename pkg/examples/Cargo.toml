@@ -1,14 +1,19 @@
 [package]
-name = "toy-api-server"
+name = "examples"
 version = "0.1.0"
 authors = ["defvar <def.daisuke@gmail.com>"]
 edition = "2018"
 
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
 [dependencies]
-tokio = { version = "0.2", features = ["macros", "sync"] }
-warp = "0.2"
 toy-core = { path = "../toy-core" }
+toy-api-server = { path = "../toy-api-server"}
 toy-rt = { path = "../toy-rt"}
 toy-pack = {path = "../../shared/toy-pack", features = ["derive"]}
-toy-pack-yaml = {path = "../../shared/toy-pack-yaml"}
 log = "0.4"
+env_logger = "0.7.1"
+
+[[example]]
+name = "serve"
+path = "serve.rs"

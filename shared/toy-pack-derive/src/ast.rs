@@ -15,7 +15,11 @@ pub struct Model<'a> {
 
 impl<'a> Model<'a> {
     pub fn original_name(&self) -> String {
-        self.input.ident.to_string().trim_start_matches("r#").to_owned()
+        self.input
+            .ident
+            .to_string()
+            .trim_start_matches("r#")
+            .to_owned()
     }
 }
 
@@ -179,7 +183,9 @@ fn field_from_ast(fields: &Punctuated<syn::Field, Token![,]>) -> Result<Vec<Fiel
     r
 }
 
-fn borrowed_lifetimes<'a>(fields: Box<dyn Iterator<Item = &'a Field<'a>> + 'a>) -> BorrowedLifetimes {
+fn borrowed_lifetimes<'a>(
+    fields: Box<dyn Iterator<Item = &'a Field<'a>> + 'a>,
+) -> BorrowedLifetimes {
     let mut lifetimes = BTreeSet::new();
     for field in fields {
         if !field.attr.ignore {

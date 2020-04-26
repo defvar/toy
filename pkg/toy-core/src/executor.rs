@@ -1,8 +1,8 @@
-use crate::channel;
-use crate::channel::{Incoming, Outgoing};
 use crate::data::{self, Frame};
 use crate::error::{Error, ServiceError};
 use crate::graph::{Graph, InputWire, OutputWire};
+use crate::mpsc;
+use crate::mpsc::{Incoming, Outgoing};
 use crate::registry::Delegator;
 use crate::service::{Service, ServiceFactory};
 use crate::service_type::ServiceType;
@@ -43,11 +43,11 @@ pub trait ServiceExecutor {
         F::Config: DeserializableOwned<Value = F::Config> + Send;
 }
 
-pub struct Executor<T>
+pub struct Executor<'a, T>
 where
     T: AsyncRuntime,
 {
-    rt: T,
+    rt: &'a T,
     starters: HashMap<Uri, Outgoing<Frame, ServiceError>>,
     awaiter: Incoming<Frame, ServiceError>,
     graph: Graph,
@@ -55,25 +55,24 @@ where
     outputs: HashMap<Uri, Outgoing<Frame, ServiceError>>,
 }
 
-impl<T> Executor<T>
+impl<'a, T> Executor<'a, T>
 where
     T: AsyncRuntime,
 {
-    pub fn new(rt: T, graph: Graph) -> Self {
+    pub fn new(rt: &'a T, graph: Graph) -> Self {
         let mut inputs: HashMap<Uri, Incoming<Frame, ServiceError>> = HashMap::new();
         let mut outputs: HashMap<Uri, Outgoing<Frame, ServiceError>> = HashMap::new();
 
         let mut starters: HashMap<Uri, Outgoing<Frame, ServiceError>> = HashMap::new();
 
-        let (l_tx, l_rx) = channel::stream::<Frame, ServiceError>(DEFAULT_CHANNEL_BUFFER_SIZE);
+        let (l_tx, l_rx) = mpsc::stream::<Frame, ServiceError>(DEFAULT_CHANNEL_BUFFER_SIZE);
 
         graph
             .inputs()
             .iter()
             .filter(|(_, w)| **w == InputWire::None)
             .for_each(|(uri, _)| {
-                let (f_tx, f_rx) =
-                    channel::stream::<Frame, ServiceError>(DEFAULT_CHANNEL_BUFFER_SIZE);
+                let (f_tx, f_rx) = mpsc::stream::<Frame, ServiceError>(DEFAULT_CHANNEL_BUFFER_SIZE);
                 inputs.insert(uri.clone(), f_rx);
                 starters.insert(uri.clone(), f_tx);
             });
@@ -87,7 +86,7 @@ where
         }
 
         for (_, wire) in graph.inputs() {
-            let (tx, rx) = channel::stream::<Frame, ServiceError>(DEFAULT_CHANNEL_BUFFER_SIZE);
+            let (tx, rx) = mpsc::stream::<Frame, ServiceError>(DEFAULT_CHANNEL_BUFFER_SIZE);
             match wire {
                 InputWire::Single(o, i) => {
                     inputs.insert(i.clone(), rx);
@@ -127,7 +126,7 @@ where
 
     pub async fn run(
         mut self,
-        delegator: impl Delegator<Request = Frame, Error = ServiceError, InitError = ServiceError>,
+        delegator: &impl Delegator<Request = Frame, Error = ServiceError, InitError = ServiceError>,
         start_frame: Frame,
     ) -> Result<(), ServiceError> {
         // need to reverse ....
@@ -139,7 +138,10 @@ where
             .collect::<Vec<_>>();
 
         for (stype, uri) in &nodes {
-            let _ = delegator.delegate(stype, uri, &mut self);
+            if let Err(e) = delegator.delegate(stype, uri, &mut self) {
+                log::error!("an error occured; {:?}", e);
+                return Err(e);
+            }
         }
 
         self.run_0(start_frame).await
@@ -154,7 +156,7 @@ where
 
         while let Some(x) = self.awaiter.next().await {
             match x {
-                Err(e) => log::error!("error {:?}", e),
+                Err(e) => log::error!("an error occured; {:?}", e),
                 _ => (),
             }
         }
@@ -163,7 +165,7 @@ where
     }
 }
 
-impl<T> ServiceExecutor for Executor<T>
+impl<'a, T> ServiceExecutor for Executor<'a, T>
 where
     T: AsyncRuntime,
 {
@@ -195,6 +197,7 @@ where
             log::error!("not found service. uri:{:?}", uri);
             return;
         }
+
         match data::unpack::<F::Config>(config_value.unwrap().config()) {
             Ok(config) => {
                 self.rt.spawn(async move {

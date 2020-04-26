@@ -5,12 +5,12 @@ extern crate proc_macro;
 extern crate syn;
 
 use quote::quote;
-use syn::{DeriveInput, parse_macro_input};
+use syn::{parse_macro_input, DeriveInput};
 
-mod ser;
-mod deser;
 mod ast;
 mod attr;
+mod deser;
+mod ser;
 
 #[proc_macro_derive(Pack, attributes(toy))]
 pub fn derive_pack(input: proc_macro::TokenStream) -> proc_macro::TokenStream {

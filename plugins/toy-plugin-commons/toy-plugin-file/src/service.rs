@@ -2,9 +2,9 @@ use crate::config::{FileReadConfig, FileWriteConfig};
 use crate::{FileReader, FileReaderBuilder, FileWriter, FileWriterBuilder, Row};
 use failure::_core::fmt::Formatter;
 use std::io;
-use toy_core::channel::Outgoing;
 use toy_core::data::{Frame, Map, Value};
 use toy_core::error::ServiceError;
+use toy_core::mpsc::Outgoing;
 use toy_core::ServiceType;
 
 pub struct FileReadContext {

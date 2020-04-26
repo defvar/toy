@@ -9,8 +9,8 @@ use rmp::decode::read_int;
 use rmp::encode::write_uint;
 use rmp::Marker;
 
-use toy_pack_mp::{decoder_from_slice, DecoderOps, encoder_from_writer, EncoderOps};
 use toy_pack_mp::marker::marker_from_byte;
+use toy_pack_mp::{decoder_from_slice, encoder_from_writer, DecoderOps, EncoderOps};
 
 #[bench]
 fn write_uint_toy(b: &mut Bencher) {

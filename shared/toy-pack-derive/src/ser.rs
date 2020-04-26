@@ -2,7 +2,7 @@ use proc_macro2::{Ident, Span, TokenStream};
 use quote::quote;
 use syn::DeriveInput;
 
-use super::ast::{Data, Field, Model, model_from_ast, Style};
+use super::ast::{model_from_ast, Data, Field, Model, Style};
 
 pub fn derive_pack_core(input: DeriveInput) -> Result<TokenStream, Vec<syn::Error>> {
     let body = match body(&input) {
@@ -24,9 +24,13 @@ pub fn derive_pack_core(input: DeriveInput) -> Result<TokenStream, Vec<syn::Erro
     };
 
     // impl block wrap const, unique name. //
-    let const_name = Ident::new(&format!("_TOY_IMPL_SER_FOR_{}",
-                                         name.to_string().trim_start_matches("r#").to_owned()),
-                                Span::call_site());
+    let const_name = Ident::new(
+        &format!(
+            "_TOY_IMPL_SER_FOR_{}",
+            name.to_string().trim_start_matches("r#").to_owned()
+        ),
+        Span::call_site(),
+    );
     let r = quote! {
         const #const_name: () = {
             #[cfg_attr(feature = "cargo-clippy", allow(useless_attribute))]
@@ -111,10 +115,10 @@ fn body_enum(target: &Model) -> Result<TokenStream, syn::Error> {
         .collect();
 
     let q = quote! {
-                match *self {
-                    #(#serialize_variants)*
-                }
-            };
+        match *self {
+            #(#serialize_variants)*
+        }
+    };
     Ok(q)
 }
 
@@ -146,15 +150,9 @@ fn body_struct(target: &Model) -> Result<TokenStream, syn::Error> {
             };
             Ok(q)
         }
-        Style::Unit => {
-            unimplemented!()
-        }
-        Style::Tuple => {
-            unimplemented!()
-        }
-        Style::Newtype => {
-            unimplemented!()
-        }
+        Style::Unit => unimplemented!(),
+        Style::Tuple => unimplemented!(),
+        Style::Newtype => unimplemented!(),
     }
 }
 

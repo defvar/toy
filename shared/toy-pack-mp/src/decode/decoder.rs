@@ -1,10 +1,10 @@
-use std::{mem, slice};
 use std::str;
+use std::{mem, slice};
 
-use crate::marker::{Marker, marker_from_byte_fixx};
+use crate::marker::{marker_from_byte_fixx, Marker};
 
-use super::{DecoderOps, Reference, Result};
 use super::reader::Reader;
+use super::{DecoderOps, Reference, Result};
 
 /// The default `DecoderOps` implementation.
 ///
@@ -13,7 +13,10 @@ pub struct Decoder<B> {
     marker_cache: Option<(Marker, u8)>,
 }
 
-impl<'toy, B> Decoder<B> where B: Reader<'toy> {
+impl<'toy, B> Decoder<B>
+where
+    B: Reader<'toy>,
+{
     pub fn new(reader: B) -> Decoder<B> {
         Decoder {
             reader,
@@ -28,8 +31,10 @@ impl<'toy, B> Decoder<B> where B: Reader<'toy> {
     }
 }
 
-impl<'toy, B> DecoderOps<'toy> for Decoder<B> where B: Reader<'toy> {
-
+impl<'toy, B> DecoderOps<'toy> for Decoder<B>
+where
+    B: Reader<'toy>,
+{
     #[inline]
     fn remaining(&self) -> usize {
         self.reader.remaining()
@@ -39,11 +44,10 @@ impl<'toy, B> DecoderOps<'toy> for Decoder<B> where B: Reader<'toy> {
     fn get<T: Sized>(&mut self) -> Result<&T> {
         let s = mem::size_of::<T>();
         assert!(self.remaining() >= s);
-        let r = self.reader.get_bytes(s).map(|x| {
-            unsafe {
-                slice::from_raw_parts(x.as_ptr() as *const T, s)
-            }
-        })?;
+        let r = self
+            .reader
+            .get_bytes(s)
+            .map(|x| unsafe { slice::from_raw_parts(x.as_ptr() as *const T, s) })?;
         Ok(&r[0])
     }
 
@@ -66,31 +70,29 @@ impl<'toy, B> DecoderOps<'toy> for Decoder<B> where B: Reader<'toy> {
     fn decode_str<'a>(&'a mut self) -> Result<Reference<'toy, 'a, str>> {
         let len = self.decode_str_len()? as usize;
         match self.reader.get_bytes(len)? {
-            Reference::Borrowed(b) => str::from_utf8(b).map(Reference::Borrowed).map_err(Into::into),
-            Reference::Copied(c) => str::from_utf8(c).map(Reference::Copied).map_err(Into::into)
+            Reference::Borrowed(b) => str::from_utf8(b)
+                .map(Reference::Borrowed)
+                .map_err(Into::into),
+            Reference::Copied(c) => str::from_utf8(c).map(Reference::Copied).map_err(Into::into),
         }
     }
 
     #[inline]
     fn peek_marker(&mut self) -> Result<Marker> {
-        self.marker_cache
-            .map(|x| Ok(x.0))
-            .unwrap_or_else(|| {
-                let r = self.get_marker_and_byte_core()?;
-                self.marker_cache = Some(r);
-                Ok(r.0)
-            })
+        self.marker_cache.map(|x| Ok(x.0)).unwrap_or_else(|| {
+            let r = self.get_marker_and_byte_core()?;
+            self.marker_cache = Some(r);
+            Ok(r.0)
+        })
     }
 
     #[inline]
     fn peek_marker_and_byte(&mut self) -> Result<(Marker, u8)> {
-        self.marker_cache
-            .map(Ok)
-            .unwrap_or_else(|| {
-                let r = self.get_marker_and_byte_core()?;
-                self.marker_cache = Some(r);
-                Ok(r)
-            })
+        self.marker_cache.map(Ok).unwrap_or_else(|| {
+            let r = self.get_marker_and_byte_core()?;
+            self.marker_cache = Some(r);
+            Ok(r)
+        })
     }
 
     #[inline]
@@ -114,9 +116,7 @@ impl<'toy, B> DecoderOps<'toy> for Decoder<B> where B: Reader<'toy> {
                 self.marker_cache = None;
                 Ok(v)
             }
-            None => {
-                self.get_marker_and_byte_core()
-            }
+            None => self.get_marker_and_byte_core(),
         }
     }
 }

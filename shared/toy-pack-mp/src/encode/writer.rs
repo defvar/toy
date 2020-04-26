@@ -1,5 +1,5 @@
-use std::{mem, slice};
 use std::io;
+use std::{mem, slice};
 
 use super::Result;
 
@@ -19,9 +19,7 @@ pub struct IoWriter<W> {
 
 impl<W: io::Write> IoWriter<W> {
     pub fn new(raw: W) -> Self {
-        Self {
-            raw,
-        }
+        Self { raw }
     }
 }
 
@@ -39,9 +37,7 @@ impl<W: io::Write> Writer for IoWriter<W> {
     #[inline]
     fn put_slice<T: Sized>(&mut self, v: &[T]) {
         let s = mem::size_of::<T>() * (*v).len();
-        let bytes = unsafe {
-            slice::from_raw_parts(v.as_ptr() as *const u8, s)
-        };
+        let bytes = unsafe { slice::from_raw_parts(v.as_ptr() as *const u8, s) };
         self.raw.write_all(bytes).unwrap()
     }
 
@@ -49,5 +45,4 @@ impl<W: io::Write> Writer for IoWriter<W> {
     fn put_byte(&mut self, v: u8) -> Result<()> {
         self.raw.write(&[v]).map(|_| Ok(()))?
     }
-
 }

@@ -8,7 +8,8 @@ use super::{Error, SerializeMapOps, SerializeSeqOps, SerializeStructOps};
 ///
 pub trait Serializable {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where S: Serializer;
+    where
+        S: Serializer;
 }
 
 /// The traits for serialization processing.
@@ -18,9 +19,9 @@ pub trait Serializable {
 pub trait Serializer: Sized {
     type Ok;
     type Error: Error;
-    type SeqAccessOps: SerializeSeqOps<Ok=Self::Ok, Error=Self::Error>;
-    type MapAccessOps: SerializeMapOps<Ok=Self::Ok, Error=Self::Error>;
-    type StructAccessOps: SerializeStructOps<Ok=Self::Ok, Error=Self::Error>;
+    type SeqAccessOps: SerializeSeqOps<Ok = Self::Ok, Error = Self::Error>;
+    type MapAccessOps: SerializeMapOps<Ok = Self::Ok, Error = Self::Error>;
+    type StructAccessOps: SerializeStructOps<Ok = Self::Ok, Error = Self::Error>;
 
     /// Serialize a `bool`.
     ///
@@ -88,7 +89,11 @@ pub trait Serializer: Sized {
     /// 構造体のシリアライズを行います。
     /// シリアライズフォーマットの仕様によって、シーケンスだったりマップだったりするでしょう。
     ///
-    fn serialize_struct(self, name: &'static str, len: usize) -> Result<Self::StructAccessOps, Self::Error>;
+    fn serialize_struct(
+        self,
+        name: &'static str,
+        len: usize,
+    ) -> Result<Self::StructAccessOps, Self::Error>;
 
     /// unit variant like `E::A` in `enum E { A, B }`.
     ///
@@ -98,7 +103,12 @@ pub trait Serializer: Sized {
     ///     B,
     /// }
     /// ```
-    fn serialize_unit_variant(self, name: &'static str, idx: u32, variant: &'static str) -> Result<Self::Ok, Self::Error>;
+    fn serialize_unit_variant(
+        self,
+        name: &'static str,
+        idx: u32,
+        variant: &'static str,
+    ) -> Result<Self::Ok, Self::Error>;
 
     /// newtype variant like `E::A(123)` in `enum E { A(u32), B(String), }`
     ///
@@ -115,7 +125,8 @@ pub trait Serializer: Sized {
         variant: &'static str,
         value: &T,
     ) -> Result<Self::Ok, Self::Error>
-        where T: Serializable;
+    where
+        T: Serializable;
 
     /// tuple variant like `E::A(123, 456)` in `enum E { A(u32, u32), B(u32, String), }`
     ///
@@ -137,7 +148,8 @@ pub trait Serializer: Sized {
     ///
     /// [`Some(T)`]: https://doc.rust-lang.org/std/option/enum.Option.html#variant.Some
     fn serialize_some<T: ?Sized>(self, v: &T) -> Result<Self::Ok, Self::Error>
-        where T: Serializable;
+    where
+        T: Serializable;
 
     /// Serialize a [`None`] value.
     ///
@@ -151,8 +163,9 @@ pub trait Serializer: Sized {
     /// デフォルト実装は `serialize_seq` を行います。
     ///
     fn collect_seq<I>(self, iter: I) -> Result<Self::Ok, Self::Error>
-        where I: IntoIterator,
-              I::Item: Serializable,
+    where
+        I: IntoIterator,
+        I::Item: Serializable,
     {
         let iter = iter.into_iter();
         let len = match iter.size_hint() {
@@ -173,9 +186,10 @@ pub trait Serializer: Sized {
     /// デフォルト実装は `serialize_map` を行います。
     ///
     fn collect_map<K, V, I>(self, iter: I) -> Result<Self::Ok, Self::Error>
-        where K: Serializable,
-              V: Serializable,
-              I: IntoIterator<Item=(K, V)>
+    where
+        K: Serializable,
+        V: Serializable,
+        I: IntoIterator<Item = (K, V)>,
     {
         let iter = iter.into_iter();
         let len = match iter.size_hint() {
@@ -191,17 +205,25 @@ pub trait Serializer: Sized {
     }
 }
 
-impl<'a, T: ?Sized> Serializable for &'a T where T: Serializable {
+impl<'a, T: ?Sized> Serializable for &'a T
+where
+    T: Serializable,
+{
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where S: Serializer
+    where
+        S: Serializer,
     {
         (**self).serialize(serializer)
     }
 }
 
-impl<'a, T: ?Sized> Serializable for &'a mut T where T: Serializable {
+impl<'a, T: ?Sized> Serializable for &'a mut T
+where
+    T: Serializable,
+{
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where S: Serializer
+    where
+        S: Serializer,
     {
         (**self).serialize(serializer)
     }

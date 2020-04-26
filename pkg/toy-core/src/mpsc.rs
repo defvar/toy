@@ -6,6 +6,7 @@ pub fn stream<T, Err>(buffer: usize) -> (Outgoing<T, Err>, Incoming<T, Err>) {
     (Outgoing::new(tx), Incoming::new(rx))
 }
 
+#[derive(Debug)]
 pub struct Incoming<T, Err> {
     inner: Receiver<Result<T, Err>>,
 }
@@ -20,6 +21,7 @@ impl<T, Err> Incoming<T, Err> {
     }
 }
 
+#[derive(Debug)]
 pub struct Outgoing<T, Err> {
     inner: Sender<Result<T, Err>>,
 }

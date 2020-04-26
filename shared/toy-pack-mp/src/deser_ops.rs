@@ -1,4 +1,6 @@
-use toy_pack::deser::{Deserializable, DeserializeMapOps, DeserializeSeqOps, DeserializeVariantOps, Visitor};
+use toy_pack::deser::{
+    Deserializable, DeserializeMapOps, DeserializeSeqOps, DeserializeVariantOps, Visitor,
+};
 
 use crate::decode::Reference;
 
@@ -23,12 +25,14 @@ impl<'a, B: 'a> DeserializeCompound<'a, B> {
 }
 
 impl<'toy, 'a, B> DeserializeSeqOps<'toy> for DeserializeCompound<'a, B>
-    where B: Reader<'toy> + 'a,
+where
+    B: Reader<'toy> + 'a,
 {
     type Error = DecodeError;
 
     fn next<T>(&mut self) -> Result<Option<T::Value>, Self::Error>
-        where T: Deserializable<'toy>
+    where
+        T: Deserializable<'toy>,
     {
         if self.remaining > 0 {
             self.remaining -= 1;
@@ -44,24 +48,32 @@ impl<'toy, 'a, B> DeserializeSeqOps<'toy> for DeserializeCompound<'a, B>
 }
 
 impl<'toy, 'a, B> DeserializeMapOps<'toy> for DeserializeCompound<'a, B>
-    where B: Reader<'toy> + 'a,
+where
+    B: Reader<'toy> + 'a,
 {
     type Error = DecodeError;
 
-    fn next_identifier<V>(&mut self, visitor: V) -> Result<Option<V::Value>, Self::Error> where V: Visitor<'toy> {
+    fn next_identifier<V>(&mut self, visitor: V) -> Result<Option<V::Value>, Self::Error>
+    where
+        V: Visitor<'toy>,
+    {
         if self.remaining > 0 {
             self.remaining -= 1;
 
             match self.de.decode_str()? {
                 Reference::Borrowed(b) => visitor.visit_borrowed_str::<DecodeError>(b),
                 Reference::Copied(b) => visitor.visit_str::<DecodeError>(b),
-            }.map(Some)
+            }
+            .map(Some)
         } else {
             Ok(None)
         }
     }
 
-    fn next_key<T>(&mut self) -> Result<Option<T::Value>, Self::Error> where T: Deserializable<'toy> {
+    fn next_key<T>(&mut self) -> Result<Option<T::Value>, Self::Error>
+    where
+        T: Deserializable<'toy>,
+    {
         if self.remaining > 0 {
             self.remaining -= 1;
             T::deserialize(&mut *self.de).map(Some)
@@ -70,7 +82,10 @@ impl<'toy, 'a, B> DeserializeMapOps<'toy> for DeserializeCompound<'a, B>
         }
     }
 
-    fn next_value<T>(&mut self) -> Result<T::Value, Self::Error> where T: Deserializable<'toy> {
+    fn next_value<T>(&mut self) -> Result<T::Value, Self::Error>
+    where
+        T: Deserializable<'toy>,
+    {
         T::deserialize(&mut *self.de)
     }
 
@@ -80,14 +95,19 @@ impl<'toy, 'a, B> DeserializeMapOps<'toy> for DeserializeCompound<'a, B>
 }
 
 impl<'toy, 'a, B> DeserializeVariantOps<'toy> for DeserializeCompound<'a, B>
-    where B: Reader<'toy> + 'a,
+where
+    B: Reader<'toy> + 'a,
 {
     type Error = DecodeError;
 
     fn variant_identifier<V>(self, visitor: V) -> Result<(V::Value, Self), Self::Error>
-        where V: Visitor<'toy>
+    where
+        V: Visitor<'toy>,
     {
-        Ok((visitor.visit_u32::<DecodeError>(self.de.decode_u32()?)?, self))
+        Ok((
+            visitor.visit_u32::<DecodeError>(self.de.decode_u32()?)?,
+            self,
+        ))
     }
 
     fn unit_variant(self) -> Result<(), Self::Error> {
@@ -95,11 +115,17 @@ impl<'toy, 'a, B> DeserializeVariantOps<'toy> for DeserializeCompound<'a, B>
         Ok(())
     }
 
-    fn newtype_variant<T>(self) -> Result<T::Value, Self::Error> where T: Deserializable<'toy> {
+    fn newtype_variant<T>(self) -> Result<T::Value, Self::Error>
+    where
+        T: Deserializable<'toy>,
+    {
         T::deserialize(&mut *self.de)
     }
 
-    fn tuple_variant<V>(self, visitor: V) -> Result<V::Value, Self::Error> where V: Visitor<'toy> {
+    fn tuple_variant<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: Visitor<'toy>,
+    {
         toy_pack::deser::Deserializer::deserialize_seq(self.de, visitor)
     }
 }

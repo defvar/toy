@@ -10,7 +10,7 @@ edition = "2018"
 tokio = { version = "0.2", features = ["sync"] }
 failure = "0.1.6"
 log = "0.4"
-toy-pack = {path = "../../shared/toy-pack"}
+toy-pack = {path = "../../shared/toy-pack", features = ["derive"]}
 indexmap = "1.3.2"
 itoa = "0.4"
 ryu = "1.0"

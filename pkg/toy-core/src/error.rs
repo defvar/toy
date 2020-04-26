@@ -1,5 +1,6 @@
 use std::fmt::Display;
 
+use crate::ServiceType;
 use failure::Fail;
 use std::io;
 use std::str::Utf8Error;
@@ -23,6 +24,9 @@ pub enum ServiceError {
 
     #[fail(display = "error: {:?}", inner)]
     ContextInitFailed { inner: String },
+
+    #[fail(display = "not found service. service_type: {:?}", st)]
+    ServiceNotFound { st: ServiceType },
 }
 
 impl ServiceError {
@@ -42,6 +46,13 @@ impl ServiceError {
         ServiceError::ContextInitFailed {
             inner: msg.to_string(),
         }
+    }
+
+    pub fn service_not_found<T>(st: T) -> ServiceError
+    where
+        ServiceType: From<T>,
+    {
+        ServiceError::ServiceNotFound { st: From::from(st) }
     }
 }
 

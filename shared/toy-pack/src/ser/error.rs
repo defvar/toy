@@ -9,5 +9,7 @@ use failure::Fail;
 /// シリアライズの実装でエラーが発生した場合に利用されます。
 ///
 pub trait Error: Sized + Fail {
-    fn custom<T>(msg: T) -> Self where T: Display;
+    fn custom<T>(msg: T) -> Self
+    where
+        T: Display;
 }

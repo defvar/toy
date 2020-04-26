@@ -9,7 +9,9 @@ pub trait SerializeSeqOps {
 
     type Error: Error;
 
-    fn next<T>(&mut self, value: &T) -> Result<(), Self::Error> where T: Serializable;
+    fn next<T>(&mut self, value: &T) -> Result<(), Self::Error>
+    where
+        T: Serializable;
 
     fn end(self) -> Result<Self::Ok, Self::Error>;
 }
@@ -23,9 +25,13 @@ pub trait SerializeMapOps {
 
     type Error: Error;
 
-    fn next_key<T>(&mut self, key: &T) -> Result<(), Self::Error> where T: Serializable;
+    fn next_key<T>(&mut self, key: &T) -> Result<(), Self::Error>
+    where
+        T: Serializable;
 
-    fn next_value<T>(&mut self, value: &T) -> Result<(), Self::Error> where T: Serializable;
+    fn next_value<T>(&mut self, value: &T) -> Result<(), Self::Error>
+    where
+        T: Serializable;
 
     fn end(self) -> Result<Self::Ok, Self::Error>;
 }
@@ -39,7 +45,9 @@ pub trait SerializeStructOps {
 
     type Error: Error;
 
-    fn field<T: ?Sized>(&mut self, key: &'static str, value: &T) -> Result<(), Self::Error> where T: Serializable;
+    fn field<T: ?Sized>(&mut self, key: &'static str, value: &T) -> Result<(), Self::Error>
+    where
+        T: Serializable;
 
     fn end(self) -> Result<Self::Ok, Self::Error>;
 }

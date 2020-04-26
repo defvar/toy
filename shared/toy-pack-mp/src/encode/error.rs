@@ -11,26 +11,23 @@ use crate::marker::Marker;
 #[derive(Debug, Fail)]
 pub enum EncodeError {
     #[fail(display = "encode error, invalid type: {:?}", inner)]
-    InvalidType {
-        inner: Marker,
-    },
+    InvalidType { inner: Marker },
 
     #[fail(display = "encode error:io error:{:?}", inner)]
-    IOError {
-        inner: io::Error,
-    },
+    IOError { inner: io::Error },
 
     #[fail(display = "encode error:{:?}", inner)]
-    Error {
-        inner: String,
-    },
+    Error { inner: String },
 
     #[fail(display = "encode error: unknown seq length")]
     UnknownSeqLength,
 }
 
 impl EncodeError {
-    pub fn error<T>(msg: T) -> EncodeError where T: Display {
+    pub fn error<T>(msg: T) -> EncodeError
+    where
+        T: Display,
+    {
         EncodeError::Error {
             inner: msg.to_string(),
         }
@@ -48,7 +45,10 @@ impl From<io::Error> for EncodeError {
 }
 
 impl Error for EncodeError {
-    fn custom<T>(msg: T) -> Self where T: Display {
+    fn custom<T>(msg: T) -> Self
+    where
+        T: Display,
+    {
         EncodeError::error(msg)
     }
 }

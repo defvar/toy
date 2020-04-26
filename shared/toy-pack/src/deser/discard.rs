@@ -15,16 +15,23 @@ impl<'a> Visitor<'a> for DiscardVisitor {
     type Value = Discard;
 
     fn visit_some<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
-        where D: Deserializer<'a>
+    where
+        D: Deserializer<'a>,
     {
         Discard::deserialize(deserializer)
     }
 
-    fn visit_none<E>(self) -> Result<Self::Value, E> where E: Error {
+    fn visit_none<E>(self) -> Result<Self::Value, E>
+    where
+        E: Error,
+    {
         Ok(Discard)
     }
 
-    fn visit_unit<E>(self) -> Result<Self::Value, E> where E: Error {
+    fn visit_unit<E>(self) -> Result<Self::Value, E>
+    where
+        E: Error,
+    {
         Ok(Discard)
     }
 }
@@ -33,7 +40,8 @@ impl<'toy: 'a, 'a> Deserializable<'toy> for Discard {
     type Value = Discard;
 
     fn deserialize<D>(deserializer: D) -> Result<Self::Value, D::Error>
-        where D: Deserializer<'toy>
+    where
+        D: Deserializer<'toy>,
     {
         deserializer.discard(DiscardVisitor)
     }

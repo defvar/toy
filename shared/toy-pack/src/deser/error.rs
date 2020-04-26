@@ -9,14 +9,29 @@ use failure::Fail;
 /// デシリアライズの実装でエラーが発生した場合に利用されます。
 ///
 pub trait Error: Sized + Fail {
-    fn custom<T>(msg: T) -> Self where T: Display;
+    fn custom<T>(msg: T) -> Self
+    where
+        T: Display;
 
-    fn invalid_type<T>(expected_type_name: T) -> Self where T: Display {
-        Error::custom(format_args!("invalid type: unexpected {}", expected_type_name))
+    fn invalid_type<T>(expected_type_name: T) -> Self
+    where
+        T: Display,
+    {
+        Error::custom(format_args!(
+            "invalid type: unexpected {}",
+            expected_type_name
+        ))
     }
 
-    fn invalid_value<T, T2>(unexpected: T, expected: T2) -> Self where T: Display, T2: Display {
-        Error::custom(format_args!("invalid value: {}, expected {}", unexpected, expected))
+    fn invalid_value<T, T2>(unexpected: T, expected: T2) -> Self
+    where
+        T: Display,
+        T2: Display,
+    {
+        Error::custom(format_args!(
+            "invalid value: {}, expected {}",
+            unexpected, expected
+        ))
     }
 
     fn invalid_length(len: usize) -> Self {

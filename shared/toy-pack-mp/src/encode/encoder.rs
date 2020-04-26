@@ -8,13 +8,14 @@ pub struct Encoder<W> {
 
 impl<W> Encoder<W> {
     pub fn new(writer: W) -> Encoder<W> {
-        Encoder {
-            writer,
-        }
+        Encoder { writer }
     }
 }
 
-impl<W> EncoderOps for Encoder<W> where W: Writer {
+impl<W> EncoderOps for Encoder<W>
+where
+    W: Writer,
+{
     #[inline]
     fn remaining(&self) -> usize {
         self.writer.remaining()

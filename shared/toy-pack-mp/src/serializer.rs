@@ -3,7 +3,10 @@ use toy_pack::ser::{Serializable, Serializer};
 use super::encode::{EncodeError, Encoder, EncoderOps, Writer};
 use super::ser_ops::SerializeCompound;
 
-impl<'a, W> Serializer for &'a mut Encoder<W> where W: Writer {
+impl<'a, W> Serializer for &'a mut Encoder<W>
+where
+    W: Writer,
+{
     type Ok = ();
     type Error = EncodeError;
     type SeqAccessOps = SerializeCompound<'a, W>;
@@ -102,21 +105,37 @@ impl<'a, W> Serializer for &'a mut Encoder<W> where W: Writer {
     }
 
     #[inline]
-    fn serialize_struct(self, _name: &'static str, len: usize) -> Result<Self::StructAccessOps, Self::Error> {
+    fn serialize_struct(
+        self,
+        _name: &'static str,
+        len: usize,
+    ) -> Result<Self::StructAccessOps, Self::Error> {
         self.encode_array_len(len as u32)?;
         Ok(SerializeCompound::new(self))
     }
 
     #[inline]
-    fn serialize_unit_variant(self, _name: &'static str, idx: u32, _variant: &'static str) -> Result<Self::Ok, Self::Error> {
+    fn serialize_unit_variant(
+        self,
+        _name: &'static str,
+        idx: u32,
+        _variant: &'static str,
+    ) -> Result<Self::Ok, Self::Error> {
         self.encode_map_len(1)?;
         self.encode_u32(idx)?;
         self.encode_nil().map_err(Into::into)
     }
 
     #[inline]
-    fn serialize_newtype_variant<T: ?Sized>(self, _name: &'static str, idx: u32, _variant: &'static str, value: &T) -> Result<Self::Ok, Self::Error>
-        where T: Serializable
+    fn serialize_newtype_variant<T: ?Sized>(
+        self,
+        _name: &'static str,
+        idx: u32,
+        _variant: &'static str,
+        value: &T,
+    ) -> Result<Self::Ok, Self::Error>
+    where
+        T: Serializable,
     {
         self.encode_map_len(1)?;
         self.encode_u32(idx)?;
@@ -124,14 +143,23 @@ impl<'a, W> Serializer for &'a mut Encoder<W> where W: Writer {
     }
 
     #[inline]
-    fn serialize_tuple_variant(self, _name: &'static str, idx: u32, _variant: &'static str, len: usize) -> Result<Self::SeqAccessOps, Self::Error> {
+    fn serialize_tuple_variant(
+        self,
+        _name: &'static str,
+        idx: u32,
+        _variant: &'static str,
+        len: usize,
+    ) -> Result<Self::SeqAccessOps, Self::Error> {
         self.encode_map_len(1)?;
         self.encode_u32(idx)?;
         self.serialize_seq(Some(len))
     }
 
     #[inline]
-    fn serialize_some<T: ?Sized>(self, v: &T) -> Result<Self::Ok, Self::Error> where T: Serializable {
+    fn serialize_some<T: ?Sized>(self, v: &T) -> Result<Self::Ok, Self::Error>
+    where
+        T: Serializable,
+    {
         v.serialize(self)
     }
 

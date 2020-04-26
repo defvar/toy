@@ -161,7 +161,8 @@ fn collect_lifetimes(ty: &syn::Type, out: &mut BTreeSet<syn::Lifetime>) {
                             syn::GenericArgument::Binding(ref binding) => {
                                 collect_lifetimes(&binding.ty, out);
                             }
-                            syn::GenericArgument::Constraint(_) | syn::GenericArgument::Const(_) => {}
+                            syn::GenericArgument::Constraint(_)
+                            | syn::GenericArgument::Const(_) => {}
                         }
                     }
                 }
@@ -194,7 +195,10 @@ fn get_meta_items(attr: &Attribute) -> Option<Vec<NestedMeta>> {
     }
 }
 
-fn parse_lit_into_expr_path(attr_name: &syn::Ident, lit: &syn::Lit) -> Result<syn::ExprPath, syn::Error> {
+fn parse_lit_into_expr_path(
+    attr_name: &syn::Ident,
+    lit: &syn::Lit,
+) -> Result<syn::ExprPath, syn::Error> {
     let string = get_lit_str(attr_name, lit)?;
     parse_lit_str(string)
 }
@@ -203,10 +207,21 @@ fn parse_lit_into_lit(attr_name: &syn::Ident, lit: &syn::Lit) -> Result<syn::Lit
     match *lit {
         syn::Lit::Str(ref v) => Ok(syn::Lit::Str(syn::LitStr::new(&v.value(), v.span()))),
         syn::Lit::Byte(ref v) => Ok(syn::Lit::Byte(syn::LitByte::new(v.value(), v.span()))),
-        syn::Lit::ByteStr(ref v) => Ok(syn::Lit::ByteStr(syn::LitByteStr::new(&v.value(), v.span()))),
+        syn::Lit::ByteStr(ref v) => Ok(syn::Lit::ByteStr(syn::LitByteStr::new(
+            &v.value(),
+            v.span(),
+        ))),
         syn::Lit::Char(ref v) => Ok(syn::Lit::Char(syn::LitChar::new(v.value(), v.span()))),
-        syn::Lit::Int(ref v) => Ok(syn::Lit::Int(syn::LitInt::new(v.value(), v.suffix(), v.span()))),
-        syn::Lit::Float(ref v) => Ok(syn::Lit::Float(syn::LitFloat::new(v.value(), v.suffix(), v.span()))),
+        syn::Lit::Int(ref v) => Ok(syn::Lit::Int(syn::LitInt::new(
+            v.value(),
+            v.suffix(),
+            v.span(),
+        ))),
+        syn::Lit::Float(ref v) => Ok(syn::Lit::Float(syn::LitFloat::new(
+            v.value(),
+            v.suffix(),
+            v.span(),
+        ))),
         syn::Lit::Bool(ref v) => Ok(syn::Lit::Bool(syn::LitBool {
             value: v.value,
             span: v.span,
@@ -221,7 +236,10 @@ fn parse_lit_into_lit(attr_name: &syn::Ident, lit: &syn::Lit) -> Result<syn::Lit
     }
 }
 
-fn get_lit_str<'a>(attr_name: &syn::Ident, lit: &'a syn::Lit) -> Result<&'a syn::LitStr, syn::Error> {
+fn get_lit_str<'a>(
+    attr_name: &syn::Ident,
+    lit: &'a syn::Lit,
+) -> Result<&'a syn::LitStr, syn::Error> {
     if let syn::Lit::Str(ref lit) = *lit {
         Ok(lit)
     } else {
@@ -246,7 +264,10 @@ fn spanned_tokens(s: &syn::LitStr) -> parse::Result<TokenStream> {
 }
 
 fn respan_token_stream(stream: TokenStream, span: Span) -> TokenStream {
-    stream.into_iter().map(|token| respan_token_tree(token, span)).collect()
+    stream
+        .into_iter()
+        .map(|token| respan_token_tree(token, span))
+        .collect()
 }
 
 fn respan_token_tree(mut token: TokenTree, span: Span) -> TokenTree {

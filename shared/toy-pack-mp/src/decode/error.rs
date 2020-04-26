@@ -12,31 +12,26 @@ use crate::marker::Marker;
 #[derive(Debug, Fail)]
 pub enum DecodeError {
     #[fail(display = "decode error:invalid type. decoded marker:{:?}", inner)]
-    InvalidType {
-        inner: Marker,
-    },
+    InvalidType { inner: Marker },
 
     #[fail(display = "decode error:num value out of range.")]
     OutOfRange,
 
     #[fail(display = "decode error:invalid utf8 sequence. sequence:{:?}", inner)]
-    Utf8Error {
-        inner: Utf8Error,
-    },
+    Utf8Error { inner: Utf8Error },
 
     #[fail(display = "decode error:io error:{:?}", inner)]
-    IOError {
-        inner: io::Error,
-    },
+    IOError { inner: io::Error },
 
     #[fail(display = "decode error: {:?}", inner)]
-    Error {
-        inner: String,
-    },
+    Error { inner: String },
 }
 
 impl DecodeError {
-    pub fn error<T>(msg: T) -> DecodeError where T: Display {
+    pub fn error<T>(msg: T) -> DecodeError
+    where
+        T: Display,
+    {
         DecodeError::Error {
             inner: msg.to_string(),
         }
@@ -62,7 +57,10 @@ impl From<io::Error> for DecodeError {
 }
 
 impl Error for DecodeError {
-    fn custom<T>(msg: T) -> Self where T: Display {
+    fn custom<T>(msg: T) -> Self
+    where
+        T: Display,
+    {
         DecodeError::error(msg)
     }
 }

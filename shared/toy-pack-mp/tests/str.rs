@@ -7,11 +7,9 @@ fn string_values() {
         ("a".repeat(30), 30 + 1),
         ("a".repeat(31), 31 + 1),
         ("a".repeat(32), 32 + 2),
-
         ("a".repeat(255), 255 + 2),
         ("a".repeat(256), 256 + 3),
         ("a".repeat(257), 257 + 3),
-
         ("a".repeat(65535), 65535 + 3),
         ("a".repeat(65536), 65536 + 5),
         ("a".repeat(65537), 65537 + 5),

@@ -89,7 +89,10 @@ impl<R: io::Read> IoReader<R> {
     }
 }
 
-impl<'toy, R> Reader<'toy> for IoReader<R> where R: io::Read {
+impl<'toy, R> Reader<'toy> for IoReader<R>
+where
+    R: io::Read,
+{
     #[inline]
     fn remaining(&self) -> usize {
         usize::max_value()
@@ -118,7 +121,7 @@ impl<'toy, R> Reader<'toy> for IoReader<R> where R: io::Read {
             match self.raw.read(&mut r) {
                 Ok(0) => break,
                 Ok(_) => (),
-                Err(e) => return Err(e.into())
+                Err(e) => return Err(e.into()),
             }
         }
         Ok(())

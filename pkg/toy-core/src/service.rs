@@ -1,4 +1,4 @@
-use crate::channel::Outgoing;
+use crate::mpsc::Outgoing;
 use crate::service_type::ServiceType;
 use log::warn;
 use std::any;
@@ -242,6 +242,10 @@ impl ServiceFactory for NoopServiceFactory {
 
 pub fn ok<T, E>(t: T) -> Ready<Result<T, E>> {
     Ready(Some(Ok(t)))
+}
+
+pub fn ready<T>(t: T) -> Ready<T> {
+    Ready(Some(t))
 }
 
 #[derive(Debug, Clone)]
