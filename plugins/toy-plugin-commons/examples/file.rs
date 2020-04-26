@@ -34,8 +34,8 @@ async fn go(graph: Graph) -> Result<(), ServiceError> {
         pool: ThreadPool::new().unwrap(),
     };
 
-    let e = Executor::new(rt, graph);
-    let _ = e.run(c, Frame::default()).await;
+    let e = Executor::new(&rt, graph);
+    let _ = e.run(&c, Frame::default()).await;
 
     Ok(())
 }
