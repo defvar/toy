@@ -1,7 +1,7 @@
 use crate::data::Frame;
 use crate::error::{Error, ServiceError};
 use crate::executor::ServiceExecutor;
-use crate::service::{Service, ServiceFactory};
+use crate::service::ServiceFactory;
 use crate::service_type::ServiceType;
 use crate::service_uri::Uri;
 use std::fmt::{self, Debug};
@@ -105,9 +105,7 @@ where
         + Send
         + Sync
         + 'static,
-    R::Future: Send + 'static,
     R::Service: Send,
-    <<R as ServiceFactory>::Service as Service>::Future: Send + 'static,
     R::Context: Send,
     R::Config: DeserializableOwned<Value = R::Config> + Send,
 {
@@ -141,9 +139,7 @@ where
         + Send
         + Sync
         + 'static,
-    R::Future: Send + 'static,
     R::Service: Send,
-    <<R as ServiceFactory>::Service as Service>::Future: Send + 'static,
     R::Context: Send,
     R::Config: DeserializableOwned<Value = R::Config> + Send,
 {

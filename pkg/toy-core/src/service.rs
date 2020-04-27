@@ -11,7 +11,7 @@ use std::task::{Context, Poll};
 pub fn fn_service<F, Ctx, Req, Fut, Err>(tp: ServiceType, f: F) -> FnService<F, Ctx, Req, Fut, Err>
 where
     F: FnMut(Ctx, Req, Outgoing<Req, Err>) -> Fut,
-    Fut: Future<Output = Result<Ctx, Err>>,
+    Fut: Future<Output = Result<Ctx, Err>> + Send,
 {
     FnService {
         tp,
@@ -26,7 +26,7 @@ pub fn fn_service_factory<F, Fut, S, InitErr, CtxF, Cfg>(
 ) -> FnServiceFactory<F, Fut, S, InitErr, CtxF, Cfg>
 where
     F: Fn(ServiceType) -> Fut,
-    Fut: Future<Output = Result<S, InitErr>>,
+    Fut: Future<Output = Result<S, InitErr>> + Send,
     S: Service,
     CtxF: Fn(ServiceType, Cfg) -> Result<S::Context, InitErr>,
 {
@@ -38,7 +38,7 @@ where
 }
 
 pub trait ServiceFactory {
-    type Future: Future<Output = Result<Self::Service, Self::InitError>>;
+    type Future: Future<Output = Result<Self::Service, Self::InitError>> + Send;
     type Service: Service<Request = Self::Request, Error = Self::Error, Context = Self::Context>;
     type Context;
     type Config;
@@ -58,7 +58,7 @@ pub trait ServiceFactory {
 pub trait Service {
     type Context;
     type Request;
-    type Future: Future<Output = Result<Self::Context, Self::Error>>;
+    type Future: Future<Output = Result<Self::Context, Self::Error>> + Send;
     type Error;
 
     fn handle(
@@ -80,7 +80,7 @@ pub trait Service {
 pub struct FnService<F, Ctx, Req, Fut, Err>
 where
     F: FnMut(Ctx, Req, Outgoing<Req, Err>) -> Fut,
-    Fut: Future<Output = Result<Ctx, Err>>,
+    Fut: Future<Output = Result<Ctx, Err>> + Send,
 {
     tp: ServiceType,
     f: F,
@@ -90,7 +90,7 @@ where
 impl<F, Ctx, Req, Fut, Err> Service for FnService<F, Ctx, Req, Fut, Err>
 where
     F: FnMut(Ctx, Req, Outgoing<Req, Err>) -> Fut,
-    Fut: Future<Output = Result<Ctx, Err>>,
+    Fut: Future<Output = Result<Ctx, Err>> + Send,
 {
     type Context = Ctx;
     type Request = Req;
@@ -110,7 +110,7 @@ where
 impl<F, Ctx, Req, Fut, Err> Debug for FnService<F, Ctx, Req, Fut, Err>
 where
     F: FnMut(Ctx, Req, Outgoing<Req, Err>) -> Fut,
-    Fut: Future<Output = Result<Ctx, Err>>,
+    Fut: Future<Output = Result<Ctx, Err>> + Send,
 {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), Error> {
         write!(f, "FnService {{ service_type:{:?} }}", self.tp)
@@ -120,7 +120,7 @@ where
 pub struct FnServiceFactory<F, Fut, S, InitErr, CtxF, Cfg>
 where
     F: Fn(ServiceType) -> Fut,
-    Fut: Future<Output = Result<S, InitErr>>,
+    Fut: Future<Output = Result<S, InitErr>> + Send,
     S: Service,
     CtxF: Fn(ServiceType, Cfg) -> Result<S::Context, InitErr>,
 {
@@ -133,7 +133,7 @@ impl<F, Fut, S, InitErr, CtxF, Cfg> ServiceFactory
     for FnServiceFactory<F, Fut, S, InitErr, CtxF, Cfg>
 where
     F: Fn(ServiceType) -> Fut,
-    Fut: Future<Output = Result<S, InitErr>>,
+    Fut: Future<Output = Result<S, InitErr>> + Send,
     S: Service,
     CtxF: Fn(ServiceType, Cfg) -> Result<S::Context, InitErr>,
 {
@@ -161,7 +161,7 @@ where
 impl<F, Fut, S, InitErr, CtxF, Cfg> Clone for FnServiceFactory<F, Fut, S, InitErr, CtxF, Cfg>
 where
     F: Fn(ServiceType) -> Fut + Clone,
-    Fut: Future<Output = Result<S, InitErr>>,
+    Fut: Future<Output = Result<S, InitErr>> + Send,
     S: Service,
     CtxF: Fn(ServiceType, Cfg) -> Result<S::Context, InitErr> + Clone,
 {
@@ -177,7 +177,7 @@ where
 impl<F, Fut, S, InitErr, CtxF, Cfg> Debug for FnServiceFactory<F, Fut, S, InitErr, CtxF, Cfg>
 where
     F: Fn(ServiceType) -> Fut + Clone,
-    Fut: Future<Output = Result<S, InitErr>>,
+    Fut: Future<Output = Result<S, InitErr>> + Send,
     S: Service,
     CtxF: Fn(ServiceType, Cfg) -> Result<S::Context, InitErr>,
 {

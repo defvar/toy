@@ -5,7 +5,7 @@ use crate::graph::Graph;
 use crate::mpsc::{self, Incoming, Outgoing};
 use crate::oneshot;
 use crate::registry::{Delegator, ServiceSet};
-use crate::service::{Service, ServiceFactory};
+use crate::service::ServiceFactory;
 use crate::ServiceType;
 use toy_pack::deser::DeserializableOwned;
 
@@ -47,9 +47,7 @@ where
         + Send
         + Sync
         + 'static,
-    R::Future: Send + 'static,
     R::Service: Send,
-    <<R as ServiceFactory>::Service as Service>::Future: Send + 'static,
     R::Context: Send,
     R::Config: DeserializableOwned<Value = R::Config> + Send,
 {

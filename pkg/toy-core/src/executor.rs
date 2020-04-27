@@ -36,9 +36,7 @@ pub trait ServiceExecutor {
             > + Send
             + Sync
             + 'static,
-        F::Future: Send + 'static,
         F::Service: Send,
-        <<F as ServiceFactory>::Service as Service>::Future: Send + 'static,
         F::Context: Send,
         F::Config: DeserializableOwned<Value = F::Config> + Send;
 }
@@ -182,9 +180,7 @@ where
             > + Send
             + Sync
             + 'static,
-        F::Future: Send + 'static,
         F::Service: Send,
-        <<F as ServiceFactory>::Service as Service>::Future: Send + 'static,
         F::Context: Send,
         F::Config: DeserializableOwned<Value = F::Config> + Send,
     {
