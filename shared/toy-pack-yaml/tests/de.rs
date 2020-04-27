@@ -22,6 +22,22 @@ First"#;
 }
 
 #[test]
+fn tuple_variant() {
+    #[derive(Pack, UnPack, PartialEq, Debug)]
+    enum Variant {
+        One(u32),
+        Two(u32, u32),
+    }
+    let v = "
+Two:
+  - 1
+  - 2
+";
+    let r = toy_pack_yaml::unpack::<Variant>(v).unwrap();
+    assert_eq!(r, Variant::Two(1, 2));
+}
+
+#[test]
 fn nested_struct() {
     #[derive(Debug, UnPack, PartialEq, Default)]
     struct Outer {

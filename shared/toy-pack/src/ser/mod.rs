@@ -1,7 +1,9 @@
 //! Data structure serialization api.
 
 pub use self::error::Error;
-pub use self::ser_ops::{SerializeMapOps, SerializeSeqOps, SerializeStructOps};
+pub use self::ser_ops::{
+    SerializeMapOps, SerializeSeqOps, SerializeStructOps, SerializeTupleVariantOps,
+};
 pub use self::serializer::{Serializable, Serializer};
 
 mod error;

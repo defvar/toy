@@ -92,6 +92,12 @@ impl<'toy, 'a> DeserializeVariantOps<'toy> for DeserializeCompound<'a> {
     where
         V: Visitor<'toy>,
     {
+        match *self.de.peek()?.0 {
+            Event::MappingStart => {
+                self.de.next()?; //consume
+            }
+            _ => (),
+        };
         Ok((
             visitor.visit_str::<YamlError>(self.de.decode_string()?.as_str())?,
             self,

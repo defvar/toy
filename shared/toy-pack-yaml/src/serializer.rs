@@ -1,5 +1,5 @@
 use crate::error::YamlError;
-use crate::ser_ops::{SerializeArray, SerializeHash};
+use crate::ser_ops::{SerializeArray, SerializeHash, SerializeTupleVariant};
 use core::num;
 use toy_pack::ser::{Serializable, Serializer};
 use yaml_rust::{yaml, Yaml};
@@ -12,6 +12,7 @@ impl Serializer for Ser {
     type SeqAccessOps = SerializeArray;
     type MapAccessOps = SerializeHash;
     type StructAccessOps = SerializeHash;
+    type TupleVariantOps = SerializeTupleVariant;
 
     fn serialize_bool(self, v: bool) -> Result<Self::Ok, Self::Error> {
         Ok(Yaml::Boolean(v))
@@ -117,11 +118,10 @@ impl Serializer for Ser {
         self,
         _name: &'static str,
         _idx: u32,
-        _variant: &'static str,
-        _len: usize,
-    ) -> Result<Self::SeqAccessOps, Self::Error> {
-        //TODO: need tuple variant ops ..... not enough SeqAccessOps.
-        unimplemented!()
+        variant: &'static str,
+        len: usize,
+    ) -> Result<Self::TupleVariantOps, Self::Error> {
+        Ok(SerializeTupleVariant::new(variant, len))
     }
 
     fn serialize_some<T: ?Sized>(self, v: &T) -> Result<Self::Ok, Self::Error>

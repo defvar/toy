@@ -1,5 +1,6 @@
 use core::time::Duration;
 use toy_core::data::{self, Map, Value};
+use toy_core::{map_value, seq_value};
 use toy_pack_derive::*;
 
 macro_rules! pass_de_integer {
@@ -37,8 +38,22 @@ fn de_timestamp() {
 }
 
 #[test]
+fn de_tuple_variant() {
+    #[derive(Pack, UnPack, PartialEq, Debug)]
+    enum Variant {
+        One(u32),
+        Two(u32, u32),
+    }
+    let v = map_value! {
+        "Two" => seq_value! [1u32, 2u32],
+    };
+    let r = data::unpack::<Variant>(v).unwrap();
+    assert_eq!(r, Variant::Two(1, 2));
+}
+
+#[test]
 fn de_struct() {
-    let src = Dum {
+    let expected = Dum {
         v_u8: 8,
         v_u16: 16,
         v_u32: 32,
@@ -55,7 +70,7 @@ fn de_struct() {
 
     // inner struct
     let mut inner = Map::new();
-    inner.insert("v_u8".to_string(), Value::from(src.inner.v_u8));
+    inner.insert("v_u8".to_string(), Value::from(expected.inner.v_u8));
 
     // enum
     let mut terminator = Map::new();
@@ -63,22 +78,22 @@ fn de_struct() {
 
     // struct
     let mut map = Map::new();
-    map.insert("v_u8".to_string(), Value::from(src.v_u8));
-    map.insert("v_u16".to_string(), Value::from(src.v_u16));
-    map.insert("v_u32".to_string(), Value::from(src.v_u32));
-    map.insert("v_u64".to_string(), Value::from(src.v_u64));
-    map.insert("v_i8_opt".to_string(), Value::from(src.v_i8_opt));
-    map.insert("v_f32".to_string(), Value::from(src.v_f32));
-    map.insert("v_f64".to_string(), Value::from(src.v_f64));
-    map.insert("name".to_string(), Value::from(src.name.clone()));
-    map.insert("vec".to_string(), Value::from(src.vec.clone()));
+    map.insert("v_u8".to_string(), Value::from(expected.v_u8));
+    map.insert("v_u16".to_string(), Value::from(expected.v_u16));
+    map.insert("v_u32".to_string(), Value::from(expected.v_u32));
+    map.insert("v_u64".to_string(), Value::from(expected.v_u64));
+    map.insert("v_i8_opt".to_string(), Value::from(expected.v_i8_opt));
+    map.insert("v_f32".to_string(), Value::from(expected.v_f32));
+    map.insert("v_f64".to_string(), Value::from(expected.v_f64));
+    map.insert("name".to_string(), Value::from(expected.name.clone()));
+    map.insert("vec".to_string(), Value::from(expected.vec.clone()));
     map.insert("inner".to_string(), Value::from(inner.clone()));
     map.insert("terminator".to_string(), Value::from(terminator));
     map.insert("terminator_from_str".to_string(), Value::from("CRLF"));
 
     let v = Value::from(map);
-    let dest = data::unpack::<Dum>(v).unwrap();
-    assert_eq!(src, dest);
+    let v = data::unpack::<Dum>(v).unwrap();
+    assert_eq!(v, expected);
 }
 
 #[derive(Debug, PartialEq, UnPack)]

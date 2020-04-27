@@ -74,6 +74,22 @@ Size: 127"#;
 }
 
 #[test]
+fn tuple_variant() {
+    #[derive(Pack, UnPack, PartialEq, Debug)]
+    enum Variant {
+        One(u32),
+        Two(u32, u32),
+    }
+    let v = Variant::Two(1, 2);
+    let r = toy_pack_yaml::pack_to_string(v).unwrap();
+    let expected = r#"---
+Two:
+  - 1
+  - 2"#;
+    assert_eq!(r, expected);
+}
+
+#[test]
 fn nested_struct() {
     #[derive(Pack, UnPack, PartialEq, Debug)]
     struct Outer {

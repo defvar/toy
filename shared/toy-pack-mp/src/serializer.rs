@@ -1,7 +1,7 @@
 use toy_pack::ser::{Serializable, Serializer};
 
 use super::encode::{EncodeError, Encoder, EncoderOps, Writer};
-use super::ser_ops::SerializeCompound;
+use crate::ser_ops::{SerializeCompound, SerializeTupleVariant};
 
 impl<'a, W> Serializer for &'a mut Encoder<W>
 where
@@ -12,6 +12,7 @@ where
     type SeqAccessOps = SerializeCompound<'a, W>;
     type MapAccessOps = SerializeCompound<'a, W>;
     type StructAccessOps = SerializeCompound<'a, W>;
+    type TupleVariantOps = SerializeTupleVariant<'a, W>;
 
     #[inline]
     fn serialize_bool(self, v: bool) -> Result<Self::Ok, Self::Error> {
@@ -137,6 +138,7 @@ where
     where
         T: Serializable,
     {
+        // map { key: variant_idx, value: variant_value }
         self.encode_map_len(1)?;
         self.encode_u32(idx)?;
         value.serialize(self)
@@ -149,10 +151,12 @@ where
         idx: u32,
         _variant: &'static str,
         len: usize,
-    ) -> Result<Self::SeqAccessOps, Self::Error> {
+    ) -> Result<Self::TupleVariantOps, Self::Error> {
+        // map { key: variant_idx, value: [variant_values_array] }
         self.encode_map_len(1)?;
         self.encode_u32(idx)?;
-        self.serialize_seq(Some(len))
+        self.encode_array_len(len as u32)?;
+        Ok(SerializeTupleVariant::new(self))
     }
 
     #[inline]

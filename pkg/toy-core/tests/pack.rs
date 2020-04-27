@@ -3,6 +3,21 @@ use toy_core::{map_value, seq_value};
 use toy_pack_derive::*;
 
 #[test]
+fn ser_tuple_variant() {
+    #[derive(Pack, UnPack, PartialEq, Debug)]
+    enum Variant {
+        One(u32),
+        Two(u32, u32),
+    }
+    let v = Variant::Two(1, 2);
+    let r = data::pack(v).unwrap();
+    let expected = map_value! {
+        "Two" => seq_value! [1u32, 2u32],
+    };
+    assert_eq!(r, expected);
+}
+
+#[test]
 fn ser_struct() {
     let src = Dum {
         v_u8: 8,

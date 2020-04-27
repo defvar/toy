@@ -1,4 +1,5 @@
 use super::{Error, SerializeMapOps, SerializeSeqOps, SerializeStructOps};
+use crate::ser::SerializeTupleVariantOps;
 
 /// The traits that the serializable data structure implements.
 /// Several primitive types "impl" are provided by default.
@@ -22,6 +23,7 @@ pub trait Serializer: Sized {
     type SeqAccessOps: SerializeSeqOps<Ok = Self::Ok, Error = Self::Error>;
     type MapAccessOps: SerializeMapOps<Ok = Self::Ok, Error = Self::Error>;
     type StructAccessOps: SerializeStructOps<Ok = Self::Ok, Error = Self::Error>;
+    type TupleVariantOps: SerializeTupleVariantOps<Ok = Self::Ok, Error = Self::Error>;
 
     /// Serialize a `bool`.
     ///
@@ -142,7 +144,7 @@ pub trait Serializer: Sized {
         idx: u32,
         variant: &'static str,
         len: usize,
-    ) -> Result<Self::SeqAccessOps, Self::Error>;
+    ) -> Result<Self::TupleVariantOps, Self::Error>;
 
     /// Serialize a [`Some(T)`] value.
     ///

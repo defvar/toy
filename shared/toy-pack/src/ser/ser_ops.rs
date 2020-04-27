@@ -51,3 +51,17 @@ pub trait SerializeStructOps {
 
     fn end(self) -> Result<Self::Ok, Self::Error>;
 }
+
+/// Provides access to each element of a tuple variant to output.
+///
+pub trait SerializeTupleVariantOps {
+    type Ok;
+
+    type Error: Error;
+
+    fn next<T>(&mut self, value: &T) -> Result<(), Self::Error>
+    where
+        T: Serializable;
+
+    fn end(self) -> Result<Self::Ok, Self::Error>;
+}

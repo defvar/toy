@@ -1,7 +1,8 @@
 use crate::data::error::SerializeError;
 use crate::data::{Map, Value};
 use toy_pack::ser::{
-    Serializable, SerializeMapOps, SerializeSeqOps, SerializeStructOps, Serializer,
+    Serializable, SerializeMapOps, SerializeSeqOps, SerializeStructOps, SerializeTupleVariantOps,
+    Serializer,
 };
 
 /// Serialize to `Value`
@@ -77,6 +78,7 @@ impl<'a> Serializer for &'a mut Value {
     type SeqAccessOps = SerializeCompound<'a>;
     type MapAccessOps = SerializeCompound<'a>;
     type StructAccessOps = SerializeCompound<'a>;
+    type TupleVariantOps = SerializeTupleVariant<'a>;
 
     fn serialize_bool(self, v: bool) -> Result<Self::Ok, Self::Error> {
         *self = Value::from(v);
@@ -190,11 +192,10 @@ impl<'a> Serializer for &'a mut Value {
         self,
         _name: &'static str,
         _idx: u32,
-        _variant: &'static str,
-        _len: usize,
-    ) -> Result<Self::SeqAccessOps, Self::Error> {
-        //TODO: need tuple variant ops .....
-        unimplemented!()
+        variant: &'static str,
+        len: usize,
+    ) -> Result<Self::TupleVariantOps, Self::Error> {
+        Ok(SerializeTupleVariant::new(self, variant, len))
     }
 
     fn serialize_some<T: ?Sized>(self, v: &T) -> Result<Self::Ok, Self::Error>
@@ -221,11 +222,29 @@ pub struct SerializeCompound<'a> {
     len: Option<usize>,
 }
 
+pub struct SerializeTupleVariant<'a> {
+    ser: &'a mut Value,
+    name: &'static str,
+    len: usize,
+    seq: Value,
+}
+
 impl<'a> SerializeCompound<'a> {
     pub fn new(ser: &'a mut Value, len: Option<usize>) -> Self {
         Self {
             ser,
             key: None,
+            len,
+        }
+    }
+}
+
+impl<'a> SerializeTupleVariant<'a> {
+    pub fn new(ser: &'a mut Value, name: &'static str, len: usize) -> Self {
+        Self {
+            ser,
+            name,
+            seq: Value::default(),
             len,
         }
     }
@@ -247,10 +266,7 @@ impl<'a> SerializeSeqOps for SerializeCompound<'a> {
                 seq.push(buf);
             }
             _ => {
-                let size = self.len.unwrap_or(0);
-                let mut vec = Vec::with_capacity(size);
-                vec.push(buf);
-                *self.ser = Value::from(vec);
+                *self.ser = default_seq(buf, self.len);
             }
         }
         Ok(())
@@ -346,4 +362,38 @@ impl<'a> SerializeStructOps for SerializeCompound<'a> {
     fn end(self) -> Result<Self::Ok, Self::Error> {
         Ok(())
     }
+}
+
+impl<'a> SerializeTupleVariantOps for SerializeTupleVariant<'a> {
+    type Ok = ();
+    type Error = SerializeError;
+
+    fn next<T>(&mut self, value: &T) -> Result<(), Self::Error>
+    where
+        T: Serializable,
+    {
+        let mut buf = Value::default();
+        value.serialize(&mut buf)?;
+        match self.seq {
+            Value::Seq(ref mut seq) => {
+                seq.push(buf);
+            }
+            _ => self.seq = default_seq(buf, Some(self.len)),
+        }
+        Ok(())
+    }
+
+    fn end(self) -> Result<Self::Ok, Self::Error> {
+        let mut map = Map::new();
+        map.insert(self.name.to_string(), self.seq);
+        *self.ser = Value::from(map);
+        Ok(())
+    }
+}
+
+fn default_seq(v: Value, len: Option<usize>) -> Value {
+    let size = len.unwrap_or(0);
+    let mut vec = Vec::with_capacity(size);
+    vec.push(v);
+    Value::from(vec)
 }

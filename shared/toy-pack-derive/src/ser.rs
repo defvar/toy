@@ -37,6 +37,7 @@ pub fn derive_pack_core(input: DeriveInput) -> Result<TokenStream, Vec<syn::Erro
             use toy_pack::ser as __ser;
             use toy_pack::ser::SerializeSeqOps as __SerializeSeqOps;
             use toy_pack::ser::SerializeStructOps as __SerializeStructOps;
+            use toy_pack::ser::SerializeTupleVariantOps as __SerializeTupleVariantOps;
 
             #impl_block
         };
