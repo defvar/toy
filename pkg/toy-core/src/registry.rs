@@ -107,7 +107,7 @@ where
         + 'static,
     R::Service: Send,
     R::Context: Send,
-    R::Config: DeserializableOwned<Value = R::Config> + Send,
+    R::Config: DeserializableOwned + Send,
 {
     type Request = Frame;
     type Error = ServiceError;
@@ -141,7 +141,7 @@ where
         + 'static,
     R::Service: Send,
     R::Context: Send,
-    R::Config: DeserializableOwned<Value = R::Config> + Send,
+    R::Config: DeserializableOwned + Send,
 {
     type Request = Frame;
     type Error = ServiceError;

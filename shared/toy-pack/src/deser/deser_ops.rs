@@ -1,4 +1,6 @@
 use super::{Deserializable, Error, Visitor};
+use crate::deser::DeserializableCore;
+use failure::_core::marker::PhantomData;
 
 /// Provides a `Visitor` access to each element of a sequence in the input.
 ///
@@ -9,9 +11,19 @@ pub trait DeserializeSeqOps<'toy> {
 
     /// Returns for the next value in the sequence.
     ///
-    fn next<T>(&mut self) -> Result<Option<T::Value>, Self::Error>
+    fn next_core<T>(&mut self, core: T) -> Result<Option<T::Value>, Self::Error>
     where
-        T: Deserializable<'toy>;
+        T: DeserializableCore<'toy>;
+
+    /// Returns for the next value in the sequence.
+    ///
+    #[inline]
+    fn next<T>(&mut self) -> Result<Option<T>, Self::Error>
+    where
+        T: Deserializable<'toy>,
+    {
+        self.next_core(PhantomData)
+    }
 
     /// Returns the number of value remaining in the sequence, if known.
     ///
@@ -37,15 +49,35 @@ pub trait DeserializeMapOps<'toy> {
 
     /// Returns for the next key in the map.
     ///
-    fn next_key<T>(&mut self) -> Result<Option<T::Value>, Self::Error>
+    fn next_key_core<T>(&mut self, core: T) -> Result<Option<T::Value>, Self::Error>
     where
-        T: Deserializable<'toy>;
+        T: DeserializableCore<'toy>;
+
+    /// Returns for the next key in the map.
+    ///
+    #[inline]
+    fn next_key<T>(&mut self) -> Result<Option<T>, Self::Error>
+    where
+        T: Deserializable<'toy>,
+    {
+        self.next_key_core(PhantomData)
+    }
 
     /// Returns for the next value in the map.
     ///
-    fn next_value<T>(&mut self) -> Result<T::Value, Self::Error>
+    fn next_value_core<T>(&mut self, core: T) -> Result<T::Value, Self::Error>
     where
-        T: Deserializable<'toy>;
+        T: DeserializableCore<'toy>;
+
+    /// Returns for the next value in the map.
+    ///
+    #[inline]
+    fn next_value<T>(&mut self) -> Result<T, Self::Error>
+    where
+        T: Deserializable<'toy>,
+    {
+        self.next_value_core(PhantomData)
+    }
 
     /// Returns the number of entries remaining in the map, if known.
     ///
@@ -77,9 +109,21 @@ pub trait DeserializeVariantOps<'toy>: Sized {
     ///
     /// 1つの値を持つヴァリアントをデシリアライズする場合に使用します。
     ///
-    fn newtype_variant<T>(self) -> Result<T::Value, Self::Error>
+    fn newtype_variant_core<T>(self, core: T) -> Result<T::Value, Self::Error>
     where
-        T: Deserializable<'toy>;
+        T: DeserializableCore<'toy>;
+
+    /// Called when deserializing a variant with a single value.
+    ///
+    /// 1つの値を持つヴァリアントをデシリアライズする場合に使用します。
+    ///
+    #[inline]
+    fn newtype_variant<T>(self) -> Result<T, Self::Error>
+    where
+        T: Deserializable<'toy>,
+    {
+        self.newtype_variant_core(PhantomData)
+    }
 
     /// Called when deserializing tuple variant.
     ///

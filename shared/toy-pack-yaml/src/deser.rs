@@ -3,7 +3,7 @@ use crate::error::YamlError;
 use toy_pack::deser::Deserializable;
 
 #[inline]
-pub fn unpack<'toy, T>(s: &'toy str) -> Result<T::Value, YamlError>
+pub fn unpack<'toy, T>(s: &'toy str) -> Result<T, YamlError>
 where
     T: Deserializable<'toy>,
 {

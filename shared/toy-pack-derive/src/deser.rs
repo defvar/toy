@@ -120,9 +120,7 @@ fn deser_impl(target: &Model) -> Result<TokenStream, syn::Error> {
 
     let r = quote! {
         impl #impl_generics __deser::Deserializable<#toy_life> for #name #ty_generics #where_clause {
-            type Value = #name #ty_generics;
-
-            fn deserialize<D>(deserializer: D) -> toy_pack::export::Result<Self::Value, D::Error>
+            fn deserialize<D>(deserializer: D) -> toy_pack::export::Result<Self, D::Error>
                 where D: __deser::Deserializer<#toy_life>
             {
                 #method

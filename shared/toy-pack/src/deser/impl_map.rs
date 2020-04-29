@@ -15,11 +15,9 @@ macro_rules! map_impl {
         where
             K: Deserializable<'toy>,
             V: Deserializable<'toy>,
-            K::Value: $kbound1 $(+ $kbound2)*,
+            K: $kbound1 $(+ $kbound2)*,
         {
-            type Value = $ty<K::Value, V::Value>;
-
-            fn deserialize<D>(deserializer: D) -> Result<Self::Value, D::Error>
+            fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
             where
                 D: Deserializer<'toy>,
             {
@@ -31,9 +29,9 @@ macro_rules! map_impl {
                 where
                     K: Deserializable<'toy>,
                     V: Deserializable<'toy>,
-                    K::Value: $kbound1 $(+ $kbound2)*,
+                    K: $kbound1 $(+ $kbound2)*,
                 {
-                    type Value = $ty<K::Value, V::Value>;
+                    type Value = $ty<K, V>;
 
                     fn visit_map<A>(self, mut $access: A) -> Result<Self::Value, A::Error>
                     where

@@ -1,7 +1,9 @@
 //! Data structure deserialization api.
 
 pub use self::deser_ops::{DeserializeMapOps, DeserializeSeqOps, DeserializeVariantOps};
-pub use self::deserializer::{Deserializable, DeserializableOwned, Deserializer};
+pub use self::deserializer::{
+    Deserializable, DeserializableCore, DeserializableOwned, Deserializer,
+};
 pub use self::error::Error;
 pub use self::visitor::Visitor;
 

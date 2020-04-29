@@ -16,9 +16,7 @@ impl<'a> Visitor<'a> for StrVisitor {
 }
 
 impl<'toy: 'a, 'a> Deserializable<'toy> for &'a str {
-    type Value = &'a str;
-
-    fn deserialize<D>(deserializer: D) -> Result<Self::Value, D::Error>
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'toy>,
     {
@@ -49,9 +47,7 @@ impl<'a> Visitor<'a> for StringVisitor {
 }
 
 impl<'toy> Deserializable<'toy> for String {
-    type Value = String;
-
-    fn deserialize<D>(deserializer: D) -> Result<Self::Value, D::Error>
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'toy>,
     {
@@ -79,9 +75,7 @@ impl<'a> Visitor<'a> for CharVisitor {
 }
 
 impl<'toy> Deserializable<'toy> for char {
-    type Value = char;
-
-    fn deserialize<D>(deserializer: D) -> Result<Self::Value, D::Error>
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'toy>,
     {
@@ -92,9 +86,7 @@ impl<'toy> Deserializable<'toy> for char {
 ////////////////////////////////////////////////////
 
 impl<'toy> Deserializable<'toy> for usize {
-    type Value = usize;
-
-    fn deserialize<D>(deserializer: D) -> Result<Self::Value, D::Error>
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'toy>,
     {
@@ -107,9 +99,7 @@ impl<'toy> Deserializable<'toy> for usize {
 }
 
 impl<'toy> Deserializable<'toy> for isize {
-    type Value = isize;
-
-    fn deserialize<D>(deserializer: D) -> Result<Self::Value, D::Error>
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'toy>,
     {
@@ -126,9 +116,7 @@ impl<'toy> Deserializable<'toy> for isize {
 macro_rules! primitive_serializer_impl {
     ($t: ident, $method: ident) => {
         impl<'toy> Deserializable<'toy> for $t {
-            type Value = $t;
-
-            fn deserialize<D>(deserializer: D) -> Result<Self::Value, D::Error>
+            fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
             where
                 D: Deserializer<'toy>,
             {

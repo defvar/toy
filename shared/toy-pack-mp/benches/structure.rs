@@ -12,7 +12,7 @@ use toy_pack_derive::*;
 use toy_pack_mp::marker::marker_from_byte;
 use toy_pack_mp::{pack, unpack};
 
-#[derive(Pack, UnPack, Deserialize, Serialize)]
+#[derive(Pack, Unpack, Deserialize, Serialize)]
 struct TestData<'a> {
     int0: u8,
     uint1: u8,

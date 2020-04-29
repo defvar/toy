@@ -29,9 +29,7 @@ impl Default for TestEnum {
 #[derive(Debug, Pack, Unpack)]
 struct Gen<T>
 where
-    T: std::default::Default
-        + toy_pack::deser::DeserializableOwned<Value = T>
-        + toy_pack::ser::Serializable,
+    T: std::default::Default + toy_pack::deser::DeserializableOwned + toy_pack::ser::Serializable,
 {
     value: T,
 }

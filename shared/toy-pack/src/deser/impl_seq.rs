@@ -8,9 +8,7 @@ impl<'toy, T> Deserializable<'toy> for Vec<T>
 where
     T: Deserializable<'toy>,
 {
-    type Value = Vec<T::Value>;
-
-    fn deserialize<D>(deserializer: D) -> Result<Self::Value, D::Error>
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'toy>,
     {
@@ -22,14 +20,14 @@ where
         where
             T: Deserializable<'toy>,
         {
-            type Value = Vec<T::Value>;
+            type Value = Vec<T>;
 
             fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
             where
                 A: DeserializeSeqOps<'toy>,
             {
                 let size = seq.size_hint().unwrap_or(256);
-                let mut vec: Vec<T::Value> = Vec::with_capacity(size);
+                let mut vec: Vec<T> = Vec::with_capacity(size);
                 while let Some(item) = seq.next::<T>()? {
                     vec.push(item);
                 }

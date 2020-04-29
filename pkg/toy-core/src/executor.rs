@@ -38,7 +38,7 @@ pub trait ServiceExecutor {
             + 'static,
         F::Service: Send,
         F::Context: Send,
-        F::Config: DeserializableOwned<Value = F::Config> + Send;
+        F::Config: DeserializableOwned + Send;
 }
 
 pub struct Executor<'a, T>
@@ -182,7 +182,7 @@ where
             + 'static,
         F::Service: Send,
         F::Context: Send,
-        F::Config: DeserializableOwned<Value = F::Config> + Send,
+        F::Config: DeserializableOwned + Send,
     {
         let (tx, rx) = self.pop_channels(uri);
         let uri = uri.clone();

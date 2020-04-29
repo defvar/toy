@@ -1,18 +1,32 @@
 use std::marker::PhantomData;
 use std::path::{Path, PathBuf};
 
-use super::{Deserializable, Deserializer, Error, Visitor};
+use super::{Deserializable, DeserializableCore, Deserializer, Error, Visitor};
 use crate::deser::discard::Discard;
 use crate::deser::{DeserializeMapOps, DeserializeSeqOps};
 use failure::_core::time::Duration;
 
-impl<'toy, T> Deserializable<'toy> for PhantomData<T>
+// TODO: deserialize_unit_struct...
+// impl<'toy, T> Deserializable<'toy> for PhantomData<T>
+// where
+//     T: Deserializable<'toy>,
+// {
+//     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+//     where
+//         D: Deserializer<'toy>,
+//     {
+//         T::deserialize(deserializer)
+//     }
+// }
+
+impl<'toy, T> DeserializableCore<'toy> for PhantomData<T>
 where
     T: Deserializable<'toy>,
 {
-    type Value = T::Value;
+    type Value = T;
 
-    fn deserialize<D>(deserializer: D) -> Result<Self::Value, D::Error>
+    #[inline]
+    fn deserialize<D>(self, deserializer: D) -> Result<T, D::Error>
     where
         D: Deserializer<'toy>,
     {
@@ -26,9 +40,7 @@ impl<'toy, T> Deserializable<'toy> for Box<T>
 where
     T: Deserializable<'toy>,
 {
-    type Value = Box<T::Value>;
-
-    fn deserialize<D>(deserializer: D) -> Result<Self::Value, D::Error>
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'toy>,
     {
@@ -42,9 +54,7 @@ impl<'toy, T> Deserializable<'toy> for Option<T>
 where
     T: Deserializable<'toy>,
 {
-    type Value = Option<T::Value>;
-
-    fn deserialize<D>(deserializer: D) -> Result<Self::Value, D::Error>
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'toy>,
     {
@@ -56,7 +66,7 @@ where
         where
             T: Deserializable<'a>,
         {
-            type Value = Option<T::Value>;
+            type Value = Option<T>;
 
             fn visit_some<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
             where
@@ -66,6 +76,13 @@ where
             }
 
             fn visit_none<E>(self) -> Result<Self::Value, E>
+            where
+                E: Error,
+            {
+                Ok(None)
+            }
+
+            fn visit_unit<E>(self) -> Result<Self::Value, E>
             where
                 E: Error,
             {
@@ -82,9 +99,7 @@ where
 ///////////////////////////////////////////////////
 
 impl<'toy: 'a, 'a> Deserializable<'toy> for &'a Path {
-    type Value = &'a Path;
-
-    fn deserialize<D>(deserializer: D) -> Result<Self::Value, D::Error>
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'toy>,
     {
@@ -108,9 +123,7 @@ impl<'toy: 'a, 'a> Deserializable<'toy> for &'a Path {
 ///////////////////////////////////////////////////
 
 impl<'toy> Deserializable<'toy> for PathBuf {
-    type Value = PathBuf;
-
-    fn deserialize<D>(deserializer: D) -> Result<Self::Value, D::Error>
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'toy>,
     {
@@ -141,9 +154,7 @@ impl<'toy> Deserializable<'toy> for PathBuf {
 ///////////////////////////////////////////////////
 
 impl<'toy> Deserializable<'toy> for Duration {
-    type Value = Duration;
-
-    fn deserialize<D>(deserializer: D) -> Result<Self::Value, <D as Deserializer<'toy>>::Error>
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'toy>,
     {

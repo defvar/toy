@@ -37,9 +37,7 @@ impl<'a> Visitor<'a> for DiscardVisitor {
 }
 
 impl<'toy: 'a, 'a> Deserializable<'toy> for Discard {
-    type Value = Discard;
-
-    fn deserialize<D>(deserializer: D) -> Result<Self::Value, D::Error>
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'toy>,
     {

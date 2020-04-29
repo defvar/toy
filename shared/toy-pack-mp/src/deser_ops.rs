@@ -1,5 +1,5 @@
 use toy_pack::deser::{
-    Deserializable, DeserializeMapOps, DeserializeSeqOps, DeserializeVariantOps, Visitor,
+    DeserializableCore, DeserializeMapOps, DeserializeSeqOps, DeserializeVariantOps, Visitor,
 };
 
 use crate::decode::Reference;
@@ -30,13 +30,13 @@ where
 {
     type Error = DecodeError;
 
-    fn next<T>(&mut self) -> Result<Option<T::Value>, Self::Error>
+    fn next_core<T>(&mut self, core: T) -> Result<Option<T::Value>, Self::Error>
     where
-        T: Deserializable<'toy>,
+        T: DeserializableCore<'toy>,
     {
         if self.remaining > 0 {
             self.remaining -= 1;
-            T::deserialize(&mut *self.de).map(Some)
+            core.deserialize(&mut *self.de).map(Some)
         } else {
             Ok(None)
         }
@@ -70,23 +70,23 @@ where
         }
     }
 
-    fn next_key<T>(&mut self) -> Result<Option<T::Value>, Self::Error>
+    fn next_key_core<T>(&mut self, core: T) -> Result<Option<T::Value>, Self::Error>
     where
-        T: Deserializable<'toy>,
+        T: DeserializableCore<'toy>,
     {
         if self.remaining > 0 {
             self.remaining -= 1;
-            T::deserialize(&mut *self.de).map(Some)
+            core.deserialize(&mut *self.de).map(Some)
         } else {
             Ok(None)
         }
     }
 
-    fn next_value<T>(&mut self) -> Result<T::Value, Self::Error>
+    fn next_value_core<T>(&mut self, core: T) -> Result<T::Value, Self::Error>
     where
-        T: Deserializable<'toy>,
+        T: DeserializableCore<'toy>,
     {
-        T::deserialize(&mut *self.de)
+        core.deserialize(&mut *self.de)
     }
 
     fn size_hint(&self) -> Option<usize> {
@@ -115,11 +115,11 @@ where
         Ok(())
     }
 
-    fn newtype_variant<T>(self) -> Result<T::Value, Self::Error>
+    fn newtype_variant_core<T>(self, core: T) -> Result<T::Value, Self::Error>
     where
-        T: Deserializable<'toy>,
+        T: DeserializableCore<'toy>,
     {
-        T::deserialize(&mut *self.de)
+        core.deserialize(&mut *self.de)
     }
 
     fn tuple_variant<V>(self, visitor: V) -> Result<V::Value, Self::Error>

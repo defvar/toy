@@ -7,9 +7,15 @@ use super::{Error, Visitor};
 /// いくつかのプリミティブ型 "impl" がデフォルトで提供されています
 ///
 pub trait Deserializable<'toy>: Sized {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'toy>;
+}
+
+pub trait DeserializableCore<'toy>: Sized {
     type Value;
 
-    fn deserialize<D>(deserializer: D) -> Result<Self::Value, D::Error>
+    fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
     where
         D: Deserializer<'toy>;
 }

@@ -2,8 +2,8 @@ use crate::data::error::DeserializeError;
 use crate::data::map::Map;
 use crate::data::Value;
 use toy_pack::deser::{
-    Deserializable, DeserializeMapOps, DeserializeSeqOps, DeserializeVariantOps, Deserializer,
-    Error, Visitor,
+    Deserializable, DeserializableCore, DeserializeMapOps, DeserializeSeqOps,
+    DeserializeVariantOps, Deserializer, Error, Visitor,
 };
 
 /// Deserialize from `Value`
@@ -35,7 +35,7 @@ use toy_pack::deser::{
 /// }
 /// ```
 #[inline]
-pub fn unpack<'toy, T>(v: Value) -> Result<T::Value, DeserializeError>
+pub fn unpack<'toy, T>(v: Value) -> Result<T, DeserializeError>
 where
     T: Deserializable<'toy>,
 {
@@ -51,9 +51,7 @@ macro_rules! from_value {
 }
 
 impl<'toy: 'a, 'a> Deserializable<'toy> for Value {
-    type Value = Value;
-
-    fn deserialize<D>(deserializer: D) -> Result<Self::Value, D::Error>
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'toy>,
     {
@@ -354,15 +352,15 @@ impl DeserializeSeq {
 impl<'toy> DeserializeSeqOps<'toy> for DeserializeSeq {
     type Error = DeserializeError;
 
-    fn next<T>(&mut self) -> Result<Option<T::Value>, Self::Error>
+    fn next_core<T>(&mut self, element: T) -> Result<Option<T::Value>, Self::Error>
     where
-        T: Deserializable<'toy>,
+        T: DeserializableCore<'toy>,
     {
         if self.remaining > 0 {
             self.remaining -= 1;
             let v = self.vec.get(self.idx).unwrap().clone();
             self.idx += 1;
-            T::deserialize(v).map(Some)
+            element.deserialize(v).map(Some)
         } else {
             Ok(None)
         }
@@ -408,26 +406,26 @@ where
         }
     }
 
-    fn next_key<T>(&mut self) -> Result<Option<T::Value>, Self::Error>
+    fn next_key_core<T>(&mut self, element: T) -> Result<Option<T::Value>, Self::Error>
     where
-        T: Deserializable<'toy>,
+        T: DeserializableCore<'toy>,
     {
         match self.iter.next() {
             Some((k, v)) => {
                 self.value = Some(v);
-                T::deserialize(Value::from(k)).map(Some)
+                element.deserialize(Value::from(k)).map(Some)
             }
             None => Ok(None),
         }
     }
 
-    fn next_value<T>(&mut self) -> Result<T::Value, Self::Error>
+    fn next_value_core<T>(&mut self, element: T) -> Result<T::Value, Self::Error>
     where
-        T: Deserializable<'toy>,
+        T: DeserializableCore<'toy>,
     {
         let value = self.value.take();
         let value = value.expect("MapAccess::visit_value called before visit_key");
-        T::deserialize(value)
+        element.deserialize(value)
     }
 
     fn size_hint(&self) -> Option<usize> {
@@ -458,13 +456,13 @@ where
         Ok(())
     }
 
-    fn newtype_variant<T>(mut self) -> Result<T::Value, Self::Error>
+    fn newtype_variant_core<T>(mut self, element: T) -> Result<T::Value, Self::Error>
     where
-        T: Deserializable<'toy>,
+        T: DeserializableCore<'toy>,
     {
         let value = self.value.take();
         let value = value.expect("MapAccess::visit_value called before visit_key");
-        T::deserialize(value)
+        element.deserialize(value)
     }
 
     fn tuple_variant<V>(mut self, visitor: V) -> Result<V::Value, Self::Error>

@@ -7,11 +7,9 @@ impl<'toy, K, V> Deserializable<'toy> for Map<K, V>
 where
     K: Deserializable<'toy>,
     V: Deserializable<'toy>,
-    K::Value: Eq + Hash,
+    K: Eq + Hash,
 {
-    type Value = Map<K::Value, V::Value>;
-
-    fn deserialize<D>(deserializer: D) -> Result<Self::Value, D::Error>
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'toy>,
     {
@@ -23,9 +21,9 @@ where
         where
             K: Deserializable<'toy>,
             V: Deserializable<'toy>,
-            K::Value: Eq + Hash,
+            K: Eq + Hash,
         {
-            type Value = Map<K::Value, V::Value>;
+            type Value = Map<K, V>;
 
             fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error>
             where
