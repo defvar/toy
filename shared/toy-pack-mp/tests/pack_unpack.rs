@@ -65,7 +65,7 @@ fn tuple_variant() {
 }
 
 //enum pattern ///////////////////////////////////////////////
-#[derive(Debug, PartialEq, Eq, Pack, UnPack)]
+#[derive(Debug, PartialEq, Eq, Pack, Unpack)]
 enum TestEnum {
     //unit variant
     A,
@@ -82,7 +82,7 @@ impl Default for TestEnum {
 }
 
 //struct pattern ///////////////////////////////////////////////
-#[derive(Debug, PartialEq, Pack, UnPack)]
+#[derive(Debug, PartialEq, Pack, Unpack)]
 struct Dum<'a> {
     v_u32: u32,
     v_f32: f32,

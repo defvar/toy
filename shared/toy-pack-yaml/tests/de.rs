@@ -10,7 +10,7 @@ fn int() {
 
 #[test]
 fn unit_variant() {
-    #[derive(Pack, UnPack, PartialEq, Debug)]
+    #[derive(Pack, Unpack, PartialEq, Debug)]
     enum Variant {
         First,
         Second,
@@ -23,7 +23,7 @@ First"#;
 
 #[test]
 fn tuple_variant() {
-    #[derive(Pack, UnPack, PartialEq, Debug)]
+    #[derive(Pack, Unpack, PartialEq, Debug)]
     enum Variant {
         One(u32),
         Two(u32, u32),
@@ -39,7 +39,7 @@ Two:
 
 #[test]
 fn nested_struct() {
-    #[derive(Debug, UnPack, PartialEq, Default)]
+    #[derive(Debug, Unpack, PartialEq, Default)]
     struct Outer {
         id: u32,
         name: String,
@@ -48,7 +48,7 @@ fn nested_struct() {
         columns: Option<Vec<Inner>>,
     }
 
-    #[derive(Debug, UnPack, Default, PartialEq)]
+    #[derive(Debug, Unpack, Default, PartialEq)]
     struct Inner {
         name: String,
     }

@@ -4,11 +4,11 @@ use crate::transform::{
 };
 use crate::typed::AllowedTypes;
 use std::collections::HashMap;
-use toy_pack::UnPack;
+use toy_pack::Unpack;
 
 /// config for type convert.
 ///
-#[derive(Debug, Clone, Default, UnPack)]
+#[derive(Debug, Clone, Default, Unpack)]
 pub struct TypedConfig {
     /// key: field name, value: option
     pub typed: HashMap<String, TypedConfigOption>,
@@ -22,7 +22,7 @@ pub struct TypedConfig {
 ///   - f32 f64
 ///   - str
 ///
-#[derive(Debug, Clone, Default, UnPack)]
+#[derive(Debug, Clone, Default, Unpack)]
 pub struct TypedConfigOption {
     pub tp: AllowedTypes,
 
@@ -32,49 +32,49 @@ pub struct TypedConfigOption {
 }
 
 /// transform to map value from map value.
-#[derive(Debug, Clone, Default, UnPack)]
+#[derive(Debug, Clone, Default, Unpack)]
 pub struct MappingConfig {
     /// key: filed name, value: new field name.
     pub mappings: HashMap<String, String>,
 }
 
 /// transform to seq value from map value.
-#[derive(Debug, Clone, Default, UnPack)]
+#[derive(Debug, Clone, Default, Unpack)]
 pub struct IndexingConfig {
     pub names: Vec<String>,
 }
 
 /// reorder element for seq value.
-#[derive(Debug, Clone, Default, UnPack)]
+#[derive(Debug, Clone, Default, Unpack)]
 pub struct ReorderConfig {
     pub reorder: Vec<u32>,
 }
 
 /// transform to map value from seq value.
-#[derive(Debug, Clone, Default, UnPack)]
+#[derive(Debug, Clone, Default, Unpack)]
 pub struct NamingConfig {
     /// key: filed name, value: seq index.
     pub names: HashMap<String, u32>,
 }
 
 /// rename field for map value.
-#[derive(Debug, Clone, Default, UnPack)]
+#[derive(Debug, Clone, Default, Unpack)]
 pub struct RenameConfig {
     pub rename: HashMap<String, String>,
 }
 
 /// put field or element for map or seq.
-#[derive(Debug, Clone, Default, UnPack)]
+#[derive(Debug, Clone, Default, Unpack)]
 pub struct PutConfig {
     pub put: HashMap<String, PutValue>,
 }
 
-#[derive(Debug, Clone, Default, UnPack)]
+#[derive(Debug, Clone, Default, Unpack)]
 pub struct RemoveByIndexConfig {
     pub remove_by_index: Vec<u32>,
 }
 
-#[derive(Debug, Clone, Default, UnPack)]
+#[derive(Debug, Clone, Default, Unpack)]
 pub struct RemoveByNameConfig {
     pub remove_by_name: Vec<String>,
 }

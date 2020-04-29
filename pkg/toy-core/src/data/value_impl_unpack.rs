@@ -11,10 +11,10 @@ use toy_pack::deser::{
 /// # Exapmle
 ///
 /// ```edition2018
-/// use toy_pack_derive::UnPack;
+/// use toy_pack_derive::Unpack;
 /// use toy_core::prelude::*;
 ///
-/// #[derive(Debug, PartialEq, UnPack)]
+/// #[derive(Debug, PartialEq, Unpack)]
 /// struct User {
 ///     id: u32,
 ///     name: String

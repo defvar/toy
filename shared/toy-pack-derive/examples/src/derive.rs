@@ -1,14 +1,14 @@
 use toy_pack_derive::*;
 use toy_pack_mp::{pack, unpack};
 
-#[derive(Pack, UnPack, Debug, PartialEq)]
+#[derive(Pack, Unpack, Debug, PartialEq)]
 struct Dum<'a> {
     v_u32: u32,
     v_string: String,
     v_borrowed_str: &'a str,
 }
 
-#[derive(Eq, PartialEq, Debug, Pack, UnPack)]
+#[derive(Eq, PartialEq, Debug, Pack, Unpack)]
 enum TestEnum {
     //unit variant
     A,
@@ -26,7 +26,7 @@ impl Default for TestEnum {
     }
 }
 
-#[derive(Debug, Pack, UnPack)]
+#[derive(Debug, Pack, Unpack)]
 struct Gen<T>
 where
     T: std::default::Default

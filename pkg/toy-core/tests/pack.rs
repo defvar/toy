@@ -4,7 +4,7 @@ use toy_pack_derive::*;
 
 #[test]
 fn ser_tuple_variant() {
-    #[derive(Pack, UnPack, PartialEq, Debug)]
+    #[derive(Pack, Unpack, PartialEq, Debug)]
     enum Variant {
         One(u32),
         Two(u32, u32),

@@ -1,7 +1,7 @@
 use std::fmt::{Debug, Error, Formatter};
-use toy_pack::{Pack, UnPack};
+use toy_pack::{Pack, Unpack};
 
-#[derive(Clone, PartialEq, Eq, Hash, Pack, UnPack)]
+#[derive(Clone, PartialEq, Eq, Hash, Pack, Unpack)]
 pub struct ServiceType {
     id: String,
 }

@@ -70,7 +70,7 @@ struct Data<'a> {
     v_enum: TestEnum,
 }
 
-#[derive(UnPack, Debug, PartialEq)]
+#[derive(Unpack, Debug, PartialEq)]
 struct DataUnpack<'a> {
     v_u32: u32,
     v_string: String,
@@ -96,7 +96,7 @@ fn default_resource() -> String {
     "/".to_string()
 }
 
-#[derive(Pack, UnPack, Debug, PartialEq)]
+#[derive(Pack, Unpack, Debug, PartialEq)]
 struct Inner {
     v_u32: u32,
 }
@@ -107,7 +107,7 @@ impl Default for Inner {
     }
 }
 
-#[derive(Eq, PartialEq, Debug, Pack, UnPack)]
+#[derive(Eq, PartialEq, Debug, Pack, Unpack)]
 enum TestEnum {
     //unit variant
     A,

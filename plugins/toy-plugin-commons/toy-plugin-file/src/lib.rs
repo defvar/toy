@@ -1,4 +1,4 @@
-use toy_pack::UnPack;
+use toy_pack::Unpack;
 
 use self::edges::Edges;
 use self::file_reader::FileReaderState;
@@ -18,7 +18,7 @@ pub mod parse;
 mod row;
 pub mod service;
 
-#[derive(Clone, Copy, Debug, UnPack)]
+#[derive(Clone, Copy, Debug, Unpack)]
 pub enum QuoteStyle {
     Always,
     Necessary,
@@ -31,7 +31,7 @@ impl Default for QuoteStyle {
     }
 }
 
-#[derive(Copy, Clone, Debug, Eq, PartialEq, UnPack)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, Unpack)]
 pub enum Terminator {
     CRLF,
     Any(u8),

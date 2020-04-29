@@ -11,7 +11,7 @@ use super::decode::{decoder_from_reader, decoder_from_slice, DecodeError};
 /// ```edition2018
 /// use toy_pack_derive::*;
 ///
-/// #[derive(UnPack)]
+/// #[derive(Unpack)]
 /// struct User {
 ///   id: u32,
 ///   name: String

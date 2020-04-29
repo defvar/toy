@@ -39,7 +39,7 @@ fn de_timestamp() {
 
 #[test]
 fn de_tuple_variant() {
-    #[derive(Pack, UnPack, PartialEq, Debug)]
+    #[derive(Pack, Unpack, PartialEq, Debug)]
     enum Variant {
         One(u32),
         Two(u32, u32),
@@ -96,7 +96,7 @@ fn de_struct() {
     assert_eq!(v, expected);
 }
 
-#[derive(Debug, PartialEq, UnPack)]
+#[derive(Debug, PartialEq, Unpack)]
 struct Dum {
     v_u8: u8,
     v_u16: u16,
@@ -112,12 +112,12 @@ struct Dum {
     terminator_from_str: Terminator,
 }
 
-#[derive(Debug, PartialEq, Default, UnPack)]
+#[derive(Debug, PartialEq, Default, Unpack)]
 struct Inner {
     v_u8: u8,
 }
 
-#[derive(Debug, UnPack, PartialEq)]
+#[derive(Debug, Unpack, PartialEq)]
 enum Terminator {
     CRLF,
     LF,

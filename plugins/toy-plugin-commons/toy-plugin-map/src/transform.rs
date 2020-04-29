@@ -2,7 +2,7 @@ use crate::typed;
 use crate::typed::AllowedTypes;
 use std::collections::HashMap;
 use toy_core::data::{Map, Value};
-use toy_pack::UnPack;
+use toy_pack::Unpack;
 
 pub trait Transformer {
     fn transform(&self, value: &mut Value) -> Result<(), ()>;
@@ -32,7 +32,7 @@ pub struct RemoveByName(pub Vec<String>);
 #[derive(Debug)]
 pub struct RemoveByIndex(pub Vec<u32>);
 
-#[derive(Debug, Clone, PartialEq, UnPack)]
+#[derive(Debug, Clone, PartialEq, Unpack)]
 pub struct PutValue {
     value: Option<String>,
     v: Value, // string

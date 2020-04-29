@@ -20,7 +20,7 @@ pub fn derive_pack(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
         .into()
 }
 
-#[proc_macro_derive(UnPack, attributes(toy))]
+#[proc_macro_derive(Unpack, attributes(toy))]
 pub fn derive_unpack(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
     deser::derive_unpack_core(input)

@@ -2,7 +2,7 @@ use toy_api_server::GraphRegistry;
 use toy_core::prelude::*;
 use toy_core::registry::Registry;
 use toy_core::supervisor::Supervisor;
-use toy_pack::UnPack;
+use toy_pack::Unpack;
 
 fn main() {
     let env = env_logger::Env::default()
@@ -55,7 +55,7 @@ fn main() {
 #[derive(Debug)]
 pub struct ServiceContext;
 
-#[derive(Clone, Debug, Default, UnPack)]
+#[derive(Clone, Debug, Default, Unpack)]
 pub struct ServiceContextConfig {}
 
 fn new_context(

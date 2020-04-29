@@ -48,7 +48,7 @@ y: 2"#;
 
 #[test]
 fn unit_variant() {
-    #[derive(Pack, UnPack, PartialEq, Debug)]
+    #[derive(Pack, Unpack, PartialEq, Debug)]
     enum Variant {
         First,
         Second,
@@ -62,7 +62,7 @@ First"#;
 
 #[test]
 fn newtype_variant() {
-    #[derive(Pack, UnPack, PartialEq, Debug)]
+    #[derive(Pack, Unpack, PartialEq, Debug)]
     enum Variant {
         Size(usize),
     }
@@ -75,7 +75,7 @@ Size: 127"#;
 
 #[test]
 fn tuple_variant() {
-    #[derive(Pack, UnPack, PartialEq, Debug)]
+    #[derive(Pack, Unpack, PartialEq, Debug)]
     enum Variant {
         One(u32),
         Two(u32, u32),
@@ -91,14 +91,14 @@ Two:
 
 #[test]
 fn nested_struct() {
-    #[derive(Pack, UnPack, PartialEq, Debug)]
+    #[derive(Pack, Unpack, PartialEq, Debug)]
     struct Outer {
         x: isize,
         y: String,
         z: bool,
         inner: Inner,
     }
-    #[derive(Pack, UnPack, PartialEq, Debug, Default)]
+    #[derive(Pack, Unpack, PartialEq, Debug, Default)]
     struct Inner {
         x: u32,
     }
