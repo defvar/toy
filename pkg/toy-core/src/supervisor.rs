@@ -63,7 +63,7 @@ where
         let (tx_sys, rx_sys) = mpsc::stream::<SystemMessage, ServiceError>(1024);
         (
             Supervisor {
-                service_rt: service_rt,
+                service_rt,
                 registry,
                 tx: tx_sys,
                 rx: rx_req,
