@@ -12,16 +12,6 @@ pub struct RuntimeBuilder {
 }
 
 impl Runtime {
-    pub fn new() -> Runtime {
-        // TODO: from settings..?
-        let rt = Builder::new()
-            .threaded_scheduler()
-            .enable_all()
-            .build()
-            .unwrap();
-        Runtime { rt }
-    }
-
     pub fn block_on<F>(&mut self, future: F) -> F::Output
     where
         F: Future,

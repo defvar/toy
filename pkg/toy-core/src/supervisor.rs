@@ -28,7 +28,7 @@ pub enum SystemMessage {
 
 #[derive(Debug)]
 pub struct Supervisor<T, S, F> {
-    rt: T,
+    service_rt: T,
     registry: ServiceSet<S, F>,
 
     /// send system message to api server
@@ -52,7 +52,7 @@ where
     R::Config: DeserializableOwned<Value = R::Config> + Send,
 {
     pub fn new(
-        rt: T,
+        service_rt: T,
         registry: ServiceSet<S, F>,
     ) -> (
         Supervisor<T, S, F>,
@@ -63,7 +63,7 @@ where
         let (tx_sys, rx_sys) = mpsc::stream::<SystemMessage, ServiceError>(1024);
         (
             Supervisor {
-                rt,
+                service_rt: service_rt,
                 registry,
                 tx: tx_sys,
                 rx: rx_req,
@@ -79,7 +79,7 @@ where
             match r {
                 Ok(m) => match m {
                     Request::Task(g) => {
-                        let e = Executor::new(&self.rt, g);
+                        let e = Executor::new(&self.service_rt, g);
                         let _ = e.run(&self.registry, Frame::default()).await;
                         log::info!("executed task");
                     }

@@ -1,4 +1,4 @@
-use crate::GraphRegistry;
+use crate::persist::GraphRegistry;
 use crate::{graphs, services};
 use std::net::SocketAddr;
 use toy_core::error::ServiceError;
@@ -21,6 +21,7 @@ impl Server {
         tx: Outgoing<Request, ServiceError>,
         mut rx: Incoming<SystemMessage, ServiceError>,
     ) {
+        let root = self.graphs.root_path();
         let api = graphs(self.graphs, tx.clone()).or(services(tx.clone()));
 
         let (addr, server) = warp::serve(api).bind_with_graceful_shutdown(addr, async move {
@@ -37,6 +38,9 @@ impl Server {
             }
         });
         log::info!("listening on http://{}", addr);
+        if let Some(path) = root.to_str() {
+            log::info!("graph registry on {}", path);
+        }
         server.await
     }
 }
