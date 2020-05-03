@@ -2,7 +2,7 @@ use toy_pack::deser::{
     DeserializableCore, DeserializeMapOps, DeserializeSeqOps, DeserializeVariantOps, Visitor,
 };
 
-use crate::decode::Reference;
+use crate::decode::{Reference, Token};
 
 use super::decode::{DecodeError, Decoder, Reader};
 
@@ -182,6 +182,13 @@ where
             Reference::Borrowed(b) => visitor.visit_borrowed_str::<DecodeError>(b),
             Reference::Copied(c) => visitor.visit_str::<DecodeError>(c),
         }?;
+        match self.de.peek_token()? {
+            Some(Token::NameSeparator) => {
+                let _ = self.de.next()?;
+            }
+            Some(_) => return Err(DecodeError::error("ExpectedColon")),
+            None => return Err(DecodeError::eof_while_parsing_value()),
+        }
         Ok((s, self))
     }
 
@@ -201,5 +208,58 @@ where
         V: Visitor<'toy>,
     {
         toy_pack::deser::Deserializer::deserialize_seq(self.de, visitor)
+    }
+}
+
+pub struct DeserializeUnitVarinat<'a, B: 'a> {
+    de: &'a mut Decoder<B>,
+}
+
+impl<'a, B: 'a> DeserializeUnitVarinat<'a, B> {
+    pub fn new(de: &'a mut Decoder<B>) -> Self {
+        Self { de }
+    }
+}
+
+impl<'toy, 'a, B> DeserializeVariantOps<'toy> for DeserializeUnitVarinat<'a, B>
+where
+    B: Reader<'toy> + 'a,
+{
+    type Error = DecodeError;
+
+    fn variant_identifier<V>(
+        self,
+        visitor: V,
+    ) -> Result<(<V as Visitor<'toy>>::Value, Self), Self::Error>
+    where
+        V: Visitor<'toy>,
+    {
+        let mut buf = Vec::new();
+        let s = match self.de.decode_str(&mut buf)? {
+            Reference::Borrowed(b) => visitor.visit_borrowed_str::<DecodeError>(b),
+            Reference::Copied(c) => visitor.visit_str::<DecodeError>(c),
+        }?;
+        Ok((s, self))
+    }
+
+    fn unit_variant(self) -> Result<(), Self::Error> {
+        Ok(())
+    }
+
+    fn newtype_variant_core<T>(
+        self,
+        _core: T,
+    ) -> Result<<T as DeserializableCore<'toy>>::Value, Self::Error>
+    where
+        T: DeserializableCore<'toy>,
+    {
+        unreachable!()
+    }
+
+    fn tuple_variant<V>(self, _visitor: V) -> Result<<V as Visitor<'toy>>::Value, Self::Error>
+    where
+        V: Visitor<'toy>,
+    {
+        unreachable!()
     }
 }

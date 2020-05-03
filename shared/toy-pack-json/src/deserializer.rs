@@ -2,7 +2,9 @@ use toy_pack::deser::{Deserializer, Error, FromPrimitive, Visitor};
 
 use super::decode::{DecodeError, Decoder, Reader, Reference};
 use crate::decode::Token;
-use crate::deser_ops::{DeserializeMap, DeserializeSeq, DeserializeVarinat};
+use crate::deser_ops::{
+    DeserializeMap, DeserializeSeq, DeserializeUnitVarinat, DeserializeVarinat,
+};
 use crate::ParseNumber;
 
 macro_rules! de_number {
@@ -140,8 +142,9 @@ where
     where
         V: Visitor<'toy>,
     {
-        match self.peek_until()? {
-            Some(b'{') => {
+        match self.peek_token()? {
+            Some(Token::BeginObject) => {
+                let _ = self.next()?;
                 let value = visitor.visit_enum(DeserializeVarinat::new(self))?;
                 match self.peek_until()? {
                     Some(b'}') => {
@@ -152,7 +155,7 @@ where
                     None => Err(DecodeError::eof_while_parsing_value()),
                 }
             }
-            Some(b'"') => visitor.visit_enum(DeserializeVarinat::new(self)),
+            Some(Token::String) => visitor.visit_enum(DeserializeUnitVarinat::new(self)),
             Some(_) => Err(DecodeError::error("ExpectedSomeValue")),
             None => Err(DecodeError::eof_while_parsing_value()),
         }
