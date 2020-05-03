@@ -1,0 +1,208 @@
+use toy_pack::deser::{
+    DeserializableCore, DeserializeMapOps, DeserializeSeqOps, DeserializeVariantOps, Visitor,
+};
+
+use crate::decode::Reference;
+
+use super::decode::{DecodeError, Decoder, Reader};
+
+pub struct DeserializeSeq<'a, B: 'a> {
+    de: &'a mut Decoder<B>,
+    first: bool,
+}
+
+impl<'a, B: 'a> DeserializeSeq<'a, B> {
+    pub fn new(de: &'a mut Decoder<B>) -> Self {
+        Self { de, first: false }
+    }
+}
+
+impl<'toy, 'a, B> DeserializeSeqOps<'toy> for DeserializeSeq<'a, B>
+where
+    B: Reader<'toy> + 'a,
+{
+    type Error = DecodeError;
+
+    fn next_core<T>(&mut self, core: T) -> Result<Option<T::Value>, Self::Error>
+    where
+        T: DeserializableCore<'toy>,
+    {
+        let b = match self.de.peek() {
+            Ok(Some(b']')) => return Ok(None),
+            Ok(Some(b',')) if !self.first => {
+                let _ = self.de.next()?;
+                self.de.peek_until()?
+            }
+            Ok(Some(b)) => {
+                if self.first {
+                    self.first = false;
+                    Some(b)
+                } else {
+                    return Err(DecodeError::error("ExpectedListCommaOrEnd"));
+                }
+            }
+            Ok(None) => return Err(DecodeError::eof_while_parsing_value()),
+            Err(e) => return Err(e),
+        };
+
+        match b {
+            Some(b']') => Err(DecodeError::error("TrailingComma")),
+            Some(_) => core.deserialize(&mut *self.de).map(Some),
+            None => Err(DecodeError::eof_while_parsing_value()),
+        }
+    }
+
+    fn size_hint(&self) -> Option<usize> {
+        None
+    }
+}
+
+pub struct DeserializeMap<'a, B: 'a> {
+    de: &'a mut Decoder<B>,
+    first: bool,
+}
+
+impl<'a, B: 'a> DeserializeMap<'a, B> {
+    pub fn new(de: &'a mut Decoder<B>) -> Self {
+        Self { de, first: false }
+    }
+}
+
+impl<'toy, 'a, B> DeserializeMapOps<'toy> for DeserializeMap<'a, B>
+where
+    B: Reader<'toy> + 'a,
+{
+    type Error = DecodeError;
+
+    fn next_identifier<V>(&mut self, visitor: V) -> Result<Option<V::Value>, Self::Error>
+    where
+        V: Visitor<'toy>,
+    {
+        let b = match self.de.peek() {
+            Ok(Some(b'}')) => return Ok(None),
+            Ok(Some(b',')) if !self.first => {
+                let _ = self.de.next()?;
+                self.de.peek_until()?
+            }
+            Ok(Some(b)) => {
+                if self.first {
+                    self.first = false;
+                    Some(b)
+                } else {
+                    return Err(DecodeError::error("ExpectedObjectCommaOrEnd"));
+                }
+            }
+            Ok(None) => return Err(DecodeError::eof_while_parsing_value()),
+            Err(e) => return Err(e),
+        };
+
+        match b {
+            Some(b'}') => Err(DecodeError::error("TrailingComma")),
+            Some(b'"') => {
+                let mut buf = Vec::new();
+                match self.de.decode_str(&mut buf)? {
+                    Reference::Borrowed(b) => visitor.visit_borrowed_str::<DecodeError>(b),
+                    Reference::Copied(b) => visitor.visit_str::<DecodeError>(b),
+                }
+                .map(Some)
+            }
+            Some(_) => Err(DecodeError::error("KeyMustBeAString")),
+            None => Err(DecodeError::eof_while_parsing_value()),
+        }
+    }
+
+    fn next_key_core<T>(&mut self, core: T) -> Result<Option<T::Value>, Self::Error>
+    where
+        T: DeserializableCore<'toy>,
+    {
+        let b = match self.de.peek() {
+            Ok(Some(b'}')) => return Ok(None),
+            Ok(Some(b',')) if !self.first => {
+                let _ = self.de.next()?;
+                self.de.peek_until()?
+            }
+            Ok(Some(b)) => {
+                if self.first {
+                    self.first = false;
+                    Some(b)
+                } else {
+                    return Err(DecodeError::error("ExpectedObjectCommaOrEnd"));
+                }
+            }
+            Ok(None) => return Err(DecodeError::eof_while_parsing_value()),
+            Err(e) => return Err(e),
+        };
+
+        match b {
+            Some(b'}') => Err(DecodeError::error("TrailingComma")),
+            Some(b'"') => core.deserialize(&mut *self.de).map(Some),
+            Some(_) => Err(DecodeError::error("KeyMustBeAString")),
+            None => Err(DecodeError::eof_while_parsing_value()),
+        }
+    }
+
+    fn next_value_core<T>(&mut self, core: T) -> Result<T::Value, Self::Error>
+    where
+        T: DeserializableCore<'toy>,
+    {
+        match self.de.peek_until()? {
+            Some(b':') => {
+                let _ = self.de.next()?;
+                core.deserialize(&mut *self.de)
+            }
+            Some(_) => Err(DecodeError::error("ExpectedColon")),
+            None => Err(DecodeError::eof_while_parsing_value()),
+        }
+    }
+
+    fn size_hint(&self) -> Option<usize> {
+        None
+    }
+}
+
+pub struct DeserializeVarinat<'a, B: 'a> {
+    de: &'a mut Decoder<B>,
+}
+
+impl<'a, B: 'a> DeserializeVarinat<'a, B> {
+    pub fn new(de: &'a mut Decoder<B>) -> Self {
+        Self { de }
+    }
+}
+
+impl<'toy, 'a, B> DeserializeVariantOps<'toy> for DeserializeVarinat<'a, B>
+where
+    B: Reader<'toy> + 'a,
+{
+    type Error = DecodeError;
+
+    fn variant_identifier<V>(self, visitor: V) -> Result<(V::Value, Self), Self::Error>
+    where
+        V: Visitor<'toy>,
+    {
+        let mut buf = Vec::new();
+        let s = match self.de.decode_str(&mut buf)? {
+            Reference::Borrowed(b) => visitor.visit_borrowed_str::<DecodeError>(b),
+            Reference::Copied(c) => visitor.visit_str::<DecodeError>(c),
+        }?;
+        Ok((s, self))
+    }
+
+    fn unit_variant(self) -> Result<(), Self::Error> {
+        Ok(())
+    }
+
+    fn newtype_variant_core<T>(self, core: T) -> Result<T::Value, Self::Error>
+    where
+        T: DeserializableCore<'toy>,
+    {
+        core.deserialize(self.de)
+    }
+
+    fn tuple_variant<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: Visitor<'toy>,
+    {
+        toy_pack::deser::Deserializer::deserialize_seq(self.de, visitor)
+    }
+}

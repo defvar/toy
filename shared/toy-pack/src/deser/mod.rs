@@ -6,13 +6,13 @@ pub use self::deserializer::{
 };
 pub use self::error::Error;
 pub use self::visitor::Visitor;
-
-pub mod from_primitive;
+pub use from_primitive::FromPrimitive;
 
 mod deser_ops;
 mod deserializer;
 pub mod discard;
 mod error;
+pub mod from_primitive;
 mod impl_builtin;
 mod impl_map;
 mod impl_primitive;
