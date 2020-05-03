@@ -7,3 +7,6 @@ edition = "2018"
 [dependencies]
 failure = "0.1.6"
 toy-pack = {path = "../toy-pack"}
+
+[dev-dependencies]
+toy-pack-derive = {path = "../toy-pack-derive"}

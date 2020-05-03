@@ -7,7 +7,7 @@ mod reader;
 mod token;
 
 pub use self::decoder::Decoder;
-pub use self::error::DecodeError;
+pub use self::error::{DecodeError, DecodeErrorKind};
 pub use self::reader::{IoReader, Reader, SliceReader};
 pub use self::token::Token;
 
@@ -27,6 +27,13 @@ impl<'b, 'c, T: ?Sized + 'static> Deref for Reference<'b, 'c, T> {
             Reference::Copied(c) => c,
         }
     }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum ParseNumber {
+    U64(u64),
+    I64(i64),
+    F64(f64),
 }
 
 pub fn decoder_from_slice(slice: &[u8]) -> Decoder<reader::SliceReader> {

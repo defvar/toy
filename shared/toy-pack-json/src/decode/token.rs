@@ -11,4 +11,5 @@ pub enum Token {
     Null,
     ValueSeparator,
     NameSeparator,
+    Unexpected(u8),
 }

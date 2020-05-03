@@ -1,6 +1,6 @@
 use super::reader::Reader;
 use super::{DecodeError, Reference, Result, Token};
-use std::io;
+use crate::decode::ParseNumber;
 
 pub struct Decoder<B> {
     reader: B,
@@ -35,63 +35,13 @@ where
         }
     }
 
-    pub fn decode_i64(&mut self) -> Result<i64> {
-        match self.peek_token()? {
-            Some(Token::Number) => {
-                let mut negative = false;
-                let mut r = 0u64;
-                if self.peek()? == Some(b'-') {
-                    negative = true;
-                    let _ = self.next()?;
-                }
-
-                loop {
-                    match self.peek_or_null()? {
-                        b'0'..=b'9' => {
-                            let b = self.next_or_eof()?;
-                            r = r * 10 + ((b - b'0') as u64);
-                        }
-                        _ => break,
-                    }
-                }
-                if negative {
-                    Ok((r as i64) * -1)
-                } else {
-                    Ok(r as i64)
-                }
-            }
-            Some(other) => Err(DecodeError::from(other)),
-            None => Err(DecodeError::eof_while_parsing_value()),
-        }
-    }
-
-    pub fn decode_u64(&mut self) -> Result<u64> {
-        match self.peek_token()? {
-            Some(Token::Number) => {
-                let mut r = 0u64;
-                loop {
-                    match self.peek_or_null()? {
-                        b'0'..=b'9' => {
-                            println!("aaaa");
-                            let b = self.next_or_eof()?;
-                            r = r * 10 + ((b - b'0') as u64);
-                        }
-                        _ => break,
-                    }
-                }
-                Ok(r)
-            }
-            Some(other) => Err(DecodeError::from(other)),
-            None => Err(DecodeError::eof_while_parsing_value()),
-        }
-    }
-
-    pub fn decode_f64(&mut self) -> Result<f64> {
+    pub fn decode_number(&mut self) -> Result<ParseNumber> {
         match self.peek_token()? {
             Some(Token::Number) => {
                 let mut negative = false;
                 let mut r = 0u64;
                 let mut r2 = 0u64;
+
                 if self.peek()? == Some(b'-') {
                     negative = true;
                     let _ = self.next()?;
@@ -119,20 +69,25 @@ where
                         _ => break,
                     }
                 }
-                let f = if r2 == 0 {
-                    r as f64
+                if r2 == 0 {
+                    if negative {
+                        Ok(ParseNumber::I64(-(r as i64)))
+                    } else {
+                        Ok(ParseNumber::U64(r))
+                    }
                 } else {
                     match format!("{}.{}", r, r2).parse::<f64>() {
-                        Ok(v) => v,
+                        Ok(v) => {
+                            if negative {
+                                Ok(ParseNumber::F64(-v))
+                            } else {
+                                Ok(ParseNumber::F64(v))
+                            }
+                        }
                         Err(e) => {
                             return Err(DecodeError::error(format!("parse float error: {:?}", e)))
                         }
                     }
-                };
-                if negative {
-                    Ok(-f)
-                } else {
-                    Ok(f)
                 }
             }
             Some(other) => Err(DecodeError::from(other)),
@@ -241,7 +196,7 @@ where
     }
 
     #[inline]
-    fn peek_token(&mut self) -> Result<Option<Token>> {
+    pub fn peek_token(&mut self) -> Result<Option<Token>> {
         let fb = self.peek_until()?;
         Ok(match fb {
             Some(b'{') => Some(Token::BeginObject),
@@ -256,12 +211,7 @@ where
             Some(b'-') => Some(Token::Number),
             Some(b'0'..=b'9') => Some(Token::Number),
             Some(b'\"') => Some(Token::String),
-            Some(other) => {
-                return Err(DecodeError::error(format!(
-                    "unexpected token byte: {:?}",
-                    other
-                )))
-            }
+            Some(other) => Some(Token::Unexpected(other)),
             None => None,
         })
     }

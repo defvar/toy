@@ -13,7 +13,7 @@ pub struct DeserializeSeq<'a, B: 'a> {
 
 impl<'a, B: 'a> DeserializeSeq<'a, B> {
     pub fn new(de: &'a mut Decoder<B>) -> Self {
-        Self { de, first: false }
+        Self { de, first: true }
     }
 }
 
@@ -27,13 +27,13 @@ where
     where
         T: DeserializableCore<'toy>,
     {
-        let b = match self.de.peek() {
-            Ok(Some(b']')) => return Ok(None),
-            Ok(Some(b',')) if !self.first => {
+        let b = match self.de.peek_until()? {
+            Some(b']') => return Ok(None),
+            Some(b',') if !self.first => {
                 let _ = self.de.next()?;
                 self.de.peek_until()?
             }
-            Ok(Some(b)) => {
+            Some(b) => {
                 if self.first {
                     self.first = false;
                     Some(b)
@@ -41,8 +41,7 @@ where
                     return Err(DecodeError::error("ExpectedListCommaOrEnd"));
                 }
             }
-            Ok(None) => return Err(DecodeError::eof_while_parsing_value()),
-            Err(e) => return Err(e),
+            None => return Err(DecodeError::eof_while_parsing_value()),
         };
 
         match b {
@@ -64,7 +63,7 @@ pub struct DeserializeMap<'a, B: 'a> {
 
 impl<'a, B: 'a> DeserializeMap<'a, B> {
     pub fn new(de: &'a mut Decoder<B>) -> Self {
-        Self { de, first: false }
+        Self { de, first: true }
     }
 }
 
@@ -78,13 +77,13 @@ where
     where
         V: Visitor<'toy>,
     {
-        let b = match self.de.peek() {
-            Ok(Some(b'}')) => return Ok(None),
-            Ok(Some(b',')) if !self.first => {
+        let b = match self.de.peek_until()? {
+            Some(b'}') => return Ok(None),
+            Some(b',') if !self.first => {
                 let _ = self.de.next()?;
                 self.de.peek_until()?
             }
-            Ok(Some(b)) => {
+            Some(b) => {
                 if self.first {
                     self.first = false;
                     Some(b)
@@ -92,8 +91,7 @@ where
                     return Err(DecodeError::error("ExpectedObjectCommaOrEnd"));
                 }
             }
-            Ok(None) => return Err(DecodeError::eof_while_parsing_value()),
-            Err(e) => return Err(e),
+            None => return Err(DecodeError::eof_while_parsing_value()),
         };
 
         match b {
@@ -106,7 +104,7 @@ where
                 }
                 .map(Some)
             }
-            Some(_) => Err(DecodeError::error("KeyMustBeAString")),
+            Some(_) => Err(DecodeError::key_must_be_a_string()),
             None => Err(DecodeError::eof_while_parsing_value()),
         }
     }
@@ -115,13 +113,13 @@ where
     where
         T: DeserializableCore<'toy>,
     {
-        let b = match self.de.peek() {
-            Ok(Some(b'}')) => return Ok(None),
-            Ok(Some(b',')) if !self.first => {
+        let b = match self.de.peek_until()? {
+            Some(b'}') => return Ok(None),
+            Some(b',') if !self.first => {
                 let _ = self.de.next()?;
                 self.de.peek_until()?
             }
-            Ok(Some(b)) => {
+            Some(b) => {
                 if self.first {
                     self.first = false;
                     Some(b)
@@ -129,14 +127,13 @@ where
                     return Err(DecodeError::error("ExpectedObjectCommaOrEnd"));
                 }
             }
-            Ok(None) => return Err(DecodeError::eof_while_parsing_value()),
-            Err(e) => return Err(e),
+            None => return Err(DecodeError::eof_while_parsing_value()),
         };
 
         match b {
             Some(b'}') => Err(DecodeError::error("TrailingComma")),
             Some(b'"') => core.deserialize(&mut *self.de).map(Some),
-            Some(_) => Err(DecodeError::error("KeyMustBeAString")),
+            Some(_) => Err(DecodeError::key_must_be_a_string()),
             None => Err(DecodeError::eof_while_parsing_value()),
         }
     }
