@@ -255,7 +255,7 @@ impl<'a> SerializeSeqOps for SerializeCompound<'a> {
     type Error = SerializeError;
 
     #[inline]
-    fn next<T>(&mut self, value: &T) -> Result<(), Self::Error>
+    fn next<T: ?Sized>(&mut self, value: &T) -> Result<(), Self::Error>
     where
         T: Serializable,
     {
@@ -283,7 +283,7 @@ impl<'a> SerializeMapOps for SerializeCompound<'a> {
     type Error = SerializeError;
 
     #[inline]
-    fn next_key<T>(&mut self, key: &T) -> Result<(), Self::Error>
+    fn next_key<T: ?Sized>(&mut self, key: &T) -> Result<(), Self::Error>
     where
         T: Serializable,
     {
@@ -296,7 +296,7 @@ impl<'a> SerializeMapOps for SerializeCompound<'a> {
     }
 
     #[inline]
-    fn next_value<T>(&mut self, value: &T) -> Result<(), Self::Error>
+    fn next_value<T: ?Sized>(&mut self, value: &T) -> Result<(), Self::Error>
     where
         T: Serializable,
     {
@@ -368,7 +368,7 @@ impl<'a> SerializeTupleVariantOps for SerializeTupleVariant<'a> {
     type Ok = ();
     type Error = SerializeError;
 
-    fn next<T>(&mut self, value: &T) -> Result<(), Self::Error>
+    fn next<T: ?Sized>(&mut self, value: &T) -> Result<(), Self::Error>
     where
         T: Serializable,
     {

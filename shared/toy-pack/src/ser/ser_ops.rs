@@ -9,7 +9,7 @@ pub trait SerializeSeqOps {
 
     type Error: Error;
 
-    fn next<T>(&mut self, value: &T) -> Result<(), Self::Error>
+    fn next<T: ?Sized>(&mut self, value: &T) -> Result<(), Self::Error>
     where
         T: Serializable;
 
@@ -25,11 +25,11 @@ pub trait SerializeMapOps {
 
     type Error: Error;
 
-    fn next_key<T>(&mut self, key: &T) -> Result<(), Self::Error>
+    fn next_key<T: ?Sized>(&mut self, key: &T) -> Result<(), Self::Error>
     where
         T: Serializable;
 
-    fn next_value<T>(&mut self, value: &T) -> Result<(), Self::Error>
+    fn next_value<T: ?Sized>(&mut self, value: &T) -> Result<(), Self::Error>
     where
         T: Serializable;
 
@@ -59,7 +59,7 @@ pub trait SerializeTupleVariantOps {
 
     type Error: Error;
 
-    fn next<T>(&mut self, value: &T) -> Result<(), Self::Error>
+    fn next<T: ?Sized>(&mut self, value: &T) -> Result<(), Self::Error>
     where
         T: Serializable;
 

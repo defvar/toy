@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use toy_pack_json::{unpack, DecodeErrorKind};
+use toy_pack_json::{pack, unpack, DecodeErrorKind};
 
 #[test]
 fn de_map() {
@@ -13,6 +13,19 @@ fn de_map() {
     let r = unpack::<HashMap<String, u32>>(json.as_bytes()).unwrap();
 
     assert_eq!(r, expected);
+}
+
+#[test]
+fn ser_map() {
+    let d = {
+        let mut m = HashMap::new();
+        m.insert("a".to_owned(), 1u32);
+        m
+    };
+    let expected = "{\"a\":1}";
+    let r = pack(&d).unwrap();
+
+    assert_eq!(std::str::from_utf8(r.as_slice()).unwrap(), expected);
 }
 
 #[test]

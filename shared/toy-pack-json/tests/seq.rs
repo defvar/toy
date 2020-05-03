@@ -1,4 +1,4 @@
-use toy_pack_json::{unpack, DecodeErrorKind};
+use toy_pack_json::{pack, unpack, DecodeErrorKind};
 
 #[test]
 fn de_seq() {
@@ -7,6 +7,15 @@ fn de_seq() {
     let r = unpack::<Vec<u32>>(json.as_bytes()).unwrap();
 
     assert_eq!(r, expected);
+}
+
+#[test]
+fn ser_seq() {
+    let d = vec![1u32, 2u32, 3u32];
+    let expected = "[1,2,3]";
+    let r = pack(&d).unwrap();
+
+    assert_eq!(std::str::from_utf8(r.as_slice()).unwrap(), expected);
 }
 
 #[test]
