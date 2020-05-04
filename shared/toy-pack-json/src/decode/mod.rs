@@ -1,3 +1,5 @@
+//! Decoder for Json data.
+
 use core::ops::Deref;
 use std::io;
 
@@ -8,6 +10,7 @@ mod token;
 
 pub use self::decoder::Decoder;
 pub use self::error::{DecodeError, DecodeErrorKind};
+pub use self::reader::Position;
 pub use self::reader::{IoReader, Reader, SliceReader};
 pub use self::token::Token;
 

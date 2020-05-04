@@ -18,7 +18,7 @@ pub trait Error: Sized + Fail {
         T: Display,
     {
         Error::custom(format_args!(
-            "invalid type: unexpected {}",
+            "invalid type, expected:{}",
             expected_type_name
         ))
     }

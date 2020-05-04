@@ -126,7 +126,7 @@ where
                 self.write_string_no_escape(&s[start..i])?;
             }
 
-            self.write_escape_char(byte)?;
+            self.write_escape_char(escape)?;
 
             start = i + 1;
         }
@@ -217,12 +217,8 @@ where
     }
 
     #[inline]
-    pub fn write_begin_object_value(&mut self, first: bool) -> Result<()> {
-        if first {
-            Ok(())
-        } else {
-            self.writer.write_all(b":").map_err(Into::into)
-        }
+    pub fn write_begin_object_value(&mut self) -> Result<()> {
+        self.writer.write_all(b":").map_err(Into::into)
     }
 
     #[inline]

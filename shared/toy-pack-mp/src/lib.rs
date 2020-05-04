@@ -1,4 +1,4 @@
-//! Implementation for MessagePack
+//! # toy-pack Implementation for MessagePack
 
 #[macro_use]
 extern crate failure;

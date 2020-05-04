@@ -78,7 +78,7 @@ where
     where
         T: Serializable,
     {
-        self.ser.write_begin_object_value(self.first)?;
+        self.ser.write_begin_object_value()?;
         value.serialize(&mut *self.ser)?;
         self.ser.write_end_object_value()?;
         Ok(())

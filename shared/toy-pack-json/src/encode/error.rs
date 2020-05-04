@@ -7,19 +7,16 @@ use toy_pack::ser::Error;
 /// Using Encoder and Serializer.
 /// It is used when an error occurs in the implementation of serialization.
 ///
-#[derive(Debug, Fail)]
+#[derive(Debug, Fail, PartialEq, Clone)]
 pub enum EncodeErrorKind {
-    #[fail(display = "encode error, invalid type: {:?}", inner)]
+    #[fail(display = "invalid type: {:?}", inner)]
     InvalidType { inner: String },
 
-    #[fail(display = "encode error:io error:{:?}", inner)]
-    IOError { inner: io::Error },
+    #[fail(display = "io error:{:?}. msg:{:?}", kind, msg)]
+    IOError { kind: io::ErrorKind, msg: String },
 
-    #[fail(display = "encode error:{:?}", inner)]
+    #[fail(display = "{:?}", inner)]
     Error { inner: String },
-
-    #[fail(display = "encode error: unknown seq length")]
-    UnknownSeqLength,
 }
 
 #[derive(Debug)]
@@ -58,6 +55,10 @@ impl From<Context<EncodeErrorKind>> for EncodeError {
 }
 
 impl EncodeError {
+    pub fn kind(&self) -> &EncodeErrorKind {
+        self.inner.get_context()
+    }
+
     pub fn error<T>(msg: T) -> EncodeError
     where
         T: Display,
@@ -67,15 +68,15 @@ impl EncodeError {
         }
         .into()
     }
-
-    pub fn unknown_seq_length() -> EncodeError {
-        EncodeErrorKind::UnknownSeqLength.into()
-    }
 }
 
 impl From<io::Error> for EncodeError {
     fn from(e: io::Error) -> EncodeError {
-        EncodeErrorKind::IOError { inner: e }.into()
+        EncodeErrorKind::IOError {
+            kind: e.kind(),
+            msg: format!("{}", e),
+        }
+        .into()
     }
 }
 

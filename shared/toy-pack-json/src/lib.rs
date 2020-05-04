@@ -1,3 +1,5 @@
+//! # toy-pack Implementation for Json
+
 #[macro_use]
 extern crate failure;
 
@@ -6,7 +8,7 @@ pub use self::decode::{
     decoder_from_reader, decoder_from_slice, DecodeError, DecodeErrorKind, Decoder, ParseNumber,
 };
 pub use self::encode::{encoder_from_writer, EncodeError, EncodeErrorKind, Encoder};
-pub use self::ser::{pack, pack_to_writer};
+pub use self::ser::{pack, pack_to_string, pack_to_writer};
 
 mod de;
 mod decode;

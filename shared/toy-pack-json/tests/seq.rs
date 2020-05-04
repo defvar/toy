@@ -1,4 +1,4 @@
-use toy_pack_json::{pack, unpack, DecodeErrorKind};
+use toy_pack_json::{pack_to_string, unpack, DecodeErrorKind};
 
 #[test]
 fn de_seq() {
@@ -13,19 +13,25 @@ fn de_seq() {
 fn ser_seq() {
     let d = vec![1u32, 2u32, 3u32];
     let expected = "[1,2,3]";
-    let r = pack(&d).unwrap();
+    let r = pack_to_string(&d).unwrap();
 
-    assert_eq!(std::str::from_utf8(r.as_slice()).unwrap(), expected);
+    assert_eq!(r, expected);
 }
 
 #[test]
 fn de_seq_err_eof() {
     let json = "[1,2";
     match unpack::<Vec<u32>>(json.as_bytes()) {
-        Err(e) => match e.kind() {
-            DecodeErrorKind::EofWhileParsingValue => (),
-            other => panic!("unexpected result: {:?}", other),
-        },
+        Err(e) if *e.kind() == DecodeErrorKind::EofWhileParsingValue => (),
+        other => panic!("unexpected result: {:?}", other),
+    };
+}
+
+#[test]
+fn de_seq_err_trailing_comma() {
+    let json = "[1,2,3,]";
+    match unpack::<Vec<u32>>(json.as_bytes()) {
+        Err(e) if *e.kind() == DecodeErrorKind::TrailingComma { line: 1, column: 8 } => (),
         other => panic!("unexpected result: {:?}", other),
     };
 }

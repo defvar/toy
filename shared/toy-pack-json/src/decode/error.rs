@@ -5,36 +5,54 @@ use std::str::Utf8Error;
 
 use toy_pack::deser::Error;
 
-use crate::decode::Token;
+use crate::decode::{Position, Token};
 
 /// Using Decoder and Deserializer.
 /// It is used when an error occurs in the implementation of deserialization.
 ///
-#[derive(Debug, Fail)]
+#[derive(Debug, Fail, PartialEq, Clone)]
 pub enum DecodeErrorKind {
-    #[fail(display = "decode error:invalid type. decoded token:{:?}", inner)]
-    InvalidType { inner: Token },
+    #[fail(display = "unexpected token:{:?}, expected:{:?}", unexpected, expected)]
+    InvalidToken { expected: String, unexpected: Token },
 
-    #[fail(display = "decode error:num value out of range.")]
-    OutOfRange,
-
-    #[fail(display = "decode error:invalid utf8 sequence. sequence:{:?}", inner)]
+    #[fail(display = "invalid utf8 sequence {:?}", inner)]
     Utf8Error { inner: Utf8Error },
 
-    #[fail(display = "decode error:io error:{:?}", inner)]
-    IOError { inner: io::Error },
+    #[fail(display = "io error:{:?}. msg:{:?}", kind, msg)]
+    IOError { kind: io::ErrorKind, msg: String },
 
-    #[fail(display = "decode error: invalid number")]
+    #[fail(display = "invalid number")]
     InvalidNumber,
 
-    #[fail(display = "decode error: {:?}", inner)]
+    #[fail(display = "{:?}", inner)]
     Error { inner: String },
 
-    #[fail(display = "decode error: eof while parsing value")]
+    #[fail(display = "eof while parsing value")]
     EofWhileParsingValue,
 
-    #[fail(display = "decode error: object key must be a String")]
-    KeyMustBeAString,
+    #[fail(
+        display = "object key must be a String at line {} column {}",
+        line, column
+    )]
+    KeyMustBeAString { line: usize, column: usize },
+
+    #[fail(
+        display = "expected comma or array end at line {} column {}",
+        line, column
+    )]
+    ExpectedArrayCommaOrEnd { line: usize, column: usize },
+
+    #[fail(
+        display = "expected comma or object end at line {} column {}",
+        line, column
+    )]
+    ExpectedObjectCommaOrEnd { line: usize, column: usize },
+
+    #[fail(display = "trailing comma at line {} column {}.", line, column)]
+    TrailingComma { line: usize, column: usize },
+
+    #[fail(display = "expected colon at line {} column {}.", line, column)]
+    ExpectedColon { line: usize, column: usize },
 }
 
 #[derive(Debug)]
@@ -81,6 +99,17 @@ impl DecodeError {
         self.inner.get_context()
     }
 
+    pub fn invalid_token<T>(unexpected: Token, expected: T) -> DecodeError
+    where
+        T: Display,
+    {
+        DecodeErrorKind::InvalidToken {
+            unexpected,
+            expected: expected.to_string(),
+        }
+        .into()
+    }
+
     pub fn error<T>(msg: T) -> DecodeError
     where
         T: Display,
@@ -99,14 +128,44 @@ impl DecodeError {
         DecodeErrorKind::EofWhileParsingValue.into()
     }
 
-    pub fn key_must_be_a_string() -> DecodeError {
-        DecodeErrorKind::KeyMustBeAString.into()
+    pub fn key_must_be_a_string(pos: Position) -> DecodeError {
+        DecodeErrorKind::KeyMustBeAString {
+            line: pos.line,
+            column: pos.column,
+        }
+        .into()
     }
-}
 
-impl From<Token> for DecodeError {
-    fn from(token: Token) -> DecodeError {
-        DecodeErrorKind::InvalidType { inner: token }.into()
+    pub fn array_comma_or_end(pos: Position) -> DecodeError {
+        DecodeErrorKind::ExpectedArrayCommaOrEnd {
+            line: pos.line,
+            column: pos.column,
+        }
+        .into()
+    }
+
+    pub fn object_comma_or_end(pos: Position) -> DecodeError {
+        DecodeErrorKind::ExpectedObjectCommaOrEnd {
+            line: pos.line,
+            column: pos.column,
+        }
+        .into()
+    }
+
+    pub fn trailing_comma(pos: Position) -> DecodeError {
+        DecodeErrorKind::TrailingComma {
+            line: pos.line,
+            column: pos.column,
+        }
+        .into()
+    }
+
+    pub fn expected_colon(pos: Position) -> DecodeError {
+        DecodeErrorKind::ExpectedColon {
+            line: pos.line,
+            column: pos.column,
+        }
+        .into()
     }
 }
 
@@ -118,7 +177,11 @@ impl From<Utf8Error> for DecodeError {
 
 impl From<io::Error> for DecodeError {
     fn from(e: io::Error) -> DecodeError {
-        DecodeErrorKind::IOError { inner: e }.into()
+        DecodeErrorKind::IOError {
+            kind: e.kind(),
+            msg: format!("{}", e),
+        }
+        .into()
     }
 }
 

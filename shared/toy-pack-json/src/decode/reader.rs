@@ -1,6 +1,14 @@
 use std::io;
 
-use super::{Reference, Result};
+use super::Result;
+
+/// reader position.
+/// use error detail. (e.g. error at line:4, column:12)
+#[derive(Debug, Clone)]
+pub struct Position {
+    pub line: usize,
+    pub column: usize,
+}
 
 /// Input source for Decoder.
 ///
@@ -9,9 +17,9 @@ pub trait Reader<'toy> {
 
     fn get_byte(&mut self) -> Result<Option<u8>>;
 
-    fn get_bytes<'a>(&'a mut self, len: usize) -> Result<Reference<'toy, 'a, [u8]>>;
-
     fn discard(&mut self, len: usize) -> Result<()>;
+
+    fn position(&self) -> Position;
 }
 
 /// Input source that reads from a slice of bytes.
@@ -64,16 +72,14 @@ impl<'toy> Reader<'toy> for SliceReader<'toy> {
     }
 
     #[inline]
-    fn get_bytes<'a>(&'a mut self, len: usize) -> Result<Reference<'toy, 'a, [u8]>> {
-        let p = self.position;
-        self.advance(len);
-        Ok(Reference::Borrowed(&self.raw[p..p + len]))
-    }
-
-    #[inline]
     fn discard(&mut self, len: usize) -> Result<()> {
         self.advance(len);
         Ok(())
+    }
+
+    #[inline]
+    fn position(&self) -> Position {
+        position_of_index(&self.raw, self.position)
     }
 }
 
@@ -81,14 +87,16 @@ impl<'toy> Reader<'toy> for SliceReader<'toy> {
 ///
 pub struct IoReader<R> {
     raw: R,
-    buffer: Vec<u8>,
+    line: usize,
+    column: usize,
 }
 
 impl<R: io::Read> IoReader<R> {
     pub fn new(raw: R) -> Self {
         Self {
             raw,
-            buffer: vec![0u8; 128],
+            line: 1,
+            column: 0,
         }
     }
 }
@@ -107,19 +115,16 @@ where
         let mut r = [0u8; 1];
         let size = self.raw.read(&mut r)?;
         if size > 0 {
+            if r[0] == b'\n' {
+                self.line += 1;
+                self.column = 0;
+            } else {
+                self.column += 1;
+            }
             Ok(Some(r[0]))
         } else {
             Ok(None)
         }
-    }
-
-    #[inline]
-    fn get_bytes<'a>(&'a mut self, len: usize) -> Result<Reference<'toy, 'a, [u8]>> {
-        if self.buffer.capacity() < len {
-            self.buffer.resize(len, 0u8);
-        }
-        self.raw.read_exact(&mut self.buffer[..len])?;
-        Ok(Reference::Copied(&self.buffer[..len]))
     }
 
     #[inline]
@@ -134,4 +139,28 @@ where
         }
         Ok(())
     }
+
+    #[inline]
+    fn position(&self) -> Position {
+        Position {
+            line: self.line,
+            column: self.column,
+        }
+    }
+}
+
+fn position_of_index(buf: &[u8], i: usize) -> Position {
+    let mut position = Position { line: 1, column: 0 };
+    for ch in &buf[..i] {
+        match *ch {
+            b'\n' => {
+                position.line += 1;
+                position.column = 0;
+            }
+            _ => {
+                position.column += 1;
+            }
+        }
+    }
+    position
 }

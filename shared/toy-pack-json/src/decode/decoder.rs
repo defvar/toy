@@ -1,6 +1,6 @@
 use super::reader::Reader;
 use super::{DecodeError, Reference, Result, Token};
-use crate::decode::ParseNumber;
+use crate::decode::{ParseNumber, Position};
 
 pub struct Decoder<B> {
     reader: B,
@@ -18,19 +18,24 @@ where
         }
     }
 
+    #[inline]
+    pub fn position(&self) -> Position {
+        self.reader.position()
+    }
+
     pub fn decode_bool(&mut self) -> Result<bool> {
         match self.peek_token()? {
             Some(Token::True) => {
-                let _ = self.next()?;
+                self.consume();
                 self.parse_ident(b"rue")?;
                 Ok(true)
             }
             Some(Token::False) => {
-                let _ = self.next()?;
+                self.consume();
                 self.parse_ident(b"alse")?;
                 Ok(false)
             }
-            Some(other) => Err(DecodeError::from(other)),
+            Some(other) => Err(DecodeError::invalid_token(other, "True or False")),
             None => Err(DecodeError::eof_while_parsing_value()),
         }
     }
@@ -44,7 +49,7 @@ where
 
                 if self.peek()? == Some(b'-') {
                     negative = true;
-                    let _ = self.next()?;
+                    self.consume();
                 }
 
                 loop {
@@ -90,7 +95,7 @@ where
                     }
                 }
             }
-            Some(other) => Err(DecodeError::from(other)),
+            Some(other) => Err(DecodeError::invalid_token(other, "Number")),
             None => Err(DecodeError::eof_while_parsing_value()),
         }
     }
@@ -98,7 +103,7 @@ where
     pub fn decode_str<'a>(&'a mut self, buf: &'a mut Vec<u8>) -> Result<Reference<'toy, 'a, str>> {
         match self.peek_token()? {
             Some(Token::String) => {
-                let _ = self.next()?;
+                self.consume();
                 loop {
                     let b = self.next_or_eof()?;
                     if !ESCAPE[b as usize] {
@@ -116,7 +121,7 @@ where
                     }
                 }
             }
-            Some(other) => Err(DecodeError::from(other)),
+            Some(other) => Err(DecodeError::invalid_token(other, "String")),
             None => Err(DecodeError::eof_while_parsing_value()),
         }
     }
@@ -141,18 +146,13 @@ where
     }
 
     #[inline]
-    fn get_byte(&mut self) -> Result<Option<u8>> {
-        self.reader.get_byte()
-    }
-
-    #[inline]
     pub fn next(&mut self) -> Result<Option<u8>> {
         match self.cache {
             Some(b) => {
                 self.cache = None;
                 Ok(Some(b))
             }
-            None => self.get_byte(),
+            None => self.reader.get_byte(),
         }
     }
 
@@ -166,15 +166,15 @@ where
     }
 
     pub fn end_seq(&mut self) -> Result<()> {
-        match self.peek_until()? {
-            Some(b']') => {
-                let _ = self.next()?;
+        match self.peek_token()? {
+            Some(Token::EndArray) => {
+                self.consume();
                 Ok(())
             }
-            Some(b',') => {
-                let _ = self.next()?;
-                match self.peek_until()? {
-                    Some(b']') => Err(DecodeError::error("TrailingComma")),
+            Some(Token::Comma) => {
+                self.consume();
+                match self.peek_token()? {
+                    Some(Token::EndArray) => Err(DecodeError::trailing_comma(self.position())),
                     Some(_) => Err(DecodeError::error("TrailingCharacters")),
                     None => Err(DecodeError::eof_while_parsing_value()),
                 }
@@ -184,17 +184,18 @@ where
     }
 
     pub fn end_map(&mut self) -> Result<()> {
-        match self.peek_until()? {
-            Some(b'}') => {
+        match self.peek_token()? {
+            Some(Token::EndObject) => {
                 let _ = self.next()?;
                 Ok(())
             }
-            Some(b',') => Err(DecodeError::error("TrailingComma")),
+            Some(Token::Comma) => Err(DecodeError::trailing_comma(self.position())),
             Some(_) => Err(DecodeError::error("TrailingCharacters")),
             None => Err(DecodeError::eof_while_parsing_value()),
         }
     }
 
+    /// peek byte as a `Token`.
     #[inline]
     pub fn peek_token(&mut self) -> Result<Option<Token>> {
         let fb = self.peek_until()?;
@@ -206,43 +207,63 @@ where
             Some(b't') => Some(Token::True),
             Some(b'f') => Some(Token::False),
             Some(b'n') => Some(Token::Null),
-            Some(b',') => Some(Token::ValueSeparator),
-            Some(b':') => Some(Token::NameSeparator),
+            Some(b',') => Some(Token::Comma),
+            Some(b':') => Some(Token::Colon),
             Some(b'-') => Some(Token::Number),
             Some(b'0'..=b'9') => Some(Token::Number),
-            Some(b'\"') => Some(Token::String),
+            Some(b'"') => Some(Token::String),
             Some(other) => Some(Token::Unexpected(other)),
             None => None,
         })
     }
 
+    /// Peek byte.
+    ///
     #[inline]
     pub fn peek(&mut self) -> Result<Option<u8>> {
         match self.cache {
             Some(v) => Ok(Some(v)),
             None => {
-                let v = self.get_byte()?;
+                let v = self.reader.get_byte()?;
                 self.cache = v;
                 Ok(v)
             }
         }
     }
 
+    /// Peek byte.
+    ///
+    /// If eof then null charactor.
+    ///
     #[inline]
     pub fn peek_or_null(&mut self) -> Result<u8> {
         Ok(self.peek()?.unwrap_or(b'\x00'))
     }
 
+    /// Peek byte.
+    ///
+    /// Until valid charactor.
+    ///
     #[inline]
     pub fn peek_until(&mut self) -> Result<Option<u8>> {
         loop {
             match self.peek()? {
                 Some(b'\r') | Some(b'\n') | Some(b'\t') | Some(b' ') => {
-                    let _ = self.next()?;
+                    self.consume();
                 }
                 other => return Ok(other),
             };
         }
+    }
+
+    /// Consume the peeked byte.
+    ///
+    /// Must be after peeked.
+    ///
+    #[inline]
+    pub fn consume(&mut self) {
+        assert!(self.cache.is_some());
+        self.cache = None;
     }
 
     pub fn parse_ident(&mut self, ident: &[u8]) -> Result<()> {

@@ -11,19 +11,19 @@ use crate::marker::Marker;
 ///
 #[derive(Debug, Fail)]
 pub enum DecodeError {
-    #[fail(display = "decode error:invalid type. decoded marker:{:?}", inner)]
+    #[fail(display = "invalid type. decoded marker:{:?}", inner)]
     InvalidType { inner: Marker },
 
-    #[fail(display = "decode error:num value out of range.")]
+    #[fail(display = "num value out of range.")]
     OutOfRange,
 
-    #[fail(display = "decode error:invalid utf8 sequence. sequence:{:?}", inner)]
+    #[fail(display = "invalid utf8 sequence {:?}", inner)]
     Utf8Error { inner: Utf8Error },
 
-    #[fail(display = "decode error:io error:{:?}", inner)]
+    #[fail(display = "io error:{:?}", inner)]
     IOError { inner: io::Error },
 
-    #[fail(display = "decode error: {:?}", inner)]
+    #[fail(display = "{:?}", inner)]
     Error { inner: String },
 }
 

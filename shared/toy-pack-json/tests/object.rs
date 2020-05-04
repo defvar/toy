@@ -1,9 +1,10 @@
 use toy_pack_derive::*;
-use toy_pack_json::{unpack, DecodeErrorKind};
+use toy_pack_json::{pack_to_string, unpack, DecodeErrorKind};
+use toy_test_utils::unindent;
 
 #[test]
-fn de_nested_struct() {
-    #[derive(Debug, Unpack, PartialEq, Default)]
+fn ser_de_nested_struct() {
+    #[derive(Debug, Pack, Unpack, PartialEq, Default)]
     struct Outer {
         id: u32,
         name: String,
@@ -12,7 +13,7 @@ fn de_nested_struct() {
         columns: Option<Vec<Inner>>,
     }
 
-    #[derive(Debug, Unpack, Default, PartialEq)]
+    #[derive(Debug, Pack, Unpack, Default, PartialEq)]
     struct Inner {
         name: String,
     }
@@ -21,6 +22,7 @@ fn de_nested_struct() {
 {
   "id": 1,
   "name": "aiueo",
+  "age": null,
   "numbers": [1, 2, 3],
   "columns": [{ "name": "a" }, { "name": "b" }]
 }
@@ -41,6 +43,9 @@ fn de_nested_struct() {
         ]),
     };
     assert_eq!(r, expected);
+
+    let r = pack_to_string(&expected).unwrap();
+    assert_eq!(r, unindent(json));
 }
 
 #[test]
@@ -55,10 +60,47 @@ fn de_struct_err_eof() {
   "id": 1,
 "#;
     match unpack::<Data>(json.as_bytes()) {
-        Err(e) => match e.kind() {
-            DecodeErrorKind::EofWhileParsingValue => (),
-            other => panic!("unexpected result: {:?}", other),
-        },
+        Err(e) if *e.kind() == DecodeErrorKind::EofWhileParsingValue => (),
+        other => panic!("unexpected result: {:?}", other),
+    };
+}
+
+#[test]
+fn de_struct_err_expected_comma() {
+    #[derive(Debug, Unpack, PartialEq, Default)]
+    struct Data {
+        id: u32,
+        name: String,
+    }
+
+    let json = r#"
+{
+  "id": 1
+  "name": "aiueo"
+}
+"#;
+    match unpack::<Data>(json.as_bytes()) {
+        Err(e) if *e.kind() == DecodeErrorKind::ExpectedObjectCommaOrEnd { line: 4, column: 3 } => {
+            ()
+        }
+        other => panic!("unexpected result: {:?}", other),
+    };
+}
+
+#[test]
+fn de_struct_err_trailing_comma() {
+    #[derive(Debug, Unpack, PartialEq, Default)]
+    struct Data {
+        id: u32,
+    }
+
+    let json = r#"
+{
+  "id": 1,
+}
+"#;
+    match unpack::<Data>(json.as_bytes()) {
+        Err(e) if *e.kind() == DecodeErrorKind::TrailingComma { line: 4, column: 1 } => (),
         other => panic!("unexpected result: {:?}", other),
     };
 }

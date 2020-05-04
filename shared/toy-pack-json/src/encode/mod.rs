@@ -1,3 +1,5 @@
+//! Encoder for Json data.
+
 use std::{io, result};
 
 pub use self::encoder::Encoder;

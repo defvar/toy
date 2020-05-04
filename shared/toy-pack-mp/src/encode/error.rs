@@ -10,16 +10,16 @@ use crate::marker::Marker;
 ///
 #[derive(Debug, Fail)]
 pub enum EncodeError {
-    #[fail(display = "encode error, invalid type: {:?}", inner)]
+    #[fail(display = "invalid type: {:?}", inner)]
     InvalidType { inner: Marker },
 
-    #[fail(display = "encode error:io error:{:?}", inner)]
+    #[fail(display = "io error:{:?}", inner)]
     IOError { inner: io::Error },
 
-    #[fail(display = "encode error:{:?}", inner)]
+    #[fail(display = "{:?}", inner)]
     Error { inner: String },
 
-    #[fail(display = "encode error: unknown seq length")]
+    #[fail(display = "unknown seq length")]
     UnknownSeqLength,
 }
 

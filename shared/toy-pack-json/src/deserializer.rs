@@ -76,7 +76,7 @@ where
         let b = self.peek_token()?;
         match b {
             Some(Token::BeginArray) => {
-                let _ = self.next()?;
+                self.consume();
                 let ret = visitor.visit_seq(DeserializeSeq::new(self));
 
                 match (ret, self.end_seq()) {
@@ -84,7 +84,7 @@ where
                     (Err(err), _) | (_, Err(err)) => Err(err),
                 }
             }
-            Some(_) => Err(DecodeError::invalid_type("array")),
+            Some(other) => Err(DecodeError::invalid_token(other, "BeginArray")),
             None => Err(DecodeError::eof_while_parsing_value()),
         }
     }
@@ -96,7 +96,7 @@ where
         let b = self.peek_token()?;
         match b {
             Some(Token::BeginObject) => {
-                let _ = self.next()?;
+                self.consume();
                 let ret = visitor.visit_map(DeserializeMap::new(self));
 
                 match (ret, self.end_map()) {
@@ -104,7 +104,7 @@ where
                     (Err(err), _) | (_, Err(err)) => Err(err),
                 }
             }
-            Some(_) => Err(DecodeError::invalid_type("map")),
+            Some(other) => Err(DecodeError::invalid_token(other, "BeginObject")),
             None => Err(DecodeError::eof_while_parsing_value()),
         }
     }
@@ -116,7 +116,7 @@ where
         let t = self.peek_token()?;
         match t {
             Some(Token::BeginObject) => {
-                let _ = self.next()?;
+                self.consume();
                 let ret = visitor.visit_map(DeserializeMap::new(self));
 
                 match (ret, self.end_map()) {
@@ -125,7 +125,7 @@ where
                 }
             }
             Some(Token::BeginArray) => {
-                let _ = self.next()?;
+                self.consume();
                 let ret = visitor.visit_seq(DeserializeSeq::new(self));
 
                 match (ret, self.end_seq()) {
@@ -133,7 +133,10 @@ where
                     (Err(err), _) | (_, Err(err)) => Err(err),
                 }
             }
-            Some(_) => Err(DecodeError::invalid_type("map or array")),
+            Some(other) => Err(DecodeError::invalid_token(
+                other,
+                "BeginObject or BeginArray",
+            )),
             None => Err(DecodeError::eof_while_parsing_value()),
         }
     }
@@ -144,11 +147,11 @@ where
     {
         match self.peek_token()? {
             Some(Token::BeginObject) => {
-                let _ = self.next()?;
+                self.consume();
                 let value = visitor.visit_enum(DeserializeVarinat::new(self))?;
-                match self.peek_until()? {
-                    Some(b'}') => {
-                        let _ = self.next()?;
+                match self.peek_token()? {
+                    Some(Token::EndObject) => {
+                        self.consume();
                         Ok(value)
                     }
                     Some(_) => Err(DecodeError::error("ExpectedSomeValue")),
@@ -165,9 +168,9 @@ where
     where
         V: Visitor<'toy>,
     {
-        match self.peek_until()? {
-            Some(b'n') => {
-                let _ = self.next()?;
+        match self.peek_token()? {
+            Some(Token::Null) => {
+                self.consume();
                 self.parse_ident(b"ull")?;
                 visitor.visit_none()
             }
@@ -196,7 +199,7 @@ where
                 }
             }
             Some(Token::BeginArray) => {
-                let _ = self.next()?;
+                self.consume();
                 let ret = visitor.visit_seq(DeserializeSeq::new(self));
 
                 match (ret, self.end_seq()) {
@@ -205,7 +208,7 @@ where
                 }
             }
             Some(Token::BeginObject) => {
-                let _ = self.next()?;
+                self.consume();
                 let ret = visitor.visit_map(DeserializeMap::new(self));
 
                 match (ret, self.end_map()) {

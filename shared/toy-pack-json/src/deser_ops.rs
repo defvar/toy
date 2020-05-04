@@ -30,7 +30,7 @@ where
         let b = match self.de.peek_until()? {
             Some(b']') => return Ok(None),
             Some(b',') if !self.first => {
-                let _ = self.de.next()?;
+                self.de.consume();
                 self.de.peek_until()?
             }
             Some(b) => {
@@ -38,14 +38,14 @@ where
                     self.first = false;
                     Some(b)
                 } else {
-                    return Err(DecodeError::error("ExpectedListCommaOrEnd"));
+                    return Err(DecodeError::array_comma_or_end(self.de.position()));
                 }
             }
             None => return Err(DecodeError::eof_while_parsing_value()),
         };
 
         match b {
-            Some(b']') => Err(DecodeError::error("TrailingComma")),
+            Some(b']') => Err(DecodeError::trailing_comma(self.de.position())),
             Some(_) => core.deserialize(&mut *self.de).map(Some),
             None => Err(DecodeError::eof_while_parsing_value()),
         }
@@ -80,7 +80,7 @@ where
         let b = match self.de.peek_until()? {
             Some(b'}') => return Ok(None),
             Some(b',') if !self.first => {
-                let _ = self.de.next()?;
+                self.de.consume();
                 self.de.peek_until()?
             }
             Some(b) => {
@@ -88,14 +88,14 @@ where
                     self.first = false;
                     Some(b)
                 } else {
-                    return Err(DecodeError::error("ExpectedObjectCommaOrEnd"));
+                    return Err(DecodeError::object_comma_or_end(self.de.position()));
                 }
             }
             None => return Err(DecodeError::eof_while_parsing_value()),
         };
 
         match b {
-            Some(b'}') => Err(DecodeError::error("TrailingComma")),
+            Some(b'}') => Err(DecodeError::trailing_comma(self.de.position())),
             Some(b'"') => {
                 let mut buf = Vec::new();
                 match self.de.decode_str(&mut buf)? {
@@ -104,7 +104,7 @@ where
                 }
                 .map(Some)
             }
-            Some(_) => Err(DecodeError::key_must_be_a_string()),
+            Some(_) => Err(DecodeError::key_must_be_a_string(self.de.position())),
             None => Err(DecodeError::eof_while_parsing_value()),
         }
     }
@@ -113,27 +113,27 @@ where
     where
         T: DeserializableCore<'toy>,
     {
-        let b = match self.de.peek_until()? {
-            Some(b'}') => return Ok(None),
-            Some(b',') if !self.first => {
-                let _ = self.de.next()?;
-                self.de.peek_until()?
+        let b = match self.de.peek_token()? {
+            Some(Token::EndObject) => return Ok(None),
+            Some(Token::Comma) if !self.first => {
+                self.de.consume();
+                self.de.peek_token()?
             }
             Some(b) => {
                 if self.first {
                     self.first = false;
                     Some(b)
                 } else {
-                    return Err(DecodeError::error("ExpectedObjectCommaOrEnd"));
+                    return Err(DecodeError::object_comma_or_end(self.de.position()));
                 }
             }
             None => return Err(DecodeError::eof_while_parsing_value()),
         };
 
         match b {
-            Some(b'}') => Err(DecodeError::error("TrailingComma")),
-            Some(b'"') => core.deserialize(&mut *self.de).map(Some),
-            Some(_) => Err(DecodeError::key_must_be_a_string()),
+            Some(Token::EndObject) => Err(DecodeError::trailing_comma(self.de.position())),
+            Some(Token::String) => core.deserialize(&mut *self.de).map(Some),
+            Some(_) => Err(DecodeError::key_must_be_a_string(self.de.position())),
             None => Err(DecodeError::eof_while_parsing_value()),
         }
     }
@@ -142,12 +142,12 @@ where
     where
         T: DeserializableCore<'toy>,
     {
-        match self.de.peek_until()? {
-            Some(b':') => {
-                let _ = self.de.next()?;
+        match self.de.peek_token()? {
+            Some(Token::Colon) => {
+                self.de.consume();
                 core.deserialize(&mut *self.de)
             }
-            Some(_) => Err(DecodeError::error("ExpectedColon")),
+            Some(_) => Err(DecodeError::expected_colon(self.de.position())),
             None => Err(DecodeError::eof_while_parsing_value()),
         }
     }
@@ -183,10 +183,10 @@ where
             Reference::Copied(c) => visitor.visit_str::<DecodeError>(c),
         }?;
         match self.de.peek_token()? {
-            Some(Token::NameSeparator) => {
-                let _ = self.de.next()?;
+            Some(Token::Colon) => {
+                self.de.consume();
             }
-            Some(_) => return Err(DecodeError::error("ExpectedColon")),
+            Some(_) => return Err(DecodeError::expected_colon(self.de.position())),
             None => return Err(DecodeError::eof_while_parsing_value()),
         }
         Ok((s, self))

@@ -128,7 +128,7 @@ where
         self.write_end_string()?;
         self.write_end_object_key()?;
 
-        self.write_begin_object_value(true)?;
+        self.write_begin_object_value()?;
         value.serialize(&mut *self)?;
         self.write_end_object_value()?;
 
@@ -155,7 +155,7 @@ where
         self.write_end_object_key()?;
 
         // value
-        self.write_begin_object_value(true)?;
+        self.write_begin_object_value()?;
         // inner array begin
         self.write_begin_array()?;
         Ok(SerializeTupleVariant::new(self))
