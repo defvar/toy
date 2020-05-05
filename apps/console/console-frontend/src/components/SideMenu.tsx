@@ -1,37 +1,53 @@
 import * as React from 'react';
-import { createStyles, Theme, makeStyles } from '@material-ui/core/styles';
+import { Theme, makeStyles, useTheme } from '@material-ui/core/styles';
 import Drawer from '@material-ui/core/Drawer';
 import Divider from '@material-ui/core/Divider';
 import List from '@material-ui/core/List';
 import ListItem from '@material-ui/core/ListItem';
 import ListItemIcon from '@material-ui/core/ListItemIcon';
 import ListItemText from '@material-ui/core/ListItemText';
-import Toolbar from '@material-ui/core/Toolbar';
 import ViewModuleIcon from '@material-ui/icons/ViewModule';
 import TimelineIcon from '@material-ui/icons/Timeline';
 import LabelImportantIcon from '@material-ui/icons/LabelImportant';
 import { useHistory } from 'react-router-dom';
+import IconButton from '@material-ui/core/IconButton';
+import ChevronLeftIcon from '@material-ui/icons/ChevronLeft';
+import ChevronRightIcon from '@material-ui/icons/ChevronRight';
 
-const drawerWidth = 240;
-
-const useStyles = makeStyles((theme: Theme) =>
-    createStyles({
-        drawer: {
-            width: drawerWidth,
+const useStyles = makeStyles<Theme, SideMenuProps>((theme: Theme) =>
+    ({
+        drawer: props => ({
+            width: props.width,
             flexShrink: 0,
-        },
-        drawerPaper: {
-            width: drawerWidth,
-        },
+        }),
+        drawerPaper: props => ({
+            width: props.width,
+        }),
         drawerContainer: {
             overflow: 'auto',
         },
-    }),
+        drawerHeader: {
+            display: 'flex',
+            alignItems: 'center',
+            padding: theme.spacing(0, 1),
+            // necessary for content to be below app bar
+            ...theme.mixins.toolbar,
+            justifyContent: 'flex-end',
+        },
+    })
 );
 
-export const SideBar = () => {
-    const classes = useStyles();
+export interface SideMenuProps {
+    width: string | number,
+    open: boolean,
+    handleDrawerClose: () => void,
+}
+
+export const SideMenu = (props: SideMenuProps) => {
+    const classes = useStyles(props);
     const history = useHistory();
+    const theme = useTheme();
+
     const [selectedIndex, setSelectedIndex] = React.useState(0);
     const handleListItemClick = (
         event: React.MouseEvent<HTMLDivElement, MouseEvent>,
@@ -45,12 +61,18 @@ export const SideBar = () => {
     return (
         <Drawer
             className={classes.drawer}
-            variant="permanent"
+            variant="persistent"
+            anchor="left"
+            open={props.open}
             classes={{
                 paper: classes.drawerPaper,
             }}
         >
-            <Toolbar />
+            <div className={classes.drawerHeader}>
+                <IconButton onClick={props.handleDrawerClose}>
+                    {theme.direction === 'ltr' ? <ChevronLeftIcon /> : <ChevronRightIcon />}
+                </IconButton>
+            </div>
             <div className={classes.drawerContainer}>
                 <List>
                     <ListItem button key="top" selected={selectedIndex === 1} onClick={(e) => handleListItemClick(e, 1, "/")}>
@@ -79,3 +101,5 @@ export const SideBar = () => {
         </Drawer>
     );
 };
+
+export default SideMenu;

@@ -3,15 +3,31 @@ const HtmlWebpackPlugin = require('html-webpack-plugin')
 const MonacoWebpackPlugin = require("monaco-editor-webpack-plugin");
 
 module.exports = {
-    mode: "production",
-
-    devtool: "source-map",
+    mode: 'development',
 
     entry: './src/index.tsx',
 
     resolve: {
         extensions: [".ts", ".tsx", ".mjs", ".cjs", ".js", ".json"],
         alias: { 'react-dom': '@hot-loader/react-dom' },
+        modules: ["node_modules"]
+    },
+
+    optimization: {
+        splitChunks: {
+            cacheGroups: {
+                commons: {
+                    test: /[\\/]node_modules[\\/]monaco-editor[\\/]/,
+                    name: "vendor-editor",
+                    chunks: "initial",
+                },
+                container: {
+                    name: "container",
+                    chunks: "initial",
+                    minChunks: 2
+                }
+            }
+        }
     },
 
     module: {
@@ -41,6 +57,7 @@ module.exports = {
             {
                 enforce: "pre",
                 test: /\.js$/,
+                exclude: /node_modules\/@mrblenny/, //avoid warinig...
                 loader: "source-map-loader"
             }
         ]
@@ -52,7 +69,7 @@ module.exports = {
             template: "./src/index.html"
         }),
         new MonacoWebpackPlugin({
-            languages: ["yaml"]
+            languages: ["yaml", "json"]
         })
     ],
 };

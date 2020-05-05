@@ -1,1 +1,1 @@
-export { GraphList, GraphListItem, GraphListProps } from "./GraphList";
+export { GraphList, GraphListProps } from "./GraphList";

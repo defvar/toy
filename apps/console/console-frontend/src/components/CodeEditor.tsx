@@ -2,24 +2,23 @@ import * as React from "react";
 import { useState, useCallback } from "react";
 import MonacoEditor from "react-monaco-editor";
 
-export interface YamlEditorProps {
-    height?: string | number;
+export interface CodeEditorProps {
+    className?: string,
+    initCode?: string
 }
 
-export const YamlEditor = (props: YamlEditorProps) => {
-    const [code, setCode] = useState("");
+export const CodeEditor = (props: CodeEditorProps) => {
+    const [code, setCode] = useState(props.initCode ?? "");
     const onChange = useCallback((newValue: string) => {
         setCode(newValue);
     }, []);
     const onDidMount = useCallback((editor) => {
-        console.log("did mound");
-        editor.focus();
+        console.log("editor did mound");
     }, []);
-    const height = props.height ?? 500;
     return (
-        <div>
+        <div className={props.className}>
             <MonacoEditor
-                height={height}
+                height={500}
                 language="yaml"
                 value={code}
                 onChange={onChange}

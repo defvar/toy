@@ -11,16 +11,11 @@ import TableRow from '@material-ui/core/TableRow';
 import Switch from '@material-ui/core/Switch';
 import GraphListMenu from './Menu';
 import Labels from './Labels';
-
-export interface GraphListItem {
-    name: string,
-    labels: string[],
-    isActive: boolean,
-}
+import { GraphState, Actions } from "../../modules/graphs";
 
 export interface GraphListProps {
-    items: { [key: string]: GraphListItem },
-    onChangeActive: (name: string, active: boolean) => void
+    items: { [key: string]: GraphState },
+    onChangeActive: React.Dispatch<Actions>,
 }
 
 const useStyles = makeStyles({
@@ -48,7 +43,12 @@ export const GraphList = (props: GraphListProps) => {
     };
 
     const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        props.onChangeActive(event.target.name, event.target.checked);
+        props.onChangeActive({
+            type: "ToggleActive",
+            payload: {
+                name: event.target.name, isActive: event.target.checked
+            }
+        });
     };
 
     return (
