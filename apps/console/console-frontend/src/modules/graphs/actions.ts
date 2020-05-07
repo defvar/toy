@@ -1,3 +1,4 @@
+import { GraphListItemState } from "./types";
 
 export interface ToggleActive {
     type: "ToggleActive",
@@ -9,6 +10,9 @@ export interface ToggleActive {
 
 export interface List {
     type: "List",
+    payload: {
+        items: { [key: string]: GraphListItemState }
+    }
 }
 
 export type Actions = ToggleActive | List;

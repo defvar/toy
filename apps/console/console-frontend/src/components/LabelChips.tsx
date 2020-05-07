@@ -3,12 +3,8 @@ import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
 import Chip from '@material-ui/core/Chip';
 import Paper from '@material-ui/core/Paper';
 
-export interface Label {
-    label: string;
-}
-
 export interface LabelsProps {
-    labels: Label[],
+    labels: { key: string, display: string, }[],
 }
 
 const useStyles = makeStyles((theme: Theme) =>
@@ -28,17 +24,15 @@ const useStyles = makeStyles((theme: Theme) =>
     }),
 );
 
-export default (props: LabelsProps) => {
+export const LabelChips = (props: LabelsProps) => {
     const classes = useStyles();
-    const [chipData] = React.useState(props);
-
     return (
         <Paper component="ul" className={classes.root} elevation={0}>
-            {chipData.labels.map((data) => {
+            {props.labels.map((data) => {
                 return (
-                    <li key={data.label}>
+                    <li key={data.key}>
                         <Chip
-                            label={data.label}
+                            label={data.display}
                             className={classes.chip}
                         />
                     </li>

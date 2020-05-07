@@ -9,6 +9,10 @@ import Toolbar from '@material-ui/core/Toolbar';
 import Typography from '@material-ui/core/Typography';
 import IconButton from '@material-ui/core/IconButton';
 import MenuIcon from '@material-ui/icons/Menu';
+import { useHistory } from 'react-router-dom';
+import TimelineIcon from '@material-ui/icons/Timeline';
+import WidgetsIcon from '@material-ui/icons/Widgets';
+import DesktopWindowsIcon from '@material-ui/icons/DesktopWindows';
 
 const drawerWidth = 240;
 
@@ -69,8 +73,35 @@ export interface AppDrawerProps {
     children: React.ReactNode
 }
 
+const menuOptions = (history) => {
+    return {
+        width: drawerWidth,
+        options: [
+            { key: 'top', display: 'top', icon: (<DesktopWindowsIcon />) },
+            { key: 'timeline', display: 'timeline', icon: (<TimelineIcon />) },
+            { key: 'graphs', display: 'graphs', icon: (<WidgetsIcon />) },
+        ],
+        onMenuItemChange: (key: string) => {
+            switch (key) {
+                case 'top':
+                    history.push('/');
+                    break;
+                case 'timeline':
+                    history.push('/timeline');
+                    break;
+                case 'graphs':
+                    history.push('/graphs');
+                    break;
+                default:
+                    break;
+            }
+        }
+    };
+};
+
 const AppDrawer = (props: AppDrawerProps) => {
     const classes = useStyles();
+    const history = useHistory();
     const [open, setOpen] = React.useState(true);
     const handleDrawerOpen = () => {
         setOpen(true);
@@ -103,7 +134,7 @@ const AppDrawer = (props: AppDrawerProps) => {
             </AppBar>
             <Grid container spacing={2}>
                 <Grid item xs={2}>
-                    <SideMenu open={open} width={drawerWidth} handleDrawerClose={handleDrawerClose} />
+                    <SideMenu open={open} onDrawerClose={handleDrawerClose} {...menuOptions(history)} />
                 </Grid>
                 <Grid item xs={10}>
                     <main className={clsx(classes.content, {

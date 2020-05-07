@@ -9,13 +9,15 @@ import TableHead from '@material-ui/core/TableHead';
 import TablePagination from '@material-ui/core/TablePagination';
 import TableRow from '@material-ui/core/TableRow';
 import Switch from '@material-ui/core/Switch';
-import GraphListMenu from './Menu';
-import Labels from './Labels';
-import { GraphState, Actions } from "../../modules/graphs";
+import LinearProgress from '@material-ui/core/LinearProgress';
+import { SimpleMenu, SimpleMenuProps } from '../components/SimpleMenu';
+import { LabelChips } from '../components/LabelChips';
+import { GraphListItemState, Actions } from "../modules/graphs";
+import { useHistory } from 'react-router-dom';
 
 export interface GraphListProps {
-    items: { [key: string]: GraphState },
-    onChangeActive: React.Dispatch<Actions>,
+    items: { [key: string]: GraphListItemState },
+    dispatch: React.Dispatch<Actions>,
 }
 
 const useStyles = makeStyles({
@@ -25,13 +27,26 @@ const useStyles = makeStyles({
     container: {
         maxHeight: 440,
     },
+    rowProgress: {
+    },
 });
+
+const menuOptions = (history, name): SimpleMenuProps => {
+    return {
+        options: [
+            { display: 'Edit', onClick: () => { history.push(`/graphs/${name}/edit`) } },
+            { display: 'Log', onClick: () => { } }
+        ]
+    };
+};
 
 export const GraphList = (props: GraphListProps) => {
     const classes = useStyles();
+    const history = useHistory();
 
     const [page, setPage] = React.useState(0);
     const [rowsPerPage, setRowsPerPage] = React.useState(10);
+    const [loadingItems, setLoadingItems] = React.useState({});
 
     const handleChangePage = (event: unknown, newPage: number) => {
         setPage(newPage);
@@ -42,14 +57,27 @@ export const GraphList = (props: GraphListProps) => {
         setPage(0);
     };
 
-    const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        props.onChangeActive({
-            type: "ToggleActive",
-            payload: {
-                name: event.target.name, isActive: event.target.checked
-            }
+    const ref = React.useRef(null);
+    ref.current = 'mount';
+    React.useEffect(() => { return () => ref.current = null }, [ref]);
+    const toggleActive = React.useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const { name, checked: isActive } = event.target;
+        setLoadingItems((prev) => ({ ...prev, [name]: true, }));
+        const promise = new Promise(resolve => {
+            setTimeout(() => {
+                resolve();
+            }, 2000);
         });
-    };
+        await promise;
+        if (ref.current) {
+            props.dispatch({ type: 'ToggleActive', payload: { name, isActive } });
+        }
+        setLoadingItems((prev) => {
+            const r = { ...prev };
+            delete r[name];
+            return r;
+        })
+    }, [ref]);
 
     return (
         <Paper className={classes.root}>
@@ -74,24 +102,27 @@ export const GraphList = (props: GraphListProps) => {
                     <TableBody>
                         {Object.keys(props.items).slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((key) => {
                             const item = props.items[key];
+                            const isProgress = key in loadingItems;
                             return (
                                 <TableRow hover role="checkbox" tabIndex={-1} key={item.name}>
                                     <TableCell key="name" align="left">
                                         {item.name}
+                                        {isProgress && <LinearProgress key={`${item.name}-progress`} className={classes.rowProgress} />}
                                     </TableCell>
                                     <TableCell key="labels" align="left">
-                                        <Labels labels={item.labels.map(x => { return { label: x }; })} />
+                                        <LabelChips labels={item.labels.map(x => ({ key: x, display: x }))} />
                                     </TableCell>
                                     <TableCell key="isActive" align="center">
                                         <Switch
                                             checked={item.isActive}
+                                            disabled={isProgress}
                                             name={key}
-                                            onChange={handleChange}
+                                            onChange={toggleActive}
                                             inputProps={{ 'aria-label': 'secondary checkbox' }}
                                         />
                                     </TableCell>
                                     <TableCell key="menu" align="center">
-                                        <GraphListMenu name={key} />
+                                        <SimpleMenu {...menuOptions(history, item.name)} />
                                     </TableCell>
                                 </TableRow>
                             );

@@ -3,23 +3,19 @@ import IconButton from '@material-ui/core/IconButton';
 import Menu from '@material-ui/core/Menu';
 import MenuItem from '@material-ui/core/MenuItem';
 import MoreVertIcon from '@material-ui/icons/MoreVert';
-import { useHistory } from 'react-router-dom';
-
-const options = [
-  'Edit',
-  'Log',
-];
 
 const ITEM_HEIGHT = 48;
 
-export interface MenuProps {
-    name: string
+export interface SimpleMenuProps {
+  options: {
+    display: string,
+    onClick: () => void,
+  }[]
 }
 
-export default (props: MenuProps) => {
+export const SimpleMenu = (props: SimpleMenuProps) => {
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
-  const history = useHistory();
 
   const handleClick = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
@@ -29,9 +25,9 @@ export default (props: MenuProps) => {
     setAnchorEl(null);
   };
 
-  const handleItemClick = () => {
+  const handleItemClick = (delegate: () => void) => {
     setAnchorEl(null);
-    history.push(`/graphs/${props.name}/edit`);
+    delegate();
   };
 
   return (
@@ -45,7 +41,6 @@ export default (props: MenuProps) => {
         <MoreVertIcon />
       </IconButton>
       <Menu
-        id="long-menu"
         anchorEl={anchorEl}
         keepMounted
         open={open}
@@ -57,9 +52,9 @@ export default (props: MenuProps) => {
           },
         }}
       >
-        {options.map((option) => (
-          <MenuItem key={option} onClick={handleItemClick}>
-            {option}
+        {props.options.map((option) => (
+          <MenuItem key={option.display} onClick={() => handleItemClick(option.onClick)}>
+            {option.display}
           </MenuItem>
         ))}
       </Menu>
