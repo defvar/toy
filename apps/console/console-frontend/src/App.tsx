@@ -8,10 +8,12 @@ import AppDrawer from './container/AppDrawer';
 import { Hello } from "./components/Hello";
 import { GraphEdit } from "./container/GraphEdit";
 import { Graphs } from "./container/Graphs";
+import CssBaseline from '@material-ui/core/CssBaseline';
 
 const App = () => {
   return (
     <Router>
+      <CssBaseline />
       <AppDrawer>
         <Switch>
           <Route path="/" exact>

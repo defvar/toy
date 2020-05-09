@@ -1,10 +1,14 @@
 import * as React from 'react';
-import { CodeEditor } from "../components/CodeEditor";
 import { useParams } from "react-router-dom";
-import { FlowChartWithState, IChart, INode, REACT_FLOW_CHART } from "@mrblenny/react-flow-chart";
+import { FlowChart, IChart, actions } from "@mrblenny/react-flow-chart";
 import { createStyles, Theme, makeStyles } from '@material-ui/core/styles';
 import Typography from '@material-ui/core/Typography';
 import Grid from '@material-ui/core/Grid';
+import RefreshIcon from '@material-ui/icons/Refresh';
+import IconButton from '@material-ui/core/IconButton';
+import { Node, Sidebar } from '../components/chart';
+import ZoomInIcon from '@material-ui/icons/ZoomIn';
+import ZoomOutIcon from '@material-ui/icons/ZoomOut';
 
 const useStyles = makeStyles((theme: Theme) =>
     createStyles({
@@ -16,7 +20,7 @@ const useStyles = makeStyles((theme: Theme) =>
         },
         chartCanvas: {
             overflow: 'hidden',
-            maxHeight: '90vh'
+            maxHeight: '80vh'
         }
     }),
 );
@@ -50,6 +54,9 @@ export const chartSimple: IChart = {
                         value: 'no',
                     },
                 },
+            },
+            properties: {
+                icon: 'file',
             },
         },
         node2: {
@@ -152,66 +159,79 @@ export const chartSimple: IChart = {
     hovered: {},
 }
 
+const createHandlers = (setState: React.Dispatch<React.SetStateAction<IChart>>) => Object.entries(actions)
+    .reduce((r, [key, fn]) => {
+        r[key] = (...args: any) => setState((prev) => {
+            const res = fn(...args)(prev);
+            return {
+                ...res
+            };
+        }
+        );
+        return r;
+    }, {}
+    ) as typeof actions;
+
 export const GraphEdit = () => {
+
     const { name } = useParams();
     const classes = useStyles();
+    const [state, setState] = React.useState(chartSimple);
+    const [handlers] = React.useState(() => createHandlers(setState));
+
+    const handleZoomIn = () => {
+        setState((prev) => ({
+            ...prev,
+            scale: prev.scale + 0.1,
+        }));
+    };
+
+    const handleZoomOut = () => {
+        setState((prev) => ({
+            ...prev,
+            scale: prev.scale - 0.1,
+        }));
+    };
+
     return (
         <div className={classes.root}>
+            <Typography className={classes.heading}>{name}</Typography>
             <Grid container item spacing={1} direction="row" alignItems="stretch">
-                <Grid item xs={10}>
-                    <Typography className={classes.heading}>{name}</Typography>
+                <Grid item xs={9}>
+                    <IconButton aria-label="refresh">
+                        <RefreshIcon />
+                    </IconButton>
+                    <IconButton aria-label="zoom-in" onClick={handleZoomIn}>
+                        <ZoomInIcon />
+                    </IconButton>
+                    <IconButton aria-label="zoom-out" onClick={handleZoomOut}>
+                        <ZoomOutIcon />
+                    </IconButton>
                     <div className={classes.chartCanvas}>
-                        <FlowChartWithState initialValue={chartSimple} />
+                        <FlowChart chart={state} Components={{ NodeInner: Node }} callbacks={handlers} config={{ zoom: { wheel: { disabled: true } } }} />
                     </div>
                 </Grid>
-                <Grid item xs={2}>
-                    <div style={{ backgroundColor: 'red', fontSize: '14px' }}>
-                        <SidebarItem
-                            type="top/bottom"
-                            ports={{
-                                port1: {
-                                    id: 'port1',
-                                    type: 'top',
-                                    properties: {
-                                        custom: 'property',
-                                    },
-                                },
-                                port2: {
-                                    id: 'port1',
-                                    type: 'bottom',
-                                    properties: {
-                                        custom: 'property',
-                                    },
-                                },
-                            }}
-                            properties={{
-                                custom: 'property',
-                            }}
-                        />
-                    </div>
+                <Grid item xs={3}>
+                    <IconButton aria-label="refresh">
+                        <RefreshIcon />
+                    </IconButton>
+                    <Sidebar
+                        services={{
+                            "common.file.reader": { name: 'reader', namespace: 'common.file', fullName: 'common.file.reader', description: 'file read service.', inPort: 1, outPort: 1, },
+                            "common.file.writer": { name: 'writer', namespace: 'common.file', fullName: 'common.file.writer', description: 'file writer service.', inPort: 1, outPort: 1, },
+                            "common.map.typed": { name: 'typed', namespace: 'common.map', fullName: 'common..map.typed', description: 'aaaaaaaaaaaaaaaaa.', inPort: 1, outPort: 1, },
+                            "common.map.reorder": { name: 'reorder', namespace: 'common.map', fullName: 'common.map.reorder', description: 'bbbbbbbbbbbbbbb.', inPort: 1, outPort: 1, },
+                            "aiueo.ccc": { name: 'ccc', namespace: 'aiueo', fullName: 'aiueo.ccc', description: 'cccccccccccccccccccc.', inPort: 1, outPort: 1, },
+                        }}
+                        namespaces={{
+                            "common.file": ["common.file.reader", "common.file.writer"],
+                            "common.map": ["common.map.typed", "common.map.reorder"],
+                            "aiueo": ["aiueo.ccc"]
+                        }} />
                 </Grid>
             </Grid>
         </div>
     );
-};
-
-export interface ISidebarItemProps {
-    type: string,
-    ports: INode['ports'],
-    properties?: any,
-}
-
-export const SidebarItem = ({ type, ports, properties }: ISidebarItemProps) => {
-    return (
-        <div style={{ backgroundColor: 'white', fontSize: '14px' }}
-            draggable={true}
-            onDragStart={(event) => {
-                event.dataTransfer.setData(REACT_FLOW_CHART, JSON.stringify({ type, ports, properties }))
-            }}
-        >
-            {type}
-        </div>
-    )
 }
 
 export default GraphEdit;

@@ -4,7 +4,6 @@ import { makeStyles, Theme, createStyles } from '@material-ui/core/styles';
 import { reducer, GraphListState, initialState, GraphListItemState, Actions } from "../modules/graphs";
 import { toResource, Resource } from "../modules/common";
 import CircularProgress from '@material-ui/core/CircularProgress';
-import Button from '@material-ui/core/Button';
 import RefreshIcon from '@material-ui/icons/Refresh';
 import IconButton from '@material-ui/core/IconButton';
 
