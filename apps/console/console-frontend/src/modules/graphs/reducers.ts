@@ -5,14 +5,17 @@ export const initialState: GraphListState = {
     items: {},
 };
 
-export const reducer = (state: GraphListState = initialState, action: Actions): GraphListState => {
+export const reducer = (
+    state: GraphListState = initialState,
+    action: Actions
+): GraphListState => {
     switch (action.type) {
         case "List":
             return {
                 ...state,
-                items: action.payload.items
+                items: action.payload.items,
             };
-        case "ToggleActive":
+        case "ToggleActive": {
             const { name, isActive } = action.payload;
             return {
                 ...state,
@@ -20,9 +23,10 @@ export const reducer = (state: GraphListState = initialState, action: Actions): 
                     ...state.items,
                     [name]: {
                         ...state.items[name],
-                        isActive
-                    }
-                }
+                        isActive,
+                    },
+                },
             };
+        }
     }
-}
+};

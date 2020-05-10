@@ -3,12 +3,13 @@
     "editor.formatOnPaste": false,
     "editor.formatOnType": false,
     "editor.codeActionsOnSave": {
-        "source.fixAll": true
+        "source.fixAll.eslint": true
     },
+    "editor.tabSize": 4,
     //tslint
     "tslint.ignoreDefinitionFiles": true,
     "tslint.exclude": [
         "**/dist/**",
         "**/node_modules/**"
-    ]
+    ],
 }

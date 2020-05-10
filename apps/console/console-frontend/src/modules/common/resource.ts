@@ -1,25 +1,26 @@
 export interface Resource<T> {
-    read: () => T
+    read: () => T;
 }
 
 export const toResource = <T>(fn: () => Promise<T>): Resource<T> => {
-    let status = 'pending';
+    let status = "pending";
     let result;
 
     const suspender = fn().then(
         (r) => {
-            status = 'fulfilled';
+            status = "fulfilled";
             result = r;
         },
         (e) => {
-            status = 'rejected';
+            status = "rejected";
             result = e;
-        });
+        }
+    );
 
-    const read = () => {
-        if (status === 'pending') {
+    const read = (): T => {
+        if (status === "pending") {
             throw suspender;
-        } else if (status === 'rejected') {
+        } else if (status === "rejected") {
             throw result;
         } else {
             return result;
@@ -27,4 +28,4 @@ export const toResource = <T>(fn: () => Promise<T>): Resource<T> => {
     };
 
     return { read };
-}
+};

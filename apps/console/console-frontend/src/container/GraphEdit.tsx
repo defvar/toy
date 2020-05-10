@@ -1,14 +1,14 @@
-import * as React from 'react';
+import * as React from "react";
 import { useParams } from "react-router-dom";
 import { FlowChart, IChart, actions } from "@mrblenny/react-flow-chart";
-import { createStyles, Theme, makeStyles } from '@material-ui/core/styles';
-import Typography from '@material-ui/core/Typography';
-import Grid from '@material-ui/core/Grid';
-import RefreshIcon from '@material-ui/icons/Refresh';
-import IconButton from '@material-ui/core/IconButton';
-import { Node, Sidebar } from '../components/chart';
-import ZoomInIcon from '@material-ui/icons/ZoomIn';
-import ZoomOutIcon from '@material-ui/icons/ZoomOut';
+import { createStyles, Theme, makeStyles } from "@material-ui/core/styles";
+import Typography from "@material-ui/core/Typography";
+import Grid from "@material-ui/core/Grid";
+import RefreshIcon from "@material-ui/icons/Refresh";
+import IconButton from "@material-ui/core/IconButton";
+import { Node, Sidebar } from "../components/chart";
+import ZoomInIcon from "@material-ui/icons/ZoomIn";
+import ZoomOutIcon from "@material-ui/icons/ZoomOut";
 
 const useStyles = makeStyles((theme: Theme) =>
     createStyles({
@@ -19,10 +19,10 @@ const useStyles = makeStyles((theme: Theme) =>
             fontSize: theme.typography.pxToRem(15),
         },
         chartCanvas: {
-            overflow: 'hidden',
-            maxHeight: '80vh'
-        }
-    }),
+            overflow: "hidden",
+            maxHeight: "80vh",
+        },
+    })
 );
 
 export const chartSimple: IChart = {
@@ -33,147 +33,147 @@ export const chartSimple: IChart = {
     scale: 1,
     nodes: {
         node1: {
-            id: 'node1',
-            type: 'output-only',
+            id: "node1",
+            type: "output-only",
             position: {
                 x: 300,
                 y: 100,
             },
             ports: {
                 port1: {
-                    id: 'port1',
-                    type: 'output',
+                    id: "port1",
+                    type: "output",
                     properties: {
-                        value: 'yes',
+                        value: "yes",
                     },
                 },
                 port2: {
-                    id: 'port2',
-                    type: 'output',
+                    id: "port2",
+                    type: "output",
                     properties: {
-                        value: 'no',
+                        value: "no",
                     },
                 },
             },
             properties: {
-                icon: 'file',
+                icon: "file",
             },
         },
         node2: {
-            id: 'node2',
-            type: 'input-output',
+            id: "node2",
+            type: "input-output",
             position: {
                 x: 300,
                 y: 300,
             },
             ports: {
                 port1: {
-                    id: 'port1',
-                    type: 'input',
+                    id: "port1",
+                    type: "input",
                 },
                 port2: {
-                    id: 'port2',
-                    type: 'output',
+                    id: "port2",
+                    type: "output",
                 },
             },
         },
         node3: {
-            id: 'node3',
-            type: 'input-output',
+            id: "node3",
+            type: "input-output",
             position: {
                 x: 100,
                 y: 600,
             },
             ports: {
                 port1: {
-                    id: 'port1',
-                    type: 'input',
+                    id: "port1",
+                    type: "input",
                 },
                 port2: {
-                    id: 'port2',
-                    type: 'output',
+                    id: "port2",
+                    type: "output",
                 },
             },
         },
         node4: {
-            id: 'node4',
-            type: 'input-output',
+            id: "node4",
+            type: "input-output",
             position: {
                 x: 500,
                 y: 600,
             },
             ports: {
                 port1: {
-                    id: 'port1',
-                    type: 'input',
+                    id: "port1",
+                    type: "input",
                 },
                 port2: {
-                    id: 'port2',
-                    type: 'output',
+                    id: "port2",
+                    type: "output",
                 },
             },
         },
     },
     links: {
         link1: {
-            id: 'link1',
+            id: "link1",
             from: {
-                nodeId: 'node1',
-                portId: 'port2',
+                nodeId: "node1",
+                portId: "port2",
             },
             to: {
-                nodeId: 'node2',
-                portId: 'port1',
+                nodeId: "node2",
+                portId: "port1",
             },
             properties: {
-                label: 'example link label',
+                label: "example link label",
             },
         },
         link2: {
-            id: 'link2',
+            id: "link2",
             from: {
-                nodeId: 'node2',
-                portId: 'port2',
+                nodeId: "node2",
+                portId: "port2",
             },
             to: {
-                nodeId: 'node3',
-                portId: 'port1',
+                nodeId: "node3",
+                portId: "port1",
             },
             properties: {
-                label: 'another example link label',
+                label: "another example link label",
             },
         },
         link3: {
-            id: 'link3',
+            id: "link3",
             from: {
-                nodeId: 'node2',
-                portId: 'port2',
+                nodeId: "node2",
+                portId: "port2",
             },
             to: {
-                nodeId: 'node4',
-                portId: 'port1',
+                nodeId: "node4",
+                portId: "port1",
             },
         },
     },
     selected: {},
     hovered: {},
-}
+};
 
-const createHandlers = (setState: React.Dispatch<React.SetStateAction<IChart>>) => Object.entries(actions)
-    .reduce((r, [key, fn]) => {
-        r[key] = (...args: any) => setState((prev) => {
-            const res = fn(...args)(prev);
-            return {
-                ...res
-            };
-        }
-        );
+const createHandlers = (
+    setState: React.Dispatch<React.SetStateAction<IChart>>
+) =>
+    Object.entries(actions).reduce((r, [key, fn]) => {
+        r[key] = (...args: any) =>
+            setState((prev) => {
+                const res = fn(...args)(prev);
+                return {
+                    ...res,
+                };
+            });
         return r;
-    }, {}
-    ) as typeof actions;
+    }, {}) as typeof actions;
 
 export const GraphEdit = () => {
-
     const { name } = useParams();
     const classes = useStyles();
     const [state, setState] = React.useState(chartSimple);
@@ -196,7 +196,13 @@ export const GraphEdit = () => {
     return (
         <div className={classes.root}>
             <Typography className={classes.heading}>{name}</Typography>
-            <Grid container item spacing={1} direction="row" alignItems="stretch">
+            <Grid
+                container
+                item
+                spacing={1}
+                direction="row"
+                alignItems="stretch"
+            >
                 <Grid item xs={9}>
                     <IconButton aria-label="refresh">
                         <RefreshIcon />
@@ -208,7 +214,12 @@ export const GraphEdit = () => {
                         <ZoomOutIcon />
                     </IconButton>
                     <div className={classes.chartCanvas}>
-                        <FlowChart chart={state} Components={{ NodeInner: Node }} callbacks={handlers} config={{ zoom: { wheel: { disabled: true } } }} />
+                        <FlowChart
+                            chart={state}
+                            Components={{ NodeInner: Node }}
+                            callbacks={handlers}
+                            config={{ zoom: { wheel: { disabled: true } } }}
+                        />
                     </div>
                 </Grid>
                 <Grid item xs={3}>
@@ -217,21 +228,63 @@ export const GraphEdit = () => {
                     </IconButton>
                     <Sidebar
                         services={{
-                            "common.file.reader": { name: 'reader', namespace: 'common.file', fullName: 'common.file.reader', description: 'file read service.', inPort: 1, outPort: 1, },
-                            "common.file.writer": { name: 'writer', namespace: 'common.file', fullName: 'common.file.writer', description: 'file writer service.', inPort: 1, outPort: 1, },
-                            "common.map.typed": { name: 'typed', namespace: 'common.map', fullName: 'common..map.typed', description: 'aaaaaaaaaaaaaaaaa.', inPort: 1, outPort: 1, },
-                            "common.map.reorder": { name: 'reorder', namespace: 'common.map', fullName: 'common.map.reorder', description: 'bbbbbbbbbbbbbbb.', inPort: 1, outPort: 1, },
-                            "aiueo.ccc": { name: 'ccc', namespace: 'aiueo', fullName: 'aiueo.ccc', description: 'cccccccccccccccccccc.', inPort: 1, outPort: 1, },
+                            "common.file.reader": {
+                                name: "reader",
+                                namespace: "common.file",
+                                fullName: "common.file.reader",
+                                description: "file read service.",
+                                inPort: 1,
+                                outPort: 1,
+                            },
+                            "common.file.writer": {
+                                name: "writer",
+                                namespace: "common.file",
+                                fullName: "common.file.writer",
+                                description: "file writer service.",
+                                inPort: 1,
+                                outPort: 1,
+                            },
+                            "common.map.typed": {
+                                name: "typed",
+                                namespace: "common.map",
+                                fullName: "common..map.typed",
+                                description: "aaaaaaaaaaaaaaaaa.",
+                                inPort: 1,
+                                outPort: 1,
+                            },
+                            "common.map.reorder": {
+                                name: "reorder",
+                                namespace: "common.map",
+                                fullName: "common.map.reorder",
+                                description: "bbbbbbbbbbbbbbb.",
+                                inPort: 1,
+                                outPort: 1,
+                            },
+                            "aiueo.ccc": {
+                                name: "ccc",
+                                namespace: "aiueo",
+                                fullName: "aiueo.ccc",
+                                description: "cccccccccccccccccccc.",
+                                inPort: 1,
+                                outPort: 1,
+                            },
                         }}
                         namespaces={{
-                            "common.file": ["common.file.reader", "common.file.writer"],
-                            "common.map": ["common.map.typed", "common.map.reorder"],
-                            "aiueo": ["aiueo.ccc"]
-                        }} />
+                            "common.file": [
+                                "common.file.reader",
+                                "common.file.writer",
+                            ],
+                            "common.map": [
+                                "common.map.typed",
+                                "common.map.reorder",
+                            ],
+                            aiueo: ["aiueo.ccc"],
+                        }}
+                    />
                 </Grid>
             </Grid>
         </div>
     );
-}
+};
 
 export default GraphEdit;

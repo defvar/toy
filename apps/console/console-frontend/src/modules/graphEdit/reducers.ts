@@ -5,7 +5,10 @@ export const initialState: GraphEditState = {
     services: {},
 };
 
-export const reducer = (state: GraphEditState = initialState, action: Actions): GraphEditState => {
+export const reducer = (
+    state: GraphEditState = initialState,
+    action: Actions
+): GraphEditState => {
     switch (action.type) {
         case "GetServices":
             return {
@@ -13,4 +16,4 @@ export const reducer = (state: GraphEditState = initialState, action: Actions): 
                 services: action.payload.items,
             };
     }
-}
+};

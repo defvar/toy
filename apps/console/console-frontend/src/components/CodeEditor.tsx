@@ -3,8 +3,8 @@ import { useState, useCallback } from "react";
 import MonacoEditor from "react-monaco-editor";
 
 export interface CodeEditorProps {
-    className?: string,
-    initCode?: string
+    className?: string;
+    initCode?: string;
 }
 
 export const CodeEditor = (props: CodeEditorProps) => {

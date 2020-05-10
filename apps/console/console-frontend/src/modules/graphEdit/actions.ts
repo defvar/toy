@@ -1,10 +1,10 @@
-import { ServiceState } from './types';
+import { ServiceState } from "./types";
 
 export interface GetServices {
-    type: "GetServices",
+    type: "GetServices";
     payload: {
-        items: { [key: string]: ServiceState }
-    }
+        items: { [key: string]: ServiceState };
+    };
 }
 
 export type Actions = GetServices;

@@ -1,34 +1,30 @@
 import * as React from "react";
-import {
-  HashRouter as Router,
-  Route,
-  Switch,
-} from 'react-router-dom';
-import AppDrawer from './container/AppDrawer';
+import { HashRouter as Router, Route, Switch } from "react-router-dom";
+import AppDrawer from "./container/AppDrawer";
 import { Hello } from "./components/Hello";
 import { GraphEdit } from "./container/GraphEdit";
 import { Graphs } from "./container/Graphs";
-import CssBaseline from '@material-ui/core/CssBaseline';
+import CssBaseline from "@material-ui/core/CssBaseline";
 
-const App = () => {
-  return (
-    <Router>
-      <CssBaseline />
-      <AppDrawer>
-        <Switch>
-          <Route path="/" exact>
-            <Hello compiler="TypeScript" framework="React" />
-          </Route>
-          <Route path="/graphs" exact>
-            <Graphs />
-          </Route>
-          <Route path="/graphs/:name/edit" exact>
-            <GraphEdit />
-          </Route>
-        </Switch>
-      </AppDrawer>
-    </Router>
-  )
+const App = (): JSX.Element => {
+    return (
+        <Router>
+            <CssBaseline />
+            <AppDrawer>
+                <Switch>
+                    <Route path="/" exact>
+                        <Hello compiler="TypeScript" framework="React" />
+                    </Route>
+                    <Route path="/graphs" exact>
+                        <Graphs />
+                    </Route>
+                    <Route path="/graphs/:name/edit" exact>
+                        <GraphEdit />
+                    </Route>
+                </Switch>
+            </AppDrawer>
+        </Router>
+    );
 };
 
 export default App;

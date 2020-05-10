@@ -4,9 +4,6 @@ import { hot } from "react-hot-loader";
 
 import App from "./App";
 
-const HotContainer = hot(module)(App)
+const HotContainer = hot(module)(App);
 
-ReactDOM.render(
-    <HotContainer />,
-    document.getElementById("root")
-);
+ReactDOM.render(<HotContainer />, document.getElementById("root"));
