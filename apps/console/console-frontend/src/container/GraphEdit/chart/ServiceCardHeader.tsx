@@ -3,7 +3,6 @@ import { makeStyles, Theme, createStyles } from "@material-ui/core/styles";
 import DescriptionIcon from "@material-ui/icons/Description";
 import CheckBoxOutlineBlankIcon from "@material-ui/icons/CheckBoxOutlineBlank";
 import CardHeader from "@material-ui/core/CardHeader";
-import Avatar from "@material-ui/core/Avatar";
 
 const useStyles = makeStyles((theme: Theme) =>
     createStyles({
@@ -14,9 +13,8 @@ const useStyles = makeStyles((theme: Theme) =>
 );
 
 export interface ServiceCardHeaderProps {
-    fullName: string;
-    name: string;
-    namespace: string;
+    title: string;
+    subheader: string;
     icon?: string;
 }
 
@@ -36,10 +34,11 @@ export const ServiceCardHeader = (props: ServiceCardHeaderProps) => {
         <CardHeader
             className={classes.card}
             avatar={
-                <Avatar aria-label="service-icon">{getIcon(props.icon)}</Avatar>
+                getIcon(props.icon)
+                // <Avatar aria-label="service-icon">{getIcon(props.icon)}</Avatar>
             }
-            title={props.name}
-            subheader={props.namespace}
+            title={props.title}
+            subheader={props.subheader}
         />
     );
 };

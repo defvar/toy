@@ -3,7 +3,6 @@ import clsx from "clsx";
 import { createStyles, Theme, makeStyles } from "@material-ui/core/styles";
 import { SideMenu } from "../components/SideMenu";
 import Grid from "@material-ui/core/Grid";
-import CssBaseline from "@material-ui/core/CssBaseline";
 import AppBar from "@material-ui/core/AppBar";
 import Toolbar from "@material-ui/core/Toolbar";
 import Typography from "@material-ui/core/Typography";
@@ -113,7 +112,6 @@ const AppDrawer = (props: AppDrawerProps): JSX.Element => {
 
     return (
         <div className={classes.root}>
-            <CssBaseline />
             <AppBar
                 position="fixed"
                 className={clsx(classes.appBar, {

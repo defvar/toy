@@ -1,10 +1,18 @@
-import { ServiceState } from "./types";
+import { ServiceState, GraphState } from "./types";
 
 export interface GetServices {
     type: "GetServices";
     payload: {
-        items: { [key: string]: ServiceState };
+        services: { [fullName: string]: ServiceState };
+        namespaces: { [namespace: string]: string[] };
     };
 }
 
-export type Actions = GetServices;
+export interface GetGraph {
+    type: "GetGraph";
+    payload: {
+        graph: GraphState;
+    };
+}
+
+export type Actions = GetServices | GetGraph;

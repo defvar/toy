@@ -7,8 +7,8 @@ import {
     initialState,
     GraphListItemState,
     Actions,
-} from "../modules/graphs";
-import { toResource, Resource } from "../modules/common";
+} from "../../modules/graphs";
+import { toResource, Resource } from "../../modules/common";
 import CircularProgress from "@material-ui/core/CircularProgress";
 import RefreshIcon from "@material-ui/icons/Refresh";
 import IconButton from "@material-ui/core/IconButton";

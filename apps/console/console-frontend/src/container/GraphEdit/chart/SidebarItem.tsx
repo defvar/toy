@@ -3,6 +3,7 @@ import { REACT_FLOW_CHART } from "@mrblenny/react-flow-chart";
 import { createStyles, Theme, makeStyles } from "@material-ui/core/styles";
 import Card from "@material-ui/core/Card";
 import { ServiceCardHeader } from "./ServiceCardHeader";
+import { toPorts } from "./util";
 
 const useStyles = makeStyles((theme: Theme) =>
     createStyles({
@@ -27,29 +28,16 @@ export interface SidebarItemProps {
     };
 }
 
-const getPorts = (way: "in" | "out", count: number) =>
-    [...Array(count).keys()]
-        .map((x) => ({
-            id: `port-${way}-${x}`,
-            type: way === "in" ? "top" : "bottom",
-        }))
-        .reduce((r, v) => {
-            r[v.id] = v;
-            return r;
-        }, {});
-
 export const SidebarItem = ({
-    fullName,
     name,
     namespace,
-    description,
     inPort,
     outPort,
 }: SidebarItemProps): JSX.Element => {
     const classes = useStyles();
 
-    const inPorts = getPorts("in", inPort);
-    const outPorts = getPorts("out", outPort);
+    const inPorts = toPorts("in", inPort);
+    const outPorts = toPorts("out", outPort);
     const allPorts = {
         ...inPorts,
         ...outPorts,
@@ -66,21 +54,15 @@ export const SidebarItem = ({
                         type: "top/bottom",
                         ports: allPorts,
                         properties: {
-                            name,
-                            fullName,
-                            namespace,
-                            description,
+                            title: name,
+                            subheader: namespace,
                         },
                     })
                 );
             }}
         >
             <Card>
-                <ServiceCardHeader
-                    name={name}
-                    fullName={fullName}
-                    namespace={namespace}
-                />
+                <ServiceCardHeader title={name} subheader={namespace} />
             </Card>
         </div>
     );

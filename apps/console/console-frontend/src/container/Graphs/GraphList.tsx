@@ -1,5 +1,5 @@
 import * as React from "react";
-import { makeStyles } from "@material-ui/core/styles";
+import { makeStyles, createStyles, Theme } from "@material-ui/core/styles";
 import Paper from "@material-ui/core/Paper";
 import Table from "@material-ui/core/Table";
 import TableBody from "@material-ui/core/TableBody";
@@ -10,9 +10,9 @@ import TablePagination from "@material-ui/core/TablePagination";
 import TableRow from "@material-ui/core/TableRow";
 import Switch from "@material-ui/core/Switch";
 import LinearProgress from "@material-ui/core/LinearProgress";
-import { SimpleMenu, SimpleMenuProps } from "../components/SimpleMenu";
-import { LabelChips } from "../components/LabelChips";
-import { GraphListItemState, Actions } from "../modules/graphs";
+import { SimpleMenu, SimpleMenuProps } from "../../components/SimpleMenu";
+import { LabelChips } from "../../components/LabelChips";
+import { GraphListItemState, Actions } from "../../modules/graphs";
 import { useHistory } from "react-router-dom";
 
 export interface GraphListProps {
@@ -20,15 +20,18 @@ export interface GraphListProps {
     dispatch: React.Dispatch<Actions>;
 }
 
-const useStyles = makeStyles({
-    root: {
-        width: "100%",
-    },
-    container: {
-        maxHeight: 440,
-    },
-    rowProgress: {},
-});
+const useStyles = makeStyles((theme: Theme) =>
+    createStyles({
+        root: {
+            width: "100%",
+        },
+        container: {
+            maxHeight: 440,
+        },
+        tableHeader: {},
+        rowProgress: {},
+    })
+);
 
 const menuOptions = (history, name): SimpleMenuProps => {
     return {
@@ -102,7 +105,7 @@ export const GraphList = (props: GraphListProps) => {
         <Paper className={classes.root}>
             <TableContainer className={classes.container}>
                 <Table stickyHeader aria-label="sticky table">
-                    <TableHead>
+                    <TableHead className={classes.tableHeader}>
                         <TableRow>
                             <TableCell
                                 key="name"

@@ -3,6 +3,11 @@ import { Actions } from "./actions";
 
 export const initialState: GraphEditState = {
     services: {},
+    namespaces: {},
+    graph: {
+        nodes: {},
+        wires: {},
+    },
 };
 
 export const reducer = (
@@ -13,7 +18,13 @@ export const reducer = (
         case "GetServices":
             return {
                 ...state,
-                services: action.payload.items,
+                services: action.payload.services,
+                namespaces: action.payload.namespaces,
+            };
+        case "GetGraph":
+            return {
+                ...state,
+                graph: action.payload.graph,
             };
     }
 };
