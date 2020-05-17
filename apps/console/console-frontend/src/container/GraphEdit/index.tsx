@@ -1,8 +1,12 @@
 import * as React from "react";
 import { useParams } from "react-router-dom";
-import { createStyles, Theme, makeStyles } from "@material-ui/core/styles";
+import {
+    createStyles,
+    Theme,
+    makeStyles,
+    useTheme,
+} from "@material-ui/core/styles";
 import Typography from "@material-ui/core/Typography";
-import Grid from "@material-ui/core/Grid";
 import RefreshIcon from "@material-ui/icons/Refresh";
 import IconButton from "@material-ui/core/IconButton";
 import {
@@ -24,14 +28,28 @@ import {
     reducer,
     initialState,
 } from "../../modules/graphEdit";
+import { Resizable } from "react-resizable";
+import AppBar from "@material-ui/core/AppBar";
+import Tabs from "@material-ui/core/Tabs";
+import Tab from "@material-ui/core/Tab";
+import { Form, Field } from "../../components/form";
 
 const useStyles = makeStyles((theme: Theme) =>
     createStyles({
         root: {
             flexGrow: 1,
+            display: "flex",
         },
         heading: {
             fontSize: theme.typography.pxToRem(15),
+        },
+        leftPane: {
+            position: "relative",
+        },
+        rightPane: {
+            marginLeft: theme.spacing(3),
+            flexGrow: 1,
+            backgroundColor: theme.palette.background.paper,
         },
         chartCanvas: {
             overflow: "hidden",
@@ -43,6 +61,17 @@ const useStyles = makeStyles((theme: Theme) =>
             justifyContent: "center",
         },
         progress: {},
+        resizeHandle: {
+            position: "absolute",
+            width: "4px",
+            height: "100px",
+            backgroundColor: "#1153aa",
+            opacity: "0.75",
+            top: "30%",
+            marginTop: "-4px",
+            right: "-11px",
+            cursor: "ew-resize",
+        },
     })
 );
 
@@ -55,6 +84,7 @@ const serviceData = {
             description: "file read service.",
             inPort: 1,
             outPort: 1,
+            configSchema: {},
         },
         "common.file.writer": {
             name: "writer",
@@ -63,6 +93,7 @@ const serviceData = {
             description: "file writer service.",
             inPort: 1,
             outPort: 1,
+            configSchema: {},
         },
         "common.map.typed": {
             name: "typed",
@@ -71,6 +102,7 @@ const serviceData = {
             description: "aaaaaaaaaaaaaaaaa.",
             inPort: 1,
             outPort: 1,
+            configSchema: {},
         },
         "common.map.reorder": {
             name: "reorder",
@@ -79,6 +111,7 @@ const serviceData = {
             description: "bbbbbbbbbbbbbbb.",
             inPort: 1,
             outPort: 1,
+            configSchema: {},
         },
         "aiueo.ccc": {
             name: "ccc",
@@ -87,6 +120,7 @@ const serviceData = {
             description: "cccccccccccccccccccc.",
             inPort: 1,
             outPort: 1,
+            configSchema: {},
         },
     },
     namespaces: {
@@ -128,6 +162,13 @@ const graphData = {
     wires: {
         reader1: ["writer1"],
     },
+};
+
+const formData = {
+    a1: "aaa",
+    a2: "uuuuu",
+    a3: 123,
+    a4: { a41: "cccccc", a42: "dddddd" },
 };
 
 const fetchServices = () => {
@@ -196,6 +237,8 @@ const ChartSuspense = (props: GraphEditSuspenseProps) => {
 export const GraphEdit = () => {
     const { name } = useParams();
     const classes = useStyles();
+    const theme = useTheme();
+
     const [serviceResource, setServiceResource] = React.useState(() =>
         fetchServices()
     );
@@ -228,17 +271,47 @@ export const GraphEdit = () => {
         }));
     };
 
+    const [size, setSize] = React.useState(() => {
+        return { width: theme.breakpoints.width("md") };
+    });
+    const onResize = (_event, { size }) => {
+        setSize({ width: size.width });
+    };
+
+    const [tabNumber, setTabNumber] = React.useState(0);
+
+    const handleTabChange = (
+        _event: React.ChangeEvent<{}>,
+        newValue: number
+    ) => {
+        setTabNumber(newValue);
+    };
+
+    const [formDataState, setFormDataState] = React.useState(formData);
+
+    const handleFormOnChange = (v) => {
+        setFormDataState((prev) => ({
+            ...prev,
+            ...v,
+        }));
+    };
+
     return (
         <div className={classes.root}>
-            <Typography className={classes.heading}>{name}</Typography>
-            <Grid
-                container
-                item
-                spacing={1}
-                direction="row"
-                alignItems="stretch"
+            <Resizable
+                width={size.width}
+                height={Infinity}
+                className={classes.leftPane}
+                onResize={onResize}
+                handle={<span className={classes.resizeHandle} />}
+                resizeHandles={["e"]}
             >
-                <Grid item xs={9}>
+                <div
+                    style={{
+                        width: size.width + "px",
+                    }}
+                >
+                    <Typography className={classes.heading}>{name}</Typography>
                     <IconButton
                         aria-label="refresh"
                         onClick={onChartRefleshClick}
@@ -251,7 +324,12 @@ export const GraphEdit = () => {
                     <IconButton aria-label="zoom-out" onClick={handleZoomOut}>
                         <ZoomOutIcon />
                     </IconButton>
-                    <div className={classes.chartCanvas}>
+                    <div
+                        style={{
+                            width: size.width + "px",
+                        }}
+                        className={classes.chartCanvas}
+                    >
                         <React.Suspense
                             fallback={
                                 <div className={classes.loader}>
@@ -272,8 +350,20 @@ export const GraphEdit = () => {
                             />
                         </React.Suspense>
                     </div>
-                </Grid>
-                <Grid item xs={3}>
+                </div>
+            </Resizable>
+            <div className={classes.rightPane}>
+                <AppBar position="static">
+                    <Tabs
+                        value={tabNumber}
+                        onChange={handleTabChange}
+                        aria-label="tabs"
+                    >
+                        <Tab label="Services" />
+                        <Tab label="Property" />
+                    </Tabs>
+                </AppBar>
+                <div hidden={tabNumber !== 0}>
                     <IconButton
                         aria-label="refresh"
                         onClick={onSidebarRefleshClick}
@@ -299,8 +389,56 @@ export const GraphEdit = () => {
                             graphResource={graphResource}
                         />
                     </React.Suspense>
-                </Grid>
-            </Grid>
+                </div>
+                <div hidden={tabNumber !== 1}>
+                    <Form
+                        data={formDataState}
+                        onChange={handleFormOnChange}
+                        items={
+                            [
+                                {
+                                    name: "a1",
+                                    type: "string",
+                                    label: "a1",
+                                    required: false,
+                                },
+                                {
+                                    name: "a2",
+                                    type: "string",
+                                    label: "a2",
+                                    required: true,
+                                },
+                                {
+                                    name: "a3",
+                                    type: "number",
+                                    label: "a3",
+                                    required: false,
+                                },
+                                {
+                                    name: "a4",
+                                    type: "object",
+                                    label: "a4",
+                                    required: false,
+                                    children: [
+                                        {
+                                            name: "a41",
+                                            type: "string",
+                                            label: "a4-1",
+                                            required: false,
+                                        },
+                                        {
+                                            name: "a42",
+                                            type: "string",
+                                            label: "a4-2",
+                                            required: false,
+                                        },
+                                    ],
+                                },
+                            ] as Field[]
+                        }
+                    />
+                </div>
+            </div>
         </div>
     );
 };

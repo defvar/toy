@@ -11,6 +11,7 @@ export interface ServiceState {
     description: string;
     inPort: number;
     outPort: number;
+    configSchema: JsonSchema;
 }
 
 export interface GraphState {
@@ -30,4 +31,21 @@ export interface NodeState {
         x: number;
         y: number;
     };
+}
+
+export interface JsonSchema {
+    id?: string;
+    $schema?: string;
+    title?: string;
+    description?: string;
+    required?: string[];
+    definitions?: JsonSchemaMap;
+    properties?: JsonSchemaMap;
+    enum?: string[];
+    type?: string;
+    $ref?: string;
+}
+
+export interface JsonSchemaMap {
+    [name: string]: JsonSchema;
 }

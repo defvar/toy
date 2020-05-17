@@ -20,11 +20,6 @@ module.exports = {
                     test: /[\\/]node_modules[\\/]monaco-editor[\\/]/,
                     name: "vendor-editor",
                     chunks: "initial",
-                },
-                container: {
-                    name: "container",
-                    chunks: "initial",
-                    minChunks: 2
                 }
             }
         }
@@ -32,15 +27,6 @@ module.exports = {
 
     module: {
         rules: [
-            {
-                test: /\.ts(x?)$/,
-                exclude: /node_modules/,
-                use: [
-                    {
-                        loader: "ts-loader"
-                    }
-                ]
-            },
             {
                 test: /\.html$/,
                 loader: "html-loader"
