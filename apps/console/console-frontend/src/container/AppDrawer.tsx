@@ -23,7 +23,7 @@ const useStyles = makeStyles((theme: Theme) =>
         content: {
             flexGrow: 1,
             backgroundColor: theme.palette.background.default,
-            padding: theme.spacing(3),
+            paddingTop: theme.spacing(2),
             transition: theme.transitions.create("margin", {
                 easing: theme.transitions.easing.sharp,
                 duration: theme.transitions.duration.leavingScreen,

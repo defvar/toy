@@ -16,7 +16,6 @@ export interface ServiceState {
 
 export interface GraphState {
     nodes: { [uri: string]: NodeState };
-    wires: { [uri: string]: string[] };
 }
 
 export interface NodeState {
@@ -31,21 +30,22 @@ export interface NodeState {
         x: number;
         y: number;
     };
+    wires: string[];
 }
 
 export interface JsonSchema {
-    id?: string;
+    $id?: string;
+    $ref?: string;
     $schema?: string;
+
+    type?: string;
+    enum?: string[];
+
+    required?: string[];
+    properties?: { [key: string]: JsonSchema };
+
+    definitions?: { [key: string]: JsonSchema };
+
     title?: string;
     description?: string;
-    required?: string[];
-    definitions?: JsonSchemaMap;
-    properties?: JsonSchemaMap;
-    enum?: string[];
-    type?: string;
-    $ref?: string;
-}
-
-export interface JsonSchemaMap {
-    [name: string]: JsonSchema;
 }

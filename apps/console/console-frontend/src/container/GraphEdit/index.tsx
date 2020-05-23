@@ -32,7 +32,8 @@ import { Resizable } from "react-resizable";
 import AppBar from "@material-ui/core/AppBar";
 import Tabs from "@material-ui/core/Tabs";
 import Tab from "@material-ui/core/Tab";
-import { Form, Field } from "../../components/form";
+import { Form, Field, addErrors } from "../../components/form";
+import { ToyApi } from "../../modules/api/toy-api";
 
 const useStyles = makeStyles((theme: Theme) =>
     createStyles({
@@ -50,6 +51,7 @@ const useStyles = makeStyles((theme: Theme) =>
             marginLeft: theme.spacing(3),
             flexGrow: 1,
             backgroundColor: theme.palette.background.paper,
+            zIndex: 990,
         },
         chartCanvas: {
             overflow: "hidden",
@@ -130,45 +132,45 @@ const serviceData = {
     },
 };
 
-const graphData = {
+const graphData = (name: string) => ({
     nodes: {
         reader1: {
             uri: "reader1",
             fullName: "common.file.reader",
             name: "reader",
             namespace: "common.file",
-            description: "",
+            description: `${name}`,
             inPort: 1,
             outPort: 1,
             position: {
                 x: 300,
                 y: 100,
             },
+            wires: ["writer1"],
         },
         writer1: {
             uri: "writer1",
             fullName: "common.file.writer",
             name: "writer",
             namespace: "common.file",
-            description: "",
+            description: `${name}`,
             inPort: 1,
             outPort: 1,
             position: {
                 x: 300,
                 y: 300,
             },
+            wires: [],
         },
     },
-    wires: {
-        reader1: ["writer1"],
-    },
-};
+});
 
 const formData = {
     a1: "aaa",
     a2: "uuuuu",
     a3: 123,
-    a4: { a41: "cccccc", a42: "dddddd" },
+    a4: { a41: true, a42: "dddddd" },
+    a5: "aaa",
 };
 
 const fetchServices = () => {
@@ -180,13 +182,17 @@ const fetchServices = () => {
             resolve(serviceData);
         }, 2000);
     });
-    return toResource(async () => await promise);
+    return toResource(async () => {
+        const r = await ToyApi.getServices();
+        console.log(r);
+        return await promise;
+    });
 };
 
 const fetchGraph = (name: string) => {
     const promise = new Promise<GraphState>((resolve) => {
         setTimeout(() => {
-            resolve(graphData);
+            resolve(graphData(name));
         }, 3000);
     });
     return toResource(async () => await promise);
@@ -353,7 +359,7 @@ export const GraphEdit = () => {
                 </div>
             </Resizable>
             <div className={classes.rightPane}>
-                <AppBar position="static">
+                <AppBar position={"relative"}>
                     <Tabs
                         value={tabNumber}
                         onChange={handleTabChange}
@@ -393,7 +399,19 @@ export const GraphEdit = () => {
                 <div hidden={tabNumber !== 1}>
                     <Form
                         data={formDataState}
+                        liveValidation={true}
                         onChange={handleFormOnChange}
+                        validate={(v) => {
+                            let r = { name: "root", errors: [] };
+                            if (!v.a2 || v.a2 == "") {
+                                r = addErrors(r, "a2", [{ message: "reqreq" }]);
+                            }
+                            r = addErrors(r, "a4.a42", [
+                                { message: "aaaaa" },
+                                { message: "bbbbbbb" },
+                            ]);
+                            return r;
+                        }}
                         items={
                             [
                                 {
@@ -422,7 +440,7 @@ export const GraphEdit = () => {
                                     children: [
                                         {
                                             name: "a41",
-                                            type: "string",
+                                            type: "boolean",
                                             label: "a4-1",
                                             required: false,
                                         },
@@ -432,6 +450,17 @@ export const GraphEdit = () => {
                                             label: "a4-2",
                                             required: false,
                                         },
+                                    ],
+                                },
+                                {
+                                    name: "a5",
+                                    type: "enum",
+                                    label: "a5",
+                                    required: false,
+                                    selectOptions: [
+                                        { label: "aaa", value: "aaa" },
+                                        { label: "bbb", value: "bbb" },
+                                        { label: "ccc", value: "ccc" },
                                     ],
                                 },
                             ] as Field[]

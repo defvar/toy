@@ -6,7 +6,6 @@ export const initialState: GraphEditState = {
     namespaces: {},
     graph: {
         nodes: {},
-        wires: {},
     },
 };
 

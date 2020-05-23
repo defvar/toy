@@ -74,7 +74,7 @@ export const chartHandler = (
         },
         onLinkMove: (input: IOnLinkMoveInput) => {
             dispatch((prev) => {
-                const r = actions.onLinkStart(input)(prev);
+                const r = actions.onLinkMove(input)(prev);
                 return {
                     ...prev,
                     ...r,
@@ -83,7 +83,7 @@ export const chartHandler = (
         },
         onLinkComplete: (input: IOnLinkCompleteInput) => {
             dispatch((prev) => {
-                const r = actions.onLinkStart(input)(prev);
+                const r = actions.onLinkComplete(input)(prev);
                 return {
                     ...prev,
                     ...r,
@@ -92,7 +92,7 @@ export const chartHandler = (
         },
         onLinkCancel: (input: IOnLinkBaseEvent) => {
             dispatch((prev) => {
-                const r = actions.onLinkStart(input)(prev);
+                const r = actions.onLinkCancel(input)(prev);
                 return {
                     ...prev,
                     ...r,

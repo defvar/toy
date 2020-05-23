@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Field } from "./types";
+import { Field, ValidationResult } from "./types";
 import { ObjectFields } from "./ObjectFields";
 import { createStyles, makeStyles, Theme } from "@material-ui/core/styles";
 
@@ -7,6 +7,8 @@ export interface FormProps<T> {
     items: Field[];
     data: T;
     onChange: (data: T) => void;
+    validate: (data: T) => ValidationResult;
+    liveValidation?: boolean;
 }
 
 const useStyles = makeStyles((theme: Theme) =>
@@ -18,8 +20,28 @@ const useStyles = makeStyles((theme: Theme) =>
     })
 );
 
-export const Form = <T extends {}>({ items, data, onChange }: FormProps<T>) => {
+export const Form = <T extends {}>({
+    items,
+    data,
+    onChange,
+    validate,
+    liveValidation,
+}: FormProps<T>) => {
     const classes = useStyles();
+
+    const [validationState, setValidationState] = React.useState(() => ({
+        name: "root",
+        errors: [],
+    }));
+
+    const handleOnChange = (data: T) => {
+        onChange(data);
+        if (liveValidation) {
+            const r = validate(data);
+            setValidationState(r);
+        }
+    };
+
     return (
         <form className={classes.root} noValidate autoComplete="off">
             <ObjectFields
@@ -29,7 +51,8 @@ export const Form = <T extends {}>({ items, data, onChange }: FormProps<T>) => {
                 required={false}
                 items={items}
                 data={data}
-                onChange={onChange}
+                onChange={handleOnChange}
+                validation={validationState}
             />
         </form>
     );

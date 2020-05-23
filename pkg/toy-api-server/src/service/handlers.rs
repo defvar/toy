@@ -12,7 +12,7 @@ pub async fn list(mut tx: Outgoing<Request, ServiceError>) -> Result<impl warp::
     let _ = tx.send_ok(Request::Services(tx_)).await;
     if let Some(Ok(r)) = rx_.recv().await {
         match r {
-            Response::Services(ref services) => Ok(common::reply::yaml(services).into_response()),
+            Response::Services(ref services) => Ok(common::reply::json(services).into_response()),
             _ => Ok(StatusCode::INTERNAL_SERVER_ERROR.into_response()),
         }
     } else {

@@ -11,5 +11,6 @@ toy-core = { path = "../toy-core" }
 toy-rt = { path = "../toy-rt"}
 toy-pack = {path = "../../shared/toy-pack", features = ["derive"]}
 toy-pack-yaml = {path = "../../shared/toy-pack-yaml"}
+toy-pack-json = {path = "../../shared/toy-pack-json"}
 log = "0.4"
 failure = "0.1.6"

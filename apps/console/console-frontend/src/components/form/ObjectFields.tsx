@@ -1,10 +1,12 @@
 import * as React from "react";
-import { Widgets } from "./widgets";
 import { Field } from "./types";
 import { createStyles, makeStyles, Theme } from "@material-ui/core/styles";
 import Divider from "@material-ui/core/Divider";
 import Typography from "@material-ui/core/Typography";
 import { isObject } from "../../utils/types";
+import { CommonField } from "./CommonField";
+import { ValidationResult } from "./types";
+import { getChildErrors, getValidationChild } from "./validation";
 
 export interface ObjectFieldsProps<T> {
     name: string;
@@ -13,6 +15,7 @@ export interface ObjectFieldsProps<T> {
     items: Field[];
     data: T;
     onChange: (data: T) => void;
+    validation?: ValidationResult;
 }
 
 const useStyles = makeStyles((theme: Theme) =>
@@ -36,6 +39,7 @@ export const ObjectFields = <T extends {}>({
     items,
     data,
     onChange,
+    validation,
 }: ObjectFieldsProps<T>) => {
     const classes = useStyles();
 
@@ -52,73 +56,50 @@ export const ObjectFields = <T extends {}>({
     };
 
     const renderWidgets = (item: Field): JSX.Element => {
-        const renderWidget = (item: Field): JSX.Element => {
-            const id = getId(item.name, path, "Widget");
-            if (!(item.type in Widgets)) {
-                return (
-                    <div key={id}>{`id:${getId(
-                        item.name,
-                        path
-                    )} no widget for type ${item.type}`}</div>
-                );
+        if (!item.children) {
+            let v = data;
+            if (isObject(data)) {
+                v = data[item.name];
             }
-            if (item.type in Widgets) {
-                const Widget = Widgets[item.type];
-                let v = data;
-                if (isObject(data)) {
-                    v = data[item.name];
-                }
-                return (
+
+            return (
+                <CommonField
+                    key={getId(item.name, path, "Field")}
+                    path={path}
+                    field={item}
+                    value={v}
+                    onChange={(v) => handleFieldChange(item.name, v)}
+                    errors={getChildErrors(validation, item.name)}
+                />
+            );
+        } else {
+            return (
+                <div key={`${item.name}-FieldSet`} className={classes.fieldSet}>
+                    <div className={classes.objectHeader}>
+                        <Typography>{item.label}</Typography>
+                        <Divider />
+                    </div>
                     <div
-                        key={getId(item.name, path, "Field")}
+                        key={getId(name, path, "Field")}
                         className={classes.field}
                     >
-                        <Widget
-                            key={id}
-                            id={id}
-                            {...item}
-                            value={v}
+                        <ObjectFields
+                            key={getId(name, path, "ObjectFields")}
+                            name={item.name}
+                            path={path ? `${path}-${name}` : name}
+                            required={item.required}
+                            items={item.children}
+                            data={data[item.name]}
                             onChange={(v) => handleFieldChange(item.name, v)}
+                            validation={getValidationChild(
+                                validation,
+                                item.name
+                            )}
                         />
                     </div>
-                );
-            }
-        };
-
-        if (item) {
-            if (!item.children) {
-                return renderWidget(item);
-            } else {
-                return (
-                    <div
-                        key={`${item.name}-FieldSet`}
-                        className={classes.fieldSet}
-                    >
-                        <div className={classes.objectHeader}>
-                            <Typography>{item.label}</Typography>
-                            <Divider />
-                        </div>
-                        <div
-                            key={getId(name, path, "Field")}
-                            className={classes.field}
-                        >
-                            <ObjectFields
-                                key={getId(name, path, "ObjectFields")}
-                                name={item.name}
-                                path={path ? `${path}-${name}` : name}
-                                required={item.required}
-                                items={item.children}
-                                data={data[item.name]}
-                                onChange={(v) =>
-                                    handleFieldChange(item.name, v)
-                                }
-                            />
-                        </div>
-                    </div>
-                );
-            }
+                </div>
+            );
         }
-        return null;
     };
 
     return <>{items.map((x) => renderWidgets(x))}</>;

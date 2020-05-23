@@ -22,7 +22,9 @@ impl Server {
         mut rx: Incoming<SystemMessage, ServiceError>,
     ) {
         let root = self.graphs.root_path();
-        let api = graphs(self.graphs, tx.clone()).or(services(tx.clone()));
+        let api = graphs(self.graphs, tx.clone())
+            .or(services(tx.clone()))
+            .with(warp::cors().allow_any_origin());
 
         let (addr, server) = warp::serve(api).bind_with_graceful_shutdown(addr, async move {
             while let Some(r) = rx.next().await {

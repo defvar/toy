@@ -1,2 +1,3 @@
 export { Form, FormProps } from "./Form";
-export { Field } from "./types";
+export { Field, ValidationResult, FieldError } from "./types";
+export { addErrors } from "./validation";

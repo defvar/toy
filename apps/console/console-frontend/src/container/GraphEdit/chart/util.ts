@@ -12,11 +12,11 @@ export const toPorts = (way: "in" | "out", count: number) =>
             return r;
         }, {});
 
-const toLinks = (wires: {
-    [uri: string]: string[];
+const toLinks = (graph: {
+    [uri: string]: NodeState;
 }): { [id: string]: LinkData } => {
-    return Object.entries(wires).reduce((r, [k, v]) => {
-        v.map((x) => {
+    return Object.entries(graph).reduce((r, [k, v]) => {
+        v.wires.map((x) => {
             const link = {
                 id: `link-${k}-${x}`,
                 from: {
@@ -63,7 +63,7 @@ const toNodes = (graph: {
 
 export const toChartData = (graph: GraphState): ChartData => {
     const nodes = toNodes(graph.nodes);
-    const links = toLinks(graph.wires);
+    const links = toLinks(graph.nodes);
     const d = {
         offset: { x: 0, y: 0 },
         nodes,

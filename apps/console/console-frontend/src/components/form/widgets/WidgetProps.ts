@@ -3,6 +3,12 @@ export interface WidgetProps {
     label: string;
     required: boolean;
     value?: unknown;
-    selectOptions?: { [key: string]: boolean | string | number };
+    isError: boolean;
+    selectOptions?: SelectOptionItem[];
     onChange: (value: unknown) => void;
+}
+
+export interface SelectOptionItem {
+    label: string;
+    value: string;
 }
