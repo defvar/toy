@@ -23,7 +23,7 @@ impl AsyncRuntime for FutureRsRuntime {
 }
 
 async fn go(graph: Graph) -> Result<(), ServiceError> {
-    let c = Registry::new("write", factory!(write, FileWriteConfig, new_write_context))
+    let c = plugin("write", factory!(write, FileWriteConfig, new_write_context))
         .service("read", factory!(read, FileReadConfig, new_read_context))
         .service(
             "mapping",

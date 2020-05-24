@@ -4,6 +4,7 @@ use log::info;
 use std::future::Future;
 use std::thread;
 use toy_core::prelude::*;
+use toy_core::registry::{app, plugin};
 use toy_pack_derive::*;
 
 struct FutureRsRuntime {
@@ -80,7 +81,7 @@ async fn service_3(
         _ => (),
     };
     info!("service3 receive {:?}, ctx:{:?}", req, ctx);
-    let _ = tx.send(Ok(Frame::default())).await?;
+    let _ = tx.send_ok(Frame::default()).await?;
     Ok(ctx)
 }
 
@@ -91,7 +92,7 @@ async fn service_2(
 ) -> Result<ServiceContext2, ServiceError> {
     ctx.count += 1;
     info!("service2 receive {:?}, ctx:{:?}", req, ctx);
-    let _ = tx.send(Ok(Frame::from(ctx.count))).await?;
+    let _ = tx.send_ok(Frame::from(ctx.count)).await?;
     Ok(ctx)
 }
 
@@ -101,55 +102,62 @@ async fn service_1(
     mut tx: Outgoing<Frame, ServiceError>,
 ) -> Result<ServiceContext, ServiceError> {
     info!("service1 receive {:?}, ctx:{:?}", req, ctx);
-    let _ = tx.send(Ok(Frame::from(1u32))).await?;
-    let _ = tx.send(Ok(Frame::from(2u32))).await?;
-    let _ = tx.send(Ok(Frame::from(3u32))).await?;
-    let _ = tx.send(Ok(Frame::from(4u32))).await?;
+    let _ = tx.send_ok(Frame::from(1u32)).await?;
+    let _ = tx.send_ok(Frame::from(2u32)).await?;
+    let _ = tx.send_ok(Frame::from(3u32)).await?;
+    let _ = tx.send_ok(Frame::from(4u32)).await?;
     Ok(ctx)
 }
 
 async fn unboxed() -> Result<(), ()> {
-    let c = Registry::new("1", factory!(service_1, ServiceContextConfig, new_context))
-        .service(
-            "2",
-            factory!(service_2, ServiceContext2Config, new_context2),
-        )
-        .service(
-            "3",
-            factory!(service_3, ServiceContext3Config, new_context3),
-        );
+    let c = plugin("1", factory!(service_1, ServiceContextConfig, new_context)).service(
+        "2",
+        factory!(service_2, ServiceContext2Config, new_context2),
+    );
+    // .service(
+    //     "3",
+    //     factory!(service_3, ServiceContext3Config, new_context3),
+    // );
+    let c1 = plugin(
+        "3",
+        factory!(service_3, ServiceContext3Config, new_context3),
+    );
+
+    let a = app(c);
+    let a = a.plugin(c1);
+    log::debug!("{:?}", a);
 
     let rt = FutureRsRuntime {
         pool: ThreadPool::new().unwrap(),
     };
     let g = graph();
     let e = Executor::new(&rt, g);
-    let _ = e.run(&c, Frame::default()).await;
+    let _ = e.run(&a, Frame::default()).await;
 
     Ok(())
 }
 
 fn graph() -> Graph {
-    let mut s1 = Map::new();
-    s1.insert("type".to_string(), Value::from("1".to_string()));
-    s1.insert("uri".to_string(), Value::from("a".to_string()));
-    s1.insert("prop1".to_string(), Value::from(0u32));
-    s1.insert("wires".to_string(), Value::from("c"));
-    let s1 = Value::from(s1);
+    let s1 = map_value! {
+        "type" => "1",
+        "uri" => "a",
+        "prop1" => 0u32,
+        "wires" => "c"
+    };
 
-    let mut s2 = Map::new();
-    s2.insert("type".to_string(), Value::from("2".to_string()));
-    s2.insert("uri".to_string(), Value::from("b".to_string()));
-    s2.insert("prop1".to_string(), Value::from(0u32));
-    s2.insert("wires".to_string(), Value::from("c"));
-    let s2 = Value::from(s2);
+    let s2 = map_value! {
+        "type" => "2",
+        "uri" => "b",
+        "prop1" => 0u32,
+        "wires" => "c"
+    };
 
-    let mut s3 = Map::new();
-    s3.insert("type".to_string(), Value::from("3".to_string()));
-    s3.insert("uri".to_string(), Value::from("c".to_string()));
-    s3.insert("prop1".to_string(), Value::from(0u32));
-    s3.insert("wires".to_string(), Value::None);
-    let s3 = Value::from(s3);
+    let s3 = map_value! {
+        "type" => "3",
+        "uri" => "c",
+        "prop1" => 0u32,
+        "wires" => Option::<String>::None
+    };
 
     let seq = Value::Seq(vec![s1, s2, s3]);
 

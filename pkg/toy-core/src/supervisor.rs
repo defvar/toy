@@ -4,10 +4,8 @@ use crate::executor::{AsyncRuntime, Executor};
 use crate::graph::Graph;
 use crate::mpsc::{self, Incoming, Outgoing};
 use crate::oneshot;
-use crate::registry::{Delegator, ServiceSet};
-use crate::service::ServiceFactory;
+use crate::registry::{App, Delegator, Registry};
 use crate::ServiceType;
-use toy_pack::deser::DeserializableOwned;
 
 #[derive(Debug)]
 pub enum Request {
@@ -27,9 +25,9 @@ pub enum SystemMessage {
 }
 
 #[derive(Debug)]
-pub struct Supervisor<T, S, F> {
+pub struct Supervisor<T, O, P> {
     service_rt: T,
-    registry: ServiceSet<S, F>,
+    registry: App<O, P>,
 
     /// send system message to api server
     tx: Outgoing<SystemMessage, ServiceError>,
@@ -38,24 +36,17 @@ pub struct Supervisor<T, S, F> {
     rx: Incoming<Request, ServiceError>,
 }
 
-impl<T, S, F, R> Supervisor<T, S, F>
+impl<T, O, P> Supervisor<T, O, P>
 where
     T: AsyncRuntime,
-    S: Delegator<Request = Frame, Error = ServiceError, InitError = ServiceError>,
-    F: Fn() -> R + Clone,
-    R: ServiceFactory<Request = Frame, Error = ServiceError, InitError = ServiceError>
-        + Send
-        + Sync
-        + 'static,
-    R::Service: Send,
-    R::Context: Send,
-    R::Config: DeserializableOwned + Send,
+    O: Delegator<Request = Frame, Error = ServiceError, InitError = ServiceError> + Registry,
+    P: Delegator<Request = Frame, Error = ServiceError, InitError = ServiceError> + Registry,
 {
     pub fn new(
         service_rt: T,
-        registry: ServiceSet<S, F>,
+        registry: App<O, P>,
     ) -> (
-        Supervisor<T, S, F>,
+        Supervisor<T, O, P>,
         Outgoing<Request, ServiceError>,
         Incoming<SystemMessage, ServiceError>,
     ) {

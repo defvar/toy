@@ -1,8 +1,6 @@
 use toy_api_server::GraphRegistry;
 use toy_core::prelude::*;
-use toy_core::registry::Registry;
 use toy_core::supervisor::Supervisor;
-use toy_pack::Unpack;
 
 fn main() {
     let env = env_logger::Env::default()
@@ -27,8 +25,7 @@ fn main() {
         .build()
         .unwrap();
 
-    let regi = Registry::new("hello1", factory!(hello, ServiceContextConfig, new_context))
-        .service("hello2", factory!(hello, ServiceContextConfig, new_context));
+    let regi = app(toy_plugin_file::load()).plugin(toy_plugin_map::load());
 
     let service_rt = toy_rt::RuntimeBuilder::new()
         .thread_name("service-worker")
@@ -38,7 +35,7 @@ fn main() {
 
     let (sv, tx, rx) = Supervisor::new(service_rt, regi);
 
-    let g = GraphRegistry::new("./examples/registry_root");
+    let g = GraphRegistry::new("./registry_root");
     let server = toy_api_server::Server::new(g);
 
     sv_rt.spawn(async {
@@ -47,29 +44,4 @@ fn main() {
     api_rt.block_on(async move {
         let _ = server.run(([127, 0, 0, 1], 3030), tx, rx).await;
     });
-    // sv_rt.block_on(async {
-    //     let _ = a.await;
-    // })
-}
-
-#[derive(Debug)]
-pub struct ServiceContext;
-
-#[derive(Clone, Debug, Default, Unpack)]
-pub struct ServiceContextConfig {}
-
-fn new_context(
-    _tp: ServiceType,
-    _config: ServiceContextConfig,
-) -> Result<ServiceContext, ServiceError> {
-    Ok(ServiceContext)
-}
-
-async fn hello(
-    ctx: ServiceContext,
-    _req: Frame,
-    mut tx: Outgoing<Frame, ServiceError>,
-) -> Result<ServiceContext, ServiceError> {
-    let _ = tx.send(Ok(Frame::from(1u32))).await?;
-    Ok(ctx)
 }

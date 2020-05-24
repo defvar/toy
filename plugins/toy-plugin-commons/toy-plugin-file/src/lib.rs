@@ -1,3 +1,5 @@
+//! Toy Plugin for File read and write.
+
 use toy_pack::Unpack;
 
 use self::edges::Edges;
@@ -7,6 +9,7 @@ pub use self::file_reader_builder::FileReaderBuilder;
 pub use self::file_writer::FileWriter;
 pub use self::file_writer_builder::FileWriterBuilder;
 pub use self::row::{ColumnIterator, Row};
+pub use plugin::load;
 
 pub mod config;
 mod edges;
@@ -15,6 +18,7 @@ mod file_reader_builder;
 mod file_writer;
 mod file_writer_builder;
 pub mod parse;
+mod plugin;
 mod row;
 pub mod service;
 

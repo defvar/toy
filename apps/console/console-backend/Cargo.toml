@@ -1,5 +1,22 @@
-[workspace]
+[package]
+name = "console-backend"
+version = "0.1.0"
+authors = ["defvar <def.daisuke@gmail.com>"]
+edition = "2018"
 
-members = [
-    "hoge"
-]
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+# common
+log = "0.4"
+env_logger = "0.7.1"
+
+# core
+toy-core = { path = "../../../pkg/toy-core" }
+toy-api-server = { path = "../../../pkg/toy-api-server"}
+toy-rt = { path = "../../../pkg/toy-rt"}
+toy-pack = {path = "../../../shared/toy-pack", features = ["derive"]}
+
+# plugins
+toy-plugin-file = { path = "../../../plugins/toy-plugin-commons/toy-plugin-file"}
+toy-plugin-map = { path = "../../../plugins/toy-plugin-commons/toy-plugin-map"}
