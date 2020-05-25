@@ -23,12 +23,16 @@ impl AsyncRuntime for FutureRsRuntime {
 }
 
 async fn go(graph: Graph) -> Result<(), ServiceError> {
-    let c = plugin("write", factory!(write, FileWriteConfig, new_write_context))
-        .service("read", factory!(read, FileReadConfig, new_read_context))
-        .service(
-            "mapping",
-            factory!(mapping, MappingConfig, new_mapping_context),
-        );
+    let c = plugin(
+        "example",
+        "write",
+        factory!(write, FileWriteConfig, new_write_context),
+    )
+    .service("read", factory!(read, FileReadConfig, new_read_context))
+    .service(
+        "mapping",
+        factory!(mapping, MappingConfig, new_mapping_context),
+    );
 
     let rt = FutureRsRuntime {
         pool: ThreadPool::new().unwrap(),

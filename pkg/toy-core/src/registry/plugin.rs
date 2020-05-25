@@ -11,37 +11,36 @@ use toy_pack::deser::DeserializableOwned;
 #[derive(Clone)]
 pub struct Plugin<S, F> {
     tp: ServiceType,
+    name_space: String,
     other: Option<S>,
     callback: F,
     tps: Vec<ServiceType>,
 }
 
 impl<S, F> Plugin<S, F> {
-    pub fn new<T>(tp: T, callback: F) -> Plugin<NoopEntry, F>
-    where
-        ServiceType: From<T>,
-    {
-        let tp: ServiceType = From::from(tp);
+    pub fn new(name_space: &str, service_name: &str, callback: F) -> Plugin<NoopEntry, F> {
+        let tp: ServiceType = From::from(format!("{}.{}", name_space, service_name));
         let tps = vec![tp.clone()];
         Plugin {
             tp,
+            name_space: name_space.to_string(),
             other: Option::<NoopEntry>::None,
             callback,
             tps,
         }
     }
 
-    pub fn service<F2, R, St>(self, tp: St, other: F2) -> Plugin<Self, F2>
+    pub fn service<F2, R>(self, service_name: &str, other: F2) -> Plugin<Self, F2>
     where
         Self: Sized,
         F2: Fn() -> R + Clone,
-        ServiceType: From<St>,
     {
-        let tp: ServiceType = From::from(tp);
+        let tp: ServiceType = From::from(format!("{}.{}", self.name_space, service_name));
         let mut tps = self.tps.clone();
         tps.push(tp.clone());
         Plugin {
             tp: tp.clone(),
+            name_space: self.name_space.to_string(),
             other: Some(self),
             callback: other,
             tps,

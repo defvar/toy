@@ -10,11 +10,8 @@ mod plugin;
 pub use app::App;
 pub use plugin::Plugin;
 
-pub fn plugin<T, F>(tp: T, callback: F) -> Plugin<NoopEntry, F>
-where
-    ServiceType: From<T>,
-{
-    Plugin::<NoopEntry, F>::new(tp, callback)
+pub fn plugin<F>(name_space: &str, service_name: &str, callback: F) -> Plugin<NoopEntry, F> {
+    Plugin::<NoopEntry, F>::new(name_space, service_name, callback)
 }
 
 pub fn app<P>(plugin: P) -> App<NoopEntry, P>

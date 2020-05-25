@@ -110,15 +110,18 @@ async fn service_1(
 }
 
 async fn unboxed() -> Result<(), ()> {
-    let c = plugin("1", factory!(service_1, ServiceContextConfig, new_context)).service(
+    let c = plugin(
+        "example",
+        "1",
+        factory!(service_1, ServiceContextConfig, new_context),
+    )
+    .service(
         "2",
         factory!(service_2, ServiceContext2Config, new_context2),
     );
-    // .service(
-    //     "3",
-    //     factory!(service_3, ServiceContext3Config, new_context3),
-    // );
+
     let c1 = plugin(
+        "example",
         "3",
         factory!(service_3, ServiceContext3Config, new_context3),
     );
