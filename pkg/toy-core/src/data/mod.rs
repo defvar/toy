@@ -9,6 +9,8 @@ mod value;
 mod value_impl_pack;
 mod value_impl_unpack;
 
+pub mod schema;
+
 pub use value_impl_pack::pack;
 pub use value_impl_unpack::unpack;
 

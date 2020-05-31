@@ -10,6 +10,7 @@ use syn::{parse_macro_input, DeriveInput};
 mod ast;
 mod attr;
 mod deser;
+mod schema;
 mod ser;
 
 #[proc_macro_derive(Pack, attributes(toy))]

@@ -61,6 +61,7 @@ fn tuple_variant() {
 
 #[derive(Pack, Debug, PartialEq)]
 struct Data<'a> {
+    #[toy(rename = "V-RENAME")]
     v_u32: u32,
     v_string: String,
     v_borrowed_str: &'a str,
@@ -72,6 +73,7 @@ struct Data<'a> {
 
 #[derive(Unpack, Debug, PartialEq)]
 struct DataUnpack<'a> {
+    #[toy(rename = "V-RENAME")]
     v_u32: u32,
     v_string: String,
     v_borrowed_str: &'a str,

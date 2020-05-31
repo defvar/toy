@@ -1,10 +1,9 @@
-use std::collections::BTreeSet;
-
 use proc_macro2::Span;
+use std::collections::BTreeSet;
 use syn::punctuated::Punctuated;
 use syn::{self, Fields};
 
-use super::attr::{FieldAttr, ModelAttr, VariantAttr};
+use super::attr::{FieldAttr, ModelAttr, RenameExpr, VariantAttr};
 
 pub struct Model<'a> {
     pub data: Data<'a>,
@@ -48,10 +47,26 @@ pub struct Field<'a> {
 }
 
 impl<'a> Field<'a> {
-    pub fn original_name(&self) -> String {
+    pub fn pack_field_name(&self) -> String {
         match self.member {
-            syn::Member::Named(ref ident) => ident.to_string().trim_start_matches("r#").to_owned(),
+            syn::Member::Named(ref ident) => match &self.attr.rename {
+                RenameExpr::Default => ident.to_string().trim_start_matches("r#").to_owned(),
+                RenameExpr::Lit(lit) => lit.to_string(),
+            },
             syn::Member::Unnamed(ref i) => format!("{}", i.index),
+        }
+    }
+
+    pub fn is_option_type(&self) -> bool {
+        fn path_is_option(path: &syn::Path) -> bool {
+            path.leading_colon.is_none()
+                && path.segments.len() == 1
+                && path.segments.iter().next().unwrap().ident == "Option"
+        }
+
+        match self.ty {
+            syn::Type::Path(typepath) if typepath.qself.is_none() => path_is_option(&typepath.path),
+            _ => false,
         }
     }
 }
@@ -65,8 +80,11 @@ pub struct Variant<'a> {
 }
 
 impl<'a> Variant<'a> {
-    pub fn original_name(&self) -> String {
-        self.ident.to_string().trim_start_matches("r#").to_owned()
+    pub fn pack_field_name(&self) -> String {
+        match &self.attrs.rename {
+            RenameExpr::Default => self.ident.to_string().trim_start_matches("r#").to_owned(),
+            RenameExpr::Lit(lit) => lit.to_string(),
+        }
     }
 }
 

@@ -1,6 +1,7 @@
 //! Data structure serialization and deserialization api.
 
 pub mod deser;
+pub mod schema;
 pub mod ser;
 
 pub mod export {

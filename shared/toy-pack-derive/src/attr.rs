@@ -13,13 +13,20 @@ pub enum DefaultExpr {
     Lit(syn::Lit),
 }
 
+pub enum RenameExpr {
+    Default,
+    Lit(String),
+}
+
 pub struct ModelAttr {
     pub deny_unknown_fields: bool,
+    pub ignore_ser_if_none: bool,
 }
 
 impl ModelAttr {
     pub fn from_ast(input: &syn::DeriveInput) -> Result<ModelAttr, Error> {
         let mut deny_unknown_fields: Option<bool> = None;
+        let mut ignore_ser_if_none: Option<bool> = None;
 
         for attr in &input.attrs {
             if let Some(items) = get_meta_items(attr) {
@@ -27,6 +34,9 @@ impl ModelAttr {
                     match meta_item {
                         Meta(Word(ref w)) if w == "deny_unknown_fields" => {
                             deny_unknown_fields = Some(true);
+                        }
+                        Meta(Word(ref w)) if w == "ignore_ser_if_none" => {
+                            ignore_ser_if_none = Some(true);
                         }
                         _ => (),
                     }
@@ -36,6 +46,7 @@ impl ModelAttr {
 
         let r = ModelAttr {
             deny_unknown_fields: deny_unknown_fields.unwrap_or(false),
+            ignore_ser_if_none: ignore_ser_if_none.unwrap_or(false),
         };
         Ok(r)
     }
@@ -46,12 +57,14 @@ pub struct FieldAttr {
     pub ignore: bool,
     pub default: DefaultExpr,
     pub borrowed_lifetimes: BTreeSet<syn::Lifetime>,
+    pub rename: RenameExpr,
 }
 
 impl FieldAttr {
     pub fn from_ast(field: &Field) -> Result<FieldAttr, Error> {
         let mut ignore: Option<bool> = None;
         let mut default: Option<DefaultExpr> = None;
+        let mut rename: Option<RenameExpr> = None;
 
         for attr in &field.attrs {
             if let Some(items) = get_meta_items(attr) {
@@ -76,6 +89,12 @@ impl FieldAttr {
                             let path = parse_lit_into_expr_path(&m.ident, &m.lit)?;
                             default = Some(DefaultExpr::Path(path));
                         }
+
+                        // #[toy(rename = ...)]
+                        Meta(NameValue(ref m)) if m.ident == "rename" => {
+                            let path = get_lit_str(&m.ident, &m.lit)?;
+                            rename = Some(RenameExpr::Lit(path.value()));
+                        }
                         _ => (),
                     }
                 }
@@ -89,6 +108,7 @@ impl FieldAttr {
             ignore: ignore.unwrap_or(false),
             default: default.unwrap_or(DefaultExpr::Default),
             borrowed_lifetimes: lifetimes,
+            rename: rename.unwrap_or(RenameExpr::Default),
         };
         Ok(r)
     }
@@ -97,11 +117,13 @@ impl FieldAttr {
 pub struct VariantAttr {
     /// skip ser and deser
     pub ignore: bool,
+    pub rename: RenameExpr,
 }
 
 impl VariantAttr {
     pub fn from_ast(variant: &Variant) -> Result<VariantAttr, Error> {
         let mut ignore: Option<bool> = None;
+        let mut rename: Option<RenameExpr> = None;
 
         for attr in &variant.attrs {
             if let Some(items) = get_meta_items(attr) {
@@ -111,6 +133,11 @@ impl VariantAttr {
                         Meta(Word(ref w)) if w == "ignore" => {
                             ignore = Some(true);
                         }
+                        // #[toy(rename = ...)]
+                        Meta(NameValue(ref m)) if m.ident == "rename" => {
+                            let path = get_lit_str(&m.ident, &m.lit)?;
+                            rename = Some(RenameExpr::Lit(path.value()));
+                        }
                         _ => (),
                     }
                 }
@@ -119,6 +146,7 @@ impl VariantAttr {
 
         let r = VariantAttr {
             ignore: ignore.unwrap_or(false),
+            rename: rename.unwrap_or(RenameExpr::Default),
         };
         Ok(r)
     }

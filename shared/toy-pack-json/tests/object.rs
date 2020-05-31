@@ -5,10 +5,12 @@ use toy_test_utils::unindent;
 #[test]
 fn ser_de_nested_struct() {
     #[derive(Debug, Pack, Unpack, PartialEq, Default)]
+    #[toy(ignore_ser_if_none)]
     struct Outer {
         id: u32,
         name: String,
         age: Option<u32>,
+        address: Option<String>,
         numbers: Vec<i64>,
         columns: Option<Vec<Inner>>,
     }
@@ -22,7 +24,7 @@ fn ser_de_nested_struct() {
 {
   "id": 1,
   "name": "aiueo",
-  "age": null,
+  "age": 1,
   "numbers": [1, 2, 3],
   "columns": [{ "name": "a" }, { "name": "b" }]
 }
@@ -31,7 +33,8 @@ fn ser_de_nested_struct() {
     let expected = Outer {
         id: 1,
         name: "aiueo".to_owned(),
-        age: None,
+        age: Some(1),
+        address: None,
         numbers: vec![1, 2, 3],
         columns: Some(vec![
             Inner {

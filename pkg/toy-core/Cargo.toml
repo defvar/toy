@@ -19,6 +19,7 @@ ryu = "1.0"
 env_logger = "0.7.1"
 toy-pack-derive = {path = "../../shared/toy-pack-derive"}
 futures = { version = "0.3", features = ["thread-pool"] }
+toy-pack-json = {path = "../../shared/toy-pack-json"}
 
 [[example]]
 name = "hello"

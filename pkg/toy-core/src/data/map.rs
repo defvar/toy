@@ -3,14 +3,16 @@
 //! By default the map is backed by a [`IndexMap`].
 
 use crate::data::Value;
+use failure::_core::fmt::Formatter;
 use failure::_core::iter::FromIterator;
 use indexmap::IndexMap;
 use std::borrow::Borrow;
 use std::hash::Hash;
-use std::{fmt, fmt::Debug, ops};
+use std::{fmt, ops};
 
 /// A map which preserves insertion order.
 /// By default the map is backed by a [`IndexMap`].
+#[derive(Clone)]
 pub struct Map<K, V> {
     map: IndexMap<K, V>,
 }
@@ -216,12 +218,13 @@ impl Default for Map<String, Value> {
     }
 }
 
-impl Clone for Map<String, Value> {
-    #[inline]
-    fn clone(&self) -> Self {
-        Map {
-            map: self.map.clone(),
-        }
+impl<K, V> fmt::Debug for Map<K, V>
+where
+    K: fmt::Debug + Hash + Eq,
+    V: fmt::Debug,
+{
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        self.map.fmt(f)
     }
 }
 
@@ -256,13 +259,6 @@ where
 {
     fn index_mut(&mut self, index: &Q) -> &mut Value {
         self.map.get_mut(index).expect("no entry found for key")
-    }
-}
-
-impl Debug for Map<String, Value> {
-    #[inline]
-    fn fmt(&self, formatter: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        self.map.fmt(formatter)
     }
 }
 

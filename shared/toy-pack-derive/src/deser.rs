@@ -28,21 +28,21 @@ impl DeserBlock {
 }
 
 struct IdentVisitorSource {
-    original_name: String,
+    pack_field_name: String,
     index: usize,
 }
 
 impl IdentVisitorSource {
     fn from_field(index: usize, field: &Field) -> IdentVisitorSource {
         IdentVisitorSource {
-            original_name: field.original_name(),
+            pack_field_name: field.pack_field_name(),
             index,
         }
     }
 
     fn from_variant(index: usize, variant: &Variant) -> IdentVisitorSource {
         IdentVisitorSource {
-            original_name: variant.original_name(),
+            pack_field_name: variant.pack_field_name(),
             index,
         }
     }
@@ -371,7 +371,7 @@ fn identifier_impl(source: &Vec<IdentVisitorSource>) -> TokenStream {
         .iter()
         .map(|x| {
             let indexed_name = member_name(x.index);
-            let original_name_str = &x.original_name;
+            let pack_field_name_str = &x.pack_field_name;
             let field_idx = x.index as u32;
             (
                 quote! {
@@ -381,7 +381,7 @@ fn identifier_impl(source: &Vec<IdentVisitorSource>) -> TokenStream {
                     #field_idx => toy_pack::export::Ok(__Field::#indexed_name),
                 },
                 quote! {
-                    #original_name_str => toy_pack::export::Ok(__Field::#indexed_name),
+                    #pack_field_name_str => toy_pack::export::Ok(__Field::#indexed_name),
                 },
             )
         })
@@ -454,7 +454,7 @@ fn deserialize_field(index: usize, field: &Field) -> TokenStream {
 fn deserialize_field_for_map(index: usize, field: &Field) -> TokenStream {
     let name = member_name(index);
     let ty = field.ty;
-    let original_name = field.original_name();
+    let original_name = field.pack_field_name();
     quote! {
       __Field::#name => {
           if Option::is_some(&#name){

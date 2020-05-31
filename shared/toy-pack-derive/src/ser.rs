@@ -68,7 +68,7 @@ fn body_enum(target: &Model) -> Result<TokenStream, syn::Error> {
             let name = &target.input.ident;
             let variant_name = &variant.ident;
             let name_str = name.to_string().trim_start_matches("r#").to_owned();
-            let variant_name_str = variant_name.to_string().trim_start_matches("r#").to_owned();
+            let variant_name_str = variant.pack_field_name();
             let idx = i as u32;
             match variant.style {
                 Style::Unit => {
@@ -129,6 +129,7 @@ fn body_struct(target: &Model) -> Result<TokenStream, syn::Error> {
         Data::Enum(_) => unreachable!(),
     };
     let struct_name_str = target.original_name();
+    let ignore_ser_if_none = target.attr.ignore_ser_if_none;
     match *style {
         Style::Struct => {
             let len = serialize_length(&fields);
@@ -136,10 +137,18 @@ fn body_struct(target: &Model) -> Result<TokenStream, syn::Error> {
                 .iter()
                 .filter(|x| !x.attr.ignore)
                 .map(|field| {
-                    let name_str = field.original_name();
+                    let name_str = field.pack_field_name();
                     let name = &field.member;
-                    quote! {
-                        serializer.field(#name_str, &self.#name)?;
+                    if ignore_ser_if_none && field.is_option_type() {
+                        quote! {
+                            if toy_pack::export::Option::is_some(&self.#name) {
+                                serializer.field(#name_str, &self.#name)?;
+                            }
+                        }
+                    } else {
+                        quote! {
+                            serializer.field(#name_str, &self.#name)?;
+                        }
                     }
                 })
                 .collect();

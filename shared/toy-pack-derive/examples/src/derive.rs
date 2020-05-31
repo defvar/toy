@@ -3,14 +3,17 @@ use toy_pack_mp::{pack, unpack};
 
 #[derive(Pack, Unpack, Debug, PartialEq)]
 struct Dum<'a> {
+    #[toy(rename = "u32")]
     v_u32: u32,
     v_string: String,
     v_borrowed_str: &'a str,
+    v_option: Option<u8>,
 }
 
 #[derive(Eq, PartialEq, Debug, Pack, Unpack)]
 enum TestEnum {
     //unit variant
+    #[toy(rename = "Variant_A")]
     A,
 
     //newtype variant
@@ -46,12 +49,14 @@ fn main() {
         v_u32: 1,
         v_string: "a".to_owned(),
         v_borrowed_str: "b",
+        v_option: None,
     };
 
     let dum2 = Dum {
         v_u32: 2,
         v_string: "a".to_owned(),
         v_borrowed_str: "b",
+        v_option: None,
     };
 
     src.push(dum1);
