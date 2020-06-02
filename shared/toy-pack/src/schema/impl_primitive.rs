@@ -26,6 +26,8 @@ primitive_scan_impl!(i8, PrimitiveTypes::I8);
 primitive_scan_impl!(i16, PrimitiveTypes::I16);
 primitive_scan_impl!(i32, PrimitiveTypes::I32);
 primitive_scan_impl!(i64, PrimitiveTypes::I64);
+primitive_scan_impl!(f32, PrimitiveTypes::F32);
+primitive_scan_impl!(f64, PrimitiveTypes::F64);
 
 primitive_scan_impl!(String, PrimitiveTypes::String);
 

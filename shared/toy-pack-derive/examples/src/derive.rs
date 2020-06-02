@@ -1,16 +1,17 @@
 use toy_pack_derive::*;
 use toy_pack_mp::{pack, unpack};
 
-#[derive(Pack, Unpack, Debug, PartialEq)]
+#[derive(Pack, Unpack, Schema, Debug, PartialEq)]
 struct Dum<'a> {
     #[toy(rename = "u32")]
     v_u32: u32,
     v_string: String,
     v_borrowed_str: &'a str,
     v_option: Option<u8>,
+    v_test_enum: TestEnum,
 }
 
-#[derive(Eq, PartialEq, Debug, Pack, Unpack)]
+#[derive(Eq, PartialEq, Debug, Pack, Unpack, Schema)]
 enum TestEnum {
     //unit variant
     #[toy(rename = "Variant_A")]
@@ -29,20 +30,6 @@ impl Default for TestEnum {
     }
 }
 
-#[derive(Debug, Pack, Unpack)]
-struct Gen<T>
-where
-    T: std::default::Default + toy_pack::deser::DeserializableOwned + toy_pack::ser::Serializable,
-{
-    value: T,
-}
-
-#[derive(Pack)]
-struct User {
-    id: u32,
-    name: String,
-}
-
 fn main() {
     let mut src: Vec<Dum> = Vec::new();
     let dum1 = Dum {
@@ -50,6 +37,7 @@ fn main() {
         v_string: "a".to_owned(),
         v_borrowed_str: "b",
         v_option: None,
+        v_test_enum: TestEnum::B(1),
     };
 
     let dum2 = Dum {
@@ -57,6 +45,7 @@ fn main() {
         v_string: "a".to_owned(),
         v_borrowed_str: "b",
         v_option: None,
+        v_test_enum: TestEnum::B(1),
     };
 
     src.push(dum1);
@@ -67,20 +56,4 @@ fn main() {
 
     let r = unpack::<Vec<Dum>>(vec.as_slice()).unwrap();
     println!("{:?}", r);
-
-    println!("----------------------------------");
-
-    let src = Gen::<u32> { value: 1 };
-    let vec = pack(&src).unwrap();
-    println!("{:?}", vec);
-
-    let r = unpack::<Gen<u32>>(vec.as_slice()).unwrap();
-    println!("{:?}", r);
-
-    let src = User {
-        id: 1,
-        name: "a".to_string(),
-    };
-    let vec = pack(&src).unwrap();
-    println!("{:?}", vec);
 }
