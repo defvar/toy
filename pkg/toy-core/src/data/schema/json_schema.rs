@@ -20,7 +20,7 @@ pub enum SchemaTypes {
 }
 
 #[derive(Clone, Debug, Pack)]
-#[toy(ignore_ser_if_none)]
+#[toy(ignore_pack_if_none)]
 pub struct JsonSchema {
     #[toy(rename = "$id")]
     pub(crate) id: Option<String>,
@@ -37,7 +37,7 @@ pub struct JsonSchema {
     pub(crate) const_: Option<String>,
 
     #[toy(rename = "additionalProperties")]
-    pub(crate) additional_properties: Option<Vec<JsonSchema>>,
+    pub(crate) additional_properties: Option<Box<JsonSchema>>,
 
     #[toy(ignore)]
     pub(crate) is_optional: bool,

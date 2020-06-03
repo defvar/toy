@@ -116,14 +116,7 @@ impl MapBuilder {
     }
 
     pub fn additional(&mut self, prop: JsonSchema) -> &mut Self {
-        match self.schema.additional_properties {
-            Some(ref mut v) => {
-                v.push(prop);
-            }
-            None => {
-                self.schema.additional_properties = Some(vec![prop]);
-            }
-        }
+        self.schema.additional_properties = Some(Box::new(prop));
         self
     }
 }

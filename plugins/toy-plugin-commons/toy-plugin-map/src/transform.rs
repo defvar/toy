@@ -2,7 +2,7 @@ use crate::typed;
 use crate::typed::AllowedTypes;
 use std::collections::HashMap;
 use toy_core::data::{Map, Value};
-use toy_pack::Unpack;
+use toy_pack::{Schema, Unpack};
 
 pub trait Transformer {
     fn transform(&self, value: &mut Value) -> Result<(), ()>;
@@ -32,10 +32,9 @@ pub struct RemoveByName(pub Vec<String>);
 #[derive(Debug)]
 pub struct RemoveByIndex(pub Vec<u32>);
 
-#[derive(Debug, Clone, PartialEq, Unpack)]
+#[derive(Debug, Clone, PartialEq, Unpack, Schema)]
 pub struct PutValue {
     value: Option<String>,
-    v: Value, // string
     tp: AllowedTypes,
 }
 
@@ -172,11 +171,15 @@ impl Transformer for RemoveByIndex {
 
 impl PutValue {
     pub fn new(value: Option<String>, tp: AllowedTypes) -> PutValue {
-        let v = value.clone().map(|x| Value::from(x)).unwrap_or(Value::None);
-        PutValue { value, v, tp }
+        PutValue { value, tp }
     }
 
     pub fn value(&self) -> Value {
-        typed::cast(&self.v, self.tp).unwrap_or(Value::None)
+        let v = self
+            .value
+            .clone()
+            .map(|x| Value::from(x))
+            .unwrap_or(Value::None);
+        typed::cast(&v, self.tp).unwrap_or(Value::None)
     }
 }

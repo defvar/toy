@@ -1,31 +1,45 @@
 use crate::data::Frame;
 use crate::error::ServiceError;
 use crate::executor::ServiceExecutor;
-use crate::registry::{Delegator, NoopEntry, PluginRegistry, Registry};
+use crate::registry::{Delegator, NoopEntry, PluginRegistry, Registry, ServiceSchema};
 use crate::service::ServiceFactory;
 use crate::service_type::ServiceType;
 use crate::service_uri::Uri;
 use std::fmt::{self, Debug};
 use toy_pack::deser::DeserializableOwned;
+use toy_pack::schema::Schema;
 
 #[derive(Clone)]
 pub struct Plugin<S, F> {
+    inner: Inner<S, F>,
+    tps: Vec<ServiceSchema>,
+}
+
+#[derive(Clone)]
+struct Inner<S, F> {
     tp: ServiceType,
     name_space: String,
     other: Option<S>,
     callback: F,
-    tps: Vec<ServiceType>,
 }
 
 impl<S, F> Plugin<S, F> {
-    pub fn new(name_space: &str, service_name: &str, callback: F) -> Plugin<NoopEntry, F> {
-        let tp: ServiceType = From::from(format!("{}.{}", name_space, service_name));
-        let tps = vec![tp.clone()];
+    pub fn new<R>(name_space: &str, service_name: &str, callback: F) -> Plugin<NoopEntry, F>
+    where
+        F: Fn() -> R + Clone,
+        R: ServiceFactory,
+        R::Config: Schema,
+    {
+        let s = ServiceSchema::new::<R::Config>(name_space, service_name);
+        let tp = s.tp.clone();
+        let tps = vec![s];
         Plugin {
-            tp,
-            name_space: name_space.to_string(),
-            other: Option::<NoopEntry>::None,
-            callback,
+            inner: Inner {
+                tp,
+                name_space: name_space.to_string(),
+                other: Option::<NoopEntry>::None,
+                callback,
+            },
             tps,
         }
     }
@@ -34,29 +48,38 @@ impl<S, F> Plugin<S, F> {
     where
         Self: Sized,
         F2: Fn() -> R + Clone,
+        R: ServiceFactory,
+        R::Config: Schema,
     {
-        let tp: ServiceType = From::from(format!("{}.{}", self.name_space, service_name));
+        let s = ServiceSchema::new::<R::Config>(&self.inner.name_space, service_name);
+        let tp = s.tp.clone();
         let mut tps = self.tps.clone();
-        tps.push(tp.clone());
+        tps.push(s);
         Plugin {
-            tp: tp.clone(),
-            name_space: self.name_space.to_string(),
-            other: Some(self),
-            callback: other,
+            inner: Inner {
+                tp,
+                name_space: self.inner.name_space.to_string(),
+                other: Some(self),
+                callback: other,
+            },
             tps,
         }
     }
 }
 
 impl<S, F> Registry for Plugin<S, F> {
-    fn service_types(&self) -> &Vec<ServiceType> {
-        &self.tps
+    fn service_types(&self) -> Vec<ServiceType> {
+        self.tps.iter().map(|x| x.tp.clone()).collect()
+    }
+
+    fn schemas(&self) -> Vec<ServiceSchema> {
+        self.tps.clone()
     }
 }
 
 impl<S, F> Debug for Plugin<S, F> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Registry {{ services:[{:?}] }}", self.tps)
+        write!(f, "Registry {{ services:[{:?}] }}", self.service_types())
     }
 }
 
@@ -98,12 +121,12 @@ where
             InitError = Self::InitError,
         >,
     {
-        match &self.other {
+        match &self.inner.other {
             Some(other) => match other.delegate(tp, uri, executor) {
                 Ok(_) => Ok(()),
                 Err(_) => {
-                    if self.tp == *tp {
-                        let f = (self.callback)();
+                    if self.inner.tp == *tp {
+                        let f = (self.inner.callback)();
                         executor.spawn(tp, uri, f);
                         Ok(())
                     } else {
@@ -112,8 +135,8 @@ where
                 }
             },
             None => {
-                if self.tp == *tp {
-                    let f = (self.callback)();
+                if self.inner.tp == *tp {
+                    let f = (self.inner.callback)();
                     executor.spawn(tp, uri, f);
                     Ok(())
                 } else {

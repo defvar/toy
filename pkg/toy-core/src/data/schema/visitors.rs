@@ -27,11 +27,7 @@ impl SchemaVisitor for JsonSchemaVisitor {
     type TupleVariantVisitor = JsonSchemaTupleVariantVisitor;
     type EnumVisitor = JsonSchemaEnumVisitor;
 
-    fn visit(
-        &mut self,
-        _name: &'static str,
-        tp: PrimitiveTypes,
-    ) -> Result<Self::Value, Self::Error> {
+    fn visit(&mut self, _name: &str, tp: PrimitiveTypes) -> Result<Self::Value, Self::Error> {
         match tp {
             PrimitiveTypes::Boolean => Ok(JsonSchema::from_types(SchemaTypes::Boolean)),
             PrimitiveTypes::U8
@@ -47,7 +43,7 @@ impl SchemaVisitor for JsonSchemaVisitor {
             PrimitiveTypes::F32 | PrimitiveTypes::F64 => {
                 Ok(JsonSchema::from_types(SchemaTypes::Number))
             }
-            PrimitiveTypes::String | PrimitiveTypes::Str => {
+            PrimitiveTypes::String | PrimitiveTypes::Str | PrimitiveTypes::Char => {
                 Ok(JsonSchema::from_types(SchemaTypes::String))
             }
         }
@@ -55,13 +51,13 @@ impl SchemaVisitor for JsonSchemaVisitor {
 
     fn visit_wrap_type<T>(
         &mut self,
-        name: &'static str,
+        name: &str,
         wrap: WrapTypes,
     ) -> Result<Self::Value, Self::Error>
     where
         T: Schema,
     {
-        let s = T::scan(name, self)?;
+        let s = T::scan(name, JsonSchemaVisitor)?;
         let r = match wrap {
             WrapTypes::Option => s.into_optional(),
             WrapTypes::Vec => SchemaBuilders::array_builder().push(s).build(),
@@ -69,20 +65,20 @@ impl SchemaVisitor for JsonSchemaVisitor {
         Ok(r)
     }
 
-    fn visit_map_type<K, V>(&mut self, name: &'static str) -> Result<Self::Value, Self::Error>
+    fn visit_map_type<K, V>(&mut self, name: &str) -> Result<Self::Value, Self::Error>
     where
         K: Schema,
         V: Schema,
     {
-        let k = K::scan(name, self)?;
+        let k = K::scan(name, JsonSchemaVisitor)?;
         if let Some(tp) = k.tp() {
             assert_eq!(tp, SchemaTypes::String, "map key must be a String type.");
         }
-        let v = V::scan(name, self)?;
+        let v = V::scan(name, JsonSchemaVisitor)?;
         Ok(SchemaBuilders::map_builder().additional(v).build())
     }
 
-    fn struct_visitor(&mut self, _name: &'static str) -> Result<Self::StructVisitor, Self::Error> {
+    fn struct_visitor(&mut self, _name: &str) -> Result<Self::StructVisitor, Self::Error> {
         let r = JsonSchemaStructVisitor {
             builder: SchemaBuilders::object_builder(),
         };
@@ -91,7 +87,7 @@ impl SchemaVisitor for JsonSchemaVisitor {
 
     fn enum_visitor(
         &mut self,
-        _name: &'static str,
+        _name: &str,
         _enum_name: &'static str,
     ) -> Result<Self::EnumVisitor, Self::Error> {
         let r = JsonSchemaEnumVisitor {
@@ -106,11 +102,7 @@ impl EnumVisitor for JsonSchemaEnumVisitor {
     type Error = SchemaScanError;
     type TupleVariantVisitor = JsonSchemaTupleVariantVisitor;
 
-    fn unit_variant(
-        &mut self,
-        _name: &'static str,
-        variant: &'static str,
-    ) -> Result<(), Self::Error> {
+    fn unit_variant(&mut self, _name: &str, variant: &'static str) -> Result<(), Self::Error> {
         let s = SchemaBuilders::const_builder().value(variant).build();
         self.builder.push(s);
         Ok(())
@@ -118,7 +110,7 @@ impl EnumVisitor for JsonSchemaEnumVisitor {
 
     fn tuple_variant_visitor(
         &mut self,
-        _name: &'static str,
+        _name: &str,
         variant: &'static str,
     ) -> Result<Self::TupleVariantVisitor, Self::Error> {
         Ok(JsonSchemaTupleVariantVisitor {
@@ -129,7 +121,7 @@ impl EnumVisitor for JsonSchemaEnumVisitor {
 
     fn variant(
         &mut self,
-        _name: &'static str,
+        _name: &str,
         _variant: &'static str,
         v: Self::Value,
     ) -> Result<(), Self::Error> {
@@ -155,8 +147,7 @@ impl TupleVariantVisitor for JsonSchemaTupleVariantVisitor {
     where
         T: Schema,
     {
-        let mut v = JsonSchemaVisitor;
-        let s = T::scan(variant, &mut v)?;
+        let s = T::scan(variant, JsonSchemaVisitor)?;
         self.builder.push(s);
         Ok(())
     }
@@ -173,12 +164,11 @@ impl StructVisitor for JsonSchemaStructVisitor {
     type Value = JsonSchema;
     type Error = SchemaScanError;
 
-    fn field<T>(&mut self, name: &'static str) -> Result<(), Self::Error>
+    fn field<T>(&mut self, name: &str) -> Result<(), Self::Error>
     where
         T: Schema,
     {
-        let mut v = JsonSchemaVisitor;
-        let p = T::scan(name, &mut v)?;
+        let p = T::scan(name, JsonSchemaVisitor)?;
         self.builder.property(name, p);
         Ok(())
     }

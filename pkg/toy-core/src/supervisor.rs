@@ -4,8 +4,7 @@ use crate::executor::{AsyncRuntime, Executor};
 use crate::graph::Graph;
 use crate::mpsc::{self, Incoming, Outgoing};
 use crate::oneshot;
-use crate::registry::{App, Delegator, Registry};
-use crate::ServiceType;
+use crate::registry::{App, Delegator, Registry, ServiceSchema};
 
 #[derive(Debug)]
 pub enum Request {
@@ -16,7 +15,7 @@ pub enum Request {
 
 #[derive(Debug)]
 pub enum Response {
-    Services(Vec<ServiceType>),
+    Services(Vec<ServiceSchema>),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -27,12 +26,12 @@ pub enum SystemMessage {
 #[derive(Debug)]
 pub struct Supervisor<T, O, P> {
     service_rt: T,
-    registry: App<O, P>,
+    app: App<O, P>,
 
-    /// send system message to api server
+    /// send system message to api server.
     tx: Outgoing<SystemMessage, ServiceError>,
 
-    /// receive any request from api server
+    /// receive any request from api server.
     rx: Incoming<Request, ServiceError>,
 }
 
@@ -55,7 +54,7 @@ where
         (
             Supervisor {
                 service_rt,
-                registry,
+                app: registry,
                 tx: tx_sys,
                 rx: rx_req,
             },
@@ -71,11 +70,11 @@ where
                 Ok(m) => match m {
                     Request::Task(g) => {
                         let e = Executor::new(&self.service_rt, g);
-                        let _ = e.run(&self.registry, Frame::default()).await;
+                        let _ = e.run(&self.app, Frame::default()).await;
                         log::info!("executed task");
                     }
                     Request::Services(tx) => {
-                        let m = Response::Services(self.registry.service_types().clone());
+                        let m = Response::Services(self.app.schemas());
                         let _ = tx.send_ok(m).await;
                     }
                     Request::Shutdown => {

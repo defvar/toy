@@ -15,29 +15,28 @@ pub trait SchemaVisitor: Sized {
         TupleVariantVisitor = Self::TupleVariantVisitor,
     >;
 
-    fn visit(&mut self, name: &'static str, tp: PrimitiveTypes)
-        -> Result<Self::Value, Self::Error>;
+    fn visit(&mut self, name: &str, tp: PrimitiveTypes) -> Result<Self::Value, Self::Error>;
 
     fn visit_wrap_type<T>(
         &mut self,
-        name: &'static str,
+        name: &str,
         wrap: WrapTypes,
     ) -> Result<Self::Value, Self::Error>
     where
         T: Schema;
 
-    fn visit_map_type<K, V>(&mut self, name: &'static str) -> Result<Self::Value, Self::Error>
+    fn visit_map_type<K, V>(&mut self, name: &str) -> Result<Self::Value, Self::Error>
     where
         K: Schema,
         V: Schema;
 
     /// Get visitor for struct.
-    fn struct_visitor(&mut self, name: &'static str) -> Result<Self::StructVisitor, Self::Error>;
+    fn struct_visitor(&mut self, name: &str) -> Result<Self::StructVisitor, Self::Error>;
 
     /// Get visitor for enum.
     fn enum_visitor(
         &mut self,
-        name: &'static str,
+        name: &str,
         enum_name: &'static str,
     ) -> Result<Self::EnumVisitor, Self::Error>;
 }
@@ -49,7 +48,7 @@ pub trait StructVisitor {
     type Error: Error;
 
     /// Add field.
-    fn field<T>(&mut self, name: &'static str) -> Result<(), Self::Error>
+    fn field<T>(&mut self, name: &str) -> Result<(), Self::Error>
     where
         T: Schema;
 
@@ -105,24 +104,20 @@ pub trait EnumVisitor {
     ///     B,
     /// }
     /// ```
-    fn unit_variant(
-        &mut self,
-        name: &'static str,
-        variant: &'static str,
-    ) -> Result<(), Self::Error>;
+    fn unit_variant(&mut self, name: &str, variant: &'static str) -> Result<(), Self::Error>;
 
     /// Get new visitor for tuple variant.
     ///
     fn tuple_variant_visitor(
         &mut self,
-        name: &'static str,
+        name: &str,
         variant: &'static str,
     ) -> Result<Self::TupleVariantVisitor, Self::Error>;
 
     /// Add any variant.
     fn variant(
         &mut self,
-        name: &'static str,
+        name: &str,
         variant: &'static str,
         v: Self::Value,
     ) -> Result<(), Self::Error>;

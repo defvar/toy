@@ -23,14 +23,14 @@ impl AsyncRuntime for FutureRsRuntime {
 
 #[derive(Debug)]
 pub struct ServiceContext;
-#[derive(Clone, Debug, Default, Unpack)]
+#[derive(Clone, Debug, Default, Unpack, Schema)]
 pub struct ServiceContextConfig {}
 
 #[derive(Debug)]
 pub struct ServiceContext2 {
     count: u32,
 }
-#[derive(Clone, Debug, Default, Unpack)]
+#[derive(Clone, Debug, Default, Unpack, Schema)]
 pub struct ServiceContext2Config {
     uri: String,
     prop1: u32,
@@ -40,7 +40,7 @@ pub struct ServiceContext2Config {
 pub struct ServiceContext3 {
     count: u32,
 }
-#[derive(Clone, Debug, Default, Unpack)]
+#[derive(Clone, Debug, Default, Unpack, Schema)]
 pub struct ServiceContext3Config {
     uri: String,
     prop1: u32,

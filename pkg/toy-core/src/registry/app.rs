@@ -1,15 +1,19 @@
 use crate::data::Frame;
 use crate::error::ServiceError;
 use crate::executor::ServiceExecutor;
-use crate::registry::{Delegator, NoopEntry, Registry};
+use crate::registry::{Delegator, NoopEntry, Registry, ServiceSchema};
 use crate::service_type::ServiceType;
 use crate::service_uri::Uri;
 use std::fmt::{self, Debug};
 
 pub struct App<O, P> {
+    inner: Inner<O, P>,
+    schemas: Vec<ServiceSchema>,
+}
+
+struct Inner<O, P> {
     other: Option<O>,
     plugin: P,
-    tps: Vec<ServiceType>,
 }
 
 impl<O, P> App<O, P>
@@ -18,11 +22,13 @@ where
     P: Registry,
 {
     pub fn new(plugin: P) -> App<NoopEntry, P> {
-        let tps = plugin.service_types().clone();
+        let schemas = plugin.schemas().clone();
         App {
-            other: Option::<NoopEntry>::None,
-            plugin,
-            tps,
+            inner: Inner {
+                other: Option::<NoopEntry>::None,
+                plugin,
+            },
+            schemas,
         }
     }
 
@@ -31,12 +37,14 @@ where
         Self: Sized,
         P2: Registry,
     {
-        let mut tps = self.tps.clone();
-        tps.extend_from_slice(plugin.service_types());
+        let mut schemas = self.schemas.clone();
+        schemas.extend_from_slice(&plugin.schemas());
         App {
-            other: Some(self),
-            plugin,
-            tps,
+            inner: Inner {
+                other: Some(self),
+                plugin,
+            },
+            schemas,
         }
     }
 }
@@ -58,15 +66,15 @@ where
             InitError = Self::InitError,
         >,
     {
-        match &self.other {
+        match &self.inner.other {
             Some(other) => match other.delegate(tp, uri, executor) {
                 Ok(()) => Ok(()),
-                Err(_) => match self.plugin.delegate(tp, uri, executor) {
+                Err(_) => match self.inner.plugin.delegate(tp, uri, executor) {
                     Ok(()) => Ok(()),
                     Err(_) => Err(ServiceError::service_not_found(tp)),
                 },
             },
-            None => match self.plugin.delegate(tp, uri, executor) {
+            None => match self.inner.plugin.delegate(tp, uri, executor) {
                 Ok(()) => Ok(()),
                 Err(_) => Err(ServiceError::service_not_found(tp)),
             },
@@ -75,13 +83,17 @@ where
 }
 
 impl<O, P> Registry for App<O, P> {
-    fn service_types(&self) -> &Vec<ServiceType> {
-        &self.tps
+    fn service_types(&self) -> Vec<ServiceType> {
+        self.schemas.iter().map(|x| x.tp.clone()).collect()
+    }
+
+    fn schemas(&self) -> Vec<ServiceSchema> {
+        self.schemas.clone()
     }
 }
 
 impl<O, P> Debug for App<O, P> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "SystemRegistry {{ services:[{:?}] }}", self.tps)
+        write!(f, "App {{ services:[{:?}] }}", self.service_types())
     }
 }

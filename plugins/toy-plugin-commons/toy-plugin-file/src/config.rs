@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use toy_pack::Unpack;
+use toy_pack::{Schema, Unpack};
 
 use super::{QuoteStyle, Terminator};
 
@@ -14,14 +14,14 @@ pub fn char_to_u8(v: char) -> u8 {
     dest[0]
 }
 
-#[derive(Debug, Clone, Unpack, Default)]
+#[derive(Debug, Clone, Default, Unpack, Schema)]
 pub struct FileReadConfig {
     pub(crate) kind: SourceType,
     pub(crate) path: Option<PathBuf>,
     pub(crate) option: ReadOption,
 }
 
-#[derive(Debug, Clone, Unpack)]
+#[derive(Debug, Clone, Unpack, Schema)]
 pub struct ReadOption {
     #[toy(default = ',')]
     pub(crate) delimiter: char,
@@ -56,19 +56,19 @@ impl Default for ReadOption {
     }
 }
 
-#[derive(Debug, Clone, Unpack, Default)]
+#[derive(Debug, Clone, Default, Unpack, Schema)]
 pub struct Column {
     pub(crate) name: String,
 }
 
-#[derive(Debug, Clone, Unpack, Default)]
+#[derive(Debug, Clone, Default, Unpack, Schema)]
 pub struct FileWriteConfig {
     pub(crate) kind: SinkType,
     pub(crate) path: Option<PathBuf>,
     pub(crate) option: WriteOption,
 }
 
-#[derive(Debug, Clone, Unpack)]
+#[derive(Debug, Clone, Unpack, Schema)]
 pub struct WriteOption {
     #[toy(default = true)]
     pub(crate) has_headers: bool,
@@ -99,7 +99,7 @@ impl Default for WriteOption {
     }
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Unpack)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Unpack, Schema)]
 pub enum SourceType {
     File,
     Stdin,
@@ -111,7 +111,7 @@ impl Default for SourceType {
     }
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Unpack)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Unpack, Schema)]
 pub enum SinkType {
     File,
     Stdout,

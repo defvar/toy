@@ -3,7 +3,7 @@ use super::{PrimitiveTypes, Schema, SchemaVisitor};
 macro_rules! primitive_scan_impl {
     ($t: ident, $variant: expr) => {
         impl Schema for $t {
-            fn scan<V>(name: &'static str, visitor: &mut V) -> Result<V::Value, V::Error>
+            fn scan<V>(name: &str, mut visitor: V) -> Result<V::Value, V::Error>
             where
                 V: SchemaVisitor,
             {
@@ -31,8 +31,10 @@ primitive_scan_impl!(f64, PrimitiveTypes::F64);
 
 primitive_scan_impl!(String, PrimitiveTypes::String);
 
+primitive_scan_impl!(char, PrimitiveTypes::Char);
+
 impl Schema for &str {
-    fn scan<V>(name: &'static str, visitor: &mut V) -> Result<V::Value, V::Error>
+    fn scan<V>(name: &str, mut visitor: V) -> Result<V::Value, V::Error>
     where
         V: SchemaVisitor,
     {

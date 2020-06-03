@@ -20,7 +20,7 @@ pub enum RenameExpr {
 
 pub struct ModelAttr {
     pub deny_unknown_fields: bool,
-    pub ignore_ser_if_none: bool,
+    pub ignore_pack_if_none: bool,
 }
 
 impl ModelAttr {
@@ -35,7 +35,7 @@ impl ModelAttr {
                         Meta(Word(ref w)) if w == "deny_unknown_fields" => {
                             deny_unknown_fields = Some(true);
                         }
-                        Meta(Word(ref w)) if w == "ignore_ser_if_none" => {
+                        Meta(Word(ref w)) if w == "ignore_pack_if_none" => {
                             ignore_ser_if_none = Some(true);
                         }
                         _ => (),
@@ -46,7 +46,7 @@ impl ModelAttr {
 
         let r = ModelAttr {
             deny_unknown_fields: deny_unknown_fields.unwrap_or(false),
-            ignore_ser_if_none: ignore_ser_if_none.unwrap_or(false),
+            ignore_pack_if_none: ignore_ser_if_none.unwrap_or(false),
         };
         Ok(r)
     }

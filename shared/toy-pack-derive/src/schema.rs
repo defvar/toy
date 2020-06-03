@@ -15,7 +15,7 @@ pub fn derive_schema_core(input: DeriveInput) -> Result<TokenStream, Vec<syn::Er
     // main impl block //
     let impl_block = quote! {
         impl #impl_generics __schema::Schema for #name #ty_generics #where_clause {
-            fn scan<V>(name: &'static str, visitor: &mut V) -> toy_pack::export::Result<V::Value, V::Error>
+            fn scan<V>(name: &str, mut visitor: V) -> toy_pack::export::Result<V::Value, V::Error>
                 where V: __schema::SchemaVisitor,
             {
                 #body
@@ -60,8 +60,8 @@ fn body_enum(target: &Model) -> Result<TokenStream, syn::Error> {
         Data::Enum(v) => v,
     };
 
-    let name = &target.input.ident;
-    let name_str = name.to_string().trim_start_matches("r#").to_owned();
+    let enum_name = &target.input.ident;
+    let name_str = enum_name.to_string().trim_start_matches("r#").to_owned();
 
     let schema_variants: Vec<TokenStream> = variants
         .iter()
@@ -80,7 +80,7 @@ fn body_enum(target: &Model) -> Result<TokenStream, syn::Error> {
                     quote!(
                         let #member_name = {
                             let mut tuple_visitor = enum_visitor.tuple_variant_visitor(#name_str, #variant_name_str)?;
-                            tuple_visitor.tuple_variant_arg::<#tp>(name, #variant_name_str, 0)?;
+                            tuple_visitor.tuple_variant_arg::<#tp>(#name_str, #variant_name_str, 0)?;
                             tuple_visitor.end()?
                         };
                         enum_visitor.variant(#name_str, #variant_name_str, #member_name)?;
@@ -94,7 +94,7 @@ fn body_enum(target: &Model) -> Result<TokenStream, syn::Error> {
                             let idx = i as u32;
                             let tp = *&variant.fields.get(0).unwrap().ty;
                             quote! {
-                                tuple_visitor.tuple_variant_arg::<#tp>(name, #variant_name_str, #idx)?;
+                                tuple_visitor.tuple_variant_arg::<#tp>(#name_str, #variant_name_str, #idx)?;
                             }
                         })
                         .collect();

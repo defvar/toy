@@ -1,6 +1,6 @@
 //! Toy Plugin for File read and write.
 
-use toy_pack::Unpack;
+use toy_pack::{Schema, Unpack};
 
 use self::edges::Edges;
 use self::file_reader::FileReaderState;
@@ -22,7 +22,7 @@ mod plugin;
 mod row;
 pub mod service;
 
-#[derive(Clone, Copy, Debug, Unpack)]
+#[derive(Clone, Copy, Debug, Unpack, Schema)]
 pub enum QuoteStyle {
     Always,
     Necessary,
@@ -35,7 +35,7 @@ impl Default for QuoteStyle {
     }
 }
 
-#[derive(Copy, Clone, Debug, Eq, PartialEq, Unpack)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, Unpack, Schema)]
 pub enum Terminator {
     CRLF,
     Any(u8),

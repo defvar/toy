@@ -129,7 +129,7 @@ fn body_struct(target: &Model) -> Result<TokenStream, syn::Error> {
         Data::Enum(_) => unreachable!(),
     };
     let struct_name_str = target.original_name();
-    let ignore_ser_if_none = target.attr.ignore_ser_if_none;
+    let ignore_ser_if_none = target.attr.ignore_pack_if_none;
     match *style {
         Style::Struct => {
             let len = serialize_length(&fields);

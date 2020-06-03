@@ -12,7 +12,7 @@ pub use self::visitor::{EnumVisitor, SchemaVisitor, StructVisitor, TupleVariantV
 /// Several primitive types "impl" are provided by default.
 ///
 pub trait Schema {
-    fn scan<V>(name: &'static str, visitor: &mut V) -> Result<V::Value, V::Error>
+    fn scan<V>(name: &str, visitor: V) -> Result<V::Value, V::Error>
     where
         V: SchemaVisitor;
 }
@@ -36,6 +36,7 @@ pub enum PrimitiveTypes {
     F64,
     String,
     Str,
+    Char,
 }
 
 /// Wrap type represented by schema.
@@ -49,7 +50,7 @@ pub enum WrapTypes {
 /// Create a Schema using `SchemaVisitor`.
 /// Please use the implementation according to the structure of the schema.
 ///
-pub fn to_schema<T, V>(name: &'static str, visitor: &mut V) -> Result<V::Value, V::Error>
+pub fn to_schema<T, V>(name: &str, visitor: V) -> Result<V::Value, V::Error>
 where
     T: Schema,
     V: SchemaVisitor,

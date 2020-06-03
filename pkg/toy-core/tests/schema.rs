@@ -4,7 +4,7 @@ use toy_pack::{schema::to_schema, Schema};
 use toy_pack_derive::*;
 
 #[test]
-fn aaaaa() {
+fn schema_test() {
     #[derive(Debug, Pack, Schema)]
     struct Dum {
         v_u8: u8,
@@ -19,13 +19,12 @@ fn aaaaa() {
 
     #[derive(Debug, Pack, Schema)]
     enum ABC {
-        A,
-        B(u32, u32),
-        C,
+        _A,
+        _B(u32, u32),
+        _C,
     }
 
-    let mut v = JsonSchemaVisitor {};
-    let r = to_schema::<Dum, JsonSchemaVisitor>("aiueo!", &mut v).unwrap();
+    let r = to_schema::<Dum, JsonSchemaVisitor>("aiueo!", JsonSchemaVisitor).unwrap();
     let json = toy_pack_json::pack_to_string(&r).unwrap();
     println!("{:?}", json);
 }
