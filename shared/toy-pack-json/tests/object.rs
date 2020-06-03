@@ -5,7 +5,7 @@ use toy_test_utils::unindent;
 #[test]
 fn ser_de_nested_struct() {
     #[derive(Debug, Pack, Unpack, PartialEq, Default)]
-    #[toy(ignore_ser_if_none)]
+    #[toy(ignore_pack_if_none)]
     struct Outer {
         id: u32,
         name: String,
