@@ -1,3 +1,4 @@
+use crate::data::schema::json_schema::RangeValue;
 use crate::data::schema::{JsonSchema, SchemaTypes};
 use crate::data::Map;
 
@@ -28,6 +29,16 @@ pub struct OneOfBuilder {
     schema: JsonSchema,
 }
 
+#[derive(Clone)]
+pub struct IntegerBuilder {
+    schema: JsonSchema,
+}
+
+#[derive(Clone)]
+pub struct NumberBuilder {
+    schema: JsonSchema,
+}
+
 impl SchemaBuilders {
     pub fn const_builder() -> ConstBuilder {
         ConstBuilder::new()
@@ -47,6 +58,14 @@ impl SchemaBuilders {
 
     pub fn one_of_builder() -> OneOfBuilder {
         OneOfBuilder::new()
+    }
+
+    pub fn integer_builder() -> IntegerBuilder {
+        IntegerBuilder::new()
+    }
+
+    pub fn number_builder() -> NumberBuilder {
+        NumberBuilder::new()
     }
 }
 
@@ -156,7 +175,7 @@ impl OneOfBuilder {
         self.schema.clone()
     }
 
-    pub fn push(&mut self, prop: JsonSchema) {
+    pub fn push(&mut self, prop: JsonSchema) -> &mut Self {
         match self.schema.one_of {
             Some(ref mut v) => {
                 v.push(prop);
@@ -165,5 +184,104 @@ impl OneOfBuilder {
                 self.schema.one_of = Some(vec![prop]);
             }
         };
+        self
+    }
+}
+
+impl IntegerBuilder {
+    pub fn new() -> IntegerBuilder {
+        IntegerBuilder {
+            schema: JsonSchema::from_types(SchemaTypes::Integer),
+        }
+    }
+
+    pub fn build(&self) -> JsonSchema {
+        self.schema.clone()
+    }
+
+    pub fn i8(&mut self) -> &mut Self {
+        self.schema.minimum = Some(RangeValue::I64(i8::min_value() as i64));
+        self.schema.maximum = Some(RangeValue::I64(i8::max_value() as i64));
+        self
+    }
+
+    pub fn i16(&mut self) -> &mut Self {
+        self.schema.minimum = Some(RangeValue::I64(i16::min_value() as i64));
+        self.schema.maximum = Some(RangeValue::I64(i16::max_value() as i64));
+        self
+    }
+
+    pub fn i32(&mut self) -> &mut Self {
+        self.schema.minimum = Some(RangeValue::I64(i32::min_value() as i64));
+        self.schema.maximum = Some(RangeValue::I64(i32::max_value() as i64));
+        self
+    }
+
+    pub fn i64(&mut self) -> &mut Self {
+        self.schema.minimum = Some(RangeValue::I64(i64::min_value()));
+        self.schema.maximum = Some(RangeValue::I64(i64::max_value()));
+        self
+    }
+
+    pub fn isize(&mut self) -> &mut Self {
+        //isize -> i64
+        self.schema.minimum = Some(RangeValue::I64(i64::min_value()));
+        self.schema.maximum = Some(RangeValue::I64(i64::max_value()));
+        self
+    }
+
+    pub fn u8(&mut self) -> &mut Self {
+        self.schema.minimum = Some(RangeValue::U64(u8::min_value() as u64));
+        self.schema.maximum = Some(RangeValue::U64(u8::max_value() as u64));
+        self
+    }
+
+    pub fn u16(&mut self) -> &mut Self {
+        self.schema.minimum = Some(RangeValue::U64(u16::min_value() as u64));
+        self.schema.maximum = Some(RangeValue::U64(u16::max_value() as u64));
+        self
+    }
+
+    pub fn u32(&mut self) -> &mut Self {
+        self.schema.minimum = Some(RangeValue::U64(u32::min_value() as u64));
+        self.schema.maximum = Some(RangeValue::U64(u32::max_value() as u64));
+        self
+    }
+
+    pub fn u64(&mut self) -> &mut Self {
+        self.schema.minimum = Some(RangeValue::U64(u64::min_value()));
+        self.schema.maximum = Some(RangeValue::U64(u64::max_value()));
+        self
+    }
+
+    pub fn usize(&mut self) -> &mut Self {
+        //usize -> u64
+        self.schema.minimum = Some(RangeValue::U64(u64::min_value()));
+        self.schema.maximum = Some(RangeValue::U64(u64::max_value()));
+        self
+    }
+}
+
+impl NumberBuilder {
+    pub fn new() -> NumberBuilder {
+        NumberBuilder {
+            schema: JsonSchema::from_types(SchemaTypes::Number),
+        }
+    }
+
+    pub fn build(&self) -> JsonSchema {
+        self.schema.clone()
+    }
+
+    pub fn f32(&mut self) -> &mut Self {
+        self.schema.minimum = Some(RangeValue::F64(std::f32::MIN as f64));
+        self.schema.maximum = Some(RangeValue::F64(std::f32::MAX as f64));
+        self
+    }
+
+    pub fn f64(&mut self) -> &mut Self {
+        self.schema.minimum = Some(RangeValue::F64(std::f64::MIN));
+        self.schema.maximum = Some(RangeValue::F64(std::f64::MAX));
+        self
     }
 }

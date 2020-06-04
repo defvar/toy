@@ -31,7 +31,7 @@ impl<S, F> Plugin<S, F> {
         R::Config: Schema,
     {
         let s = ServiceSchema::new::<R::Config>(name_space, service_name);
-        let tp = s.tp.clone();
+        let tp = s.service_type.clone();
         let tps = vec![s];
         Plugin {
             inner: Inner {
@@ -52,7 +52,7 @@ impl<S, F> Plugin<S, F> {
         R::Config: Schema,
     {
         let s = ServiceSchema::new::<R::Config>(&self.inner.name_space, service_name);
-        let tp = s.tp.clone();
+        let tp = s.service_type.clone();
         let mut tps = self.tps.clone();
         tps.push(s);
         Plugin {
@@ -69,7 +69,7 @@ impl<S, F> Plugin<S, F> {
 
 impl<S, F> Registry for Plugin<S, F> {
     fn service_types(&self) -> Vec<ServiceType> {
-        self.tps.iter().map(|x| x.tp.clone()).collect()
+        self.tps.iter().map(|x| x.service_type.clone()).collect()
     }
 
     fn schemas(&self) -> Vec<ServiceSchema> {

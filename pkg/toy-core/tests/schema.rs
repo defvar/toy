@@ -8,6 +8,7 @@ fn schema_test() {
     #[derive(Debug, Pack, Schema)]
     struct Dum {
         v_u8: u8,
+        v_u64: u64,
         v_i8_opt: Option<i8>,
         v_f32: f32,
         v_f64: f64,

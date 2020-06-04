@@ -28,25 +28,24 @@ impl SchemaVisitor for JsonSchemaVisitor {
     type EnumVisitor = JsonSchemaEnumVisitor;
 
     fn visit(&mut self, _name: &str, tp: PrimitiveTypes) -> Result<Self::Value, Self::Error> {
-        match tp {
-            PrimitiveTypes::Boolean => Ok(JsonSchema::from_types(SchemaTypes::Boolean)),
-            PrimitiveTypes::U8
-            | PrimitiveTypes::U16
-            | PrimitiveTypes::U32
-            | PrimitiveTypes::U64
-            | PrimitiveTypes::USize
-            | PrimitiveTypes::I8
-            | PrimitiveTypes::I16
-            | PrimitiveTypes::I32
-            | PrimitiveTypes::I64
-            | PrimitiveTypes::ISize => Ok(JsonSchema::from_types(SchemaTypes::Integer)),
-            PrimitiveTypes::F32 | PrimitiveTypes::F64 => {
-                Ok(JsonSchema::from_types(SchemaTypes::Number))
-            }
+        Ok(match tp {
+            PrimitiveTypes::Boolean => JsonSchema::from_types(SchemaTypes::Boolean),
+            PrimitiveTypes::U8 => SchemaBuilders::integer_builder().u8().build(),
+            PrimitiveTypes::U16 => SchemaBuilders::integer_builder().u16().build(),
+            PrimitiveTypes::U32 => SchemaBuilders::integer_builder().u32().build(),
+            PrimitiveTypes::U64 => SchemaBuilders::integer_builder().u64().build(),
+            PrimitiveTypes::USize => SchemaBuilders::integer_builder().usize().build(),
+            PrimitiveTypes::I8 => SchemaBuilders::integer_builder().i8().build(),
+            PrimitiveTypes::I16 => SchemaBuilders::integer_builder().i16().build(),
+            PrimitiveTypes::I32 => SchemaBuilders::integer_builder().i32().build(),
+            PrimitiveTypes::I64 => SchemaBuilders::integer_builder().i64().build(),
+            PrimitiveTypes::ISize => SchemaBuilders::integer_builder().isize().build(),
+            PrimitiveTypes::F32 => SchemaBuilders::number_builder().f32().build(),
+            PrimitiveTypes::F64 => SchemaBuilders::number_builder().f64().build(),
             PrimitiveTypes::String | PrimitiveTypes::Str | PrimitiveTypes::Char => {
-                Ok(JsonSchema::from_types(SchemaTypes::String))
+                JsonSchema::from_types(SchemaTypes::String)
             }
-        }
+        })
     }
 
     fn visit_wrap_type<T>(

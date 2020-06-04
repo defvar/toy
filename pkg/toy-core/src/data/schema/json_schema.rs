@@ -1,4 +1,5 @@
 use crate::data::Map;
+use toy_pack::ser::{Serializable, Serializer};
 use toy_pack::Pack;
 
 #[derive(Clone, Copy, Debug, PartialEq, Pack)]
@@ -39,6 +40,14 @@ pub struct JsonSchema {
     #[toy(rename = "additionalProperties")]
     pub(crate) additional_properties: Option<Box<JsonSchema>>,
 
+    pub(crate) minimum: Option<RangeValue>,
+    pub(crate) maximum: Option<RangeValue>,
+
+    #[toy(rename = "minLength")]
+    pub(crate) min_length: Option<u64>,
+    #[toy(rename = "maxLength")]
+    pub(crate) max_length: Option<u64>,
+
     #[toy(ignore)]
     pub(crate) is_optional: bool,
 }
@@ -55,6 +64,10 @@ impl JsonSchema {
             one_of: None,
             const_: None,
             additional_properties: None,
+            minimum: None,
+            maximum: None,
+            min_length: None,
+            max_length: None,
             is_optional: false,
         }
     }
@@ -90,6 +103,26 @@ impl JsonSchema {
         JsonSchema {
             required: req,
             ..self
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub enum RangeValue {
+    U64(u64),
+    I64(i64),
+    F64(f64),
+}
+
+impl Serializable for RangeValue {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        match self {
+            RangeValue::U64(v) => serializer.serialize_u64(*v),
+            RangeValue::I64(v) => serializer.serialize_i64(*v),
+            RangeValue::F64(v) => serializer.serialize_f64(*v),
         }
     }
 }

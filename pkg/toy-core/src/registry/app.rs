@@ -84,7 +84,10 @@ where
 
 impl<O, P> Registry for App<O, P> {
     fn service_types(&self) -> Vec<ServiceType> {
-        self.schemas.iter().map(|x| x.tp.clone()).collect()
+        self.schemas
+            .iter()
+            .map(|x| x.service_type.clone())
+            .collect()
     }
 
     fn schemas(&self) -> Vec<ServiceSchema> {

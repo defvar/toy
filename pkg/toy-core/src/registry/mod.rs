@@ -57,7 +57,7 @@ pub trait Delegator {
 
 #[derive(Debug, Clone, Pack)]
 pub struct ServiceSchema {
-    tp: ServiceType,
+    service_type: ServiceType,
     schema: Option<JsonSchema>,
 }
 
@@ -70,7 +70,10 @@ impl ServiceSchema {
         let schema = to_schema::<T, JsonSchemaVisitor>(service_name, JsonSchemaVisitor)
             .map_err(|e| log::error!("an error occured; {:?}", e))
             .ok();
-        Self { tp, schema }
+        Self {
+            service_type: tp,
+            schema,
+        }
     }
 }
 
