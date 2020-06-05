@@ -1,29 +1,31 @@
 use crate::data::Value;
-use failure::Fail;
 use std::fmt::Display;
+use thiserror::Error as ThisError;
 use toy_pack::{deser, ser};
 
-#[derive(Debug, Fail)]
+#[derive(Debug, ThisError)]
 pub enum SerializeError {
-    #[fail(
-        display = "serialize error:invalid type. expected:{:?} but candidate:{:?}.",
-        expected, candidate
+    #[error(
+        "serialize error:invalid type. expected:{:?} but candidate:{:?}.",
+        expected,
+        candidate
     )]
     InvalidType { expected: String, candidate: Value },
 
-    #[fail(display = "error: {:?}", inner)]
+    #[error("error: {:?}", inner)]
     Error { inner: String },
 }
 
-#[derive(Debug, Fail)]
+#[derive(Debug, ThisError)]
 pub enum DeserializeError {
-    #[fail(
-        display = "deserialize error:invalid type. expected:{:?} but candidate:{:?}.",
-        expected, candidate
+    #[error(
+        "deserialize error:invalid type. expected:{:?} but candidate:{:?}.",
+        expected,
+        candidate
     )]
     InvalidType { expected: String, candidate: Value },
 
-    #[fail(display = "error: {:?}", inner)]
+    #[error("error: {:?}", inner)]
     Error { inner: String },
 }
 

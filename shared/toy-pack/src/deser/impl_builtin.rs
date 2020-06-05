@@ -4,7 +4,7 @@ use std::path::{Path, PathBuf};
 use super::{Deserializable, DeserializableCore, Deserializer, Error, Visitor};
 use crate::deser::discard::Discard;
 use crate::deser::{DeserializeMapOps, DeserializeSeqOps};
-use failure::_core::time::Duration;
+use core::time::Duration;
 
 // TODO: deserialize_unit_struct...
 // impl<'toy, T> Deserializable<'toy> for PhantomData<T>

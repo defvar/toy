@@ -66,7 +66,7 @@ impl ServiceSchema {
     where
         T: Schema,
     {
-        let tp: ServiceType = From::from(format!("{}.{}", name_space, service_name));
+        let tp = ServiceType::new(name_space, service_name).unwrap();
         let schema = to_schema::<T, JsonSchemaVisitor>(service_name, JsonSchemaVisitor)
             .map_err(|e| log::error!("an error occured; {:?}", e))
             .ok();

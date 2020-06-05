@@ -6,7 +6,7 @@ edition = "2018"
 
 [dependencies]
 lazy_static = "1.2.0"
-failure = "0.1.6"
+thiserror = "1.0"
 toy-pack = {path = "../toy-pack"}
 
 [dev-dependencies]

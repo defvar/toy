@@ -182,7 +182,10 @@ impl Graph {
             },
             None => return Err(ConfigError::not_found_key("wires")),
         };
-        Ok((Node::new(tp.into(), uri.into(), v.clone()), wire))
+        match ServiceType::from_full_name(tp) {
+            Ok(st) => Ok((Node::new(st, uri.into(), v.clone()), wire)),
+            Err(e) => Err(e),
+        }
     }
 }
 

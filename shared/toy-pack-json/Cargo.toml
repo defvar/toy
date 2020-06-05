@@ -5,7 +5,7 @@ authors = ["defvar <def.daisuke@gmail.com>"]
 edition = "2018"
 
 [dependencies]
-failure = "0.1.6"
+thiserror = "1.0"
 toy-pack = {path = "../toy-pack"}
 itoa = "0.4"
 ryu = "1.0"

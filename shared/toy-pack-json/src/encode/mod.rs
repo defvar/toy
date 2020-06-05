@@ -3,7 +3,7 @@
 use std::{io, result};
 
 pub use self::encoder::Encoder;
-pub use self::error::{EncodeError, EncodeErrorKind};
+pub use self::error::EncodeError;
 
 mod encoder;
 mod error;

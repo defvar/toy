@@ -1,5 +1,4 @@
-#[macro_use]
-extern crate failure;
+#![feature(backtrace)]
 
 pub use self::service_type::ServiceType;
 pub use self::service_uri::Uri;

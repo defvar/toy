@@ -1,6 +1,6 @@
 use super::{Deserializable, Error, Visitor};
 use crate::deser::DeserializableCore;
-use failure::_core::marker::PhantomData;
+use core::marker::PhantomData;
 
 /// Provides a `Visitor` access to each element of a sequence in the input.
 ///

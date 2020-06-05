@@ -1,10 +1,10 @@
-use failure::Fail;
 use std::fmt::Display;
+use thiserror::Error as ThisError;
 use toy_pack::schema;
 
-#[derive(Debug, Fail)]
+#[derive(Debug, ThisError)]
 pub enum SchemaScanError {
-    #[fail(display = "error: {:?}", inner)]
+    #[error("error: {:?}", inner)]
     Error { inner: String },
 }
 

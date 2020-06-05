@@ -1,7 +1,7 @@
 //! # toy-pack Implementation for MessagePack
 
-#[macro_use]
-extern crate failure;
+#![feature(backtrace)]
+
 #[macro_use]
 extern crate lazy_static;
 

@@ -1,6 +1,6 @@
 use super::encode::{EncodeError, Encoder};
 use crate::ser_ops::{SerializeCompound, SerializeTupleVariant};
-use failure::_core::num::FpCategory;
+use core::num::FpCategory;
 use std::io;
 use toy_pack::ser::{Serializable, Serializer};
 

@@ -1,5 +1,5 @@
 use toy_pack_derive::*;
-use toy_pack_json::{pack_to_string, unpack, DecodeErrorKind};
+use toy_pack_json::{pack_to_string, unpack, DecodeError};
 use toy_test_utils::unindent;
 
 #[test]
@@ -63,7 +63,10 @@ fn de_struct_err_eof() {
   "id": 1,
 "#;
     match unpack::<Data>(json.as_bytes()) {
-        Err(e) if *e.kind() == DecodeErrorKind::EofWhileParsingValue => (),
+        Err(e) => match e {
+            DecodeError::EofWhileParsingValue => (),
+            other => panic!("unexpected result: {:?}", other),
+        },
         other => panic!("unexpected result: {:?}", other),
     };
 }
@@ -83,9 +86,10 @@ fn de_struct_err_expected_comma() {
 }
 "#;
     match unpack::<Data>(json.as_bytes()) {
-        Err(e) if *e.kind() == DecodeErrorKind::ExpectedObjectCommaOrEnd { line: 4, column: 3 } => {
-            ()
-        }
+        Err(e) => match e {
+            DecodeError::ExpectedObjectCommaOrEnd { line: 4, column: 3 } => (),
+            other => panic!("unexpected result: {:?}", other),
+        },
         other => panic!("unexpected result: {:?}", other),
     };
 }
@@ -103,7 +107,10 @@ fn de_struct_err_trailing_comma() {
 }
 "#;
     match unpack::<Data>(json.as_bytes()) {
-        Err(e) if *e.kind() == DecodeErrorKind::TrailingComma { line: 4, column: 1 } => (),
+        Err(e) => match e {
+            DecodeError::TrailingComma { line: 4, column: 1 } => (),
+            other => panic!("unexpected result: {:?}", other),
+        },
         other => panic!("unexpected result: {:?}", other),
     };
 }

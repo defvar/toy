@@ -142,21 +142,21 @@ async fn unboxed() -> Result<(), ()> {
 
 fn graph() -> Graph {
     let s1 = map_value! {
-        "type" => "1",
+        "type" => "example.1",
         "uri" => "a",
         "prop1" => 0u32,
         "wires" => "c"
     };
 
     let s2 = map_value! {
-        "type" => "2",
+        "type" => "example.2",
         "uri" => "b",
         "prop1" => 0u32,
         "wires" => "c"
     };
 
     let s3 = map_value! {
-        "type" => "3",
+        "type" => "example.3",
         "uri" => "c",
         "prop1" => 0u32,
         "wires" => Option::<String>::None

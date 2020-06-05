@@ -1,7 +1,8 @@
+use std::backtrace::Backtrace;
 use std::fmt::Display;
 use std::io;
 use std::str::Utf8Error;
-
+use thiserror::Error as ThisError;
 use toy_pack::deser::Error;
 
 use crate::marker::Marker;
@@ -9,21 +10,29 @@ use crate::marker::Marker;
 /// Using Decoder and Deserializer.
 /// It is used when an error occurs in the implementation of deserialization.
 ///
-#[derive(Debug, Fail)]
+#[derive(Debug, ThisError)]
 pub enum DecodeError {
-    #[fail(display = "invalid type. decoded marker:{:?}", inner)]
+    #[error("invalid type. decoded marker:{:?}", inner)]
     InvalidType { inner: Marker },
 
-    #[fail(display = "num value out of range.")]
+    #[error("num value out of range.")]
     OutOfRange,
 
-    #[fail(display = "invalid utf8 sequence {:?}", inner)]
-    Utf8Error { inner: Utf8Error },
+    #[error("invalid utf8 sequence {:?}", source)]
+    Utf8Error {
+        #[from]
+        source: Utf8Error,
+        backtrace: Backtrace,
+    },
 
-    #[fail(display = "io error:{:?}", inner)]
-    IOError { inner: io::Error },
+    #[error("io error:{:?}", source)]
+    IOError {
+        #[from]
+        source: io::Error,
+        backtrace: Backtrace,
+    },
 
-    #[fail(display = "{:?}", inner)]
+    #[error("{:?}", inner)]
     Error { inner: String },
 }
 
@@ -41,18 +50,6 @@ impl DecodeError {
 impl From<Marker> for DecodeError {
     fn from(marker: Marker) -> DecodeError {
         DecodeError::InvalidType { inner: marker }
-    }
-}
-
-impl From<Utf8Error> for DecodeError {
-    fn from(e: Utf8Error) -> DecodeError {
-        DecodeError::Utf8Error { inner: e }
-    }
-}
-
-impl From<io::Error> for DecodeError {
-    fn from(e: io::Error) -> DecodeError {
-        DecodeError::IOError { inner: e }
     }
 }
 

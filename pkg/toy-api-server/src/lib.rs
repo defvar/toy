@@ -1,5 +1,4 @@
-#[macro_use]
-extern crate failure;
+#![feature(backtrace)]
 
 mod graph;
 mod service;

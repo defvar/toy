@@ -1,7 +1,6 @@
 //! Implementation for YAML
 
-#[macro_use]
-extern crate failure;
+#![feature(backtrace)]
 
 mod decoder;
 pub mod deser;

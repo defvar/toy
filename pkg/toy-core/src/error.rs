@@ -1,31 +1,38 @@
-use std::fmt::Display;
-
 use crate::ServiceType;
-use failure::Fail;
+use std::backtrace::Backtrace;
+use std::fmt::Display;
 use std::io;
 use std::str::Utf8Error;
+use thiserror::Error as ThisError;
 
-pub trait Error: Sized + Fail {
+pub trait Error: Sized {
     fn custom<T>(msg: T) -> Self
     where
         T: Display;
 }
 
-#[derive(Debug, Fail)]
+#[derive(Debug, ThisError)]
 pub enum ServiceError {
-    #[fail(display = "config initialization failed. error: {:?}", inner)]
-    ConfigInitFailed { inner: ConfigError },
+    #[error("config initialization failed. error: {:?}", source)]
+    ConfigInitFailed {
+        #[from]
+        source: ConfigError,
+    },
 
-    #[fail(display = "error: {:?}", inner)]
-    IOError { inner: io::Error },
+    #[error("error: {:?}", source)]
+    IOError {
+        #[from]
+        source: io::Error,
+        backtrace: Backtrace,
+    },
 
-    #[fail(display = "error: {:?}", inner)]
+    #[error("error: {:?}", inner)]
     Error { inner: String },
 
-    #[fail(display = "error: {:?}", inner)]
+    #[error("error: {:?}", inner)]
     ContextInitFailed { inner: String },
 
-    #[fail(display = "not found service. service_type: {:?}", st)]
+    #[error("not found service. service_type: {:?}", st)]
     ServiceNotFound { st: ServiceType },
 }
 
@@ -56,18 +63,6 @@ impl ServiceError {
     }
 }
 
-impl From<ConfigError> for ServiceError {
-    fn from(e: ConfigError) -> Self {
-        ServiceError::ConfigInitFailed { inner: e }
-    }
-}
-
-impl From<io::Error> for ServiceError {
-    fn from(e: io::Error) -> Self {
-        ServiceError::IOError { inner: e }
-    }
-}
-
 impl Error for ServiceError {
     fn custom<T>(msg: T) -> Self
     where
@@ -79,24 +74,44 @@ impl Error for ServiceError {
     }
 }
 
-#[derive(Debug, Fail)]
+#[derive(Debug, ThisError)]
 pub enum ConfigError {
-    #[fail(display = "config validation failed. error:{:?}", inner)]
+    #[error("config validation failed. error:{:?}", inner)]
     ValidationError { inner: String },
 
-    #[fail(display = "invalid config. {:?}", inner)]
-    Utf8Error { inner: Utf8Error },
+    #[error("invalid config. {:?}", source)]
+    Utf8Error {
+        #[from]
+        source: Utf8Error,
+        backtrace: Backtrace,
+    },
 
-    #[fail(display = "config load failed. {:?}", inner)]
-    IOError { inner: io::Error },
+    #[error("config load failed. {:?}", source)]
+    IOError {
+        #[from]
+        source: io::Error,
+        backtrace: Backtrace,
+    },
 
-    #[fail(display = "invalid config. not found key:{:?}", inner)]
+    #[error("invalid config. not found key:{:?}", inner)]
     NotFoundKey { inner: String },
 
-    #[fail(display = "invalid config key type. {:?} must be {:?}", key, expected)]
+    #[error("invalid config key type. {:?} must be {:?}", key, expected)]
     InvalidKeyType { key: String, expected: String },
 
-    #[fail(display = "error: {:?}", inner)]
+    #[error(
+        "invalid service type. {:?} name_space:{:?} service_name:{:?}",
+        msg,
+        name_space,
+        service_name
+    )]
+    InvalidServiceType {
+        name_space: String,
+        service_name: String,
+        msg: String,
+    },
+
+    #[error("error: {:?}", inner)]
     Error { inner: String },
 }
 
@@ -138,16 +153,16 @@ impl ConfigError {
             expected: expected.to_string(),
         }
     }
-}
 
-impl From<io::Error> for ConfigError {
-    fn from(e: io::Error) -> ConfigError {
-        ConfigError::IOError { inner: e }
-    }
-}
-
-impl From<Utf8Error> for ConfigError {
-    fn from(e: Utf8Error) -> ConfigError {
-        ConfigError::Utf8Error { inner: e }
+    pub fn invalid_service_type<P: Display, M: Display>(
+        name_space: P,
+        service_name: P,
+        msg: M,
+    ) -> ConfigError {
+        ConfigError::InvalidServiceType {
+            name_space: name_space.to_string(),
+            service_name: service_name.to_string(),
+            msg: msg.to_string(),
+        }
     }
 }

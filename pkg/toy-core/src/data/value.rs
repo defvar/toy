@@ -1,5 +1,5 @@
 use crate::data::map::Map;
-use failure::_core::time::Duration;
+use core::time::Duration;
 use std::str::FromStr;
 use toy_pack::deser::from_primitive::FromPrimitive;
 

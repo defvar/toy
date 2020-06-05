@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use toy_pack_json::{pack_to_string, unpack, DecodeErrorKind};
+use toy_pack_json::{pack_to_string, unpack, DecodeError};
 
 #[test]
 fn de_map() {
@@ -32,7 +32,10 @@ fn ser_map() {
 fn de_map_err_eof() {
     let json = "{ \"a\": 1, \"b\": 2  ";
     match unpack::<HashMap<String, u32>>(json.as_bytes()) {
-        Err(e) if *e.kind() == DecodeErrorKind::EofWhileParsingValue => (),
+        Err(e) => match e {
+            DecodeError::EofWhileParsingValue => (),
+            other => panic!("unexpected result: {:?}", other),
+        },
         other => panic!("unexpected result: {:?}", other),
     };
 }
@@ -41,7 +44,10 @@ fn de_map_err_eof() {
 fn de_map_err_trailing_comma() {
     let json = "{\"a\":1,}";
     match unpack::<HashMap<String, u32>>(json.as_bytes()) {
-        Err(e) if *e.kind() == DecodeErrorKind::TrailingComma { line: 1, column: 8 } => (),
+        Err(e) => match e {
+            DecodeError::TrailingComma { line: 1, column: 8 } => (),
+            other => panic!("unexpected result: {:?}", other),
+        },
         other => panic!("unexpected result: {:?}", other),
     };
 }

@@ -1,5 +1,5 @@
 use crate::data::{self, Frame};
-use crate::error::{Error, ServiceError};
+use crate::error::ServiceError;
 use crate::graph::{Graph, InputWire, OutputWire};
 use crate::mpsc;
 use crate::mpsc::{Incoming, Outgoing};
@@ -240,7 +240,7 @@ where
                 context = service.handle(context, req, tx).await?;
             }
             Err(e) => {
-                let _ = tx.send(Err(Error::custom(e))).await?;
+                let _ = tx.send(Err(ServiceError::error(e))).await?;
             }
         };
     }

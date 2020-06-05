@@ -3,8 +3,8 @@
 //! By default the map is backed by a [`IndexMap`].
 
 use crate::data::Value;
-use failure::_core::fmt::Formatter;
-use failure::_core::iter::FromIterator;
+use core::fmt::Formatter;
+use core::iter::FromIterator;
 use indexmap::IndexMap;
 use std::borrow::Borrow;
 use std::hash::Hash;

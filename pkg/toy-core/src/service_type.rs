@@ -1,3 +1,4 @@
+use crate::error::ConfigError;
 use std::fmt::{Debug, Error, Formatter};
 use toy_pack::{Pack, Unpack};
 
@@ -9,41 +10,57 @@ pub struct ServiceType {
 }
 
 impl ServiceType {
-    pub fn new<P: AsRef<str>>(name_space: P, service_name: P) -> ServiceType {
+    pub fn new<P: AsRef<str>>(name_space: P, service_name: P) -> Result<ServiceType, ConfigError> {
         let name_space = name_space.as_ref().to_string();
         let service_name = service_name.as_ref().to_string();
-        assert!(!name_space.is_empty(), "name_space should not be empty");
-        assert!(!service_name.is_empty(), "service_name should not be empty");
-        ServiceType {
+        if name_space.is_empty() {
+            return Err(ConfigError::invalid_service_type(
+                name_space,
+                service_name,
+                "name_space should not be empty.",
+            ));
+        }
+        if service_name.is_empty() {
+            return Err(ConfigError::invalid_service_type(
+                name_space,
+                service_name,
+                "service_name should not be empty.",
+            ));
+        }
+        Ok(ServiceType {
             full_name: format!("{}.{}", name_space, service_name),
             name_space,
             service_name,
-        }
+        })
     }
-}
 
-impl<T> From<T> for ServiceType
-where
-    T: AsRef<str>,
-{
-    fn from(v: T) -> Self {
-        let s = v.as_ref();
-        assert!(!s.is_empty(), "serivce full name should not be empty");
-        assert!(
-            s.contains("."),
-            "service full name should contains \".\" (=name_space should not be empty)"
-        );
+    pub fn from_full_name<P: AsRef<str>>(full_name: P) -> Result<ServiceType, ConfigError> {
+        let s = full_name.as_ref();
+        if s.is_empty() {
+            return Err(ConfigError::invalid_service_type(
+                "",
+                "",
+                "serivce full name should not be empty.",
+            ));
+        }
+        if !s.contains(".") {
+            return Err(ConfigError::invalid_service_type(
+                "",
+                "",
+                "service full name should contains \".\" (=name_space should not be empty).",
+            ));
+        }
 
         let full_name = s.to_string();
         let mut segments: Vec<&str> = s.split(".").collect();
         let service_name = segments.last().unwrap_or(&"").to_string();
         segments.pop();
         let name_space = segments.join(".").to_string();
-        ServiceType {
+        Ok(ServiceType {
             full_name,
             name_space,
             service_name,
-        }
+        })
     }
 }
 

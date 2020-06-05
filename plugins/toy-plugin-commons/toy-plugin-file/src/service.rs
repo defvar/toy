@@ -1,6 +1,6 @@
 use crate::config::{FileReadConfig, FileWriteConfig};
 use crate::{FileReader, FileReaderBuilder, FileWriter, FileWriterBuilder, Row};
-use failure::_core::fmt::Formatter;
+use core::fmt::Formatter;
 use std::io;
 use toy_core::data::{Frame, Map, Value};
 use toy_core::error::ServiceError;

@@ -2,7 +2,7 @@ use std::path::{Path, PathBuf};
 
 use super::{Error, Serializable, Serializer};
 use crate::ser::SerializeStructOps;
-use failure::_core::time::Duration;
+use core::time::Duration;
 
 ///////////////////////////////////////////////////
 
