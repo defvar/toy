@@ -38,7 +38,6 @@ impl GraphRegistry {
 
     pub async fn find(&self, name: &str) -> Result<Option<Graph>, PersistError> {
         if let Some(ref path) = self.find0(name).await? {
-            fs::remove_file(path).await?;
             let text = fs::read_to_string(path).await?;
             let v = toy_pack_yaml::unpack::<Value>(&text)?;
             Ok(Some(Graph::from(v)?))

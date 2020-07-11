@@ -2,5 +2,6 @@
 members = [
     "toy-core",
     "toy-rt",
-    "toy-api-server"
+    "toy-api-server",
+    "toy-api-store-etcd"
 ]

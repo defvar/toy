@@ -3,8 +3,10 @@ use futures::FutureExt;
 use log::info;
 use std::future::Future;
 use std::thread;
+use std::time::Duration;
 use toy_core::prelude::*;
 use toy_core::registry::{app, plugin};
+use toy_core::supervisor::{Request, Supervisor};
 use toy_pack_derive::*;
 
 struct FutureRsRuntime {
@@ -109,37 +111,6 @@ async fn service_1(
     Ok(ctx)
 }
 
-async fn unboxed() -> Result<(), ()> {
-    let c = plugin(
-        "example",
-        "1",
-        factory!(service_1, ServiceContextConfig, new_context),
-    )
-    .service(
-        "2",
-        factory!(service_2, ServiceContext2Config, new_context2),
-    );
-
-    let c1 = plugin(
-        "example",
-        "3",
-        factory!(service_3, ServiceContext3Config, new_context3),
-    );
-
-    let a = app(c);
-    let a = a.plugin(c1);
-    log::debug!("{:?}", a);
-
-    let rt = FutureRsRuntime {
-        pool: ThreadPool::new().unwrap(),
-    };
-    let g = graph();
-    let e = Executor::new(&rt, g);
-    let _ = e.run(&a, Frame::default()).await;
-
-    Ok(())
-}
-
 fn graph() -> Graph {
     let s1 = map_value! {
         "type" => "example.1",
@@ -180,8 +151,50 @@ fn main() {
     builder.format_timestamp_nanos();
     builder.init();
 
+    let c = plugin(
+        "example",
+        "1",
+        factory!(service_1, ServiceContextConfig, new_context),
+    )
+    .service(
+        "2",
+        factory!(service_2, ServiceContext2Config, new_context2),
+    );
+
+    let c1 = plugin(
+        "example",
+        "3",
+        factory!(service_3, ServiceContext3Config, new_context3),
+    );
+
+    let a = app(c);
+    let a = a.plugin(c1);
+    log::debug!("{:?}", a);
+
     info!("-----------------------------------");
     info!("main thread {:?}", thread::current().id());
-    let _ = block_on(unboxed());
-    // info!("{:?}", graph());
+
+    // runtime for services
+    let service_rt = FutureRsRuntime {
+        pool: ThreadPool::new().unwrap(),
+    };
+    // runtime for supervisor
+    let sv_rt = FutureRsRuntime {
+        pool: ThreadPool::new().unwrap(),
+    };
+
+    let (sv, mut tx, _) = Supervisor::new(service_rt, a);
+
+    // supervisor start
+    sv_rt.spawn(async {
+        let _ = sv.run().await;
+    });
+
+    // send request to supervisor
+    let _ = block_on(async {
+        let _ = tx.send_ok(Request::Task(graph())).await;
+    });
+
+    // wait task end
+    thread::sleep(Duration::from_secs(3));
 }

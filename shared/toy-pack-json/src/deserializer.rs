@@ -242,17 +242,23 @@ where
                 }
                 Some(Token::BeginArray) => {
                     array_depth += 1;
+                    self.consume();
                 }
                 Some(Token::EndArray) => {
                     array_depth -= 1;
+                    self.consume();
                 }
                 Some(Token::BeginObject) => {
                     object_depth += 1;
+                    self.consume();
                 }
                 Some(Token::EndObject) => {
                     object_depth -= 1;
+                    self.consume();
                 }
-                Some(_) => (),
+                Some(_) => {
+                    self.consume();
+                }
                 None => {
                     if array_depth > 0 || object_depth > 0 {
                         return Err(DecodeError::eof_while_parsing_value());

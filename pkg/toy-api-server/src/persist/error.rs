@@ -2,6 +2,7 @@ use std::backtrace::Backtrace;
 use std::fmt::Display;
 use thiserror::Error;
 use toy_core::error::ConfigError;
+use toy_pack_json::DecodeError;
 use toy_pack_yaml::error::YamlError;
 
 #[derive(Debug, Error)]
@@ -15,6 +16,9 @@ pub enum PersistError {
 
     #[error("error: {:?}", inner)]
     DeserializeValue { inner: YamlError },
+
+    #[error("error: {:?}", inner)]
+    DeserializeJsonValue { inner: DecodeError },
 
     #[error("error: {:?}", source)]
     DeserializeConfig {
@@ -40,6 +44,12 @@ impl PersistError {
 impl From<YamlError> for PersistError {
     fn from(e: YamlError) -> PersistError {
         PersistError::DeserializeValue { inner: e }
+    }
+}
+
+impl From<DecodeError> for PersistError {
+    fn from(e: DecodeError) -> PersistError {
+        PersistError::DeserializeJsonValue { inner: e }
     }
 }
 
