@@ -2,4 +2,7 @@
 
 pub mod client;
 pub mod error;
-pub mod types;
+pub mod kv;
+pub mod txn;
+
+pub use client::Client;

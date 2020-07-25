@@ -1,5 +1,6 @@
 use std::backtrace::Backtrace;
 use std::fmt::Display;
+use std::num::ParseIntError;
 use thiserror::Error;
 use toy_pack_json::DecodeError;
 
@@ -23,6 +24,13 @@ pub enum StoreEtcdError {
     InvalidBase64String {
         #[from]
         source: base64::DecodeError,
+        backtrace: Backtrace,
+    },
+
+    #[error("error: {:?}", source)]
+    InvalidVersionString {
+        #[from]
+        source: ParseIntError,
         backtrace: Backtrace,
     },
 
