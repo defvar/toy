@@ -80,6 +80,18 @@ pub struct DeleteRangeResponse {
 ///////////////////////////////
 
 impl<T> Versioning<T> {
+    pub fn from(data: T, version: u64) -> Versioning<T> {
+        Versioning { data, version }
+    }
+
+    pub fn data(&self) -> &T {
+        &self.data
+    }
+
+    pub fn into_data(self) -> T {
+        self.data
+    }
+
     pub fn version(&self) -> u64 {
         self.version
     }
@@ -89,6 +101,25 @@ impl RangeRequest {
     pub fn single(key: &str) -> RangeRequest {
         RangeRequest {
             key: key.to_string(),
+            range_end: None,
+        }
+    }
+
+    pub fn range_from(key: &str) -> RangeRequest {
+        let range_end = {
+            std::str::from_utf8(get_range_end(key).as_slice())
+                .map(|x| x.to_string())
+                .ok()
+        };
+        RangeRequest {
+            key: key.to_string(),
+            range_end,
+        }
+    }
+
+    pub fn all() -> RangeRequest {
+        RangeRequest {
+            key: "AA==".to_string(),
             range_end: None,
         }
     }
@@ -106,7 +137,7 @@ impl RangeResponse {
                     log::trace!("get decode(base64)={:?}", std::str::from_utf8(&v));
                     let r = toy_pack_json::unpack::<T>(&v)?;
                     let version = x.mod_revision.parse::<u64>()?;
-                    vec.push(Versioning::<T> { data: r, version });
+                    vec.push(Versioning::<T>::from(r, version));
                     Ok(vec)
                 }
                 Err(e) => Err(e.into()),
@@ -127,4 +158,16 @@ impl<'a> DeleteRangeRequest<'a> {
             range_end: None,
         }
     }
+}
+
+fn get_range_end(key: &str) -> Vec<u8> {
+    let mut end = key.clone().as_bytes().to_vec();
+    for i in (0..end.len()).rev() {
+        if end[i] < 0xff {
+            end[i] += 1;
+            end = end[..=i].to_vec();
+            break;
+        }
+    }
+    end
 }
