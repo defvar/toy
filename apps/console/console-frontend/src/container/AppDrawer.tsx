@@ -2,7 +2,6 @@ import * as React from "react";
 import clsx from "clsx";
 import { createStyles, Theme, makeStyles } from "@material-ui/core/styles";
 import { SideMenu } from "../components/SideMenu";
-import Grid from "@material-ui/core/Grid";
 import AppBar from "@material-ui/core/AppBar";
 import Toolbar from "@material-ui/core/Toolbar";
 import Typography from "@material-ui/core/Typography";
@@ -12,6 +11,8 @@ import { useHistory } from "react-router-dom";
 import TimelineIcon from "@material-ui/icons/Timeline";
 import WidgetsIcon from "@material-ui/icons/Widgets";
 import DesktopWindowsIcon from "@material-ui/icons/DesktopWindows";
+import ExitToAppIcon from "@material-ui/icons/ExitToApp";
+import AccountCircle from "../components/AccountCircle";
 
 const drawerWidth = 240;
 
@@ -19,11 +20,13 @@ const useStyles = makeStyles((theme: Theme) =>
     createStyles({
         root: {
             flexGrow: 1,
+            display: "flex",
         },
         content: {
             flexGrow: 1,
             backgroundColor: theme.palette.background.default,
-            paddingTop: theme.spacing(2),
+            // paddingTop: theme.spacing(2),
+            padding: theme.spacing(3),
             transition: theme.transitions.create("margin", {
                 easing: theme.transitions.easing.sharp,
                 duration: theme.transitions.duration.leavingScreen,
@@ -98,10 +101,28 @@ const menuOptions = (history) => {
     };
 };
 
+const accountCircleProps = (history) => {
+    return {
+        options: [
+            { key: "signOut", display: "sign out", icon: <ExitToAppIcon /> },
+        ],
+        onMenuItemClick: (key: string): void => {
+            switch (key) {
+                case "signOut":
+                    history.push("/signOut");
+                    break;
+                default:
+                    break;
+            }
+        },
+    };
+};
+
 const AppDrawer = (props: AppDrawerProps): JSX.Element => {
     const classes = useStyles();
     const history = useHistory();
     const [open, setOpen] = React.useState(true);
+
     const handleDrawerOpen = (): void => {
         setOpen(true);
     };
@@ -131,30 +152,25 @@ const AppDrawer = (props: AppDrawerProps): JSX.Element => {
                     >
                         <MenuIcon />
                     </IconButton>
-                    <Typography variant="h6" noWrap>
+                    <Typography variant="h6" noWrap style={{ flexGrow: 1 }}>
                         graph system
                     </Typography>
+                    <AccountCircle {...accountCircleProps(history)} />
                 </Toolbar>
             </AppBar>
-            <Grid container spacing={2}>
-                <Grid item xs={2}>
-                    <SideMenu
-                        open={open}
-                        onDrawerClose={handleDrawerClose}
-                        {...menuOptions(history)}
-                    />
-                </Grid>
-                <Grid item xs={10}>
-                    <main
-                        className={clsx(classes.content, {
-                            [classes.contentShift]: open,
-                        })}
-                    >
-                        <div className={classes.drawerHeader} />
-                        {props.children}
-                    </main>
-                </Grid>
-            </Grid>
+            <SideMenu
+                open={open}
+                onDrawerClose={handleDrawerClose}
+                {...menuOptions(history)}
+            />
+            <main
+                className={clsx(classes.content, {
+                    [classes.contentShift]: open,
+                })}
+            >
+                <div className={classes.drawerHeader} />
+                {props.children}
+            </main>
         </div>
     );
 };

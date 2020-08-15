@@ -1,12 +1,18 @@
+import { getIdToken } from "../auth";
+
 export interface ServiceResponse {
     payload: { id: string }[];
 }
 
 export const ToyApi = {
-    getServices: (): Promise<ServiceResponse> => {
+    getServices: async (): Promise<ServiceResponse> => {
+        const key = await getIdToken();
         return fetch(`http://localhost:3030/services`, {
             method: "GET",
             mode: "cors",
+            headers: {
+                Authorization: `Bearer ${key}`,
+            },
         })
             .then((res) => {
                 if (res.ok) {

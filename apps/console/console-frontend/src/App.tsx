@@ -9,6 +9,7 @@ import { CssBaseline, createMuiTheme } from "@material-ui/core";
 import { ThemeProvider } from "@material-ui/styles";
 import { AuthProvider, AppContextProvider } from "./context";
 import { Auth } from "./Auth";
+import { SignOut } from "./container/SignOut";
 
 const theme = createMuiTheme({
     palette: {
@@ -33,9 +34,6 @@ const App = (): JSX.Element => {
                 <ThemeProvider theme={theme}>
                     <Router>
                         <CssBaseline />
-                        <Route path="/login" exact>
-                            <Login redirectTo="/" />
-                        </Route>
                         <Auth redirectByReject="/login">
                             <AppDrawer>
                                 <Switch>
@@ -51,9 +49,15 @@ const App = (): JSX.Element => {
                                     <Route path="/graphs/:name/edit" exact>
                                         <GraphEdit />
                                     </Route>
+                                    <Route path="/signout" exact>
+                                        <SignOut />
+                                    </Route>
                                 </Switch>
                             </AppDrawer>
                         </Auth>
+                        <Route path="/login" exact>
+                            <Login redirectTo="/" />
+                        </Route>
                     </Router>
                 </ThemeProvider>
             </AppContextProvider>

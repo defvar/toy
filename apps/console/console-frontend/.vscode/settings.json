@@ -7,10 +7,4 @@
     },
     "editor.tabSize": 4,
     "editor.defaultFormatter": "dbaeumer.vscode-eslint",
-    //tslint
-    "tslint.ignoreDefinitionFiles": true,
-    "tslint.exclude": [
-        "**/dist/**",
-        "**/node_modules/**"
-    ],
 }

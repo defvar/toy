@@ -1,6 +1,7 @@
 const webpack = require('webpack');
 const HtmlWebpackPlugin = require('html-webpack-plugin')
 const MonacoWebpackPlugin = require("monaco-editor-webpack-plugin");
+const Dotenv = require('dotenv-webpack')
 
 module.exports = {
     mode: 'development',
@@ -56,6 +57,8 @@ module.exports = {
         }),
         new MonacoWebpackPlugin({
             languages: ["yaml", "json"]
+        }),
+        new Dotenv({
         })
     ],
 };

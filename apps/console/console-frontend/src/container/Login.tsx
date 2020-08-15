@@ -4,8 +4,10 @@ import Container from "@material-ui/core/Container";
 import Paper from "@material-ui/core/Paper";
 import TextField from "@material-ui/core/TextField";
 import Button from "@material-ui/core/Button";
+import CircularProgress from "@material-ui/core/CircularProgress";
 import { AuthContext } from "../context";
 import { useHistory } from "react-router-dom";
+import { Redirect } from "react-router-dom";
 
 const useStyles = makeStyles((theme: Theme) =>
     createStyles({
@@ -33,7 +35,12 @@ export interface LoginProps {
 }
 
 export const Login = ({ redirectTo }: LoginProps) => {
-    const { login } = React.useContext(AuthContext);
+    const {
+        login,
+        signinWithGoogle,
+        isProgress,
+        currentUser,
+    } = React.useContext(AuthContext);
     const classes = useStyles();
     const history = useHistory();
 
@@ -43,6 +50,19 @@ export const Login = ({ redirectTo }: LoginProps) => {
         // sueccess ?
         history.push(redirectTo);
     };
+
+    const handleSigninWithGoogle = () => {
+        signinWithGoogle();
+        history.push(redirectTo);
+    };
+
+    if (isProgress) {
+        return <CircularProgress size={68} />;
+    } else {
+        if (!isProgress && currentUser) {
+            return <Redirect to={redirectTo} />;
+        }
+    }
 
     return (
         <Container fixed className={classes.root}>
@@ -76,6 +96,17 @@ export const Login = ({ redirectTo }: LoginProps) => {
                         </Button>
                     </div>
                 </form>
+                <div className={classes.formRow}>
+                    <Button
+                        className={classes.formButton}
+                        onClick={handleSigninWithGoogle}
+                        variant="contained"
+                        size="large"
+                        color="primary"
+                    >
+                        Sign in with Google
+                    </Button>
+                </div>
             </Paper>
         </Container>
     );
