@@ -1,3 +1,5 @@
+//! api for graph.
+
 mod filters;
 mod handlers;
 

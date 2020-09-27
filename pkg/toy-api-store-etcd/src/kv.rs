@@ -43,14 +43,22 @@ pub struct RangeResponse {
     count: String,
 }
 
+/// convert only from `RangeResponse'
+#[derive(Debug)]
+pub struct SingleResponse {
+    header: ResponseHeader,
+    kv: Option<Kv>,
+    count: String,
+}
+
 ///////////////////////////////
 // Put
 ///////////////////////////////
 
 #[derive(Debug, Pack)]
-pub struct PutRequest<'a> {
-    key: &'a str,
-    value: &'a str,
+pub struct PutRequest {
+    key: String,
+    value: String,
 }
 
 #[derive(Debug, Unpack)]
@@ -63,8 +71,8 @@ pub struct PutResponse {
 ///////////////////////////////
 
 #[derive(Debug, Pack)]
-pub struct DeleteRangeRequest<'a> {
-    key: &'a str,
+pub struct DeleteRangeRequest {
+    key: String,
     range_end: Option<String>,
 }
 
@@ -99,20 +107,22 @@ impl<T> Versioning<T> {
 
 impl RangeRequest {
     pub fn single(key: &str) -> RangeRequest {
+        let encoded_key = encode(key);
         RangeRequest {
-            key: key.to_string(),
+            key: encoded_key,
             range_end: None,
         }
     }
 
     pub fn range_from(key: &str) -> RangeRequest {
+        let encoded_key = encode(key);
         let range_end = {
             std::str::from_utf8(get_range_end(key).as_slice())
-                .map(|x| x.to_string())
+                .map(|x| encode(x.to_string()))
                 .ok()
         };
         RangeRequest {
-            key: key.to_string(),
+            key: encoded_key,
             range_end,
         }
     }
@@ -132,9 +142,8 @@ impl RangeResponse {
     {
         self.kvs
             .iter()
-            .try_fold(Vec::new(), |mut vec, x| match base64::decode(&x.value) {
+            .try_fold(Vec::new(), |mut vec, x| match decode(&x.value) {
                 Ok(v) => {
-                    log::trace!("get decode(base64)={:?}", std::str::from_utf8(&v));
                     let r = toy_pack_json::unpack::<T>(&v)?;
                     let version = x.mod_revision.parse::<u64>()?;
                     vec.push(Versioning::<T>::from(r, version));
@@ -143,21 +152,73 @@ impl RangeResponse {
                 Err(e) => Err(e.into()),
             })
     }
-}
 
-impl<'a> PutRequest<'a> {
-    pub fn from(key: &'a str, value: &'a str) -> PutRequest<'a> {
-        PutRequest { key, value }
+    pub fn into_single(mut self) -> Result<SingleResponse, StoreEtcdError> {
+        if self.kvs.len() == 0 {
+            Ok(SingleResponse {
+                header: self.header,
+                kv: None,
+                count: "0".to_string(),
+            })
+        } else if self.kvs.len() == 1 {
+            Ok(SingleResponse {
+                header: self.header,
+                kv: Some(self.kvs.pop().unwrap()),
+                count: "1".to_string(),
+            })
+        } else {
+            let one = self.kvs.pop().unwrap();
+            Err(StoreEtcdError::multiple_result(&one.key))
+        }
     }
 }
 
-impl<'a> DeleteRangeRequest<'a> {
-    pub fn single(key: &'a str) -> DeleteRangeRequest<'a> {
+impl SingleResponse {
+    pub fn json<T>(&self) -> Result<Option<Versioning<T>>, StoreEtcdError>
+    where
+        T: DeserializableOwned,
+    {
+        match &self.kv {
+            Some(kv) => match decode(&kv.value) {
+                Ok(v) => {
+                    let r = toy_pack_json::unpack::<T>(&v)?;
+                    let version = kv.mod_revision.parse::<u64>()?;
+                    Ok(Some(Versioning::<T>::from(r, version)))
+                }
+                Err(e) => Err(e.into()),
+            },
+            None => Ok(None),
+        }
+    }
+}
+
+impl PutRequest {
+    pub fn from(key: &str, value: &str) -> PutRequest {
+        let encoded_key = encode(key);
+        let encoded_value = encode(value);
+        PutRequest {
+            key: encoded_key,
+            value: encoded_value,
+        }
+    }
+}
+
+impl DeleteRangeRequest {
+    pub fn single(key: &str) -> DeleteRangeRequest {
+        let encoded_key = encode(key);
         DeleteRangeRequest {
-            key,
+            key: encoded_key,
             range_end: None,
         }
     }
+}
+
+pub(crate) fn encode<T: AsRef<[u8]>>(input: T) -> String {
+    base64::encode_config(input.as_ref(), base64::URL_SAFE)
+}
+
+pub(crate) fn decode<T: AsRef<[u8]>>(input: T) -> Result<Vec<u8>, base64::DecodeError> {
+    base64::decode_config(input.as_ref(), base64::URL_SAFE)
 }
 
 fn get_range_end(key: &str) -> Vec<u8> {
@@ -165,7 +226,7 @@ fn get_range_end(key: &str) -> Vec<u8> {
     for i in (0..end.len()).rev() {
         if end[i] < 0xff {
             end[i] += 1;
-            end = end[..=i].to_vec();
+            end = end[0..=i].to_vec();
             break;
         }
     }

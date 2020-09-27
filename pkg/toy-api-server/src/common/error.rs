@@ -1,12 +1,16 @@
 use std::fmt::Display;
 use thiserror::Error;
 use toy_core::error::ConfigError;
+use toy_pack_json::DecodeError;
 use toy_pack_yaml::error::YamlError;
 
 #[derive(Debug, Error)]
 pub enum ApiError {
     #[error("error: {:?}", inner)]
     DeserializeValue { inner: YamlError },
+
+    #[error("error: {:?}", inner)]
+    DeserializeJsonValue { inner: DecodeError },
 
     #[error("error: {:?}", inner)]
     DeserializeConfig { inner: ConfigError },
@@ -29,6 +33,12 @@ impl ApiError {
 impl From<YamlError> for ApiError {
     fn from(e: YamlError) -> ApiError {
         ApiError::DeserializeValue { inner: e }
+    }
+}
+
+impl From<DecodeError> for ApiError {
+    fn from(e: DecodeError) -> ApiError {
+        ApiError::DeserializeJsonValue { inner: e }
     }
 }
 

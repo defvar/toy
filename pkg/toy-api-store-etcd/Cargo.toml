@@ -12,6 +12,7 @@ tokio = { version = "0.2", features = ["full"] }
 base64 = "0.12"
 toy-pack = {path = "../../shared/toy-pack", features = ["derive"]}
 toy-pack-json = {path = "../../shared/toy-pack-json"}
+toy-api-server = {path = "../toy-api-server"}
 log = "0.4"
 thiserror = "1.0"
 

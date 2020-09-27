@@ -1,6 +1,6 @@
 use crate::common::error::ApiError;
 use crate::graph::handlers;
-use crate::persist::GraphRegistry;
+use crate::store::{StoreConnection, StoreOpsFactory};
 use log;
 use toy_core::error::ServiceError;
 use toy_core::mpsc::Outgoing;
@@ -8,88 +8,125 @@ use toy_core::prelude::Value;
 use toy_core::supervisor::Request;
 use warp::Filter;
 
-pub fn graphs(
-    g: GraphRegistry,
+pub fn graphs<C>(
+    con: C,
+    ops: impl StoreOpsFactory<C> + Clone,
     tx: Outgoing<Request, ServiceError>,
-) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
-    graphs_list(g.clone(), tx.clone())
-        .or(graphs_exec(g.clone(), tx.clone()))
-        .or(graphs_find(g.clone(), tx.clone()))
-        .or(graphs_put(g.clone(), tx.clone()))
-        .or(graphs_delete(g, tx.clone()))
+) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone
+where
+    C: StoreConnection,
+{
+    graphs_list(con.clone(), ops.clone())
+        .or(graphs_exec(con.clone(), tx.clone()))
+        .or(graphs_find(con.clone(), ops.clone()))
+        .or(graphs_put(con.clone(), ops.clone()))
+        .or(graphs_delete(con.clone(), ops.clone()))
 }
 
-pub fn graphs_list(
-    g: GraphRegistry,
-    tx: Outgoing<Request, ServiceError>,
-) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+pub fn graphs_list<C>(
+    store: C,
+    ops: impl StoreOpsFactory<C> + Clone,
+) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone
+where
+    C: StoreConnection,
+{
     warp::path!("graphs")
         .and(warp::get())
-        .and(with_graphs(g, tx))
-        .and_then(|(a, _)| handlers::list(a))
+        .and(with_ops(store, ops))
+        .and_then(|(a, b)| handlers::list(a, b))
 }
 
-pub fn graphs_find(
-    g: GraphRegistry,
-    tx: Outgoing<Request, ServiceError>,
-) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+pub fn graphs_find<C>(
+    store: C,
+    ops: impl StoreOpsFactory<C> + Clone,
+) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone
+where
+    C: StoreConnection,
+{
     warp::path!("graphs" / String)
         .and(warp::get())
-        .and(with_graphs(g, tx))
-        .and_then(|a, (b, _)| handlers::find(a, b))
+        .and(with_ops(store, ops))
+        .and_then(|a, (b, c)| handlers::find(a, b, c))
 }
 
 pub fn graphs_exec(
-    g: GraphRegistry,
+    store: impl StoreConnection,
     tx: Outgoing<Request, ServiceError>,
 ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
     warp::path!("graphs" / String / "exec")
         .and(warp::get())
-        .and(with_graphs(g, tx))
+        .and(with_graphs(store, tx))
         .and_then(|a, (b, c)| handlers::exec(a, b, c))
 }
 
-pub fn graphs_put(
-    g: GraphRegistry,
-    tx: Outgoing<Request, ServiceError>,
-) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+pub fn graphs_put<C>(
+    store: C,
+    ops: impl StoreOpsFactory<C> + Clone,
+) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone
+where
+    C: StoreConnection,
+{
     warp::path!("graphs" / String)
         .and(warp::put())
-        .and(yaml_body())
-        .and(with_graphs(g, tx))
-        .and_then(|_, b, (c, _)| handlers::put(b, c))
+        .and(json_body())
+        .and(with_ops(store, ops))
+        .and_then(|a, b, (c, d)| handlers::put(a, b, c, d))
 }
 
-pub fn graphs_delete(
-    g: GraphRegistry,
-    tx: Outgoing<Request, ServiceError>,
-) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+pub fn graphs_delete<C>(
+    store: C,
+    ops: impl StoreOpsFactory<C> + Clone,
+) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone
+where
+    C: StoreConnection,
+{
     warp::path!("graphs" / String)
         .and(warp::delete())
-        .and(with_graphs(g, tx))
-        .and_then(|a, (b, _)| handlers::delete(a, b))
+        .and(with_ops(store, ops))
+        .and_then(|a, (b, c)| handlers::delete(a, b, c))
 }
 
 fn with_graphs(
-    g: GraphRegistry,
+    store: impl StoreConnection,
     tx: Outgoing<Request, ServiceError>,
 ) -> impl Filter<
-    Extract = ((GraphRegistry, Outgoing<Request, ServiceError>),),
+    Extract = ((impl StoreConnection, Outgoing<Request, ServiceError>),),
     Error = std::convert::Infallible,
 > + Clone {
-    warp::any().map(move || (g.clone(), tx.clone()))
+    warp::any().map(move || (store.clone(), tx.clone()))
+}
+
+fn with_ops<C>(
+    con: C,
+    ops: impl StoreOpsFactory<C> + Clone,
+) -> impl Filter<Extract = ((C, impl StoreOpsFactory<C> + Clone),), Error = std::convert::Infallible>
+       + Clone
+where
+    C: StoreConnection,
+{
+    warp::any().map(move || (con.clone(), ops.clone()))
 }
 
 fn yaml_body() -> impl Filter<Extract = (Value,), Error = warp::Rejection> + Clone {
     // warp::body::content_length_limit(1024 * 16).and(warp::body::json())
-    warp::body::aggregate().and_then(|buf| {
-        async move {
-            let s = buf_to_string(buf);
-            match s {
-                Ok(x) => toy_pack_yaml::unpack::<Value>(x.as_str())
-                    .map_err(|e| warp::reject::custom(ApiError::from(e))),
-                Err(e) => Err(warp::reject::custom(e)),
-            }
+    warp::body::aggregate().and_then(|buf| async move {
+        let s = buf_to_string(buf);
+        match s {
+            Ok(x) => toy_pack_yaml::unpack::<Value>(x.as_str())
+                .map_err(|e| warp::reject::custom(ApiError::from(e))),
+            Err(e) => Err(warp::reject::custom(e)),
+        }
+    })
+}
+
+fn json_body() -> impl Filter<Extract = (Value,), Error = warp::Rejection> + Clone {
+    // warp::body::content_length_limit(1024 * 16).and(warp::body::json())
+    warp::body::aggregate().and_then(|buf| async move {
+        let s = buf_to_string(buf);
+        match s {
+            Ok(x) => toy_pack_json::unpack::<Value>(x.as_bytes())
+                .map_err(|e| warp::reject::custom(ApiError::from(e))),
+            Err(e) => Err(warp::reject::custom(e)),
         }
     })
 }
@@ -97,7 +134,7 @@ fn yaml_body() -> impl Filter<Extract = (Value,), Error = warp::Rejection> + Clo
 fn buf_to_string<T: warp::Buf>(buf: T) -> Result<String, ApiError> {
     std::str::from_utf8(buf.bytes())
         .map(|x| {
-            log::info!("string----->{:?}", x.to_string());
+            log::debug!("receive:{:?}", x.to_string());
             x.to_string()
         })
         .map_err(|_| ApiError::error("body invalid utf8 sequence."))

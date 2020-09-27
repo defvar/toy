@@ -1,6 +1,6 @@
 use crate::kv::{
-    DeleteRangeRequest, DeleteRangeResponse, PutRequest, PutResponse, RangeRequest, RangeResponse,
-    ResponseHeader,
+    encode, DeleteRangeRequest, DeleteRangeResponse, PutRequest, PutResponse, RangeRequest,
+    RangeResponse, ResponseHeader,
 };
 use toy_pack::{Pack, Unpack};
 
@@ -23,8 +23,8 @@ pub enum CompareTarget {
 
 #[derive(Debug, Pack, Unpack)]
 #[toy(ignore_pack_if_none)]
-pub struct Compare<'a> {
-    key: &'a str,
+pub struct Compare {
+    key: String,
     result: Option<CompareResult>,
     target: Option<CompareTarget>,
 
@@ -35,10 +35,10 @@ pub struct Compare<'a> {
 
 #[derive(Debug, Pack)]
 #[toy(ignore_pack_if_none)]
-pub struct RequestOp<'a> {
+pub struct RequestOp {
     request_range: Option<RangeRequest>,
-    request_put: Option<PutRequest<'a>>,
-    request_delete_range: Option<DeleteRangeRequest<'a>>,
+    request_put: Option<PutRequest>,
+    request_delete_range: Option<DeleteRangeRequest>,
 }
 
 #[derive(Debug, Unpack)]
@@ -51,10 +51,10 @@ pub struct ResponseOp {
 
 #[derive(Debug, Pack)]
 #[toy(ignore_pack_if_none)]
-pub struct TxnRequest<'a> {
-    compare: Vec<Compare<'a>>,
-    success: Option<Vec<RequestOp<'a>>>,
-    failure: Option<Vec<RequestOp<'a>>>,
+pub struct TxnRequest {
+    compare: Vec<Compare>,
+    success: Option<Vec<RequestOp>>,
+    failure: Option<Vec<RequestOp>>,
 }
 
 #[derive(Debug, Unpack)]
@@ -64,10 +64,11 @@ pub struct TxnResponse {
     responses: Vec<ResponseOp>,
 }
 
-impl<'a> Compare<'a> {
-    pub fn not_exists(key: &'a str) -> Compare<'a> {
+impl Compare {
+    pub fn not_exists(key: &str) -> Compare {
+        let encoded_key = encode(key);
         Compare {
-            key,
+            key: encoded_key,
             result: None,
             target: Some(CompareTarget::CREATE),
             version: None,
@@ -76,12 +77,8 @@ impl<'a> Compare<'a> {
         }
     }
 
-    pub fn with(
-        key: &'a str,
-        result: CompareResult,
-        target: CompareTarget,
-        rev: String,
-    ) -> Compare {
+    pub fn with(key: &str, result: CompareResult, target: CompareTarget, rev: String) -> Compare {
+        let encoded_key = encode(key);
         let (version, create_revision, mod_revision) = {
             match target {
                 CompareTarget::VERSION => (Some(rev), None, None),
@@ -91,7 +88,7 @@ impl<'a> Compare<'a> {
             }
         };
         Compare {
-            key,
+            key: encoded_key,
             result: Some(result),
             target: Some(target),
             version,
@@ -101,8 +98,8 @@ impl<'a> Compare<'a> {
     }
 }
 
-impl<'a> RequestOp<'a> {
-    pub fn range(req: RangeRequest) -> RequestOp<'a> {
+impl RequestOp {
+    pub fn range(req: RangeRequest) -> RequestOp {
         RequestOp {
             request_range: Some(req),
             request_put: None,
@@ -110,7 +107,7 @@ impl<'a> RequestOp<'a> {
         }
     }
 
-    pub fn put(req: PutRequest<'a>) -> RequestOp<'a> {
+    pub fn put(req: PutRequest) -> RequestOp {
         RequestOp {
             request_range: None,
             request_put: Some(req),
@@ -118,7 +115,7 @@ impl<'a> RequestOp<'a> {
         }
     }
 
-    pub fn delete(req: DeleteRangeRequest<'a>) -> RequestOp<'a> {
+    pub fn delete(req: DeleteRangeRequest) -> RequestOp {
         RequestOp {
             request_range: None,
             request_put: None,
@@ -127,8 +124,8 @@ impl<'a> RequestOp<'a> {
     }
 }
 
-impl<'a> TxnRequest<'a> {
-    pub fn with(compare: Compare<'a>, success: RequestOp<'a>) -> TxnRequest<'a> {
+impl TxnRequest {
+    pub fn with(compare: Compare, success: RequestOp) -> TxnRequest {
         TxnRequest {
             compare: vec![compare],
             success: Some(vec![success]),

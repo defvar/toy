@@ -1,28 +1,47 @@
-use crate::persist::GraphRegistry;
-use crate::{graphs, services};
+use crate::api::{graphs, services};
+use crate::store::{StoreConnection, StoreOpsFactory};
+use core::marker::PhantomData;
 use std::net::SocketAddr;
 use toy_core::error::ServiceError;
 use toy_core::mpsc::{Incoming, Outgoing};
 use toy_core::supervisor::{Request, SystemMessage};
 use warp::Filter;
 
-pub struct Server {
-    graphs: GraphRegistry,
+/// toy-api Server.
+pub struct Server<C, SF> {
+    sf: SF,
+    _t: PhantomData<C>,
 }
 
-impl Server {
-    pub fn new(graphs: GraphRegistry) -> Server {
-        Server { graphs }
+impl<C, SF> Server<C, SF>
+where
+    C: StoreConnection + 'static,
+    SF: StoreOpsFactory<C> + 'static + Clone,
+{
+    pub fn new(sf: SF) -> Server<C, SF> {
+        Server {
+            sf,
+            _t: PhantomData,
+        }
     }
 
+    /// Run this `Server` forever on the current thread.
     pub async fn run(
-        self,
+        &self,
         addr: impl Into<SocketAddr> + 'static,
         tx: Outgoing<Request, ServiceError>,
         mut rx: Incoming<SystemMessage, ServiceError>,
     ) {
-        let root = self.graphs.root_path();
-        let api = graphs(self.graphs, tx.clone())
+        let store_factory = self.sf.clone();
+        let store_connection = match store_factory.connect() {
+            Ok(c) => c,
+            Err(e) => {
+                log::error!("error store connection failed. error:{:?}", e);
+                return;
+            }
+        };
+
+        let api = graphs(store_connection.clone(), store_factory, tx.clone())
             .or(services(tx.clone()))
             .with(warp::cors().allow_any_origin());
 
@@ -40,9 +59,6 @@ impl Server {
             }
         });
         log::info!("listening on http://{}", addr);
-        if let Some(path) = root.to_str() {
-            log::info!("graph registry on {}", path);
-        }
         server.await
     }
 }

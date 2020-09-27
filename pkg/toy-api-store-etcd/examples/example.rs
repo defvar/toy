@@ -10,7 +10,7 @@ struct Test {
 #[tokio::main]
 async fn main() -> Result<(), StoreEtcdError> {
     let env = env_logger::Env::default()
-        .filter_or("MY_LOG_LEVEL", "info")
+        .filter_or("MY_LOG_LEVEL", "trace")
         .write_style_or("MY_LOG_STYLE", "always");
 
     let mut builder = env_logger::Builder::from_env(env);
@@ -34,7 +34,7 @@ async fn main() -> Result<(), StoreEtcdError> {
     // update
     let range_res = c.get(key).await?.json::<Test>()?;
     let upd_res = c
-        .update(key, data_json.clone(), range_res.get(0).unwrap().version())
+        .update(key, data_json.clone(), range_res.unwrap().version())
         .await?;
     log::info!("update {:?}", upd_res);
 
@@ -44,7 +44,7 @@ async fn main() -> Result<(), StoreEtcdError> {
 
     // remove
     let range_res = c.get(key).await?.json::<Test>()?;
-    let rm_res = c.remove(key, range_res.get(0).unwrap().version()).await?;
+    let rm_res = c.remove(key, range_res.unwrap().version()).await?;
     log::info!("remove {:?}", rm_res);
 
     Ok(())

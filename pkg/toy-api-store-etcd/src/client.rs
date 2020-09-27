@@ -5,6 +5,7 @@ use reqwest::header::{HeaderValue, CONTENT_TYPE};
 use reqwest::{IntoUrl, Url};
 
 /// etcd api client.
+#[derive(Clone, Debug)]
 pub struct Client {
     inner: reqwest::Client,
     root: Url,
@@ -19,31 +20,27 @@ impl Client {
         Ok(Client { inner: c, root })
     }
 
-    pub async fn get<K>(&self, key: K) -> Result<RangeResponse, StoreEtcdError>
+    pub async fn get<K>(&self, key: K) -> Result<SingleResponse, StoreEtcdError>
     where
         K: AsRef<str>,
     {
         log::trace!("get key={:?}", key.as_ref());
-        let encoded_key = base64::encode(key.as_ref().as_bytes());
-        let param = toy_pack_json::pack(&RangeRequest::single(&encoded_key)).unwrap();
-
+        let param = toy_pack_json::pack(&RangeRequest::single(key.as_ref())).unwrap();
         let bytes = self.range(param).await?.bytes().await?;
         let res = toy_pack_json::unpack::<RangeResponse>(&bytes)?;
         log::trace!("get response={:?}", res);
-        Ok(res)
+        res.into_single()
     }
 
     pub async fn list<K>(&self, key: K) -> Result<RangeResponse, StoreEtcdError>
     where
         K: AsRef<str>,
     {
-        log::trace!("list");
-        let encoded_key = base64::encode(key.as_ref().as_bytes());
-        let param = toy_pack_json::pack(&RangeRequest::range_from(&encoded_key)).unwrap();
-
+        log::trace!("list key={:?}", key.as_ref());
+        let param = toy_pack_json::pack(&RangeRequest::range_from(key.as_ref())).unwrap();
         let bytes = self.range(param).await?.bytes().await?;
         let res = toy_pack_json::unpack::<RangeResponse>(&bytes)?;
-        log::trace!("get response={:?}", res);
+        log::trace!("list response={:?}", res);
         Ok(res)
     }
 
@@ -53,11 +50,9 @@ impl Client {
         V: AsRef<str>,
     {
         log::trace!("create key={:?}", key.as_ref());
-        let encoded_key = base64::encode(key.as_ref().as_bytes());
-        let encoded_value = base64::encode(value.as_ref().as_bytes());
         let txn = TxnRequest::with(
-            Compare::not_exists(&encoded_key),
-            RequestOp::put(PutRequest::from(&encoded_key, &encoded_value)),
+            Compare::not_exists(key.as_ref()),
+            RequestOp::put(PutRequest::from(key.as_ref(), value.as_ref())),
         );
         let param = toy_pack_json::pack(&txn).unwrap();
         let bytes = self.txn(param).await?.bytes().await?;
@@ -77,16 +72,14 @@ impl Client {
         V: AsRef<str>,
     {
         log::trace!("update key={:?}, version={:?}", key.as_ref(), version);
-        let encoded_key = base64::encode(key.as_ref().as_bytes());
-        let encoded_value = base64::encode(value.as_ref().as_bytes());
         let txn = TxnRequest::with(
             Compare::with(
-                &encoded_key,
+                key.as_ref(),
                 CompareResult::EQUAL,
                 CompareTarget::MOD,
                 version.to_string(),
             ),
-            RequestOp::put(PutRequest::from(&encoded_key, &encoded_value)),
+            RequestOp::put(PutRequest::from(key.as_ref(), value.as_ref())),
         );
         let param = toy_pack_json::pack(&txn).unwrap();
         let bytes = self.txn(param).await?.bytes().await?;
@@ -100,15 +93,14 @@ impl Client {
         K: AsRef<str>,
     {
         log::trace!("remove key={:?}", key.as_ref());
-        let encoded_key = base64::encode(key.as_ref().as_bytes());
         let txn = TxnRequest::with(
             Compare::with(
-                &encoded_key,
+                key.as_ref(),
                 CompareResult::EQUAL,
                 CompareTarget::MOD,
                 version.to_string(),
             ),
-            RequestOp::delete(DeleteRangeRequest::single(&encoded_key)),
+            RequestOp::delete(DeleteRangeRequest::single(key.as_ref())),
         );
         let param = toy_pack_json::pack(&txn).unwrap();
         let bytes = self.txn(param).await?.bytes().await?;

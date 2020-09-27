@@ -1,4 +1,4 @@
-use toy_api_server::GraphRegistry;
+use toy_api_store_etcd::EtcdStoreOpsFactory;
 use toy_core::prelude::*;
 use toy_core::supervisor::Supervisor;
 
@@ -35,8 +35,7 @@ fn main() {
 
     let (sv, tx, rx) = Supervisor::new(service_rt, regi);
 
-    let g = GraphRegistry::new("./registry_root");
-    let server = toy_api_server::Server::new(g);
+    let server = toy_api_server::Server::new(EtcdStoreOpsFactory);
 
     sv_rt.spawn(async {
         let _ = sv.run().await;
