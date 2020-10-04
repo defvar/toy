@@ -9,7 +9,7 @@ where
 {
     Yaml {
         inner: toy_pack_yaml::pack_to_string(v)
-            .map_err(|e| log::error!("reply::yaml error: {}", e)),
+            .map_err(|e| tracing::error!("reply::yaml error: {}", e)),
     }
 }
 
@@ -19,7 +19,7 @@ where
 {
     Json {
         inner: toy_pack_json::pack_to_string(v)
-            .map_err(|e| log::error!("reply::json error: {}", e)),
+            .map_err(|e| tracing::error!("reply::json error: {}", e)),
     }
 }
 

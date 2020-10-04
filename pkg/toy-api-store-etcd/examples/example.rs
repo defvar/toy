@@ -1,5 +1,6 @@
 use toy_api_store_etcd::error::StoreEtcdError;
 use toy_pack::{Pack, Unpack};
+use tracing_subscriber::fmt::format::FmtSpan;
 
 #[derive(Debug, Pack, Unpack)]
 struct Test {
@@ -9,13 +10,12 @@ struct Test {
 
 #[tokio::main]
 async fn main() -> Result<(), StoreEtcdError> {
-    let env = env_logger::Env::default()
-        .filter_or("MY_LOG_LEVEL", "trace")
-        .write_style_or("MY_LOG_STYLE", "always");
-
-    let mut builder = env_logger::Builder::from_env(env);
-    builder.format_timestamp_nanos();
-    builder.init();
+    tracing_subscriber::fmt()
+        .with_max_level(tracing::Level::DEBUG)
+        .with_span_events(FmtSpan::CLOSE)
+        .with_thread_ids(true)
+        .with_thread_names(true)
+        .init();
 
     let prefix = "/hoge1";
     let key = "/hoge1/aiueo";
@@ -29,23 +29,23 @@ async fn main() -> Result<(), StoreEtcdError> {
 
     // create new kv
     let put_res = c.create(key, data_json.clone()).await?;
-    log::info!("create {:?}", put_res);
+    tracing::info!("create {:?}", put_res);
 
     // update
     let range_res = c.get(key).await?.json::<Test>()?;
     let upd_res = c
         .update(key, data_json.clone(), range_res.unwrap().version())
         .await?;
-    log::info!("update {:?}", upd_res);
+    tracing::info!("update {:?}", upd_res);
 
     // list
     let range_res = c.list(prefix).await?.json::<Test>()?;
-    log::info!("list {:?}", range_res);
+    tracing::info!("list {:?}", range_res);
 
     // remove
     let range_res = c.get(key).await?.json::<Test>()?;
     let rm_res = c.remove(key, range_res.unwrap().version()).await?;
-    log::info!("remove {:?}", rm_res);
+    tracing::info!("remove {:?}", rm_res);
 
     Ok(())
 }

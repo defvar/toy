@@ -15,6 +15,9 @@ pub enum ApiError {
     #[error("error: {:?}", inner)]
     DeserializeConfig { inner: ConfigError },
 
+    #[error("authentication failed. {:?}", inner)]
+    AuthenticationFailed { inner: String },
+
     #[error("error: {:?}", inner)]
     Error { inner: String },
 }
@@ -25,6 +28,15 @@ impl ApiError {
         T: Display,
     {
         ApiError::Error {
+            inner: msg.to_string(),
+        }
+    }
+
+    pub fn authentication_failed<T>(msg: T) -> ApiError
+    where
+        T: Display,
+    {
+        ApiError::AuthenticationFailed {
             inner: msg.to_string(),
         }
     }

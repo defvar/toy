@@ -13,6 +13,7 @@
 mod graph;
 mod service;
 
+pub use common::error::ApiError;
 pub use server::Server;
 
 pub mod api {
@@ -22,6 +23,7 @@ pub mod api {
     pub use super::service::services;
 }
 
+pub mod auth;
 mod common;
 mod server;
 pub mod store;

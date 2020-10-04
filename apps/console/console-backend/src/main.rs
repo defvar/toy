@@ -1,15 +1,16 @@
+use toy_api_auth_firebase::FireAuth;
 use toy_api_store_etcd::EtcdStoreOpsFactory;
 use toy_core::prelude::*;
 use toy_core::supervisor::Supervisor;
+use tracing_subscriber::fmt::format::FmtSpan;
 
 fn main() {
-    let env = env_logger::Env::default()
-        .filter_or("MY_LOG_LEVEL", "trace")
-        .write_style_or("MY_LOG_STYLE", "always");
-
-    let mut builder = env_logger::Builder::from_env(env);
-    builder.format_timestamp_nanos();
-    builder.init();
+    tracing_subscriber::fmt()
+        .with_max_level(tracing::Level::DEBUG)
+        .with_span_events(FmtSpan::CLOSE)
+        .with_thread_ids(true)
+        .with_thread_names(true)
+        .init();
 
     let sv_rt = toy_rt::RuntimeBuilder::new()
         .thread_name("supervisor")
@@ -35,7 +36,7 @@ fn main() {
 
     let (sv, tx, rx) = Supervisor::new(service_rt, regi);
 
-    let server = toy_api_server::Server::new(EtcdStoreOpsFactory);
+    let server = toy_api_server::Server::new(EtcdStoreOpsFactory, FireAuth);
 
     sv_rt.spawn(async {
         let _ = sv.run().await;

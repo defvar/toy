@@ -5,6 +5,7 @@ use crate::store::{
 };
 use std::convert::Infallible;
 use toy_core::error::ServiceError;
+use toy_core::graph::Graph;
 use toy_core::mpsc::Outgoing;
 use toy_core::prelude::Value;
 use toy_core::supervisor::Request;
@@ -31,7 +32,7 @@ where
     {
         Ok(v) => Ok(common::reply::json(&v).into_response()),
         Err(e) => {
-            log::error!("error:{:?}", e);
+            tracing::error!("error:{:?}", e);
             Ok(StatusCode::INTERNAL_SERVER_ERROR.into_response())
         }
     }
@@ -53,30 +54,43 @@ where
             None => Ok(StatusCode::NOT_FOUND.into_response()),
         },
         Err(e) => {
-            log::error!("error:{:?}", e);
+            tracing::error!("error:{:?}", e);
             Ok(StatusCode::INTERNAL_SERVER_ERROR.into_response())
         }
     }
 }
 
-pub async fn exec(
-    _key: String,
-    _store: impl StoreConnection,
-    mut _tx: Outgoing<Request, ServiceError>,
-) -> Result<impl warp::Reply, Infallible> {
-    Ok(StatusCode::NOT_FOUND.into_response())
-    // match g.find(&name).await {
-    //     Ok(Some(graph)) => tx
-    //         .send_ok(Request::Task(graph))
-    //         .await
-    //         .map(|_| StatusCode::OK)
-    //         .or_else(|_| Ok(StatusCode::INTERNAL_SERVER_ERROR)),
-    //     Ok(None) => Ok(StatusCode::NOT_FOUND),
-    //     Err(e) => {
-    //         log::error!("error:{:?}", e);
-    //         Ok(StatusCode::INTERNAL_SERVER_ERROR)
-    //     }
-    // }
+pub async fn exec<C>(
+    key: String,
+    con: C,
+    ops: impl StoreOpsFactory<C> + Clone,
+    mut tx: Outgoing<Request, ServiceError>,
+) -> Result<impl warp::Reply, Infallible>
+where
+    C: StoreConnection,
+{
+    let ops = ops.create().unwrap();
+    let key = full_key(key);
+    match ops.find(con, key, FindOption::new()).await {
+        Ok(Some(v)) => {
+            let graph = match Graph::from(v) {
+                Ok(g) => g,
+                Err(e) => {
+                    tracing::error!("error:{:?}", e);
+                    return Ok(StatusCode::INTERNAL_SERVER_ERROR);
+                }
+            };
+            tx.send_ok(Request::Task(graph))
+                .await
+                .map(|_| StatusCode::OK)
+                .or_else(|_| Ok(StatusCode::INTERNAL_SERVER_ERROR))
+        }
+        Ok(None) => Ok(StatusCode::NOT_FOUND),
+        Err(e) => {
+            tracing::error!("error:{:?}", e);
+            Ok(StatusCode::INTERNAL_SERVER_ERROR)
+        }
+    }
 }
 
 pub async fn put<C>(
@@ -84,7 +98,7 @@ pub async fn put<C>(
     v: Value,
     con: C,
     ops: impl StoreOpsFactory<C> + Clone,
-) -> Result<impl warp::Reply, warp::Rejection>
+) -> Result<impl warp::Reply, Infallible>
 where
     C: StoreConnection,
 {
@@ -96,7 +110,7 @@ where
             PutResult::Update => Ok(StatusCode::OK),
         },
         Err(e) => {
-            log::error!("error:{:?}", e);
+            tracing::error!("error:{:?}", e);
             Ok(StatusCode::INTERNAL_SERVER_ERROR)
         }
     }
@@ -118,7 +132,7 @@ where
             DeleteResult::NotFound => Ok(StatusCode::NOT_FOUND),
         },
         Err(e) => {
-            log::error!("error:{:?}", e);
+            tracing::error!("error:{:?}", e);
             Ok(StatusCode::INTERNAL_SERVER_ERROR)
         }
     }

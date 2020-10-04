@@ -55,7 +55,7 @@ pub enum DeleteResult {
 pub trait Find {
     type Con: StoreConnection;
     type T: Future<Output = Result<Option<Value>, Self::Err>> + Send;
-    type Err: Debug;
+    type Err: Debug + Send;
 
     fn find(&self, con: Self::Con, key: String, opt: FindOption) -> Self::T;
 }
@@ -64,7 +64,7 @@ pub trait Find {
 pub trait List {
     type Con: StoreConnection;
     type T: Future<Output = Result<Vec<Value>, Self::Err>> + Send;
-    type Err: Debug;
+    type Err: Debug + Send;
 
     fn list(&self, con: Self::Con, prefix: String, opt: ListOption) -> Self::T;
 }
@@ -73,7 +73,7 @@ pub trait List {
 pub trait Put {
     type Con: StoreConnection;
     type T: Future<Output = Result<PutResult, Self::Err>> + Send;
-    type Err: Debug;
+    type Err: Debug + Send;
 
     fn put(&self, con: Self::Con, key: String, v: Value, opt: PutOption) -> Self::T;
 }
@@ -82,7 +82,7 @@ pub trait Put {
 pub trait Delete {
     type Con: StoreConnection;
     type T: Future<Output = Result<DeleteResult, Self::Err>> + Send;
-    type Err: Debug;
+    type Err: Debug + Send;
 
     fn delete(&self, con: Self::Con, key: String, opt: DeleteOption) -> Self::T;
 }

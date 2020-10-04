@@ -6,6 +6,7 @@ use toy_api_server::store::{
     Delete, DeleteOption, DeleteResult, Find, FindOption, List, ListOption, Put, PutOption,
     PutResult, StoreConnection, StoreOps, StoreOpsFactory, Value,
 };
+use tracing::{span, Instrument, Level};
 
 #[derive(Clone, Debug)]
 pub struct EtcdStoreConnection {
@@ -28,16 +29,18 @@ impl Find for EtcdStoreOps {
     type Err = StoreEtcdError;
 
     fn find(&self, con: Self::Con, key: String, opt: FindOption) -> Self::T {
+        let span = span!(Level::DEBUG, "find", key = ?key);
         async move {
             let res = con.client.get(&key).await?.json::<Value>()?;
             match res {
                 Some(v) => Ok(Some(v.into_data())),
                 None => {
-                    log::debug!("[find] not found. key:{:?}, opt:{:?}", key, opt);
+                    tracing::debug!("[find] not found. key:{:?}, opt:{:?}", key, opt);
                     Ok(Option::<Value>::None)
                 }
             }
         }
+        .instrument(span)
     }
 }
 
@@ -47,10 +50,12 @@ impl List for EtcdStoreOps {
     type Err = StoreEtcdError;
 
     fn list(&self, con: Self::Con, prefix: String, _opt: ListOption) -> Self::T {
+        let span = span!(Level::DEBUG, "list", prefix = ?prefix);
         async move {
             let res = con.client.list(&prefix).await?.json::<Value>()?;
             Ok(res.into_iter().map(|x| x.into_data()).collect())
         }
+        .instrument(span)
     }
 }
 
@@ -60,6 +65,7 @@ impl Put for EtcdStoreOps {
     type Err = StoreEtcdError;
 
     fn put(&self, con: Self::Con, key: String, v: Value, _opt: PutOption) -> Self::T {
+        let span = span!(Level::DEBUG, "put", key = ?key);
         async move {
             let data_json = toy_pack_json::pack_to_string(&v)?;
             let create_res = con.client.create(&key, &data_json).await?;
@@ -82,6 +88,7 @@ impl Put for EtcdStoreOps {
                 }
             }
         }
+        .instrument(span)
     }
 }
 
@@ -91,6 +98,7 @@ impl Delete for EtcdStoreOps {
     type Err = StoreEtcdError;
 
     fn delete(&self, con: Self::Con, key: String, _opt: DeleteOption) -> Self::T {
+        let span = span!(Level::DEBUG, "delete", key = ?key);
         async move {
             let single_res = con.client.get(&key).await?.json::<Value>()?;
             match single_res {
@@ -105,6 +113,7 @@ impl Delete for EtcdStoreOps {
                 None => Ok(DeleteResult::NotFound),
             }
         }
+        .instrument(span)
     }
 }
 
@@ -119,7 +128,7 @@ impl StoreOpsFactory<EtcdStoreConnection> for EtcdStoreOpsFactory {
         let host = std::env::var("TOY_STORE_ETCD_HOST").unwrap_or_else(|_| "localhost".to_string());
         let port = std::env::var("TOY_STORE_ETCD_PORT").unwrap_or_else(|_| "2379".to_string());
         let url = format!("http://{}:{}", host, port);
-        log::info!("toy store=etcd. connecting:{}", &url);
+        tracing::info!("toy store=etcd. connecting:{}", &url);
         let c = match Client::new(&url) {
             Ok(c) => c,
             Err(e) => return Err(StoreError::error(e)),

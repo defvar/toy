@@ -8,9 +8,6 @@ pub fn services(
     tx: Outgoing<Request, ServiceError>,
 ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
     service_list(tx.clone())
-    // .or(todos_create(db.clone()))
-    // .or(todos_update(db.clone()))
-    // .or(todos_delete(db))
 }
 
 pub fn service_list(

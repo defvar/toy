@@ -6,6 +6,7 @@ edition = "2018"
 
 [dependencies]
 tokio = { version = "0.2", features = ["macros", "sync", "fs"] }
+tracing = "0.1"
 warp = "0.2"
 toy-core = { path = "../toy-core" }
 toy-rt = { path = "../toy-rt"}

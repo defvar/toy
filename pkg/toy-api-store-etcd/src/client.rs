@@ -24,11 +24,10 @@ impl Client {
     where
         K: AsRef<str>,
     {
-        log::trace!("get key={:?}", key.as_ref());
         let param = toy_pack_json::pack(&RangeRequest::single(key.as_ref())).unwrap();
         let bytes = self.range(param).await?.bytes().await?;
         let res = toy_pack_json::unpack::<RangeResponse>(&bytes)?;
-        log::trace!("get response={:?}", res);
+        tracing::debug!(key= ?key.as_ref(), response = ?res, "get");
         res.into_single()
     }
 
@@ -36,11 +35,10 @@ impl Client {
     where
         K: AsRef<str>,
     {
-        log::trace!("list key={:?}", key.as_ref());
         let param = toy_pack_json::pack(&RangeRequest::range_from(key.as_ref())).unwrap();
         let bytes = self.range(param).await?.bytes().await?;
         let res = toy_pack_json::unpack::<RangeResponse>(&bytes)?;
-        log::trace!("list response={:?}", res);
+        tracing::debug!(key= ?key.as_ref(), response = ?res, "list");
         Ok(res)
     }
 
@@ -49,7 +47,6 @@ impl Client {
         K: AsRef<str>,
         V: AsRef<str>,
     {
-        log::trace!("create key={:?}", key.as_ref());
         let txn = TxnRequest::with(
             Compare::not_exists(key.as_ref()),
             RequestOp::put(PutRequest::from(key.as_ref(), value.as_ref())),
@@ -57,7 +54,7 @@ impl Client {
         let param = toy_pack_json::pack(&txn).unwrap();
         let bytes = self.txn(param).await?.bytes().await?;
         let res = toy_pack_json::unpack::<TxnResponse>(&bytes)?;
-        log::trace!("get response={:?}", res);
+        tracing::debug!(key= ?key.as_ref(), response = ?res, "create");
         Ok(res)
     }
 
@@ -71,7 +68,6 @@ impl Client {
         K: AsRef<str>,
         V: AsRef<str>,
     {
-        log::trace!("update key={:?}, version={:?}", key.as_ref(), version);
         let txn = TxnRequest::with(
             Compare::with(
                 key.as_ref(),
@@ -84,7 +80,7 @@ impl Client {
         let param = toy_pack_json::pack(&txn).unwrap();
         let bytes = self.txn(param).await?.bytes().await?;
         let res = toy_pack_json::unpack::<TxnResponse>(&bytes)?;
-        log::trace!("get response={:?}", res);
+        tracing::debug!(key= ?key.as_ref(), version= ?version, response= ?res, "update");
         Ok(res)
     }
 
@@ -92,7 +88,6 @@ impl Client {
     where
         K: AsRef<str>,
     {
-        log::trace!("remove key={:?}", key.as_ref());
         let txn = TxnRequest::with(
             Compare::with(
                 key.as_ref(),
@@ -105,7 +100,7 @@ impl Client {
         let param = toy_pack_json::pack(&txn).unwrap();
         let bytes = self.txn(param).await?.bytes().await?;
         let res = toy_pack_json::unpack::<TxnResponse>(&bytes)?;
-        log::trace!("get response={:?}", res);
+        tracing::debug!(key= ?key.as_ref(), response= ?res, "remove");
         Ok(res)
     }
 

@@ -9,7 +9,8 @@ edition = "2018"
 [dependencies]
 # common
 log = "0.4"
-env_logger = "0.7.1"
+tracing = "0.1"
+tracing-subscriber = "0.2"
 
 # core
 toy-core = { path = "../../../pkg/toy-core" }
@@ -23,3 +24,6 @@ toy-plugin-map = { path = "../../../plugins/toy-plugin-commons/toy-plugin-map"}
 
 # store
 toy-api-store-etcd = { path = "../../../pkg/toy-api-store-etcd"}
+
+# auth
+toy-api-auth-firebase = { path = "../../../pkg/toy-api-auth-firebase"}
