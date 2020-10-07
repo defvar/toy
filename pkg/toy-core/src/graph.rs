@@ -102,6 +102,21 @@ impl Graph {
         let mut nodes: Vec<Arc<Node>> = Vec::new();
         let mut output_wires: HashMap<Uri, OutputWire> = HashMap::new();
         let mut input_wires: HashMap<Uri, InputWire> = HashMap::new();
+
+        fn push_input_wire_from_output(
+            me: &Uri,
+            other: Uri,
+            input_wires: &mut HashMap<Uri, InputWire>,
+        ) {
+            let new_wire = if input_wires.contains_key(&other) {
+                let v = input_wires.get(&other).unwrap();
+                v.put_output(me.clone())
+            } else {
+                InputWire::Single(me.clone(), other.clone())
+            };
+            input_wires.insert(other.clone(), new_wire);
+        }
+
         match v {
             Value::Seq(ref seq) => {
                 for v in seq {
@@ -109,15 +124,13 @@ impl Graph {
                     output_wires.insert(n.uri(), w.clone());
                     match w {
                         OutputWire::Single(o, i) => {
-                            let new_wire = if input_wires.contains_key(&i) {
-                                let v = input_wires.get(&i).unwrap();
-                                v.put_output(o)
-                            } else {
-                                InputWire::Single(o, i.clone())
-                            };
-                            input_wires.insert(i.clone(), new_wire);
+                            push_input_wire_from_output(&o, i, &mut input_wires);
                         }
-                        OutputWire::Fanout(_, _) => unimplemented!(),
+                        OutputWire::Fanout(me, outs) => {
+                            for o in outs {
+                                push_input_wire_from_output(&me, o, &mut input_wires);
+                            }
+                        }
                         _ => (),
                     };
                     nodes.push(Arc::new(n));
@@ -247,6 +260,7 @@ impl Node {
 pub enum OutputWire {
     /// Wire of "One to One".
     /// Sender is "0" Value of Tuple.
+    /// "0" of Tuple is Me.
     ///
     Single(Uri, Uri),
 
@@ -262,7 +276,8 @@ pub enum OutputWire {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum InputWire {
     /// Wire of "One to One".
-    /// Sender is "0" Value of Tuple.
+    /// Sender is "0" of Tuple.
+    /// "1" of Tuple is Me.
     ///
     Single(Uri, Uri),
 

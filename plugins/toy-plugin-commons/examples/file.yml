@@ -1,18 +1,18 @@
 name: "file sample"
 services:
-  - type: read
+  - type: example.read
     uri: "reader"
     kind: File
     path: "./examples/file.csv"
     wires: mapper
-  - type: mapping
+  - type: example.mapping
     uri: "mapper"
     mappings:
         gameid: "game_id"
         qtr: "qtr"
         description: "description"
     wires: writer
-  - type: write
+  - type: example.write
     uri: "writer"
     kind: File
     path: "./examples/file.out"

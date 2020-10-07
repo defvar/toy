@@ -24,122 +24,138 @@ impl AsyncRuntime for FutureRsRuntime {
 }
 
 #[derive(Debug)]
-pub struct ServiceContext;
+pub struct PublishContext;
 #[derive(Clone, Debug, Default, Unpack, Schema)]
-pub struct ServiceContextConfig {}
+pub struct PublishConfig {}
 
 #[derive(Debug)]
-pub struct ServiceContext2 {
-    count: u32,
-}
+pub struct ReceiveContext {}
+
 #[derive(Clone, Debug, Default, Unpack, Schema)]
-pub struct ServiceContext2Config {
+pub struct ReceiveConfig {
     uri: String,
     prop1: u32,
 }
 
 #[derive(Debug)]
-pub struct ServiceContext3 {
+pub struct AccumulateContext {
     count: u32,
 }
 #[derive(Clone, Debug, Default, Unpack, Schema)]
-pub struct ServiceContext3Config {
+pub struct AccumulateConfig {
     uri: String,
     prop1: u32,
 }
 
-fn new_context(
+fn new_publish_context(
     _tp: ServiceType,
-    _config: ServiceContextConfig,
-) -> Result<ServiceContext, ServiceError> {
-    Ok(ServiceContext)
+    _config: PublishConfig,
+) -> Result<PublishContext, ServiceError> {
+    Ok(PublishContext)
 }
 
-fn new_context2(
+fn new_receive_context(
     _tp: ServiceType,
-    config: ServiceContext2Config,
-) -> Result<ServiceContext2, ServiceError> {
-    Ok(ServiceContext2 {
+    _config: ReceiveConfig,
+) -> Result<ReceiveContext, ServiceError> {
+    Ok(ReceiveContext {})
+}
+
+fn new_accumulate_context(
+    _tp: ServiceType,
+    config: AccumulateConfig,
+) -> Result<AccumulateContext, ServiceError> {
+    Ok(AccumulateContext {
         count: config.prop1,
     })
 }
 
-fn new_context3(
-    _tp: ServiceType,
-    config: ServiceContext3Config,
-) -> Result<ServiceContext3, ServiceError> {
-    Ok(ServiceContext3 {
-        count: config.prop1,
-    })
-}
-
-async fn service_3(
-    mut ctx: ServiceContext3,
+async fn accumulate(
+    mut ctx: AccumulateContext,
     req: Frame,
     mut tx: Outgoing<Frame, ServiceError>,
-) -> Result<ServiceContext3, ServiceError> {
+) -> Result<AccumulateContext, ServiceError> {
     match req.value() {
         Value::U32(v) => ctx.count += *v,
         _ => (),
     };
-    info!("service3 receive {:?}, ctx:{:?}", req, ctx);
+    info!(
+        "accumulate value:{:?} from port:{:?} -> ctx:{:?}",
+        req,
+        req.port(),
+        ctx
+    );
     let _ = tx.send_ok(Frame::default()).await?;
     Ok(ctx)
 }
 
-async fn service_2(
-    mut ctx: ServiceContext2,
+async fn receive(
+    ctx: ReceiveContext,
     req: Frame,
     mut tx: Outgoing<Frame, ServiceError>,
-) -> Result<ServiceContext2, ServiceError> {
-    ctx.count += 1;
-    info!("service2 receive {:?}, ctx:{:?}", req, ctx);
-    let _ = tx.send_ok(Frame::from(ctx.count)).await?;
+) -> Result<ReceiveContext, ServiceError> {
+    info!("receive and send value {:?}.", req);
+    let _ = tx.send_ok(req).await?;
     Ok(ctx)
 }
 
-async fn service_1(
-    ctx: ServiceContext,
-    req: Frame,
+async fn publish(
+    ctx: PublishContext,
+    _req: Frame,
     mut tx: Outgoing<Frame, ServiceError>,
-) -> Result<ServiceContext, ServiceError> {
-    info!("service1 receive {:?}, ctx:{:?}", req, ctx);
+) -> Result<PublishContext, ServiceError> {
+    info!("publish");
     let _ = tx.send_ok(Frame::from(1u32)).await?;
     let _ = tx.send_ok(Frame::from(2u32)).await?;
     let _ = tx.send_ok(Frame::from(3u32)).await?;
     let _ = tx.send_ok(Frame::from(4u32)).await?;
+
+    let _ = tx.send_ok_to(1, Frame::from(1u32)).await?;
+    let _ = tx.send_ok_to(1, Frame::from(2u32)).await?;
+    let _ = tx.send_ok_to(1, Frame::from(3u32)).await?;
+    let _ = tx.send_ok_to(1, Frame::from(4u32)).await?;
+
     Ok(ctx)
 }
 
 fn graph() -> Graph {
     let s1 = map_value! {
-        "type" => "example.1",
-        "uri" => "a",
+        "type" => "example.pub",
+        "uri" => "ex/pub",
         "prop1" => 0u32,
-        "wires" => "c"
+        "wires" => seq_value!["ex/rec/1", "ex/rec/2"]
     };
 
     let s2 = map_value! {
-        "type" => "example.2",
-        "uri" => "b",
+        "type" => "example.rec",
+        "uri" => "ex/rec/1",
         "prop1" => 0u32,
-        "wires" => "c"
+        "wires" => "ex/acc"
     };
 
     let s3 = map_value! {
-        "type" => "example.3",
-        "uri" => "c",
+        "type" => "example.rec",
+        "uri" => "ex/rec/2",
+        "prop1" => 0u32,
+        "wires" => "ex/acc"
+    };
+
+    let s4 = map_value! {
+        "type" => "example.acc",
+        "uri" => "ex/acc",
         "prop1" => 0u32,
         "wires" => Option::<String>::None
     };
 
-    let seq = Value::Seq(vec![s1, s2, s3]);
+    let seq = Value::Seq(vec![s1, s2, s3, s4]);
 
     let mut services = Map::new();
     services.insert("name".to_string(), Value::from("example"));
     services.insert("services".to_string(), seq);
 
-    Graph::from(Value::Map(services)).unwrap()
+    let r = Graph::from(Value::Map(services)).unwrap();
+    info!("{:?}", r);
+    r
 }
 
 fn main() {
@@ -153,22 +169,16 @@ fn main() {
 
     let c = plugin(
         "example",
-        "1",
-        factory!(service_1, ServiceContextConfig, new_context),
+        "pub",
+        factory!(publish, PublishConfig, new_publish_context),
     )
+    .service("rec", factory!(receive, ReceiveConfig, new_receive_context))
     .service(
-        "2",
-        factory!(service_2, ServiceContext2Config, new_context2),
-    );
-
-    let c1 = plugin(
-        "example",
-        "3",
-        factory!(service_3, ServiceContext3Config, new_context3),
+        "acc",
+        factory!(accumulate, AccumulateConfig, new_accumulate_context),
     );
 
     let a = app(c);
-    let a = a.plugin(c1);
     log::debug!("{:?}", a);
 
     info!("-----------------------------------");

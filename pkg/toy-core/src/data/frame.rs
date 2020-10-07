@@ -1,15 +1,23 @@
 use super::value::Value;
 use crate::data::map::Map;
+use crate::mpsc::OutgoingMessage;
 use std::borrow::{Borrow, BorrowMut};
 
 #[derive(Debug, Clone)]
 pub struct Frame {
+    header: Header,
     payload: Box<Value>,
+}
+
+#[derive(Debug, Clone)]
+struct Header {
+    port: u8,
 }
 
 impl Frame {
     pub fn from_value(v: Value) -> Self {
         Frame {
+            header: Header::new(),
             payload: Box::new(v),
         }
     }
@@ -27,6 +35,28 @@ impl Frame {
     #[inline]
     pub fn value_mut(&mut self) -> &mut Value {
         self.payload.borrow_mut()
+    }
+
+    #[inline]
+    pub fn port(&self) -> u8 {
+        self.header.port
+    }
+
+    #[inline]
+    fn set_port(&mut self, port: u8) {
+        self.header.port = port;
+    }
+}
+
+impl Header {
+    pub fn new() -> Self {
+        Self { port: 0 }
+    }
+}
+
+impl OutgoingMessage for Frame {
+    fn set_port(&mut self, port: u8) {
+        self.set_port(port)
     }
 }
 

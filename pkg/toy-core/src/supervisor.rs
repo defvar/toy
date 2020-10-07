@@ -2,7 +2,7 @@ use crate::data::Frame;
 use crate::error::ServiceError;
 use crate::executor::{AsyncRuntime, Executor};
 use crate::graph::Graph;
-use crate::mpsc::{self, Incoming, Outgoing};
+use crate::mpsc::{self, Incoming, Outgoing, OutgoingMessage};
 use crate::oneshot;
 use crate::registry::{App, Delegator, Registry, ServiceSchema};
 
@@ -21,6 +21,18 @@ pub enum Response {
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum SystemMessage {
     Shutdown,
+}
+
+impl OutgoingMessage for Request {
+    fn set_port(&mut self, _port: u8) {}
+}
+
+impl OutgoingMessage for Response {
+    fn set_port(&mut self, _port: u8) {}
+}
+
+impl OutgoingMessage for SystemMessage {
+    fn set_port(&mut self, _port: u8) {}
 }
 
 #[derive(Debug)]

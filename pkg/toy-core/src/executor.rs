@@ -65,6 +65,7 @@ where
 
         let (l_tx, l_rx) = mpsc::stream::<Frame, ServiceError>(DEFAULT_CHANNEL_BUFFER_SIZE);
 
+        // first channel
         graph
             .inputs()
             .iter()
@@ -75,25 +76,35 @@ where
                 starters.insert(uri.clone(), f_tx);
             });
 
-        if let Some((uri, _)) = graph
+        // last channel
+        graph
             .outputs()
             .iter()
-            .find(|(_, w)| **w == OutputWire::None)
-        {
-            outputs.insert(uri.clone(), l_tx);
-        }
+            .filter(|(_, w)| **w == OutputWire::None)
+            .for_each(|(uri, _)| {
+                outputs
+                    .entry(uri.clone())
+                    .or_insert_with(|| Outgoing::empty())
+                    .merge(l_tx.clone());
+            });
 
         for (_, wire) in graph.inputs() {
             let (tx, rx) = mpsc::stream::<Frame, ServiceError>(DEFAULT_CHANNEL_BUFFER_SIZE);
             match wire {
                 InputWire::Single(o, i) => {
                     inputs.insert(i.clone(), rx);
-                    outputs.insert(o.clone(), tx);
+                    outputs
+                        .entry(o.clone())
+                        .or_insert_with(|| Outgoing::empty())
+                        .merge(tx);
                 }
                 InputWire::Fanin(o, i) => {
                     inputs.insert(i.clone(), rx);
-                    o.iter().for_each(|x| {
-                        outputs.insert(x.clone(), tx.clone());
+                    o.iter().enumerate().for_each(|(i, x)| {
+                        outputs
+                            .entry(x.clone())
+                            .or_insert_with(|| Outgoing::empty())
+                            .merge_by(i as u8, tx.clone());
                     });
                 }
                 _ => (),
