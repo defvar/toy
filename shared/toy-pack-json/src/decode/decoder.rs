@@ -100,7 +100,15 @@ where
         }
     }
 
-    pub fn decode_str<'a>(&'a mut self, buf: &'a mut Vec<u8>) -> Result<Reference<'toy, 'a, str>> {
+    fn decode_str_bytes<'a, F, T>(
+        &'a mut self,
+        buf: &'a mut Vec<u8>,
+        result: F,
+    ) -> Result<Reference<'toy, 'a, T>>
+    where
+        T: ?Sized + 'a,
+        F: for<'f> FnOnce(&'a Self, &'f [u8]) -> Result<&'f T>,
+    {
         match self.peek_token()? {
             Some(Token::String) => {
                 self.consume();
@@ -112,9 +120,7 @@ where
                     }
                     match b {
                         b'"' => {
-                            return Ok(unsafe {
-                                Reference::Copied(std::str::from_utf8_unchecked(buf.as_slice()))
-                            });
+                            return result(self, buf).map(Reference::Copied);
                         }
                         b'\\' => self.parse_escape(buf)?,
                         _ => return Err(DecodeError::error("ControlCharacterWhileParsingString")),
@@ -124,6 +130,19 @@ where
             Some(other) => Err(DecodeError::invalid_token(other, "String")),
             None => Err(DecodeError::eof_while_parsing_value()),
         }
+    }
+
+    pub fn decode_str<'a>(&'a mut self, buf: &'a mut Vec<u8>) -> Result<Reference<'toy, 'a, str>> {
+        self.decode_str_bytes(buf, |_, bytes| {
+            std::str::from_utf8(bytes).map_err(|e| e.into())
+        })
+    }
+
+    pub fn decode_str_raw<'a>(
+        &'a mut self,
+        buf: &'a mut Vec<u8>,
+    ) -> Result<Reference<'toy, 'a, [u8]>> {
+        self.decode_str_bytes(buf, |_, bytes| Ok(bytes))
     }
 
     pub fn parse_escape(&mut self, scratch: &mut Vec<u8>) -> Result<()> {

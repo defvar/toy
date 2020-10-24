@@ -29,7 +29,7 @@ pub enum Value {
     Seq(Vec<Value>),
     Map(Map<String, Value>),
 
-    TimeStamp(Map<String, Value>),
+    TimeStamp(Duration),
 
     Unit,
 }
@@ -115,15 +115,7 @@ impl Value {
 
     pub fn as_timestamp(&self) -> Option<Duration> {
         match self {
-            Value::TimeStamp(map) => {
-                let secs = map.get("secs").map(|x| x.as_u64()).flatten();
-                let nanos = map.get("nanos").map(|x| x.as_u32()).flatten();
-                if secs.is_some() && nanos.is_some() {
-                    Some(Duration::new(secs.unwrap(), nanos.unwrap()))
-                } else {
-                    None
-                }
-            }
+            Value::TimeStamp(v) => Some(v.clone()),
             _ => None,
         }
     }
@@ -373,6 +365,18 @@ impl_from_to_value!(f32, F32);
 impl_from_to_value!(f64, F64);
 impl_from_to_value!(String, String);
 
+impl From<&[u8]> for Value {
+    fn from(v: &[u8]) -> Self {
+        Value::Bytes(Vec::from(v))
+    }
+}
+
+impl From<Vec<u8>> for Value {
+    fn from(v: Vec<u8>) -> Self {
+        Value::Bytes(v)
+    }
+}
+
 impl From<&String> for Value {
     fn from(v: &String) -> Self {
         Value::String(v.to_string())
@@ -411,10 +415,7 @@ impl From<&mut Vec<Value>> for Value {
 
 impl From<Duration> for Value {
     fn from(v: Duration) -> Self {
-        let mut m = Map::with_capacity(2);
-        m.insert("secs".to_string(), Value::from(v.as_secs()));
-        m.insert("nanos".to_string(), Value::from(v.subsec_nanos()));
-        Value::TimeStamp(m)
+        Value::TimeStamp(v)
     }
 }
 

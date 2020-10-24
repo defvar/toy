@@ -2,7 +2,7 @@ use crate::error::Error;
 use std::collections::HashMap;
 use tokio::sync::mpsc::{self, Receiver, Sender};
 
-pub fn stream<T, Err>(buffer: usize) -> (Outgoing<T, Err>, Incoming<T, Err>) {
+pub fn channel<T, Err>(buffer: usize) -> (Outgoing<T, Err>, Incoming<T, Err>) {
     let (tx, rx) = mpsc::channel(buffer);
     (Outgoing::new(tx), Incoming::new(rx))
 }
@@ -50,7 +50,7 @@ impl<T, Err> Outgoing<T, Err> {
         self.inner.extend(tx.inner)
     }
 
-    /// merge, specified target input port.
+    /// merge, specified input port.
     pub fn merge_by(&mut self, input_port: u8, tx: Outgoing<T, Err>) {
         let next = self.inner.len();
         for i in next..(next + tx.inner.len()) {
@@ -83,6 +83,10 @@ where
     }
 
     pub async fn send_to(&mut self, port: u8, v: Result<T, Err>) -> Result<(), Err> {
+        if (port as usize) >= self.inner.len() {
+            return Result::Err(Error::custom(format!("not found output port:{}", port)));
+        }
+
         let v = v.map(|mut x| {
             x.set_port(self.target_input_port(port));
             x

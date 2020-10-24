@@ -83,6 +83,10 @@ where
         self.encode_str(v)
     }
 
+    fn serialize_bytes(self, _v: &[u8]) -> Result<Self::Ok, Self::Error> {
+        unimplemented!()
+    }
+
     #[inline]
     fn serialize_seq(self, len: Option<usize>) -> Result<Self::SeqAccessOps, Self::Error> {
         let len = match len {

@@ -2,7 +2,7 @@ use super::encode::{EncodeError, Encoder};
 use crate::ser_ops::{SerializeCompound, SerializeTupleVariant};
 use core::num::FpCategory;
 use std::io;
-use toy_pack::ser::{Serializable, Serializer};
+use toy_pack::ser::{Serializable, SerializeSeqOps, Serializer};
 
 impl<'a, W> Serializer for &'a mut Encoder<W>
 where
@@ -75,6 +75,14 @@ where
         self.write_string(v)?;
         self.write_end_string()?;
         Ok(())
+    }
+
+    fn serialize_bytes(self, v: &[u8]) -> Result<Self::Ok, Self::Error> {
+        let mut seq = self.serialize_seq(Some(v.len()))?;
+        for byte in v {
+            seq.next(byte)?;
+        }
+        seq.end()
     }
 
     fn serialize_seq(self, _len: Option<usize>) -> Result<Self::SeqAccessOps, Self::Error> {

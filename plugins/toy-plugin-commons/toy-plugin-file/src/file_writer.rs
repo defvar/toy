@@ -6,20 +6,20 @@ use toy_core::data::Value;
 
 macro_rules! itoa_write {
     ($tp: ident, $fun_name: ident) => {
-       fn $fun_name(&mut self, v: $tp, need_delimiter: bool) -> Result<(), Error> {
-           let mut buf = itoa::Buffer::new();
-           let b = buf.format(v).as_bytes();
-           self.write_column(b, need_delimiter)
+        fn $fun_name(&mut self, v: $tp, need_delimiter: bool) -> Result<(), Error> {
+            let mut buf = itoa::Buffer::new();
+            let b = buf.format(v).as_bytes();
+            self.write_column(b, need_delimiter)
         }
     };
 }
 
 macro_rules! ryu_write {
     ($tp: ident, $fun_name: ident) => {
-       fn $fun_name(&mut self, v: $tp, need_delimiter: bool) -> Result<(), Error> {
-           let mut buf = ryu::Buffer::new();
-           let b = buf.format(v).as_bytes();
-           self.write_column(b, need_delimiter)
+        fn $fun_name(&mut self, v: $tp, need_delimiter: bool) -> Result<(), Error> {
+            let mut buf = ryu::Buffer::new();
+            let b = buf.format(v).as_bytes();
+            self.write_column(b, need_delimiter)
         }
     };
 }
@@ -135,7 +135,8 @@ impl<W: Write> FileWriter<W> {
 
     pub fn write_value(&mut self, value: &Value) -> Result<(), Error> {
         if self.state.has_headers && self.state.wrote_row == 0 {
-            self.write_value_headers(value, false, None)?;
+            let mut buf = Vec::new();
+            self.write_value_headers(value, false, &mut buf)?;
             self.write_terminator()?;
             self.state.wrote_row += 1;
         }
@@ -187,35 +188,49 @@ impl<W: Write> FileWriter<W> {
         &mut self,
         value: &Value,
         need_delimiter: bool,
-        parent: Option<String>,
+        parent: &Vec<u8>,
     ) -> Result<(), Error> {
         match value {
             Value::Map(map) => {
                 let mut need_delimiter = need_delimiter;
+                let mut text = Vec::<u8>::new();
                 for (k, v) in map {
-                    let text = parent
-                        .clone()
-                        .map_or(k.to_string(), |x| format!("{}.{}", x, k));
-                    self.write_value_headers(v, need_delimiter, Some(text))?;
+                    if parent.len() > 0 {
+                        text.extend_from_slice(parent.as_slice());
+                        text.push(b'.');
+                    }
+                    text.extend_from_slice(k.as_bytes());
+                    self.write_value_headers(v, need_delimiter, &text)?;
                     need_delimiter = true;
+                    text.clear();
                 }
                 Ok(())
             }
             Value::Seq(seq) => {
                 let mut need_delimiter = need_delimiter;
+                let mut text = Vec::<u8>::new();
                 for (idx, v) in seq.iter().enumerate() {
-                    let text = parent
-                        .clone()
-                        .map_or(idx.to_string(), |x| format!("{}.{}", x, idx.to_string()));
-                    self.write_value_headers(v, need_delimiter, Some(text))?;
+                    if parent.len() > 0 {
+                        text.extend_from_slice(parent.as_slice());
+                        text.push(b'.');
+                    }
+                    let mut buf = itoa::Buffer::new();
+                    let b = buf.format(idx).as_bytes();
+                    text.extend_from_slice(b);
+                    self.write_value_headers(v, need_delimiter, &text)?;
                     need_delimiter = true;
+                    text.clear();
                 }
                 Ok(())
             }
-            Value::Some(v) => self.write_value_headers(v, need_delimiter, None),
+            Value::Some(v) => self.write_value_headers(v, need_delimiter, parent),
             _ => {
-                let text = parent.unwrap_or("unknown".to_string());
-                self.write_column(text.as_bytes(), need_delimiter)
+                let text = if parent.len() == 0 {
+                    "unknown".as_bytes()
+                } else {
+                    parent.as_slice()
+                };
+                self.write_column(text, need_delimiter)
             }
         }
     }

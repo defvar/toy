@@ -74,6 +74,11 @@ impl Serializer for Ser {
         Ok(Yaml::String(v.to_string()))
     }
 
+    fn serialize_bytes(self, v: &[u8]) -> Result<Self::Ok, Self::Error> {
+        let vec = v.iter().map(|&b| Yaml::Integer(b as i64)).collect();
+        Ok(Yaml::Array(vec))
+    }
+
     fn serialize_seq(self, len: Option<usize>) -> Result<Self::SeqAccessOps, Self::Error> {
         Ok(SerializeArray::new(len))
     }

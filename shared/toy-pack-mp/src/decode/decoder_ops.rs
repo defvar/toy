@@ -40,6 +40,8 @@ pub trait DecoderOps<'toy> {
 
     fn decode_str<'a>(&'a mut self) -> Result<Reference<'toy, 'a, str>>;
 
+    fn decode_bin<'a>(&'a mut self) -> Result<Reference<'toy, 'a, [u8]>>;
+
     /// Markers are checked and bytes read are cached.
     /// The next `get_marker` will return the value from the cached byte.
     /// If you want to check the marker but you do not want to advance the stream (nil check etc), use it.

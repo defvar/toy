@@ -77,6 +77,10 @@ pub trait Serializer: Sized {
     ///
     fn serialize_str(self, v: &str) -> Result<Self::Ok, Self::Error>;
 
+    /// Serialize a chunk of raw byte data.
+    ///
+    fn serialize_bytes(self, v: &[u8]) -> Result<Self::Ok, Self::Error>;
+
     /// Serialize a seq.
     ///
     fn serialize_seq(self, len: Option<usize>) -> Result<Self::SeqAccessOps, Self::Error>;

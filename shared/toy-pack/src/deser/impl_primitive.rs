@@ -13,6 +13,13 @@ impl<'a> Visitor<'a> for StrVisitor {
     {
         Ok(v)
     }
+
+    fn visit_borrowed_bytes<E>(self, v: &'a [u8]) -> Result<Self::Value, E>
+    where
+        E: Error,
+    {
+        std::str::from_utf8(v).map_err(|_| Error::invalid_value("[borrowed bytes]", "str"))
+    }
 }
 
 impl<'toy: 'a, 'a> Deserializable<'toy> for &'a str {
@@ -43,6 +50,26 @@ impl<'a> Visitor<'a> for StringVisitor {
         E: Error,
     {
         Ok(v)
+    }
+
+    fn visit_bytes<E>(self, v: &[u8]) -> Result<Self::Value, E>
+    where
+        E: Error,
+    {
+        match std::str::from_utf8(v) {
+            Ok(s) => Ok(s.to_owned()),
+            Err(_) => Err(Error::invalid_value("[borrowed bytes]", "str")),
+        }
+    }
+
+    fn visit_byte_buf<E>(self, v: Vec<u8>) -> Result<Self::Value, E>
+    where
+        E: Error,
+    {
+        match String::from_utf8(v) {
+            Ok(s) => Ok(s),
+            Err(_) => Err(Error::invalid_value("[borrowed bytes]", "str")),
+        }
     }
 }
 
@@ -80,6 +107,37 @@ impl<'toy> Deserializable<'toy> for char {
         D: Deserializer<'toy>,
     {
         deserializer.deserialize_char(CharVisitor)
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+struct BytesVisitor;
+
+impl<'a> Visitor<'a> for BytesVisitor {
+    type Value = &'a [u8];
+
+    fn visit_borrowed_str<E>(self, v: &'a str) -> Result<Self::Value, E>
+    where
+        E: Error,
+    {
+        Ok(v.as_bytes())
+    }
+
+    fn visit_borrowed_bytes<E>(self, v: &'a [u8]) -> Result<Self::Value, E>
+    where
+        E: Error,
+    {
+        Ok(v)
+    }
+}
+
+impl<'toy: 'a, 'a> Deserializable<'toy> for &'a [u8] {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'toy>,
+    {
+        deserializer.deserialize_bytes(BytesVisitor)
     }
 }
 

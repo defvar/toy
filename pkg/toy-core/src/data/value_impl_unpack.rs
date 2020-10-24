@@ -1,6 +1,7 @@
 use crate::data::error::DeserializeError;
 use crate::data::map::Map;
 use crate::data::Value;
+use std::collections::HashMap;
 use toy_pack::deser::{
     Deserializable, DeserializableCore, DeserializeMapOps, DeserializeSeqOps,
     DeserializeVariantOps, Deserializer, Error, Visitor,
@@ -44,7 +45,7 @@ where
 
 macro_rules! from_value {
     ($t: ident, $variant: ident) => {
-       fn $variant<E>(self, v: $t) -> Result<Self::Value, E> {
+        fn $variant<E>(self, v: $t) -> Result<Self::Value, E> {
             Ok(Value::from(v))
         }
     };
@@ -91,6 +92,27 @@ impl<'toy: 'a, 'a> Deserializable<'toy> for Value {
                 E: Error,
             {
                 self.visit_str(&v)
+            }
+
+            fn visit_bytes<E>(self, v: &[u8]) -> Result<Self::Value, E>
+            where
+                E: Error,
+            {
+                Ok(Value::from(v))
+            }
+
+            fn visit_borrowed_bytes<E>(self, v: &'a [u8]) -> Result<Self::Value, E>
+            where
+                E: Error,
+            {
+                self.visit_bytes(v)
+            }
+
+            fn visit_byte_buf<E>(self, v: Vec<u8>) -> Result<Self::Value, E>
+            where
+                E: Error,
+            {
+                self.visit_bytes(&v)
             }
 
             fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
@@ -153,8 +175,9 @@ impl<'toy: 'a, 'a> Deserializable<'toy> for Value {
 
 macro_rules! de_value_number {
     ($t: ident, $func: ident, $variant: ident, $expected: literal) => {
-       fn $func(self) -> Result<$t, Self::Error> {
-           self.parse_integer::<$t>().ok_or(DeserializeError::invalid_type($expected, self))
+        fn $func(self) -> Result<$t, Self::Error> {
+            self.parse_integer::<$t>()
+                .ok_or(DeserializeError::invalid_type($expected, self))
         }
     };
 }
@@ -218,6 +241,23 @@ impl<'toy> Deserializer<'toy> for Value {
         }
     }
 
+    fn deserialize_bytes<V>(self, visitor: V) -> Result<<V as Visitor<'toy>>::Value, Self::Error>
+    where
+        V: Visitor<'toy>,
+    {
+        match self {
+            Value::Bytes(v) => visitor.visit_bytes(v.as_slice()),
+            _ => Err(DeserializeError::invalid_type("bytes", self)),
+        }
+    }
+
+    fn deserialize_byte_buf<V>(self, visitor: V) -> Result<<V as Visitor<'toy>>::Value, Self::Error>
+    where
+        V: Visitor<'toy>,
+    {
+        self.deserialize_bytes(visitor)
+    }
+
     fn deserialize_seq<V>(self, visitor: V) -> Result<<V as Visitor<'toy>>::Value, Self::Error>
     where
         V: Visitor<'toy>,
@@ -231,15 +271,21 @@ impl<'toy> Deserializer<'toy> for Value {
         }
     }
 
-    fn deserialize_map<V>(self, visitor: V) -> Result<<V as Visitor<'toy>>::Value, Self::Error>
+    fn deserialize_map<V>(self, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: Visitor<'toy>,
     {
         match self {
-            Value::Map(map) | Value::TimeStamp(map) => {
+            Value::Map(map) => {
                 let len = map.keys().len();
                 let iter = map.into_iter();
                 visitor.visit_map(DeserializeMap::new(iter, len))
+            }
+            Value::TimeStamp(v) => {
+                let mut map = HashMap::new();
+                map.insert("secs".to_string(), Value::U64(v.as_secs()));
+                map.insert("nanos".to_string(), Value::U64(v.subsec_nanos() as u64));
+                visitor.visit_map(DeserializeMap::new(map.into_iter(), 2))
             }
             _ => Err(DeserializeError::invalid_type("map", self)),
         }
@@ -254,7 +300,7 @@ impl<'toy> Deserializer<'toy> for Value {
             Value::Map(_) => self.deserialize_map(visitor),
             Value::TimeStamp(_) => self.deserialize_map(visitor),
             _ => Err(DeserializeError::error(
-                "deserialize struct, must be a map or array type.",
+                "deserialize struct, must be a map, array or Duration type.",
             )),
         }
     }
@@ -314,7 +360,7 @@ impl<'toy> Deserializer<'toy> for Value {
             Value::F32(v) => visitor.visit_f32(v),
             Value::F64(v) => visitor.visit_f64(v),
             Value::String(v) => visitor.visit_string(v),
-            Value::Bytes(_) => unimplemented!(),
+            Value::Bytes(v) => visitor.visit_bytes(v.as_slice()),
             Value::None | Value::Some(_) => self.deserialize_option(visitor),
             Value::Seq(_) => self.deserialize_seq(visitor),
             Value::Map(_) => self.deserialize_map(visitor),

@@ -77,6 +77,11 @@ where
         }
     }
 
+    fn decode_bin<'a>(&'a mut self) -> Result<Reference<'toy, 'a, [u8]>> {
+        let len = self.decode_bin_len()? as usize;
+        self.reader.get_bytes(len)
+    }
+
     #[inline]
     fn peek_marker(&mut self) -> Result<Marker> {
         self.marker_cache.map(|x| Ok(x.0)).unwrap_or_else(|| {

@@ -201,4 +201,27 @@ pub trait EncoderOps {
             Ok(Marker::Map32)
         }
     }
+
+    fn encode_bin(&mut self, v: &[u8]) -> Result<()> {
+        self.encode_bin_len(v.len() as u32)?;
+        self.put_slice(v);
+        Ok(())
+    }
+
+    fn encode_bin_len(&mut self, len: u32) -> Result<Marker> {
+        assert!(len > 0);
+        if len < 256 {
+            self.put_marker(Marker::Bin8)?;
+            self.put::<u8>((len as u8).to_be());
+            Ok(Marker::Bin8)
+        } else if len < 65536 {
+            self.put_marker(Marker::Bin16)?;
+            self.put::<u16>((len as u16).to_be());
+            Ok(Marker::Bin16)
+        } else {
+            self.put_marker(Marker::Bin32)?;
+            self.put::<u32>((len).to_be());
+            Ok(Marker::Bin32)
+        }
+    }
 }

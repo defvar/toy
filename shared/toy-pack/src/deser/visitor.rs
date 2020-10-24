@@ -144,6 +144,29 @@ pub trait Visitor<'a>: Sized {
         self.visit_str(&v)
     }
 
+    fn visit_bytes<E>(self, v: &[u8]) -> Result<Self::Value, E>
+    where
+        E: Error,
+    {
+        let _ = v;
+        Err(Error::invalid_type("bytes"))
+    }
+
+    #[inline]
+    fn visit_borrowed_bytes<E>(self, v: &'a [u8]) -> Result<Self::Value, E>
+    where
+        E: Error,
+    {
+        self.visit_bytes(v)
+    }
+
+    fn visit_byte_buf<E>(self, v: Vec<u8>) -> Result<Self::Value, E>
+    where
+        E: Error,
+    {
+        self.visit_bytes(&v)
+    }
+
     fn visit_seq<A>(self, seq: A) -> Result<Self::Value, A::Error>
     where
         A: DeserializeSeqOps<'a>,

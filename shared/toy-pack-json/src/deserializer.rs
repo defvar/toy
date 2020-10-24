@@ -9,13 +9,13 @@ use crate::ParseNumber;
 
 macro_rules! de_number {
     ($t: ident, $func: ident, $expected: literal) => {
-       fn $func(self) -> Result<$t, Self::Error> {
-           match self.decode_number()? {
-               ParseNumber::U64(v) => $t::from_u64(v),
-               ParseNumber::I64(v) => $t::from_i64(v),
-               ParseNumber::F64(v) => Some(v as $t),
-           }
-           .ok_or_else(|| Error::invalid_type($expected))
+        fn $func(self) -> Result<$t, Self::Error> {
+            match self.decode_number()? {
+                ParseNumber::U64(v) => $t::from_u64(v),
+                ParseNumber::I64(v) => $t::from_i64(v),
+                ParseNumber::F64(v) => Some(v as $t),
+            }
+            .ok_or_else(|| Error::invalid_type($expected))
         }
     };
 }
@@ -67,6 +67,34 @@ where
         V: Visitor<'toy>,
     {
         self.deserialize_str(visitor)
+    }
+
+    fn deserialize_bytes<V>(self, visitor: V) -> Result<<V as Visitor<'toy>>::Value, Self::Error>
+    where
+        V: Visitor<'toy>,
+    {
+        let b = self.peek_token()?;
+        match b {
+            Some(Token::String) => {
+                self.consume();
+                let mut buf = Vec::new();
+                let s = self.decode_str_raw(&mut buf)?;
+                match s {
+                    Reference::Borrowed(b) => visitor.visit_borrowed_bytes(b),
+                    Reference::Copied(c) => visitor.visit_bytes(c),
+                }
+            }
+            Some(Token::BeginArray) => self.deserialize_seq(visitor),
+            Some(other) => Err(DecodeError::invalid_token(other, "String or BeginArray")),
+            None => Err(DecodeError::eof_while_parsing_value()),
+        }
+    }
+
+    fn deserialize_byte_buf<V>(self, visitor: V) -> Result<<V as Visitor<'toy>>::Value, Self::Error>
+    where
+        V: Visitor<'toy>,
+    {
+        self.deserialize_bytes(visitor)
     }
 
     fn deserialize_seq<V>(self, visitor: V) -> Result<V::Value, Self::Error>

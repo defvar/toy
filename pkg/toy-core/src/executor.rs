@@ -63,7 +63,7 @@ where
 
         let mut starters: HashMap<Uri, Outgoing<Frame, ServiceError>> = HashMap::new();
 
-        let (l_tx, l_rx) = mpsc::stream::<Frame, ServiceError>(DEFAULT_CHANNEL_BUFFER_SIZE);
+        let (l_tx, l_rx) = mpsc::channel::<Frame, ServiceError>(DEFAULT_CHANNEL_BUFFER_SIZE);
 
         // first channel
         graph
@@ -71,7 +71,8 @@ where
             .iter()
             .filter(|(_, w)| **w == InputWire::None)
             .for_each(|(uri, _)| {
-                let (f_tx, f_rx) = mpsc::stream::<Frame, ServiceError>(DEFAULT_CHANNEL_BUFFER_SIZE);
+                let (f_tx, f_rx) =
+                    mpsc::channel::<Frame, ServiceError>(DEFAULT_CHANNEL_BUFFER_SIZE);
                 inputs.insert(uri.clone(), f_rx);
                 starters.insert(uri.clone(), f_tx);
             });
@@ -89,7 +90,7 @@ where
             });
 
         for (_, wire) in graph.inputs() {
-            let (tx, rx) = mpsc::stream::<Frame, ServiceError>(DEFAULT_CHANNEL_BUFFER_SIZE);
+            let (tx, rx) = mpsc::channel::<Frame, ServiceError>(DEFAULT_CHANNEL_BUFFER_SIZE);
             match wire {
                 InputWire::Single(o, i) => {
                     inputs.insert(i.clone(), rx);

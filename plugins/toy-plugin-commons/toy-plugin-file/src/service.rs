@@ -71,20 +71,11 @@ pub async fn read(
                 .headers()?
                 .iter()
                 .zip(ctx.buf.iter())
-                .map(|(h, v)| {
-                    (
-                        std::str::from_utf8(h).unwrap().to_string(),
-                        Value::from(std::str::from_utf8(v).unwrap()),
-                    )
-                })
+                .map(|(h, v)| (String::from_utf8_lossy(h).to_string(), Value::from(v)))
                 .collect::<Map<_, _>>();
             Frame::from(v)
         } else {
-            let v = ctx
-                .buf
-                .iter()
-                .map(|c| Value::from(std::str::from_utf8(c).unwrap()))
-                .collect::<Vec<_>>();
+            let v = ctx.buf.iter().map(|c| Value::from(c)).collect::<Vec<_>>();
             Frame::from(v)
         };
         tx.send(Ok(v)).await?;

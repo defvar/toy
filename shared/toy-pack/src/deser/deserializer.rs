@@ -97,6 +97,18 @@ pub trait Deserializer<'toy>: Sized {
     where
         V: Visitor<'toy>;
 
+    /// Deserialize 'Bytes'
+    ///
+    fn deserialize_bytes<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: Visitor<'toy>;
+
+    /// Deserialize 'Bytes'
+    ///
+    fn deserialize_byte_buf<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: Visitor<'toy>;
+
     /// Deserialize the sequence.
     ///
     fn deserialize_seq<V>(self, visitor: V) -> Result<V::Value, Self::Error>

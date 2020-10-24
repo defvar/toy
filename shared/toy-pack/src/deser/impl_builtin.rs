@@ -114,6 +114,15 @@ impl<'toy: 'a, 'a> Deserializable<'toy> for &'a Path {
             {
                 Ok(v.as_ref())
             }
+
+            fn visit_borrowed_bytes<E>(self, v: &'a [u8]) -> Result<Self::Value, E>
+            where
+                E: Error,
+            {
+                std::str::from_utf8(v)
+                    .map(AsRef::as_ref)
+                    .map_err(|_| Error::invalid_value("[borrowed bytes]", "bytes"))
+            }
         }
 
         deserializer.deserialize_str(PathVisitor)
@@ -144,6 +153,24 @@ impl<'toy> Deserializable<'toy> for PathBuf {
                 E: Error,
             {
                 Ok(From::from(v))
+            }
+
+            fn visit_bytes<E>(self, v: &[u8]) -> Result<Self::Value, E>
+            where
+                E: Error,
+            {
+                std::str::from_utf8(v)
+                    .map(From::from)
+                    .map_err(|_| Error::invalid_value("[borrowed bytes]", "bytes"))
+            }
+
+            fn visit_byte_buf<E>(self, v: Vec<u8>) -> Result<Self::Value, E>
+            where
+                E: Error,
+            {
+                String::from_utf8(v)
+                    .map(From::from)
+                    .map_err(|_| Error::invalid_value("[borrowed bytes]", "bytes"))
             }
         }
 

@@ -61,8 +61,8 @@ where
         Outgoing<Request, ServiceError>,
         Incoming<SystemMessage, ServiceError>,
     ) {
-        let (tx_req, rx_req) = mpsc::stream::<Request, ServiceError>(1024);
-        let (tx_sys, rx_sys) = mpsc::stream::<SystemMessage, ServiceError>(1024);
+        let (tx_req, rx_req) = mpsc::channel::<Request, ServiceError>(1024);
+        let (tx_sys, rx_sys) = mpsc::channel::<SystemMessage, ServiceError>(1024);
         (
             Supervisor {
                 service_rt,

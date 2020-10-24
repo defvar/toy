@@ -61,13 +61,13 @@ impl Serializable for Value {
             Value::F32(v) => serializer.serialize_f32(*v),
             Value::F64(v) => serializer.serialize_f64(*v),
             Value::String(v) => serializer.serialize_str(v),
-            Value::Bytes(_) => unimplemented!(), //TODO:
+            Value::Bytes(v) => serializer.serialize_bytes(v.as_slice()),
             Value::None => serializer.serialize_none(),
             Value::Some(v) => serializer.serialize_some(v),
             Value::Seq(v) => serializer.collect_seq(v),
             Value::Map(v) => serializer.collect_map(v),
-            Value::TimeStamp(_) => unimplemented!(), //TODO: how to timestamp...?
-            Value::Unit => unimplemented!(),         //TODO:
+            Value::TimeStamp(v) => v.serialize(serializer),
+            Value::Unit => unimplemented!(), //TODO:
         }
     }
 }
@@ -141,6 +141,11 @@ impl<'a> Serializer for &'a mut Value {
     }
 
     fn serialize_str(self, v: &str) -> Result<Self::Ok, Self::Error> {
+        *self = Value::from(v);
+        Ok(())
+    }
+
+    fn serialize_bytes(self, v: &[u8]) -> Result<Self::Ok, Self::Error> {
         *self = Value::from(v);
         Ok(())
     }

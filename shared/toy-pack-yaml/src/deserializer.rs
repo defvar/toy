@@ -75,6 +75,20 @@ impl<'toy, 'a> Deserializer<'toy> for &'a mut Decoder {
         self.deserialize_str(visitor)
     }
 
+    fn deserialize_bytes<V>(self, visitor: V) -> Result<<V as Visitor<'toy>>::Value, Self::Error>
+    where
+        V: Visitor<'toy>,
+    {
+        self.deserialize_any(visitor)
+    }
+
+    fn deserialize_byte_buf<V>(self, visitor: V) -> Result<<V as Visitor<'toy>>::Value, Self::Error>
+    where
+        V: Visitor<'toy>,
+    {
+        self.deserialize_any(visitor)
+    }
+
     fn deserialize_seq<V>(self, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: Visitor<'toy>,

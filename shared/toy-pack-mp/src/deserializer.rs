@@ -93,6 +93,26 @@ where
     }
 
     #[inline]
+    fn deserialize_bytes<V>(self, _visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: Visitor<'toy>,
+    {
+        let s = self.decode_bin()?;
+        match s {
+            Reference::Borrowed(b) => _visitor.visit_borrowed_bytes(b),
+            Reference::Copied(c) => _visitor.visit_bytes(c),
+        }
+    }
+
+    #[inline]
+    fn deserialize_byte_buf<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: Visitor<'toy>,
+    {
+        self.deserialize_bytes(visitor)
+    }
+
+    #[inline]
     fn deserialize_seq<V>(self, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: Visitor<'toy>,
@@ -169,8 +189,7 @@ where
         } else if marker.is_str_type() {
             self.deserialize_str(visitor)
         } else if marker.is_bin_type() {
-            //let len = self.decode_bin_len()? as usize;
-            unimplemented!()
+            self.deserialize_bytes(visitor)
         } else {
             match marker {
                 Marker::Nil => {
