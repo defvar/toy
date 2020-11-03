@@ -32,19 +32,19 @@ async fn main() -> Result<(), StoreEtcdError> {
     tracing::info!("create {:?}", put_res);
 
     // update
-    let range_res = c.get(key).await?.json::<Test>()?;
+    let range_res = c.get(key).await?.value()?.unwrap();
     let upd_res = c
-        .update(key, data_json.clone(), range_res.unwrap().version())
+        .update(key, data_json.clone(), range_res.version())
         .await?;
     tracing::info!("update {:?}", upd_res);
 
     // list
-    let range_res = c.list(prefix).await?.json::<Test>()?;
+    let range_res = c.list(prefix).await?.values()?;
     tracing::info!("list {:?}", range_res);
 
     // remove
-    let range_res = c.get(key).await?.json::<Test>()?;
-    let rm_res = c.remove(key, range_res.unwrap().version()).await?;
+    let range_res = c.get(key).await?.value()?.unwrap();
+    let rm_res = c.remove(key, range_res.version()).await?;
     tracing::info!("remove {:?}", rm_res);
 
     Ok(())
