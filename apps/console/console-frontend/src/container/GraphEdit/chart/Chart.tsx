@@ -1,18 +1,18 @@
 import * as React from "react";
 import { FlowChart } from "@mrblenny/react-flow-chart";
 import { Node } from "./Node";
-import { ChartData } from "./types";
+import { ChartData } from "../../../modules/graphEdit/types";
 import { chartHandler } from "./chartHandler";
+import { Actions } from "../../../modules/graphEdit";
 
 export interface ChartProps {
     data: ChartData;
-    dispatch: React.Dispatch<React.SetStateAction<ChartData>>;
+    dispatch: React.Dispatch<Actions>;
 }
 
-export const Chart = (props: ChartProps) => {
+export const Chart = React.memo((props: ChartProps) => {
     const { data, dispatch } = props;
     const [handlers] = React.useState(() => chartHandler(dispatch));
-
     return (
         <FlowChart
             chart={data}
@@ -21,4 +21,4 @@ export const Chart = (props: ChartProps) => {
             config={{ zoom: { wheel: { disabled: true } } }}
         />
     );
-};
+});

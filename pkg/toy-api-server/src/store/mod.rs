@@ -4,7 +4,6 @@ pub use store_op::{
     Delete, DeleteOption, DeleteResult, Find, FindOption, List, ListOption, Put, PutOption,
     PutResult,
 };
-pub use toy_core::data::Value;
 
 use crate::store::error::StoreError;
 

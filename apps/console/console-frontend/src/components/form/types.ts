@@ -1,6 +1,9 @@
+
+export type FiledType = "string" | "number" | "enum" | "object" | "boolean";
+
 export interface Field {
     name: string;
-    type: "string" | "number" | "enum" | "object";
+    type: FiledType;
     label: string;
     required: boolean;
     selectOptions?: SelectOptionItem[];

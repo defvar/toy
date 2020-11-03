@@ -7,3 +7,7 @@ export function isObject(obj: unknown): obj is unknown {
         !(obj instanceof Date)
     );
 }
+
+export function isArray(value: any): value is any[] {
+    return Array.isArray(value);
+}

@@ -68,7 +68,7 @@ export const ObjectFields = <T extends {}>({
                     path={path}
                     field={item}
                     value={v}
-                    onChange={(v) => handleFieldChange(item.name, v)}
+                    onChange={handleFieldChange}
                     errors={getChildErrors(validation, item.name)}
                 />
             );

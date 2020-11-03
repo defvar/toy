@@ -5,6 +5,8 @@ use toy_core::supervisor::Supervisor;
 use tracing_subscriber::fmt::format::FmtSpan;
 
 fn main() {
+    dotenv::dotenv().ok();
+
     tracing_subscriber::fmt()
         .with_max_level(tracing::Level::DEBUG)
         .with_span_events(FmtSpan::CLOSE)

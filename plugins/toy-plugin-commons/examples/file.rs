@@ -3,6 +3,7 @@ use futures::FutureExt;
 use std::future::Future;
 use std::io::Read;
 use toy_core::prelude::*;
+use toy_core::registry::PortType;
 use toy_plugin_file::config::*;
 use toy_plugin_file::service::*;
 use toy_plugin_map::config::*;
@@ -26,11 +27,17 @@ async fn go(graph: Graph) -> Result<(), ServiceError> {
     let c = plugin(
         "example",
         "write",
+        PortType::sink(),
         factory!(write, FileWriteConfig, new_write_context),
     )
-    .service("read", factory!(read, FileReadConfig, new_read_context))
-    .service(
+    .with(
+        "read",
+        PortType::source(),
+        factory!(read, FileReadConfig, new_read_context),
+    )
+    .with(
         "mapping",
+        PortType::flow(),
         factory!(mapping, MappingConfig, new_mapping_context),
     );
 

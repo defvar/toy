@@ -10,7 +10,7 @@ export interface CommonFieldProps<T> {
     path: string;
     field: Field;
     value: T;
-    onChange: (value: T) => void;
+    onChange: (name: string, value: T) => void;
     errors: FieldError[];
 }
 
@@ -26,7 +26,7 @@ const getId = (name: string, path: string, sufix = ""): string => {
     return sufix ? `${path}-${name}-${sufix}` : `${path}-${name}`;
 };
 
-export const CommonField = <T extends {}>({
+export const CommonField = React.memo(<T extends {}>({
     path,
     field,
     value,
@@ -34,6 +34,10 @@ export const CommonField = <T extends {}>({
     errors,
 }: CommonFieldProps<T>) => {
     const classes = useStyles();
+
+    const handleOnChange = (name: string, value: T) => {
+        onChange(name, value);
+    };
 
     const id = getId(field.name, path, "Widget");
     if (!(field.type in Widgets)) {
@@ -55,7 +59,7 @@ export const CommonField = <T extends {}>({
                     selectOptions={field.selectOptions}
                     value={value}
                     isError={errors.length > 0}
-                    onChange={onChange}
+                    onChange={(v) => handleOnChange(field.name, v)}
                 />
                 {errors.length > 0 && (
                     <List dense={true}>
@@ -73,4 +77,4 @@ export const CommonField = <T extends {}>({
             </div>
         );
     }
-};
+});

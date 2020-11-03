@@ -1,7 +1,6 @@
 use crate::store::StoreConnection;
 use std::fmt::Debug;
 use std::future::Future;
-use toy_core::data::Value;
 
 #[derive(Clone, Debug)]
 pub struct FindOption {}
@@ -54,7 +53,7 @@ pub enum DeleteResult {
 /// Find one entity by specified key.
 pub trait Find {
     type Con: StoreConnection;
-    type T: Future<Output = Result<Option<Value>, Self::Err>> + Send;
+    type T: Future<Output = Result<Option<Vec<u8>>, Self::Err>> + Send;
     type Err: Debug + Send;
 
     fn find(&self, con: Self::Con, key: String, opt: FindOption) -> Self::T;
@@ -63,7 +62,7 @@ pub trait Find {
 /// List all or part entities by specified prefix of key.
 pub trait List {
     type Con: StoreConnection;
-    type T: Future<Output = Result<Vec<Value>, Self::Err>> + Send;
+    type T: Future<Output = Result<Vec<Vec<u8>>, Self::Err>> + Send;
     type Err: Debug + Send;
 
     fn list(&self, con: Self::Con, prefix: String, opt: ListOption) -> Self::T;
@@ -75,7 +74,7 @@ pub trait Put {
     type T: Future<Output = Result<PutResult, Self::Err>> + Send;
     type Err: Debug + Send;
 
-    fn put(&self, con: Self::Con, key: String, v: Value, opt: PutOption) -> Self::T;
+    fn put(&self, con: Self::Con, key: String, v: Vec<u8>, opt: PutOption) -> Self::T;
 }
 
 /// Delete one entity by specified key.

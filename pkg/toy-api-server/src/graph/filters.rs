@@ -1,5 +1,6 @@
 use crate::common::body;
 use crate::graph::handlers;
+use crate::graph::models::GraphEntity;
 use crate::store::{StoreConnection, StoreOpsFactory};
 use toy_core::error::ServiceError;
 use toy_core::mpsc::Outgoing;
@@ -70,7 +71,7 @@ where
 {
     warp::path!("graphs" / String)
         .and(warp::put())
-        .and(body::json())
+        .and(body::json::<GraphEntity>())
         .and(with_ops(store, ops))
         .and_then(|a, b, (c, d)| handlers::put(a, b, c, d))
 }

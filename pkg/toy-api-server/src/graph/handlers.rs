@@ -1,8 +1,9 @@
-use crate::common;
+use crate::graph::models::GraphEntity;
 use crate::store::{
     Delete, DeleteOption, DeleteResult, Find, FindOption, List, ListOption, Put, PutOption,
     PutResult, StoreConnection, StoreOpsFactory,
 };
+use crate::{common, ApiError};
 use std::convert::Infallible;
 use toy_core::error::ServiceError;
 use toy_core::graph::Graph;
@@ -42,7 +43,7 @@ pub async fn find<C>(
     key: String,
     con: C,
     ops: impl StoreOpsFactory<C> + Clone,
-) -> Result<impl warp::Reply, Infallible>
+) -> Result<impl warp::Reply, warp::Rejection>
 where
     C: StoreConnection,
 {
@@ -50,7 +51,11 @@ where
     let key = full_key(key);
     match ops.find(con, key, FindOption::new()).await {
         Ok(v) => match v {
-            Some(v) => Ok(common::reply::json(&v).into_response()),
+            Some(v) => {
+                let v = toy_pack_json::unpack::<GraphEntity>(&v)
+                    .map_err(|e| warp::reject::custom(ApiError::from(e)))?;
+                Ok(common::reply::json(&v).into_response())
+            }
             None => Ok(StatusCode::NOT_FOUND.into_response()),
         },
         Err(e) => {
@@ -65,7 +70,7 @@ pub async fn exec<C>(
     con: C,
     ops: impl StoreOpsFactory<C> + Clone,
     mut tx: Outgoing<Request, ServiceError>,
-) -> Result<impl warp::Reply, Infallible>
+) -> Result<impl warp::Reply, warp::Rejection>
 where
     C: StoreConnection,
 {
@@ -73,6 +78,13 @@ where
     let key = full_key(key);
     match ops.find(con, key, FindOption::new()).await {
         Ok(Some(v)) => {
+            let v = match toy_pack_json::unpack::<Value>(&v) {
+                Ok(v) => v,
+                Err(e) => {
+                    tracing::error!("error:{:?}", e);
+                    return Ok(StatusCode::INTERNAL_SERVER_ERROR);
+                }
+            };
             let graph = match Graph::from(v) {
                 Ok(g) => g,
                 Err(e) => {
@@ -95,15 +107,19 @@ where
 
 pub async fn put<C>(
     key: String,
-    v: Value,
+    v: GraphEntity,
     con: C,
     ops: impl StoreOpsFactory<C> + Clone,
-) -> Result<impl warp::Reply, Infallible>
+) -> Result<impl warp::Reply, warp::Rejection>
 where
     C: StoreConnection,
 {
     let ops = ops.create().unwrap();
     let key = full_key(key);
+    //
+    // validation...?
+    //
+    let v = toy_pack_json::pack(&v).map_err(|e| warp::reject::custom(ApiError::from(e)))?;
     match ops.put(con, key, v, PutOption::new()).await {
         Ok(r) => match r {
             PutResult::Create => Ok(StatusCode::CREATED),

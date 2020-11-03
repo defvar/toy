@@ -4,7 +4,7 @@ use std::future::Future;
 use toy_api_server::store::error::StoreError;
 use toy_api_server::store::{
     Delete, DeleteOption, DeleteResult, Find, FindOption, List, ListOption, Put, PutOption,
-    PutResult, StoreConnection, StoreOps, StoreOpsFactory, Value,
+    PutResult, StoreConnection, StoreOps, StoreOpsFactory,
 };
 use tracing::{span, Instrument, Level};
 
@@ -25,18 +25,18 @@ impl StoreOps<EtcdStoreConnection> for EtcdStoreOps {}
 
 impl Find for EtcdStoreOps {
     type Con = EtcdStoreConnection;
-    type T = impl Future<Output = Result<Option<Value>, Self::Err>> + Send;
+    type T = impl Future<Output = Result<Option<Vec<u8>>, Self::Err>> + Send;
     type Err = StoreEtcdError;
 
     fn find(&self, con: Self::Con, key: String, opt: FindOption) -> Self::T {
         let span = span!(Level::DEBUG, "find", key = ?key);
         async move {
-            let res = con.client.get(&key).await?.json::<Value>()?;
+            let res = con.client.get(&key).await?.value()?;
             match res {
                 Some(v) => Ok(Some(v.into_data())),
                 None => {
                     tracing::debug!("[find] not found. key:{:?}, opt:{:?}", key, opt);
-                    Ok(Option::<Value>::None)
+                    Ok(Option::<Vec<u8>>::None)
                 }
             }
         }
@@ -46,13 +46,13 @@ impl Find for EtcdStoreOps {
 
 impl List for EtcdStoreOps {
     type Con = EtcdStoreConnection;
-    type T = impl Future<Output = Result<Vec<Value>, Self::Err>> + Send;
+    type T = impl Future<Output = Result<Vec<Vec<u8>>, Self::Err>> + Send;
     type Err = StoreEtcdError;
 
     fn list(&self, con: Self::Con, prefix: String, _opt: ListOption) -> Self::T {
         let span = span!(Level::DEBUG, "list", prefix = ?prefix);
         async move {
-            let res = con.client.list(&prefix).await?.json::<Value>()?;
+            let res = con.client.list(&prefix).await?.values()?;
             Ok(res.into_iter().map(|x| x.into_data()).collect())
         }
         .instrument(span)
@@ -64,20 +64,20 @@ impl Put for EtcdStoreOps {
     type T = impl Future<Output = Result<PutResult, Self::Err>> + Send;
     type Err = StoreEtcdError;
 
-    fn put(&self, con: Self::Con, key: String, v: Value, _opt: PutOption) -> Self::T {
+    fn put(&self, con: Self::Con, key: String, v: Vec<u8>, _opt: PutOption) -> Self::T {
         let span = span!(Level::DEBUG, "put", key = ?key);
         async move {
-            let data_json = toy_pack_json::pack_to_string(&v)?;
-            let create_res = con.client.create(&key, &data_json).await?;
+            let s = std::str::from_utf8(&v)?;
+            let create_res = con.client.create(&key, s).await?;
             if create_res.is_success() {
                 Ok(PutResult::Create)
             } else {
                 // update
-                let res = con.client.get(&key).await?.json::<Value>()?;
+                let res = con.client.get(&key).await?.value()?;
                 match res {
                     Some(v) => {
                         let version = v.version();
-                        let upd_res = con.client.update(&key, &data_json, version).await?;
+                        let upd_res = con.client.update(&key, s, version).await?;
                         if upd_res.is_success() {
                             Ok(PutResult::Update)
                         } else {
@@ -100,7 +100,7 @@ impl Delete for EtcdStoreOps {
     fn delete(&self, con: Self::Con, key: String, _opt: DeleteOption) -> Self::T {
         let span = span!(Level::DEBUG, "delete", key = ?key);
         async move {
-            let single_res = con.client.get(&key).await?.json::<Value>()?;
+            let single_res = con.client.get(&key).await?.value()?;
             match single_res {
                 Some(v) => {
                     let rm_res = con.client.remove(&key, v.version()).await?;

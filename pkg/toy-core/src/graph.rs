@@ -48,12 +48,15 @@ impl Graph {
                 ))
             }
         };
+
+        let config_value = get_config_value(&v)?;
+
         Ok(Graph {
             name: name.to_string(),
             nodes: Vec::<Arc<Node>>::from(seq.0),
             outputs: HashMap::<Uri, OutputWire>::from(seq.1),
             inputs: HashMap::<Uri, InputWire>::from(seq.2),
-            config_value: v,
+            config_value,
         })
     }
 
@@ -166,6 +169,9 @@ impl Graph {
             },
             None => return Err(ConfigError::not_found_key("uri")),
         };
+
+        let config_value = get_config_value(&v)?;
+
         let wire = match map.get("wires") {
             Some(wires) => match wires {
                 Value::None => OutputWire::None,
@@ -196,9 +202,21 @@ impl Graph {
             None => return Err(ConfigError::not_found_key("wires")),
         };
         match ServiceType::from_full_name(tp) {
-            Ok(st) => Ok((Node::new(st, uri.into(), v.clone()), wire)),
+            Ok(st) => Ok((Node::new(st, uri.into(), config_value), wire)),
             Err(e) => Err(e),
         }
+    }
+}
+
+fn get_config_value(v: &Value) -> Result<Value, ConfigError> {
+    match v {
+        Value::Map(ref map) => match map.get("config") {
+            Some(c) => Ok(c.clone()),
+            None => Ok(Value::None),
+        },
+        _ => Err(ConfigError::error(
+            "invalid config. config value must be map type.",
+        )),
     }
 }
 

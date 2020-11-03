@@ -1,7 +1,7 @@
 use crate::data::Frame;
 use crate::error::ServiceError;
 use crate::executor::ServiceExecutor;
-use crate::registry::{Delegator, NoopEntry, PluginRegistry, Registry, ServiceSchema};
+use crate::registry::{Delegator, NoopEntry, PluginRegistry, PortType, Registry, ServiceSchema};
 use crate::service::ServiceFactory;
 use crate::service_type::ServiceType;
 use crate::service_uri::Uri;
@@ -24,13 +24,18 @@ struct Inner<S, F> {
 }
 
 impl<S, F> Plugin<S, F> {
-    pub fn new<R>(name_space: &str, service_name: &str, callback: F) -> Plugin<NoopEntry, F>
+    pub fn new<R>(
+        name_space: &str,
+        service_name: &str,
+        port_type: PortType,
+        callback: F,
+    ) -> Plugin<NoopEntry, F>
     where
         F: Fn() -> R + Clone,
         R: ServiceFactory,
         R::Config: Schema,
     {
-        let s = ServiceSchema::new::<R::Config>(name_space, service_name);
+        let s = ServiceSchema::new::<R::Config>(name_space, service_name, port_type);
         let tp = s.service_type.clone();
         let tps = vec![s];
         Plugin {
@@ -44,14 +49,14 @@ impl<S, F> Plugin<S, F> {
         }
     }
 
-    pub fn service<F2, R>(self, service_name: &str, other: F2) -> Plugin<Self, F2>
+    pub fn with<F2, R>(self, service_name: &str, port_type: PortType, other: F2) -> Plugin<Self, F2>
     where
         Self: Sized,
         F2: Fn() -> R + Clone,
         R: ServiceFactory,
         R::Config: Schema,
     {
-        let s = ServiceSchema::new::<R::Config>(&self.inner.name_space, service_name);
+        let s = ServiceSchema::new::<R::Config>(&self.inner.name_space, service_name, port_type);
         let tp = s.service_type.clone();
         let mut tps = self.tps.clone();
         tps.push(s);

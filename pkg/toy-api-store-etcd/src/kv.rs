@@ -1,10 +1,9 @@
 use crate::error::StoreEtcdError;
-use toy_pack::deser::DeserializableOwned;
 use toy_pack::{Pack, Unpack};
 
 #[derive(Debug)]
-pub struct Versioning<T> {
-    data: T,
+pub struct Versioning {
+    data: Vec<u8>,
     version: u64,
 }
 
@@ -87,16 +86,16 @@ pub struct DeleteRangeResponse {
 // Impl
 ///////////////////////////////
 
-impl<T> Versioning<T> {
-    pub fn from(data: T, version: u64) -> Versioning<T> {
+impl Versioning {
+    pub fn from(data: Vec<u8>, version: u64) -> Versioning {
         Versioning { data, version }
     }
 
-    pub fn data(&self) -> &T {
+    pub fn data(&self) -> &Vec<u8> {
         &self.data
     }
 
-    pub fn into_data(self) -> T {
+    pub fn into_data(self) -> Vec<u8> {
         self.data
     }
 
@@ -136,17 +135,13 @@ impl RangeRequest {
 }
 
 impl RangeResponse {
-    pub fn json<T>(&self) -> Result<Vec<Versioning<T>>, StoreEtcdError>
-    where
-        T: DeserializableOwned,
-    {
+    pub fn values(&self) -> Result<Vec<Versioning>, StoreEtcdError> {
         self.kvs
             .iter()
             .try_fold(Vec::new(), |mut vec, x| match decode(&x.value) {
                 Ok(v) => {
-                    let r = toy_pack_json::unpack::<T>(&v)?;
                     let version = x.mod_revision.parse::<u64>()?;
-                    vec.push(Versioning::<T>::from(r, version));
+                    vec.push(Versioning::from(v, version));
                     Ok(vec)
                 }
                 Err(e) => Err(e.into()),
@@ -174,16 +169,12 @@ impl RangeResponse {
 }
 
 impl SingleResponse {
-    pub fn json<T>(&self) -> Result<Option<Versioning<T>>, StoreEtcdError>
-    where
-        T: DeserializableOwned,
-    {
+    pub fn value(&self) -> Result<Option<Versioning>, StoreEtcdError> {
         match &self.kv {
             Some(kv) => match decode(&kv.value) {
                 Ok(v) => {
-                    let r = toy_pack_json::unpack::<T>(&v)?;
                     let version = kv.mod_revision.parse::<u64>()?;
-                    Ok(Some(Versioning::<T>::from(r, version)))
+                    Ok(Some(Versioning::from(v, version)))
                 }
                 Err(e) => Err(e.into()),
             },

@@ -5,7 +5,7 @@ use std::future::Future;
 use std::thread;
 use std::time::Duration;
 use toy_core::prelude::*;
-use toy_core::registry::{app, plugin};
+use toy_core::registry::{app, plugin, PortType};
 use toy_core::supervisor::{Request, Supervisor};
 use toy_pack_derive::*;
 
@@ -122,28 +122,36 @@ fn graph() -> Graph {
     let s1 = map_value! {
         "type" => "example.pub",
         "uri" => "ex/pub",
-        "prop1" => 0u32,
+        "config" => map_value! {
+            "prop1" => 0u32,
+        },
         "wires" => seq_value!["ex/rec/1", "ex/rec/2"]
     };
 
     let s2 = map_value! {
         "type" => "example.rec",
         "uri" => "ex/rec/1",
-        "prop1" => 0u32,
+        "config" => map_value! {
+            "prop1" => 0u32,
+        },
         "wires" => "ex/acc"
     };
 
     let s3 = map_value! {
         "type" => "example.rec",
         "uri" => "ex/rec/2",
-        "prop1" => 0u32,
+        "config" => map_value! {
+            "prop1" => 0u32,
+        },
         "wires" => "ex/acc"
     };
 
     let s4 = map_value! {
         "type" => "example.acc",
         "uri" => "ex/acc",
-        "prop1" => 0u32,
+        "config" => map_value! {
+            "prop1" => 0u32,
+        },
         "wires" => Option::<String>::None
     };
 
@@ -170,11 +178,17 @@ fn main() {
     let c = plugin(
         "example",
         "pub",
+        PortType::fan_out_source(2),
         factory!(publish, PublishConfig, new_publish_context),
     )
-    .service("rec", factory!(receive, ReceiveConfig, new_receive_context))
-    .service(
+    .with(
+        "rec",
+        PortType::flow(),
+        factory!(receive, ReceiveConfig, new_receive_context),
+    )
+    .with(
         "acc",
+        PortType::fan_in_sink(2),
         factory!(accumulate, AccumulateConfig, new_accumulate_context),
     );
 

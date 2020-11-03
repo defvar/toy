@@ -1,5 +1,6 @@
 use crate::common::error::ApiError;
 use toy_core::prelude::Value;
+use toy_pack::deser::DeserializableOwned;
 use warp::Filter;
 
 pub fn yaml() -> impl Filter<Extract = (Value,), Error = warp::Rejection> + Clone {
@@ -14,12 +15,15 @@ pub fn yaml() -> impl Filter<Extract = (Value,), Error = warp::Rejection> + Clon
     })
 }
 
-pub fn json() -> impl Filter<Extract = (Value,), Error = warp::Rejection> + Clone {
+pub fn json<T>() -> impl Filter<Extract = (T,), Error = warp::Rejection> + Clone
+where
+    T: DeserializableOwned,
+{
     // warp::body::content_length_limit(1024 * 16).and(warp::body::json())
     warp::body::aggregate().and_then(|buf| async move {
         let s = buf_to_string(buf);
         match s {
-            Ok(x) => toy_pack_json::unpack::<Value>(x.as_bytes())
+            Ok(x) => toy_pack_json::unpack::<T>(x.as_bytes())
                 .map_err(|e| warp::reject::custom(ApiError::from(e))),
             Err(e) => Err(warp::reject::custom(e)),
         }

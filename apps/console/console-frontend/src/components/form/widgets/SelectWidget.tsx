@@ -26,12 +26,9 @@ export const SelectWidget = ({
                 error={isError}
                 label={label}
                 required={required}
-                value={value}
+                value={value ? value : ""}
                 onChange={handleChange}
             >
-                <MenuItem value="">
-                    <em>None</em>
-                </MenuItem>
                 {selectOptions &&
                     selectOptions.map((v, i) => {
                         return (

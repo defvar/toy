@@ -27,6 +27,13 @@ pub enum StoreEtcdError {
         backtrace: Backtrace,
     },
 
+    #[error("invalid utf-8 string: {:?}", source)]
+    InvalidUTF8String {
+        #[from]
+        source: std::str::Utf8Error,
+        backtrace: Backtrace,
+    },
+
     #[error("invalid version string: {:?}", source)]
     InvalidVersionString {
         #[from]

@@ -11,18 +11,28 @@ use toy_pack::Pack;
 
 mod app;
 mod plugin;
+mod port_type;
+
 pub use app::App;
 pub use plugin::Plugin;
+pub use port_type::PortType;
 
-pub fn plugin<F, R>(name_space: &str, service_name: &str, callback: F) -> Plugin<NoopEntry, F>
+/// Create plugin.
+pub fn plugin<F, R>(
+    name_space: &str,
+    service_name: &str,
+    port_type: PortType,
+    callback: F,
+) -> Plugin<NoopEntry, F>
 where
     F: Fn() -> R + Clone,
     R: ServiceFactory,
     R::Config: Schema,
 {
-    Plugin::<NoopEntry, F>::new(name_space, service_name, callback)
+    Plugin::<NoopEntry, F>::new(name_space, service_name, port_type, callback)
 }
 
+/// Create app.
 pub fn app<P>(plugin: P) -> App<NoopEntry, P>
 where
     P: Registry,
@@ -55,14 +65,16 @@ pub trait Delegator {
         >;
 }
 
+/// ServiceSchema (json schema format) for front-end api.
 #[derive(Debug, Clone, Pack)]
 pub struct ServiceSchema {
     service_type: ServiceType,
+    port_type: PortType,
     schema: Option<JsonSchema>,
 }
 
 impl ServiceSchema {
-    pub fn new<T>(name_space: &str, service_name: &str) -> Self
+    pub fn new<T>(name_space: &str, service_name: &str, port_type: PortType) -> Self
     where
         T: Schema,
     {
@@ -72,6 +84,7 @@ impl ServiceSchema {
             .ok();
         Self {
             service_type: tp,
+            port_type,
             schema,
         }
     }

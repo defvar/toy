@@ -9,21 +9,13 @@ import {
 import Typography from "@material-ui/core/Typography";
 import RefreshIcon from "@material-ui/icons/Refresh";
 import IconButton from "@material-ui/core/IconButton";
-import {
-    Sidebar,
-    Chart,
-    ChartData,
-    initialChartData,
-    toChartData,
-} from "./chart";
+import { Sidebar, Chart } from "./chart";
 import ZoomInIcon from "@material-ui/icons/ZoomIn";
 import ZoomOutIcon from "@material-ui/icons/ZoomOut";
 import CircularProgress from "@material-ui/core/CircularProgress";
-import { toResource, Resource } from "../../modules/common";
+import { Resource } from "../../modules/common";
 import {
     GraphEditState,
-    ServiceState,
-    GraphState,
     Actions,
     reducer,
     initialState,
@@ -32,8 +24,19 @@ import { Resizable } from "react-resizable";
 import AppBar from "@material-ui/core/AppBar";
 import Tabs from "@material-ui/core/Tabs";
 import Tab from "@material-ui/core/Tab";
-import { Form, Field, addErrors } from "../../components/form";
-import { ToyApi } from "../../modules/api/toy-api";
+import {
+    Form,
+    Field,
+    addErrors,
+    ValidationResult,
+    parse,
+} from "../../components/form";
+import {
+    ServiceResponse,
+    fetchServices,
+    fetchGraph,
+    GraphResponse,
+} from "../../modules/api/toy-api";
 
 const useStyles = makeStyles((theme: Theme) =>
     createStyles({
@@ -77,94 +80,6 @@ const useStyles = makeStyles((theme: Theme) =>
     })
 );
 
-const serviceData = {
-    services: {
-        "common.file.reader": {
-            name: "reader",
-            namespace: "common.file",
-            fullName: "common.file.reader",
-            description: "file read service.",
-            inPort: 1,
-            outPort: 1,
-            configSchema: {},
-        },
-        "common.file.writer": {
-            name: "writer",
-            namespace: "common.file",
-            fullName: "common.file.writer",
-            description: "file writer service.",
-            inPort: 1,
-            outPort: 1,
-            configSchema: {},
-        },
-        "common.map.typed": {
-            name: "typed",
-            namespace: "common.map",
-            fullName: "common..map.typed",
-            description: "aaaaaaaaaaaaaaaaa.",
-            inPort: 1,
-            outPort: 1,
-            configSchema: {},
-        },
-        "common.map.reorder": {
-            name: "reorder",
-            namespace: "common.map",
-            fullName: "common.map.reorder",
-            description: "bbbbbbbbbbbbbbb.",
-            inPort: 1,
-            outPort: 1,
-            configSchema: {},
-        },
-        "aiueo.ccc": {
-            name: "ccc",
-            namespace: "aiueo",
-            fullName: "aiueo.ccc",
-            description: "cccccccccccccccccccc.",
-            inPort: 1,
-            outPort: 1,
-            configSchema: {},
-        },
-    },
-    namespaces: {
-        "common.file": ["common.file.reader", "common.file.writer"],
-        "common.map": ["common.map.typed", "common.map.reorder"],
-        aiueo: ["aiueo.ccc"],
-    },
-};
-
-const graphData = (name: string) => ({
-    nodes: {
-        reader1: {
-            uri: "reader1",
-            fullName: "common.file.reader",
-            name: "reader",
-            namespace: "common.file",
-            description: `${name}`,
-            inPort: 1,
-            outPort: 1,
-            position: {
-                x: 300,
-                y: 100,
-            },
-            wires: ["writer1"],
-        },
-        writer1: {
-            uri: "writer1",
-            fullName: "common.file.writer",
-            name: "writer",
-            namespace: "common.file",
-            description: `${name}`,
-            inPort: 1,
-            outPort: 1,
-            position: {
-                x: 300,
-                y: 300,
-            },
-            wires: [],
-        },
-    },
-});
-
 const formData = {
     a1: "aaa",
     a2: "uuuuu",
@@ -173,51 +88,73 @@ const formData = {
     a5: "aaa",
 };
 
-const fetchServices = () => {
-    const promise = new Promise<{
-        services: { [fullName: string]: ServiceState };
-        namespaces: { [namespace: string]: string[] };
-    }>((resolve) => {
-        setTimeout(() => {
-            resolve(serviceData);
-        }, 2000);
-    });
-    return toResource(async () => {
-        const r = await ToyApi.getServices();
-        console.log(r);
-        return await promise;
-    });
-};
-
-const fetchGraph = (name: string) => {
-    const promise = new Promise<GraphState>((resolve) => {
-        setTimeout(() => {
-            resolve(graphData(name));
-        }, 3000);
-    });
-    return toResource(async () => await promise);
-};
+const formItems: Field[] = [
+    {
+        name: "a1",
+        type: "string",
+        label: "a1",
+        required: false,
+    },
+    {
+        name: "a2",
+        type: "string",
+        label: "a2",
+        required: true,
+    },
+    {
+        name: "a3",
+        type: "number",
+        label: "a3",
+        required: false,
+    },
+    {
+        name: "a4",
+        type: "object",
+        label: "a4",
+        required: false,
+        children: [
+            {
+                name: "a41",
+                type: "boolean",
+                label: "a4-1",
+                required: false,
+            },
+            {
+                name: "a42",
+                type: "string",
+                label: "a4-2",
+                required: false,
+            },
+        ],
+    },
+    {
+        name: "a5",
+        type: "enum",
+        label: "a5",
+        required: false,
+        selectOptions: [
+            { label: "aaa", value: "aaa" },
+            { label: "bbb", value: "bbb" },
+            { label: "ccc", value: "ccc" },
+        ],
+    },
+];
 
 interface GraphEditSuspenseProps {
     state: GraphEditState;
-    chartState: ChartData;
-    setChartState: React.Dispatch<React.SetStateAction<ChartData>>;
     dispatch: React.Dispatch<Actions>;
-    serviceResource: Resource<{
-        services: { [fullName: string]: ServiceState };
-        namespaces: { [namespace: string]: string[] };
-    }>;
-    graphResource: Resource<GraphState>;
+    serviceResource: Resource<ServiceResponse>;
+    graphResource: Resource<GraphResponse>;
 }
 
 const SidebarSuspense = (props: GraphEditSuspenseProps) => {
-    const { services, namespaces } = props.serviceResource.read();
+    const r = props.serviceResource.read();
     React.useEffect(() => {
         props.dispatch({
             type: "GetServices",
-            payload: { services, namespaces },
+            payload: r,
         });
-    }, [services, namespaces]);
+    }, [r]);
     return (
         <Sidebar
             services={props.state.services}
@@ -231,14 +168,21 @@ const ChartSuspense = (props: GraphEditSuspenseProps) => {
     React.useEffect(() => {
         props.dispatch({
             type: "GetGraph",
-            payload: { graph },
+            payload: graph,
         });
-        const d = toChartData(graph);
-        props.setChartState(d);
     }, [graph]);
 
-    return <Chart data={props.chartState} dispatch={props.setChartState} />;
+    return <Chart data={props.state.graph} dispatch={props.dispatch} />;
 };
+
+function validate(v: any): ValidationResult {
+    let r = { name: "root", errors: [] };
+    // if (!v.a2 || v.a2 == "") {
+    //     r = addErrors(r, "a2", [{ message: "reqreq" }]);
+    // }
+    // r = addErrors(r, "a4.a42", [{ message: "aaaaa" }, { message: "bbbbbbb" }]);
+    return r;
+}
 
 export const GraphEdit = () => {
     const { name } = useParams();
@@ -252,8 +196,9 @@ export const GraphEdit = () => {
         fetchGraph(name)
     );
     const [state, dispatch] = React.useReducer(reducer, initialState);
-
-    const [chartState, setChartState] = React.useState(initialChartData);
+    const [formSchemaState, setFormSchemaState] = React.useState([]);
+    const [tabNumber, setTabNumber] = React.useState(0);
+    const [formDataState, setFormDataState] = React.useState(formData);
 
     const onChartRefleshClick = React.useCallback(() => {
         setGraphResource(() => fetchGraph(name));
@@ -263,19 +208,19 @@ export const GraphEdit = () => {
         setServiceResource(() => fetchServices());
     }, []);
 
-    const handleZoomIn = () => {
-        setChartState((prev) => ({
-            ...prev,
-            scale: prev.scale + 0.1,
-        }));
-    };
+    const handleZoomIn = React.useCallback(() => {
+        dispatch({
+            type: "ZoomChart",
+            payload: 0.1,
+        });
+    }, []);
 
-    const handleZoomOut = () => {
-        setChartState((prev) => ({
-            ...prev,
-            scale: prev.scale - 0.1,
-        }));
-    };
+    const handleZoomOut = React.useCallback(() => {
+        dispatch({
+            type: "ZoomChart",
+            payload: -0.1,
+        });
+    }, []);
 
     const [size, setSize] = React.useState(() => {
         return { width: theme.breakpoints.width("md") };
@@ -284,23 +229,23 @@ export const GraphEdit = () => {
         setSize({ width: size.width });
     };
 
-    const [tabNumber, setTabNumber] = React.useState(0);
-
-    const handleTabChange = (
+    const handleTabChange = React.useCallback((
         _event: React.ChangeEvent<{}>,
         newValue: number
     ) => {
         setTabNumber(newValue);
-    };
+        if(newValue == 1){
+            const f = parse(state.services["plugin.common.file.reader"].configSchema);
+            setFormSchemaState((_prev) => f);
+        }
+    }, [state.services]);
 
-    const [formDataState, setFormDataState] = React.useState(formData);
-
-    const handleFormOnChange = (v) => {
+    const handleFormOnChange = React.useCallback((v) => {
         setFormDataState((prev) => ({
             ...prev,
             ...v,
         }));
-    };
+    }, []);
 
     return (
         <div className={classes.root}>
@@ -348,8 +293,6 @@ export const GraphEdit = () => {
                         >
                             <ChartSuspense
                                 state={state}
-                                chartState={chartState}
-                                setChartState={setChartState}
                                 dispatch={dispatch}
                                 serviceResource={serviceResource}
                                 graphResource={graphResource}
@@ -388,8 +331,6 @@ export const GraphEdit = () => {
                     >
                         <SidebarSuspense
                             state={state}
-                            chartState={chartState}
-                            setChartState={setChartState}
                             dispatch={dispatch}
                             serviceResource={serviceResource}
                             graphResource={graphResource}
@@ -399,72 +340,10 @@ export const GraphEdit = () => {
                 <div hidden={tabNumber !== 1}>
                     <Form
                         data={formDataState}
-                        liveValidation={true}
+                        liveValidation={false}
                         onChange={handleFormOnChange}
-                        validate={(v) => {
-                            let r = { name: "root", errors: [] };
-                            if (!v.a2 || v.a2 == "") {
-                                r = addErrors(r, "a2", [{ message: "reqreq" }]);
-                            }
-                            r = addErrors(r, "a4.a42", [
-                                { message: "aaaaa" },
-                                { message: "bbbbbbb" },
-                            ]);
-                            return r;
-                        }}
-                        items={
-                            [
-                                {
-                                    name: "a1",
-                                    type: "string",
-                                    label: "a1",
-                                    required: false,
-                                },
-                                {
-                                    name: "a2",
-                                    type: "string",
-                                    label: "a2",
-                                    required: true,
-                                },
-                                {
-                                    name: "a3",
-                                    type: "number",
-                                    label: "a3",
-                                    required: false,
-                                },
-                                {
-                                    name: "a4",
-                                    type: "object",
-                                    label: "a4",
-                                    required: false,
-                                    children: [
-                                        {
-                                            name: "a41",
-                                            type: "boolean",
-                                            label: "a4-1",
-                                            required: false,
-                                        },
-                                        {
-                                            name: "a42",
-                                            type: "string",
-                                            label: "a4-2",
-                                            required: false,
-                                        },
-                                    ],
-                                },
-                                {
-                                    name: "a5",
-                                    type: "enum",
-                                    label: "a5",
-                                    required: false,
-                                    selectOptions: [
-                                        { label: "aaa", value: "aaa" },
-                                        { label: "bbb", value: "bbb" },
-                                        { label: "ccc", value: "ccc" },
-                                    ],
-                                },
-                            ] as Field[]
-                        }
+                        validate={validate}
+                        items={formSchemaState}
                     />
                 </div>
             </div>

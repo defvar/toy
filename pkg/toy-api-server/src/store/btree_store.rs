@@ -4,11 +4,10 @@ use crate::store::{StoreConnection, StoreOps, StoreOpsFactory};
 use std::collections::BTreeMap;
 use std::future::Future;
 use std::sync::{Arc, Mutex};
-use toy_core::data::Value;
 
 #[derive(Clone, Debug)]
 pub struct BTreeStoreConnection {
-    map: Arc<Mutex<BTreeMap<String, Value>>>,
+    map: Arc<Mutex<BTreeMap<String, Vec<u8>>>>,
 }
 
 impl StoreConnection for BTreeStoreConnection {}
@@ -23,7 +22,7 @@ impl StoreOps<BTreeStoreConnection> for BTreeStoreOps {}
 
 impl List for BTreeStoreOps {
     type Con = BTreeStoreConnection;
-    type T = impl Future<Output = Result<Vec<Value>, Self::Err>> + Send;
+    type T = impl Future<Output = Result<Vec<Vec<u8>>, Self::Err>> + Send;
     type Err = StoreError;
 
     fn list(&self, con: Self::Con, prefix: String, opt: ListOption) -> Self::T {
@@ -44,7 +43,7 @@ impl List for BTreeStoreOps {
 
 impl Find for BTreeStoreOps {
     type Con = BTreeStoreConnection;
-    type T = impl Future<Output = Result<Option<Value>, Self::Err>> + Send;
+    type T = impl Future<Output = Result<Option<Vec<u8>>, Self::Err>> + Send;
     type Err = StoreError;
 
     fn find(&self, con: Self::Con, key: String, opt: FindOption) -> Self::T {
@@ -54,7 +53,7 @@ impl Find for BTreeStoreOps {
                 Some(v) => Ok(Some(v.clone())),
                 _ => {
                     log::debug!("[find] not found. key:{:?}, opt:{:?}", key, opt);
-                    Ok(Option::<Value>::None)
+                    Ok(Option::<Vec<u8>>::None)
                 }
             }
         }
@@ -66,7 +65,7 @@ impl Put for BTreeStoreOps {
     type T = impl Future<Output = Result<PutResult, Self::Err>> + Send;
     type Err = StoreError;
 
-    fn put(&self, con: Self::Con, key: String, v: Value, opt: PutOption) -> Self::T {
+    fn put(&self, con: Self::Con, key: String, v: Vec<u8>, opt: PutOption) -> Self::T {
         async move {
             let mut map = con.map.lock().unwrap();
             if let Some(prev) = map.insert(key.clone(), v) {
