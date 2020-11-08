@@ -3,7 +3,7 @@ import { WidgetProps } from "./WidgetProps";
 import FormControl from "@material-ui/core/FormControl";
 import TextField from "@material-ui/core/TextField";
 
-export const TextWidget = (props: WidgetProps) => {
+export const TextWidget = React.memo((props: WidgetProps) => {
     const { id, label, value, required, onChange, isError } = props;
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
         onChange(e.target.value);
@@ -20,4 +20,4 @@ export const TextWidget = (props: WidgetProps) => {
             />
         </FormControl>
     );
-};
+});

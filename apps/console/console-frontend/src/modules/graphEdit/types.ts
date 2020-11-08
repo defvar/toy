@@ -30,6 +30,15 @@ export interface ChartData {
     hovered: {};
 }
 
+export interface Port {
+    id: string;
+    type: string;
+    value?: string;
+    properties?: {
+        max: number;
+    };
+}
+
 export interface NodeData {
     id: string;
     type: string;
@@ -39,13 +48,7 @@ export interface NodeData {
     };
     orientation?: number;
     ports: {
-        [id: string]: {
-            id: string;
-            type: string;
-            value?: string;
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            properties?: any;
-        };
+        [id: string]: Port;
     };
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     properties?: any;
@@ -69,6 +72,12 @@ export interface GraphEditState {
     services: { [fullName: string]: ServiceState };
     namespaces: { [namespace: string]: string[] };
     graph: ChartData;
+    edit: {
+        id?: string;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        config: any;
+        configSchema: JsonSchema;
+    };
 }
 
 export interface ServiceState {

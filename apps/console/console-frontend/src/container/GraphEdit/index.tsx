@@ -8,6 +8,7 @@ import {
 } from "@material-ui/core/styles";
 import Typography from "@material-ui/core/Typography";
 import RefreshIcon from "@material-ui/icons/Refresh";
+import UndoIcon from "@material-ui/icons/Undo";
 import IconButton from "@material-ui/core/IconButton";
 import { Sidebar, Chart } from "./chart";
 import ZoomInIcon from "@material-ui/icons/ZoomIn";
@@ -24,13 +25,7 @@ import { Resizable } from "react-resizable";
 import AppBar from "@material-ui/core/AppBar";
 import Tabs from "@material-ui/core/Tabs";
 import Tab from "@material-ui/core/Tab";
-import {
-    Form,
-    Field,
-    addErrors,
-    ValidationResult,
-    parse,
-} from "../../components/form";
+import { Form, ValidationResult } from "../../components/form";
 import {
     ServiceResponse,
     fetchServices,
@@ -80,66 +75,6 @@ const useStyles = makeStyles((theme: Theme) =>
     })
 );
 
-const formData = {
-    a1: "aaa",
-    a2: "uuuuu",
-    a3: 123,
-    a4: { a41: true, a42: "dddddd" },
-    a5: "aaa",
-};
-
-const formItems: Field[] = [
-    {
-        name: "a1",
-        type: "string",
-        label: "a1",
-        required: false,
-    },
-    {
-        name: "a2",
-        type: "string",
-        label: "a2",
-        required: true,
-    },
-    {
-        name: "a3",
-        type: "number",
-        label: "a3",
-        required: false,
-    },
-    {
-        name: "a4",
-        type: "object",
-        label: "a4",
-        required: false,
-        children: [
-            {
-                name: "a41",
-                type: "boolean",
-                label: "a4-1",
-                required: false,
-            },
-            {
-                name: "a42",
-                type: "string",
-                label: "a4-2",
-                required: false,
-            },
-        ],
-    },
-    {
-        name: "a5",
-        type: "enum",
-        label: "a5",
-        required: false,
-        selectOptions: [
-            { label: "aaa", value: "aaa" },
-            { label: "bbb", value: "bbb" },
-            { label: "ccc", value: "ccc" },
-        ],
-    },
-];
-
 interface GraphEditSuspenseProps {
     state: GraphEditState;
     dispatch: React.Dispatch<Actions>;
@@ -176,7 +111,7 @@ const ChartSuspense = (props: GraphEditSuspenseProps) => {
 };
 
 function validate(v: any): ValidationResult {
-    let r = { name: "root", errors: [] };
+    const r = { name: "root", errors: [] };
     // if (!v.a2 || v.a2 == "") {
     //     r = addErrors(r, "a2", [{ message: "reqreq" }]);
     // }
@@ -196,9 +131,7 @@ export const GraphEdit = () => {
         fetchGraph(name)
     );
     const [state, dispatch] = React.useReducer(reducer, initialState);
-    const [formSchemaState, setFormSchemaState] = React.useState([]);
     const [tabNumber, setTabNumber] = React.useState(0);
-    const [formDataState, setFormDataState] = React.useState(formData);
 
     const onChartRefleshClick = React.useCallback(() => {
         setGraphResource(() => fetchGraph(name));
@@ -206,6 +139,10 @@ export const GraphEdit = () => {
 
     const onSidebarRefleshClick = React.useCallback(() => {
         setServiceResource(() => fetchServices());
+    }, []);
+
+    const onPropertyRevertClick = React.useCallback(() => {
+        console.log("revert!");
     }, []);
 
     const handleZoomIn = React.useCallback(() => {
@@ -225,26 +162,23 @@ export const GraphEdit = () => {
     const [size, setSize] = React.useState(() => {
         return { width: theme.breakpoints.width("md") };
     });
+
     const onResize = (_event, { size }) => {
         setSize({ width: size.width });
     };
 
-    const handleTabChange = React.useCallback((
-        _event: React.ChangeEvent<{}>,
-        newValue: number
-    ) => {
-        setTabNumber(newValue);
-        if(newValue == 1){
-            const f = parse(state.services["plugin.common.file.reader"].configSchema);
-            setFormSchemaState((_prev) => f);
-        }
-    }, [state.services]);
+    const handleTabChange = React.useCallback(
+        (_event: React.ChangeEvent<{}>, newValue: number) => {
+            setTabNumber(newValue);
+        },
+        [state.services]
+    );
 
     const handleFormOnChange = React.useCallback((v) => {
-        setFormDataState((prev) => ({
-            ...prev,
-            ...v,
-        }));
+        dispatch({
+            type: "ChangeEditNode",
+            payload: v,
+        });
     }, []);
 
     return (
@@ -338,12 +272,21 @@ export const GraphEdit = () => {
                     </React.Suspense>
                 </div>
                 <div hidden={tabNumber !== 1}>
+                    <IconButton
+                        aria-label="undo"
+                        onClick={onPropertyRevertClick}
+                    >
+                        <UndoIcon />
+                    </IconButton>
+                    <Typography className={classes.heading}>
+                        {state.edit.id}
+                    </Typography>
                     <Form
-                        data={formDataState}
+                        data={state.edit.config}
                         liveValidation={false}
                         onChange={handleFormOnChange}
                         validate={validate}
-                        items={formSchemaState}
+                        schema={state.edit.configSchema}
                     />
                 </div>
             </div>

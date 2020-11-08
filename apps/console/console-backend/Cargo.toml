@@ -22,6 +22,7 @@ toy-pack = {path = "../../../shared/toy-pack", features = ["derive"]}
 # plugins
 toy-plugin-file = { path = "../../../plugins/toy-plugin-commons/toy-plugin-file"}
 toy-plugin-map = { path = "../../../plugins/toy-plugin-commons/toy-plugin-map"}
+toy-plugin-fanout = { path = "../../../plugins/toy-plugin-commons/toy-plugin-fanout"}
 
 # store
 toy-api-store-etcd = { path = "../../../pkg/toy-api-store-etcd"}

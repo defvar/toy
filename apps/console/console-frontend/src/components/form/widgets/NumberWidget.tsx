@@ -4,7 +4,7 @@ import FormControl from "@material-ui/core/FormControl";
 import Input from "@material-ui/core/Input";
 import InputLabel from "@material-ui/core/InputLabel";
 
-export const NumberWidget = (props: WidgetProps) => {
+export const NumberWidget = React.memo((props: WidgetProps) => {
     const { id, label, value, required, onChange, isError } = props;
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
         onChange(e.target.value);
@@ -22,4 +22,4 @@ export const NumberWidget = (props: WidgetProps) => {
             />
         </FormControl>
     );
-};
+});

@@ -28,7 +28,9 @@ fn main() {
         .build()
         .unwrap();
 
-    let regi = app(toy_plugin_file::load()).plugin(toy_plugin_map::load());
+    let regi = app(toy_plugin_file::load())
+        .plugin(toy_plugin_map::load())
+        .plugin(toy_plugin_fanout::load());
 
     let service_rt = toy_rt::RuntimeBuilder::new()
         .thread_name("service-worker")

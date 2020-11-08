@@ -22,6 +22,10 @@ export const initialState: GraphEditState = {
         selected: {},
         hovered: {},
     },
+    edit: {
+        config: {},
+        configSchema: {},
+    },
 };
 
 const toServiceState = (item: ServiceResponseItem): ServiceState => {
@@ -48,16 +52,20 @@ const toServiceState = (item: ServiceResponseItem): ServiceState => {
     };
 };
 
-export const toPorts = (way: "in" | "out", count: number) =>
-    [...Array(count).keys()]
-        .map((x) => ({
-            id: `port-${way}-${x}`,
+export const toPorts = (way: "in" | "out", count: number) => {
+    const r = {};
+    if (count != 0) {
+        const k = `port-${way}-0`;
+        r[k] = {
+            id: `port-${way}-0`,
             type: way === "in" ? "top" : "bottom",
-        }))
-        .reduce((r, v) => {
-            r[v.id] = v;
-            return r;
-        }, {});
+            properties: {
+                max: count,
+            },
+        };
+    }
+    return r;
+};
 
 const toLinks = (graph: {
     [uri: string]: GraphNode;
@@ -88,13 +96,15 @@ const toNodes = (graph: {
         let inPort = 0;
         let outPort = 0;
 
-        if (node.port_type.Source) {
-            outPort = node.port_type.Source;
-        } else if (node.port_type.Flow) {
-            inPort = node.port_type.Flow[0];
-            outPort = node.port_type.Flow[1];
-        } else if (node.port_type.Sink) {
-            inPort = node.port_type.Sink;
+        if (node.port_type) {
+            if (node.port_type.Source) {
+                outPort = node.port_type.Source;
+            } else if (node.port_type.Flow) {
+                inPort = node.port_type.Flow[0];
+                outPort = node.port_type.Flow[1];
+            } else if (node.port_type.Sink) {
+                inPort = node.port_type.Sink;
+            }
         }
         const inPorts = toPorts("in", inPort);
         const outPorts = toPorts("out", outPort);
@@ -109,8 +119,10 @@ const toNodes = (graph: {
             position: node.position,
             ports: allPorts,
             properties: {
-                title: node.type,
-                subheader: "nnnnnn",
+                title: node.uri,
+                subheader: node.type,
+                config: node.config,
+                fullName: node.type,
             },
         };
 
@@ -189,6 +201,38 @@ export const reducer = (
                 graph: {
                     ...state.graph,
                     scale,
+                },
+            };
+        }
+        case "StartEditNode": {
+            const n = state.graph.nodes[action.payload];
+            let config = {};
+            if (n && n.properties && n.properties.config) {
+                config = { ...n.properties.config };
+            }
+            let configSchema = {};
+            if (n && state.services[n.properties.fullName]) {
+                configSchema = {
+                    ...state.services[n.properties.fullName].configSchema,
+                };
+            }
+            return {
+                ...state,
+                edit: {
+                    id: action.payload,
+                    config,
+                    configSchema,
+                },
+            };
+        }
+        case "ChangeEditNode": {
+            return {
+                ...state,
+                edit: {
+                    ...state.edit,
+                    config: {
+                        ...action.payload,
+                    },
                 },
             };
         }

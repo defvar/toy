@@ -21,4 +21,21 @@ export interface ZoomChart {
     payload: number;
 }
 
-export type Actions = GetServices | GetGraph | ChangeChart | ZoomChart;
+export interface StartEditNode {
+    type: "StartEditNode";
+    payload: string; // node key
+}
+
+export interface ChangeEditNode {
+    type: "ChangeEditNode";
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    payload: any;
+}
+
+export type Actions =
+    | GetServices
+    | GetGraph
+    | ChangeChart
+    | ZoomChart
+    | StartEditNode
+    | ChangeEditNode;

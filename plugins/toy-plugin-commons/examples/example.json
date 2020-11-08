@@ -1,0 +1,77 @@
+{
+    "name": "aaaa",
+    "services": [
+        {
+            "type": "plugin.common.file.reader",
+            "uri": "reader",
+            "position": {
+                "x": 100,
+                "y": 100
+            },
+            "port_type": { "Source": 1 },
+            "config": {
+            },
+            "wires": ["broadcast"]
+        },
+        {
+            "type": "plugin.common.fanout.broadcast",
+            "uri": "broadcast",
+            "position": {
+                "x": 100,
+                "y": 200
+            },
+            "port_type": { "Flow": [1, 2] },
+            "config": {
+            },
+            "wires": ["map1", "map2"]
+        },
+        {
+            "type": "plugin.common.map.mapping",
+            "uri": "map1",
+            "position": {
+                "x": 100,
+                "y": 300
+            },
+            "port_type": { "Flow": [1, 1] },
+            "config": {
+            },
+            "wires": ["writer1"]
+        },
+        {
+            "type": "plugin.common.map.mapping",
+            "uri": "map2",
+            "position": {
+                "x": 400,
+                "y": 300
+            },
+            "port_type": { "Flow": [1, 1] },
+            "config": {
+            },
+            "wires": ["writer2"]
+        },
+        {
+            "type": "plugin.common.file.writer",
+            "uri": "writer1",
+            "position": {
+                "x": 100,
+                "y": 400
+            },
+            "port_type": { "Sink": 1 },
+            "config": {
+            },
+            "wires": []
+        },
+        {
+            "type": "plugin.common.file.writer",
+            "uri": "writer2",
+            "position": {
+                "x": 400,
+                "y": 400
+            },
+            "port_type": { "Sink": 1 },
+            "config": {
+            },
+            "wires": []
+        }
+    ]
+}

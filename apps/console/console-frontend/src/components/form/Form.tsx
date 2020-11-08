@@ -1,10 +1,12 @@
 import * as React from "react";
-import { Field, ValidationResult } from "./types";
+import { ValidationResult } from "./types";
+import { parse } from "./util";
 import { ObjectFields } from "./ObjectFields";
 import { createStyles, makeStyles, Theme } from "@material-ui/core/styles";
+import { JsonSchema } from "../../modules/common";
 
 export interface FormProps<T> {
-    items: Field[];
+    schema: JsonSchema;
     data: T;
     onChange: (data: T) => void;
     validate: (data: T) => ValidationResult;
@@ -21,7 +23,7 @@ const useStyles = makeStyles((theme: Theme) =>
 );
 
 export const Form = <T extends {}>({
-    items,
+    schema,
     data,
     onChange,
     validate,
@@ -34,10 +36,14 @@ export const Form = <T extends {}>({
         errors: [],
     }));
 
-    const handleOnChange = (data: T) => {
-        onChange(data);
+    const items = React.useMemo(() => {
+        return parse(schema);
+    }, [schema]);
+
+    const handleOnChange = (d: T) => {
+        onChange(d);
         if (liveValidation) {
-            const r = validate(data);
+            const r = validate(d);
             setValidationState(r);
         }
     };

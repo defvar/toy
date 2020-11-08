@@ -1,5 +1,6 @@
 import { getIdToken } from "../auth";
 import { JsonSchema, toResource } from "../common";
+import { config } from "./config";
 
 export type PortTypeValue = number;
 export type PortType = {
@@ -43,7 +44,7 @@ export interface GraphResponse {
 export const ToyApi = {
     getServices: async (): Promise<ServiceResponse> => {
         const key = await getIdToken();
-        return fetch(`http://localhost:3030/services`, {
+        return fetch(`${config.root}/services`, {
             method: "GET",
             mode: "cors",
             headers: {
@@ -74,7 +75,7 @@ export const ToyApi = {
 
     getGraph: async (name: string): Promise<GraphResponse> => {
         const key = await getIdToken();
-        return fetch(`http://localhost:3030/graphs/${name}`, {
+        return fetch(`${config.root}/graphs/${name}`, {
             method: "GET",
             mode: "cors",
             headers: {

@@ -4,7 +4,7 @@ import FormControl from "@material-ui/core/FormControl";
 import FormControlLabel from "@material-ui/core/FormControlLabel";
 import Checkbox from "@material-ui/core/Checkbox";
 
-export const CheckboxWidget = (props: WidgetProps) => {
+export const CheckboxWidget = React.memo((props: WidgetProps) => {
     const { id, label, value, required, onChange, isError } = props;
     const handleChange = (
         _e: React.ChangeEvent<HTMLInputElement>,
@@ -27,4 +27,4 @@ export const CheckboxWidget = (props: WidgetProps) => {
             />
         </FormControl>
     );
-};
+});

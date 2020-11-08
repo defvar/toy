@@ -105,6 +105,11 @@ where
     pub async fn send_ok_to(&mut self, port: u8, v: T) -> Result<(), Err> {
         self.send_to(port, Ok(v)).await
     }
+
+    pub fn ports(&self) -> OutgoingPortIter {
+        let ports = self.port_map.keys().into_iter().map(|x| *x).collect();
+        OutgoingPortIter { ports, idx: 0 }
+    }
 }
 
 impl<T, Err> Clone for Outgoing<T, Err> {
@@ -113,6 +118,21 @@ impl<T, Err> Clone for Outgoing<T, Err> {
             inner: self.inner.clone(),
             port_map: self.port_map.clone(),
         }
+    }
+}
+
+pub struct OutgoingPortIter {
+    ports: Vec<u8>,
+    idx: usize,
+}
+
+impl Iterator for OutgoingPortIter {
+    type Item = u8;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let r = self.ports.get(self.idx).map(|x| *x);
+        self.idx += 1;
+        r
     }
 }
 

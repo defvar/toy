@@ -22,7 +22,7 @@
         },
         "useJSXTextNode": true,
         "sourceType": "module",
-        "project": "./tsconfig.json",
+        "project": "./tsconfig.json"
     },
     "rules": {
         "@typescript-eslint/explicit-function-return-type": "off",

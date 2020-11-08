@@ -1,10 +1,14 @@
-export const toPorts = (way: "in" | "out", count: number) =>
-    [...Array(count).keys()]
-        .map((x) => ({
-            id: `port-${way}-${x}`,
+export const toPorts = (way: "in" | "out", count: number) => {
+    const r = {};
+    if (count != 0) {
+        const k = `port-${way}-0`;
+        r[k] = {
+            id: `port-${way}-0`,
             type: way === "in" ? "top" : "bottom",
-        }))
-        .reduce((r, v) => {
-            r[v.id] = v;
-            return r;
-        }, {});
+            properties: {
+                max: count,
+            },
+        };
+    }
+    return r;
+};
