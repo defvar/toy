@@ -11,6 +11,7 @@ use log;
 use std::collections::HashMap;
 use std::future::Future;
 use std::thread;
+use tokio::sync::broadcast;
 use toy_pack::deser::DeserializableOwned;
 
 const DEFAULT_CHANNEL_BUFFER_SIZE: usize = 128;
@@ -57,13 +58,16 @@ impl<'a, T> Executor<'a, T>
 where
     T: AsyncRuntime,
 {
-    pub fn new(rt: &'a T, graph: Graph) -> Self {
+    pub fn new(rt: &'a T, graph: Graph, sv_tx: &broadcast::Sender<()>) -> Self {
         let mut inputs: HashMap<Uri, Incoming<Frame, ServiceError>> = HashMap::new();
         let mut outputs: HashMap<Uri, Outgoing<Frame, ServiceError>> = HashMap::new();
 
         let mut starters: HashMap<Uri, Outgoing<Frame, ServiceError>> = HashMap::new();
 
-        let (l_tx, l_rx) = mpsc::channel::<Frame, ServiceError>(DEFAULT_CHANNEL_BUFFER_SIZE);
+        let (l_tx, l_rx) = mpsc::channel_with_supervisor_channel::<Frame, ServiceError>(
+            DEFAULT_CHANNEL_BUFFER_SIZE,
+            sv_tx.subscribe(),
+        );
 
         // first channel
         graph
@@ -71,8 +75,10 @@ where
             .iter()
             .filter(|(_, w)| **w == InputWire::None)
             .for_each(|(uri, _)| {
-                let (f_tx, f_rx) =
-                    mpsc::channel::<Frame, ServiceError>(DEFAULT_CHANNEL_BUFFER_SIZE);
+                let (f_tx, f_rx) = mpsc::channel_with_supervisor_channel::<Frame, ServiceError>(
+                    DEFAULT_CHANNEL_BUFFER_SIZE,
+                    sv_tx.subscribe(),
+                );
                 inputs.insert(uri.clone(), f_rx);
                 starters.insert(uri.clone(), f_tx);
             });
@@ -90,7 +96,10 @@ where
             });
 
         for (_, wire) in graph.inputs() {
-            let (tx, rx) = mpsc::channel::<Frame, ServiceError>(DEFAULT_CHANNEL_BUFFER_SIZE);
+            let (tx, rx) = mpsc::channel_with_supervisor_channel::<Frame, ServiceError>(
+                DEFAULT_CHANNEL_BUFFER_SIZE,
+                sv_tx.subscribe(),
+            );
             match wire {
                 InputWire::Single(o, i) => {
                     inputs.insert(i.clone(), rx);
@@ -160,7 +169,7 @@ where
     async fn run_0(mut self, start_frame: Frame) -> Result<(), ServiceError> {
         log::info!("{:?} run executor", thread::current().id());
 
-        for (_, mut tx) in self.starters {
+        for (_, tx) in &mut self.starters {
             tx.send(Ok(start_frame.clone())).await?
         }
 

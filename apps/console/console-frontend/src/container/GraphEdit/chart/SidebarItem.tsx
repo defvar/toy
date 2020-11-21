@@ -4,6 +4,7 @@ import { createStyles, Theme, makeStyles } from "@material-ui/core/styles";
 import Card from "@material-ui/core/Card";
 import { ServiceCardHeader } from "./ServiceCardHeader";
 import { toPorts } from "./util";
+import { NodeData, PortType } from "../../../modules/graphEdit/types";
 
 const useStyles = makeStyles((theme: Theme) =>
     createStyles({
@@ -23,16 +24,15 @@ export interface SidebarItemProps {
     description: string;
     inPort: number;
     outPort: number;
-    properties?: {
-        icon?: string;
-    };
+    portType: PortType;
 }
 
 export const SidebarItem = ({
+    fullName,
     name,
-    namespace,
     inPort,
     outPort,
+    portType,
 }: SidebarItemProps): JSX.Element => {
     const classes = useStyles();
 
@@ -43,6 +43,20 @@ export const SidebarItem = ({
         ...outPorts,
     };
 
+    const dropItem: NodeData = {
+        id: null,
+        type: "top/bottom",
+        position: { x: 0, y: 0 },
+        ports: allPorts,
+        properties: {
+            name,
+            fullName,
+            config: {},
+            dirty: false,
+            portType,
+        },
+    };
+
     return (
         <div
             className={classes.sideBarItem}
@@ -50,19 +64,16 @@ export const SidebarItem = ({
             onDragStart={(event): void => {
                 event.dataTransfer.setData(
                     REACT_FLOW_CHART,
-                    JSON.stringify({
-                        type: "top/bottom",
-                        ports: allPorts,
-                        properties: {
-                            title: name,
-                            subheader: namespace,
-                        },
-                    })
+                    JSON.stringify(dropItem)
                 );
             }}
         >
             <Card>
-                <ServiceCardHeader title={name} subheader={namespace} />
+                <ServiceCardHeader
+                    title={name}
+                    dirty={false}
+                    portType={portType}
+                />
             </Card>
         </div>
     );

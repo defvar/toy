@@ -20,7 +20,7 @@ export interface ServiceResponseItem {
 }
 
 export interface ServiceResponse {
-    items: ServiceResponseItem[];
+    readonly items: ServiceResponseItem[];
 }
 
 export interface GraphNode {

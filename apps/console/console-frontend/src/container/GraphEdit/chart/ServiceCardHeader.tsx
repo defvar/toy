@@ -1,8 +1,10 @@
 import * as React from "react";
 import { makeStyles, Theme, createStyles } from "@material-ui/core/styles";
-import DescriptionIcon from "@material-ui/icons/Description";
+import FunctionsIcon from "@material-ui/icons/Functions";
+import AllOutIcon from "@material-ui/icons/AllOut";
 import CheckBoxOutlineBlankIcon from "@material-ui/icons/CheckBoxOutlineBlank";
 import CardHeader from "@material-ui/core/CardHeader";
+import { PortType } from "../../../modules/graphEdit/types";
 
 const useStyles = makeStyles((theme: Theme) =>
     createStyles({
@@ -14,14 +16,18 @@ const useStyles = makeStyles((theme: Theme) =>
 
 export interface ServiceCardHeaderProps {
     title: string;
-    subheader: string;
-    icon?: string;
+    dirty: boolean;
+    portType: PortType;
 }
 
-const getIcon = (icon: string) => {
-    switch (icon) {
-        case "file":
-            return <DescriptionIcon />;
+const getIcon = (portType: PortType) => {
+    switch (portType) {
+        case "Source":
+            return <AllOutIcon />;
+        case "Flow":
+            return <FunctionsIcon />;
+        case "Sink":
+            return <CheckBoxOutlineBlankIcon />;
         default:
             return <CheckBoxOutlineBlankIcon />;
     }
@@ -29,16 +35,13 @@ const getIcon = (icon: string) => {
 
 export const ServiceCardHeader = (props: ServiceCardHeaderProps) => {
     const classes = useStyles();
+    const title = props.dirty ? ` * ${props.title}` : props.title;
 
     return (
         <CardHeader
             className={classes.card}
-            avatar={
-                getIcon(props.icon)
-                // <Avatar aria-label="service-icon">{getIcon(props.icon)}</Avatar>
-            }
-            title={props.title}
-            subheader={props.subheader}
+            avatar={getIcon(props.portType)}
+            title={title}
         />
     );
 };

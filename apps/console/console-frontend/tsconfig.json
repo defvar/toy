@@ -3,10 +3,13 @@
         "outDir": "./dist/",
         "sourceMap": true,
         "module": "commonjs",
-        "target": "es6",
-        "jsx": "react"
+        "target": "es2017",
+        "jsx": "react",
+        "types": ["jest", "node"]
     },
     "include": [
-        "./src/**/*"
+        "./src/**/*",
+        "./__tests__/**/*",
+        "./jest.config.ts"
     ]
 }

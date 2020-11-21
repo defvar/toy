@@ -8,6 +8,7 @@ import Collapse from "@material-ui/core/Collapse";
 import ExpandLess from "@material-ui/icons/ExpandLess";
 import ExpandMore from "@material-ui/icons/ExpandMore";
 import { SidebarItem } from "./SidebarItem";
+import { PortType } from "../../../modules/graphEdit/types";
 
 const useStyles = makeStyles((theme: Theme) =>
     createStyles({
@@ -30,6 +31,7 @@ export interface SidebarProps {
             description: string;
             inPort: number;
             outPort: number;
+            portType: PortType;
         };
     };
     namespaces: {

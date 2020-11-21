@@ -8,6 +8,6 @@ export function isObject(obj: unknown): obj is unknown {
     );
 }
 
-export function isArray(value: any): value is any[] {
+export function isArray(value: unknown): value is unknown[] {
     return Array.isArray(value);
 }

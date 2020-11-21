@@ -105,6 +105,7 @@ async fn publish(
     mut tx: Outgoing<Frame, ServiceError>,
 ) -> Result<PublishContext, ServiceError> {
     info!("publish");
+
     let _ = tx.send_ok(Frame::from(1u32)).await?;
     let _ = tx.send_ok(Frame::from(2u32)).await?;
     let _ = tx.send_ok(Frame::from(3u32)).await?;
@@ -200,25 +201,41 @@ fn main() {
 
     // runtime for services
     let service_rt = FutureRsRuntime {
-        pool: ThreadPool::new().unwrap(),
+        pool: ThreadPool::builder().pool_size(1).create().unwrap(),
     };
     // runtime for supervisor
     let sv_rt = FutureRsRuntime {
-        pool: ThreadPool::new().unwrap(),
+        pool: ThreadPool::builder().pool_size(2).create().unwrap(),
     };
 
-    let (sv, mut tx, _) = Supervisor::new(service_rt, a);
+    let (sv, mut tx, mut rx) = Supervisor::new(service_rt, a);
 
     // supervisor start
     sv_rt.spawn(async {
         let _ = sv.run().await;
     });
 
-    // send request to supervisor
+    info!(
+        "send task request to supervisor {:?}",
+        thread::current().id()
+    );
     let _ = block_on(async {
         let _ = tx.send_ok(Request::Task(graph())).await;
     });
 
-    // wait task end
-    thread::sleep(Duration::from_secs(3));
+    info!(
+        "send shutdown request to supervisor {:?}",
+        thread::current().id()
+    );
+    let _ = block_on(async {
+        let _ = tx.send_ok(Request::Shutdown).await;
+    });
+
+    info!(
+        "waiting shutdown reply from supervisor {:?}",
+        thread::current().id()
+    );
+    let _ = block_on(async {
+        rx.next().await;
+    });
 }

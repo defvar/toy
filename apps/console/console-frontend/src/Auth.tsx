@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Redirect } from "react-router-dom";
+import { Redirect, useLocation } from "react-router-dom";
 import { AuthContext } from "./context";
 import { makeStyles, createStyles } from "@material-ui/core/styles";
 import CircularProgress from "@material-ui/core/CircularProgress";
@@ -28,6 +28,7 @@ const useStyles = makeStyles(() =>
 
 export const Auth = ({ children, redirectByReject }: AuthProps) => {
     const classes = useStyles();
+    const location = useLocation();
     const { currentUser, isProgress } = React.useContext(AuthContext);
 
     if (isProgress) {
@@ -38,13 +39,15 @@ export const Auth = ({ children, redirectByReject }: AuthProps) => {
         );
     } else {
         if (currentUser) {
+            console.debug("auth ok");
             return (
                 <>
-                    <Redirect to={"/"} />
+                    <Redirect to={location.pathname} />
                     {children}
                 </>
             );
         } else {
+            console.debug("auth ng");
             return <Redirect to={redirectByReject} />;
         }
     }

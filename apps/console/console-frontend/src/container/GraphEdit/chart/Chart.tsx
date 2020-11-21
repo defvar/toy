@@ -4,6 +4,7 @@ import { Node } from "./Node";
 import { ChartData } from "../../../modules/graphEdit/types";
 import { chartHandler } from "./chartHandler";
 import { Actions } from "../../../modules/graphEdit";
+import { CustomPort } from "./Port";
 
 export interface ChartProps {
     data: ChartData;
@@ -16,9 +17,13 @@ export const Chart = React.memo((props: ChartProps) => {
     return (
         <FlowChart
             chart={data}
-            Components={{ NodeInner: Node }}
+            Components={{ NodeInner: Node, Port: CustomPort }}
             callbacks={handlers}
-            config={{ zoom: { wheel: { disabled: true } } }}
+            config={{
+                zoom: { wheel: { disabled: true } },
+                selectable: true,
+                nodeProps: { dispatch },
+            }}
         />
     );
 });

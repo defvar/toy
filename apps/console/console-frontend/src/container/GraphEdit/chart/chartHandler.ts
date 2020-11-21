@@ -116,10 +116,6 @@ export const chartHandler = (
         },
         onNodeDoubleClick: (input: INodeBaseInput) => {
             dispatch({
-                type: "StartEditNode",
-                payload: input.nodeId,
-            });
-            dispatch({
                 type: "ChangeChart",
                 payload: actions.onNodeDoubleClick(input),
             });

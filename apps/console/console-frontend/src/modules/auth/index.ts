@@ -6,10 +6,22 @@ export type AuthUser = {
 };
 
 export const getIdToken = () => {
-    return app.auth().currentUser.getIdToken();
+    if (process.env.DEV_AUTH == "none") {
+        return Promise.resolve("");
+    } else {
+        return app.auth().currentUser.getIdToken();
+    }
 };
 
 export const onAuthStateChanged = (fn: (user: AuthUser) => void): void => {
+    if (process.env.DEV_AUTH == "none") {
+        fn({
+            email: process.env.DEV_AUTH_USER_EMAIL,
+            name: process.env.DEV_AUTH_USER_NAME,
+        });
+        return;
+    }
+
     app.auth().onAuthStateChanged((fireBaseUser) => {
         if (fireBaseUser) {
             fn({
@@ -23,6 +35,13 @@ export const onAuthStateChanged = (fn: (user: AuthUser) => void): void => {
 };
 
 export const signinWithPopupToGoogle = async (): Promise<AuthUser> => {
+    if (process.env.DEV_AUTH == "none") {
+        return Promise.resolve({
+            email: process.env.DEV_AUTH_USER_EMAIL,
+            name: process.env.DEV_AUTH_USER_NAME,
+        });
+    }
+
     const r = await app.auth().signInWithPopup(googleAuthProvider());
     return {
         email: r.user.email,
@@ -31,5 +50,9 @@ export const signinWithPopupToGoogle = async (): Promise<AuthUser> => {
 };
 
 export const signOut = async (): Promise<void> => {
+    if (process.env.DEV_AUTH == "none") {
+        return Promise.resolve();
+    }
+
     return app.auth().signOut();
 };

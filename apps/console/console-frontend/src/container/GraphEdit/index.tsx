@@ -8,7 +8,6 @@ import {
 } from "@material-ui/core/styles";
 import Typography from "@material-ui/core/Typography";
 import RefreshIcon from "@material-ui/icons/Refresh";
-import UndoIcon from "@material-ui/icons/Undo";
 import IconButton from "@material-ui/core/IconButton";
 import { Sidebar, Chart } from "./chart";
 import ZoomInIcon from "@material-ui/icons/ZoomIn";
@@ -25,13 +24,13 @@ import { Resizable } from "react-resizable";
 import AppBar from "@material-ui/core/AppBar";
 import Tabs from "@material-ui/core/Tabs";
 import Tab from "@material-ui/core/Tab";
-import { Form, ValidationResult } from "../../components/form";
 import {
     ServiceResponse,
     fetchServices,
     fetchGraph,
     GraphResponse,
 } from "../../modules/api/toy-api";
+import { NodeEditor } from "./NodeEditor";
 
 const useStyles = makeStyles((theme: Theme) =>
     createStyles({
@@ -110,15 +109,6 @@ const ChartSuspense = (props: GraphEditSuspenseProps) => {
     return <Chart data={props.state.graph} dispatch={props.dispatch} />;
 };
 
-function validate(v: any): ValidationResult {
-    const r = { name: "root", errors: [] };
-    // if (!v.a2 || v.a2 == "") {
-    //     r = addErrors(r, "a2", [{ message: "reqreq" }]);
-    // }
-    // r = addErrors(r, "a4.a42", [{ message: "aaaaa" }, { message: "bbbbbbb" }]);
-    return r;
-}
-
 export const GraphEdit = () => {
     const { name } = useParams();
     const classes = useStyles();
@@ -139,10 +129,6 @@ export const GraphEdit = () => {
 
     const onSidebarRefleshClick = React.useCallback(() => {
         setServiceResource(() => fetchServices());
-    }, []);
-
-    const onPropertyRevertClick = React.useCallback(() => {
-        console.log("revert!");
     }, []);
 
     const handleZoomIn = React.useCallback(() => {
@@ -173,13 +159,6 @@ export const GraphEdit = () => {
         },
         [state.services]
     );
-
-    const handleFormOnChange = React.useCallback((v) => {
-        dispatch({
-            type: "ChangeEditNode",
-            payload: v,
-        });
-    }, []);
 
     return (
         <div className={classes.root}>
@@ -243,7 +222,6 @@ export const GraphEdit = () => {
                         aria-label="tabs"
                     >
                         <Tab label="Services" />
-                        <Tab label="Property" />
                     </Tabs>
                 </AppBar>
                 <div hidden={tabNumber !== 0}>
@@ -271,25 +249,12 @@ export const GraphEdit = () => {
                         />
                     </React.Suspense>
                 </div>
-                <div hidden={tabNumber !== 1}>
-                    <IconButton
-                        aria-label="undo"
-                        onClick={onPropertyRevertClick}
-                    >
-                        <UndoIcon />
-                    </IconButton>
-                    <Typography className={classes.heading}>
-                        {state.edit.id}
-                    </Typography>
-                    <Form
-                        data={state.edit.config}
-                        liveValidation={false}
-                        onChange={handleFormOnChange}
-                        validate={validate}
-                        schema={state.edit.configSchema}
-                    />
-                </div>
             </div>
+            <NodeEditor
+                state={state}
+                dispatch={dispatch}
+                open={!!state.edit.id}
+            />
         </div>
     );
 };

@@ -23,7 +23,10 @@ export interface ZoomChart {
 
 export interface StartEditNode {
     type: "StartEditNode";
-    payload: string; // node key
+    /**
+     * node id
+     */
+    payload: string;
 }
 
 export interface ChangeEditNode {
@@ -32,10 +35,20 @@ export interface ChangeEditNode {
     payload: any;
 }
 
+export interface SubmitEditNode {
+    type: "SubmitEditNode";
+}
+
+export interface CancelEditNode {
+    type: "CancelEditNode";
+}
+
 export type Actions =
     | GetServices
     | GetGraph
     | ChangeChart
     | ZoomChart
     | StartEditNode
-    | ChangeEditNode;
+    | ChangeEditNode
+    | SubmitEditNode
+    | CancelEditNode;
