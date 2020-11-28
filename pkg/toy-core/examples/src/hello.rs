@@ -1,27 +1,10 @@
-use futures::executor::{block_on, ThreadPool};
-use futures::FutureExt;
-use log::info;
-use std::future::Future;
 use std::thread;
 use std::time::Duration;
 use toy_core::prelude::*;
 use toy_core::registry::{app, plugin, PortType};
 use toy_core::supervisor::{Request, Supervisor};
 use toy_pack_derive::*;
-
-struct FutureRsRuntime {
-    pool: ThreadPool,
-}
-
-impl AsyncRuntime for FutureRsRuntime {
-    fn spawn<F>(&self, future: F)
-    where
-        F: Future + Send + 'static,
-        F::Output: Send + 'static,
-    {
-        self.pool.spawn_ok(future.map(|_| ()));
-    }
-}
+use tracing_subscriber::fmt::format::FmtSpan;
 
 #[derive(Debug)]
 pub struct PublishContext;
@@ -79,7 +62,7 @@ async fn accumulate(
         Value::U32(v) => ctx.count += *v,
         _ => (),
     };
-    info!(
+    tracing::info!(
         "accumulate value:{:?} from port:{:?} -> ctx:{:?}",
         req,
         req.port(),
@@ -94,7 +77,7 @@ async fn receive(
     req: Frame,
     mut tx: Outgoing<Frame, ServiceError>,
 ) -> Result<ReceiveContext, ServiceError> {
-    info!("receive and send value {:?}.", req);
+    tracing::info!("receive and send value {:?}.", req);
     let _ = tx.send_ok(req).await?;
     Ok(ctx)
 }
@@ -104,7 +87,7 @@ async fn publish(
     _req: Frame,
     mut tx: Outgoing<Frame, ServiceError>,
 ) -> Result<PublishContext, ServiceError> {
-    info!("publish");
+    tracing::info!("publish");
 
     let _ = tx.send_ok(Frame::from(1u32)).await?;
     let _ = tx.send_ok(Frame::from(2u32)).await?;
@@ -163,18 +146,17 @@ fn graph() -> Graph {
     services.insert("services".to_string(), seq);
 
     let r = Graph::from(Value::Map(services)).unwrap();
-    info!("{:?}", r);
+    tracing::info!("{:?}", r);
     r
 }
 
 fn main() {
-    let env = env_logger::Env::default()
-        .filter_or("MY_LOG_LEVEL", "trace")
-        .write_style_or("MY_LOG_STYLE", "always");
-
-    let mut builder = env_logger::Builder::from_env(env);
-    builder.format_timestamp_nanos();
-    builder.init();
+    tracing_subscriber::fmt()
+        .with_max_level(tracing::Level::DEBUG)
+        .with_span_events(FmtSpan::CLOSE)
+        .with_thread_ids(true)
+        .with_thread_names(true)
+        .init();
 
     let c = plugin(
         "example",
@@ -193,49 +175,43 @@ fn main() {
         factory!(accumulate, AccumulateConfig, new_accumulate_context),
     );
 
-    let a = app(c);
-    log::debug!("{:?}", a);
+    let app = app(c);
+    tracing::debug!("{:?}", app);
 
-    info!("-----------------------------------");
-    info!("main thread {:?}", thread::current().id());
+    tracing::info!("-----------------------------------");
+    tracing::info!("main thread");
 
-    // runtime for services
-    let service_rt = FutureRsRuntime {
-        pool: ThreadPool::builder().pool_size(1).create().unwrap(),
-    };
     // runtime for supervisor
-    let sv_rt = FutureRsRuntime {
-        pool: ThreadPool::builder().pool_size(2).create().unwrap(),
-    };
+    let mut rt = toy_rt::RuntimeBuilder::new()
+        .threaded()
+        .core_threads(4)
+        .thread_name("toy-worker")
+        .build()
+        .unwrap();
 
-    let (sv, mut tx, mut rx) = Supervisor::new(service_rt, a);
+    let (sv, mut tx, mut rx) = Supervisor::new(toy_rt::Spawner, app);
 
     // supervisor start
-    sv_rt.spawn(async {
+    rt.spawn(async {
         let _ = sv.run().await;
     });
 
-    info!(
-        "send task request to supervisor {:?}",
-        thread::current().id()
-    );
-    let _ = block_on(async {
+    tracing::info!("send task request to supervisor");
+    let _ = rt.block_on(async {
         let _ = tx.send_ok(Request::Task(graph())).await;
     });
 
-    info!(
-        "send shutdown request to supervisor {:?}",
-        thread::current().id()
-    );
-    let _ = block_on(async {
+    thread::sleep(Duration::from_secs(3));
+
+    tracing::info!("send shutdown request to supervisor");
+    let _ = rt.block_on(async {
         let _ = tx.send_ok(Request::Shutdown).await;
     });
 
-    info!(
-        "waiting shutdown reply from supervisor {:?}",
-        thread::current().id()
-    );
-    let _ = block_on(async {
+    tracing::info!("waiting shutdown reply from supervisor");
+    let _ = rt.block_on(async {
         rx.next().await;
     });
+
+    thread::sleep(Duration::from_secs(3));
 }

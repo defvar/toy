@@ -17,14 +17,14 @@ fn main() {
     let sv_rt = toy_rt::RuntimeBuilder::new()
         .thread_name("supervisor")
         .threaded()
-        .core_threads(1)
+        .core_threads(4)
         .build()
         .unwrap();
 
     let mut api_rt = toy_rt::RuntimeBuilder::new()
         .thread_name("api-server")
         .threaded()
-        .core_threads(1)
+        .core_threads(2)
         .build()
         .unwrap();
 
@@ -32,13 +32,7 @@ fn main() {
         .plugin(toy_plugin_map::load())
         .plugin(toy_plugin_fanout::load());
 
-    let service_rt = toy_rt::RuntimeBuilder::new()
-        .thread_name("service-worker")
-        .threaded()
-        .build()
-        .unwrap();
-
-    let (sv, tx, rx) = Supervisor::new(service_rt, regi);
+    let (sv, tx, rx) = Supervisor::new(toy_rt::Spawner, regi);
 
     let server = toy_api_server::Server::new(EtcdStoreOpsFactory, FireAuth);
 

@@ -12,12 +12,24 @@ pub struct Frame {
 #[derive(Debug, Clone)]
 struct Header {
     port: u8,
+    frame_type: FrameType,
+}
+
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+pub enum FrameType {
+    Data,
+    Signal(Signal),
+}
+
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+pub enum Signal {
+    Stop,
 }
 
 impl Frame {
     pub fn from_value(v: Value) -> Self {
         Frame {
-            header: Header::new(),
+            header: Header::data(),
             payload: Box::new(v),
         }
     }
@@ -46,11 +58,32 @@ impl Frame {
     fn set_port(&mut self, port: u8) {
         self.header.port = port;
     }
+
+    pub fn stop() -> Frame {
+        Frame {
+            header: Header::signal(Signal::Stop),
+            payload: Box::new(Value::None),
+        }
+    }
+
+    pub fn is_stop(&self) -> bool {
+        self.header.frame_type == FrameType::Signal(Signal::Stop)
+    }
 }
 
 impl Header {
-    pub fn new() -> Self {
-        Self { port: 0 }
+    pub fn data() -> Self {
+        Self {
+            port: 0,
+            frame_type: FrameType::Data,
+        }
+    }
+
+    pub fn signal(v: Signal) -> Self {
+        Self {
+            port: 0,
+            frame_type: FrameType::Signal(v),
+        }
     }
 }
 

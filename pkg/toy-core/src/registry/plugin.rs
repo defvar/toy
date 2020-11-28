@@ -90,7 +90,7 @@ impl<S, F> Debug for Plugin<S, F> {
 
 impl<S, F, R> PluginRegistry for Plugin<S, F>
 where
-    S: Delegator<Request = Frame, Error = ServiceError, InitError = ServiceError>,
+    S: Delegator<Request = Frame, Error = ServiceError, InitError = ServiceError> + Clone,
     F: Fn() -> R + Clone,
     R: ServiceFactory<Request = Frame, Error = ServiceError, InitError = ServiceError>
         + Send
@@ -104,7 +104,7 @@ where
 
 impl<S, F, R> Delegator for Plugin<S, F>
 where
-    S: Delegator<Request = Frame, Error = ServiceError, InitError = ServiceError>,
+    S: Delegator<Request = Frame, Error = ServiceError, InitError = ServiceError> + Clone,
     F: Fn() -> R + Clone,
     R: ServiceFactory<Request = Frame, Error = ServiceError, InitError = ServiceError>
         + Send

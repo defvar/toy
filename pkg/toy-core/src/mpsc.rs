@@ -1,50 +1,24 @@
 use crate::error::Error;
-use futures_util::future::Either;
 use std::collections::HashMap;
-use tokio::sync::broadcast::Receiver as BroadcastReveiver;
 use tokio::sync::mpsc::{self, Receiver, Sender};
 
 pub fn channel<T, Err>(buffer: usize) -> (Outgoing<T, Err>, Incoming<T, Err>) {
     let (tx, rx) = mpsc::channel(buffer);
-    (Outgoing::new(tx), Incoming::new(rx, None))
-}
-
-pub fn channel_with_supervisor_channel<T, Err>(
-    buffer: usize,
-    sv_rx: BroadcastReveiver<()>,
-) -> (Outgoing<T, Err>, Incoming<T, Err>) {
-    let (tx, rx) = mpsc::channel(buffer);
-    (Outgoing::new(tx), Incoming::new(rx, Some(sv_rx)))
+    (Outgoing::new(tx), Incoming::new(rx))
 }
 
 #[derive(Debug)]
 pub struct Incoming<T, Err> {
     inner: Receiver<Result<T, Err>>,
-    /// receive stop message from supervisor.
-    sv_rx: Option<BroadcastReveiver<()>>,
 }
 
 impl<T, Err> Incoming<T, Err> {
-    pub fn new(
-        rx: Receiver<Result<T, Err>>,
-        sv_rx: Option<BroadcastReveiver<()>>,
-    ) -> Incoming<T, Err> {
-        Incoming { inner: rx, sv_rx }
+    pub fn new(rx: Receiver<Result<T, Err>>) -> Incoming<T, Err> {
+        Incoming { inner: rx }
     }
 
     pub async fn next(&mut self) -> Option<Result<T, Err>> {
-        if self.sv_rx.is_some() {
-            let f1 = self.sv_rx.as_mut().unwrap().recv();
-            let f2 = self.inner.recv();
-            futures_util::pin_mut!(f1);
-            futures_util::pin_mut!(f2);
-            match futures_util::future::select(f1, f2).await {
-                Either::Left((_, _)) => None,
-                Either::Right((v, _)) => v,
-            }
-        } else {
-            self.inner.recv().await
-        }
+        self.inner.recv().await
     }
 }
 
@@ -73,7 +47,8 @@ impl<T, Err> Outgoing<T, Err> {
     }
 
     pub fn merge(&mut self, tx: Outgoing<T, Err>) {
-        self.inner.extend(tx.inner)
+        self.inner.extend(tx.inner);
+        self.port_map.extend(tx.port_map);
     }
 
     /// merge, specified input port.

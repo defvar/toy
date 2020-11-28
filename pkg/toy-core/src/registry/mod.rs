@@ -41,7 +41,7 @@ where
 }
 
 pub trait PluginRegistry:
-    Registry + Delegator<Request = Frame, Error = ServiceError, InitError = ServiceError>
+    Registry + Delegator<Request = Frame, Error = ServiceError, InitError = ServiceError> + Clone
 {
 }
 

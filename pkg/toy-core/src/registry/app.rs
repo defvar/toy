@@ -6,11 +6,13 @@ use crate::service_type::ServiceType;
 use crate::service_uri::Uri;
 use std::fmt::{self, Debug};
 
+#[derive(Clone)]
 pub struct App<O, P> {
     inner: Inner<O, P>,
     schemas: Vec<ServiceSchema>,
 }
 
+#[derive(Clone)]
 struct Inner<O, P> {
     other: Option<O>,
     plugin: P,
