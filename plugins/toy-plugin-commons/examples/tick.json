@@ -1,0 +1,42 @@
+{
+    "name": "example-tick",
+    "services": [
+        {
+            "type": "plugin.common.timer.tick",
+            "uri": "tick",
+            "port_type": { "Source": 1 },
+            "config": {
+                "interval_millis": 1000
+            },
+            "wires": ["broadcast"]
+        },
+        {
+            "type": "plugin.common.fanout.broadcast",
+            "uri": "broadcast",
+            "port_type": { "Flow": [1, 2] },
+            "config": {
+            },
+            "wires": ["write1", "write2"]
+        },
+        {
+            "type": "plugin.common.file.writer",
+            "uri": "write1",
+            "port_type": { "Sink": 1 },
+            "config": {
+                "kind": "File",
+                "path": "/tmp/tick1.out"
+            },
+            "wires": []
+        },
+        {
+            "type": "plugin.common.file.writer",
+            "uri": "write2",
+            "port_type": { "Sink": 1 },
+            "config": {
+                "kind": "File",
+                "path": "/tmp/tick2.out"
+            },
+            "wires": []
+        }
+    ]
+}

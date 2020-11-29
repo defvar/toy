@@ -1,5 +1,4 @@
 use toy_core::data::Map;
-use toy_core::prelude::Value;
 
 #[test]
 fn get_or_insert() {

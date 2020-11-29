@@ -11,7 +11,7 @@ use std::task::{Context, Poll};
 pub fn fn_service<F, Ctx, Req, Fut, Err>(tp: ServiceType, f: F) -> FnService<F, Ctx, Req, Fut, Err>
 where
     F: FnMut(Ctx, Req, Outgoing<Req, Err>) -> Fut,
-    Fut: Future<Output = Result<Ctx, Err>> + Send,
+    Fut: Future<Output = Result<ServiceContext<Ctx>, Err>> + Send,
 {
     FnService {
         tp,
@@ -55,10 +55,23 @@ pub trait ServiceFactory {
     ) -> Result<Self::Context, Self::InitError>;
 }
 
+/// A value for reporting the current context to the executor.
+/// The executor changes its behavior depending on this value.
+pub enum ServiceContext<T> {
+    /// processed request and waiting next request.
+    Ready(T),
+
+    /// complete service. not waiting next request.
+    Complete(T),
+
+    /// force next step, ignored request.
+    Next(T),
+}
+
 pub trait Service {
     type Context;
     type Request;
-    type Future: Future<Output = Result<Self::Context, Self::Error>> + Send;
+    type Future: Future<Output = Result<ServiceContext<Self::Context>, Self::Error>> + Send;
     type Error;
 
     fn handle(
@@ -80,7 +93,7 @@ pub trait Service {
 pub struct FnService<F, Ctx, Req, Fut, Err>
 where
     F: FnMut(Ctx, Req, Outgoing<Req, Err>) -> Fut,
-    Fut: Future<Output = Result<Ctx, Err>> + Send,
+    Fut: Future<Output = Result<ServiceContext<Ctx>, Err>> + Send,
 {
     tp: ServiceType,
     f: F,
@@ -90,7 +103,7 @@ where
 impl<F, Ctx, Req, Fut, Err> Service for FnService<F, Ctx, Req, Fut, Err>
 where
     F: FnMut(Ctx, Req, Outgoing<Req, Err>) -> Fut,
-    Fut: Future<Output = Result<Ctx, Err>> + Send,
+    Fut: Future<Output = Result<ServiceContext<Ctx>, Err>> + Send,
 {
     type Context = Ctx;
     type Request = Req;
@@ -110,7 +123,7 @@ where
 impl<F, Ctx, Req, Fut, Err> Debug for FnService<F, Ctx, Req, Fut, Err>
 where
     F: FnMut(Ctx, Req, Outgoing<Req, Err>) -> Fut,
-    Fut: Future<Output = Result<Ctx, Err>> + Send,
+    Fut: Future<Output = Result<ServiceContext<Ctx>, Err>> + Send,
 {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), Error> {
         write!(f, "FnService {{ service_type:{:?} }}", self.tp)
@@ -199,7 +212,7 @@ pub struct NoopService;
 impl Service for NoopService {
     type Context = NoopContext;
     type Request = ();
-    type Future = Ready<Result<NoopContext, ()>>;
+    type Future = Ready<Result<ServiceContext<NoopContext>, ()>>;
     type Error = ();
 
     fn handle(
@@ -208,7 +221,7 @@ impl Service for NoopService {
         _req: Self::Request,
         _tx: Outgoing<Self::Request, Self::Error>,
     ) -> Self::Future {
-        ok(NoopContext)
+        ok(ServiceContext::Complete(NoopContext))
     }
 }
 

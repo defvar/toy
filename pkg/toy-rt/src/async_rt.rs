@@ -44,22 +44,12 @@ impl AsyncSpawner for Spawner {
 impl RuntimeBuilder {
     pub fn new() -> RuntimeBuilder {
         RuntimeBuilder {
-            builder: Builder::new(),
+            builder: Builder::new_multi_thread(),
         }
     }
 
-    pub fn basic(&mut self) -> &mut RuntimeBuilder {
-        self.builder.basic_scheduler().enable_all();
-        self
-    }
-
-    pub fn threaded(&mut self) -> &mut RuntimeBuilder {
-        self.builder.threaded_scheduler().enable_all();
-        self
-    }
-
-    pub fn core_threads(&mut self, v: usize) -> &mut RuntimeBuilder {
-        self.builder.core_threads(v);
+    pub fn worker_threads(&mut self, v: usize) -> &mut RuntimeBuilder {
+        self.builder.worker_threads(v);
         self
     }
 
@@ -74,7 +64,7 @@ impl RuntimeBuilder {
     }
 
     pub fn build(&mut self) -> Result<Runtime, io::Error> {
-        let rt = self.builder.build()?;
+        let rt = self.builder.enable_all().build()?;
         Ok(Runtime { rt })
     }
 }

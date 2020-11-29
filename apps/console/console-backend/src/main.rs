@@ -16,15 +16,13 @@ fn main() {
 
     let sv_rt = toy_rt::RuntimeBuilder::new()
         .thread_name("supervisor")
-        .threaded()
-        .core_threads(4)
+        .worker_threads(4)
         .build()
         .unwrap();
 
     let mut api_rt = toy_rt::RuntimeBuilder::new()
         .thread_name("api-server")
-        .threaded()
-        .core_threads(2)
+        .worker_threads(2)
         .build()
         .unwrap();
 

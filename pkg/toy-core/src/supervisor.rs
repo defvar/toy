@@ -17,7 +17,7 @@ use uuid::Uuid;
 
 #[derive(Debug)]
 pub enum Request {
-    Task(Graph),
+    Task(Graph, oneshot::Outgoing<TaskResponse, ServiceError>),
     Stop(Uuid),
     Services(oneshot::Outgoing<Response, ServiceError>),
     Shutdown,
@@ -28,14 +28,18 @@ pub enum Response {
     Services(Vec<ServiceSchema>),
 }
 
+#[derive(Debug, Clone)]
+pub struct TaskResponse(Uuid);
+
+impl TaskResponse {
+    pub fn uuid(&self) -> Uuid {
+        self.0
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum SystemMessage {
     Shutdown,
-}
-
-#[derive(Debug, Clone, PartialEq)]
-pub enum NodeMessage {
-    Stoped(Uri),
 }
 
 impl OutgoingMessage for Request {
@@ -50,10 +54,6 @@ impl OutgoingMessage for SystemMessage {
     fn set_port(&mut self, _port: u8) {}
 }
 
-impl OutgoingMessage for NodeMessage {
-    fn set_port(&mut self, _port: u8) {}
-}
-
 #[derive(Debug)]
 pub struct RunningTask {
     uuid: Uuid,
@@ -65,9 +65,9 @@ pub struct RunningTask {
 }
 
 impl RunningTask {
-    pub fn new(graph: Graph, txs: HashMap<Uri, Outgoing<Frame, ServiceError>>) -> Self {
+    pub fn new(uuid: Uuid, graph: Graph, txs: HashMap<Uri, Outgoing<Frame, ServiceError>>) -> Self {
         Self {
-            uuid: Uuid::new_v4(),
+            uuid,
             started_at: SystemTime::now()
                 .duration_since(UNIX_EPOCH)
                 .expect("Time went backwards"),
@@ -78,6 +78,10 @@ impl RunningTask {
 
     pub fn uuid(&self) -> Uuid {
         self.uuid
+    }
+
+    pub fn started_at(&self) -> Duration {
+        self.started_at
     }
 }
 
@@ -92,10 +96,6 @@ pub struct Supervisor<T, O, P> {
 
     /// receive any request from api server.
     rx: Incoming<Request, ServiceError>,
-
-    tx_node: Outgoing<NodeMessage, ServiceError>,
-
-    rx_node: Incoming<NodeMessage, ServiceError>,
 
     tasks: Arc<Mutex<HashMap<Uuid, RunningTask>>>,
 }
@@ -124,15 +124,12 @@ where
     ) {
         let (tx_req, rx_req) = mpsc::channel::<Request, ServiceError>(1024);
         let (tx_sys, rx_sys) = mpsc::channel::<SystemMessage, ServiceError>(1024);
-        let (tx_node, rx_node) = mpsc::channel::<NodeMessage, ServiceError>(32);
         (
             Supervisor {
                 spawner,
                 app: registry,
                 tx: tx_sys,
                 rx: rx_req,
-                tx_node,
-                rx_node,
                 tasks: Arc::new(Mutex::new(HashMap::new())),
             },
             tx_req,
@@ -147,30 +144,30 @@ where
         while let Some(r) = self.rx.next().await {
             match r {
                 Ok(m) => match m {
-                    Request::Task(g) => {
+                    Request::Task(g, tx) => {
                         let graph = g.clone();
                         let app = self.app.clone();
                         let tasks = Arc::clone(&self.tasks);
                         let s = self.spawner.clone();
-                        let tx_node = self.tx_node.clone();
+                        let uuid = Uuid::new_v4();
                         let _ = self.spawner.spawn(async move {
-                            let (e, txs) = Executor::new(s, g, tx_node);
-                            let task = RunningTask::new(graph, txs);
-                            let uuid = task.uuid();
+                            let (e, txs) = Executor::new(s, g);
+                            let task = RunningTask::new(uuid, graph, txs);
                             {
                                 let mut tasks = tasks.lock().await;
                                 let _ = tasks.insert(uuid, task);
                                 tracing::debug!("add task store. uuid:{:?}", uuid);
                             }
                             let _ = e.run(app, Frame::default()).await;
-                            tracing::debug!("end run.");
                             {
                                 let mut tasks = tasks.lock().await;
                                 let _ = tasks.remove(&uuid);
                                 tracing::debug!("remove task store. uuid:{:?}", uuid);
                             }
+                            tracing::info!("end task. uuid:{:?}", uuid);
                             ()
                         });
+                        let _ = tx.send_ok(TaskResponse(uuid)).await;
                     }
                     Request::Stop(uuid) => {
                         let tasks = Arc::clone(&self.tasks);

@@ -47,8 +47,14 @@ impl<T, Err> Outgoing<T, Err> {
     }
 
     pub fn merge(&mut self, tx: Outgoing<T, Err>) {
+        let next = self.inner.len();
+        let mut inner_idx = 0;
+        for i in next..(next + tx.inner.len()) {
+            self.port_map
+                .insert(i as u8, *tx.port_map.get(&inner_idx).unwrap());
+            inner_idx += 1;
+        }
         self.inner.extend(tx.inner);
-        self.port_map.extend(tx.port_map);
     }
 
     /// merge, specified input port.
@@ -105,6 +111,18 @@ where
 
     pub async fn send_ok_to(&mut self, port: u8, v: T) -> Result<(), Err> {
         self.send_to(port, Ok(v)).await
+    }
+
+    pub async fn send_ok_all(&mut self, v: T) -> Vec<Result<(), Err>>
+    where
+        T: Clone,
+    {
+        let mut vec: Vec<Result<(), Err>> = vec![];
+        for p in self.ports() {
+            let r = self.send_ok_to(p, v.clone()).await;
+            vec.push(r);
+        }
+        vec
     }
 
     pub fn ports(&self) -> OutgoingPortIter {

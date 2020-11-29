@@ -18,5 +18,5 @@ services:
     uri: "writer"
     config:
         kind: File
-        path: "./examples/file.out"
+        path: "/tmp/file.out"
     wires:

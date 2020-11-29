@@ -8,8 +8,9 @@ use std::convert::Infallible;
 use toy_core::error::ServiceError;
 use toy_core::graph::Graph;
 use toy_core::mpsc::Outgoing;
+use toy_core::oneshot;
 use toy_core::prelude::Value;
-use toy_core::supervisor::Request;
+use toy_core::supervisor::{Request, TaskResponse};
 use warp::http::StatusCode;
 use warp::reply::Reply;
 
@@ -82,25 +83,28 @@ where
                 Ok(v) => v,
                 Err(e) => {
                     tracing::error!("error:{:?}", e);
-                    return Ok(StatusCode::INTERNAL_SERVER_ERROR);
+                    return Ok(StatusCode::INTERNAL_SERVER_ERROR.into_response());
                 }
             };
             let graph = match Graph::from(v) {
                 Ok(g) => g,
                 Err(e) => {
                     tracing::error!("error:{:?}", e);
-                    return Ok(StatusCode::INTERNAL_SERVER_ERROR);
+                    return Ok(StatusCode::INTERNAL_SERVER_ERROR.into_response());
                 }
             };
-            tx.send_ok(Request::Task(graph))
-                .await
-                .map(|_| StatusCode::OK)
-                .or_else(|_| Ok(StatusCode::INTERNAL_SERVER_ERROR))
+            let (tx_, rx_) = oneshot::channel::<TaskResponse, ServiceError>();
+            let _ = tx.send_ok(Request::Task(graph, tx_)).await;
+            if let Some(Ok(r)) = rx_.recv().await {
+                Ok(common::reply::json(&(r.uuid().to_string())).into_response())
+            } else {
+                Ok(StatusCode::INTERNAL_SERVER_ERROR.into_response())
+            }
         }
-        Ok(None) => Ok(StatusCode::NOT_FOUND),
+        Ok(None) => Ok(StatusCode::NOT_FOUND.into_response()),
         Err(e) => {
             tracing::error!("error:{:?}", e);
-            Ok(StatusCode::INTERNAL_SERVER_ERROR)
+            Ok(StatusCode::INTERNAL_SERVER_ERROR.into_response())
         }
     }
 }

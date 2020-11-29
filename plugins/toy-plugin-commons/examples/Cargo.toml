@@ -6,8 +6,8 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dev-dependencies]
-log = "0.4"
-env_logger = "0.7.1"
+tracing = "0.1"
+tracing-subscriber = "0.2"
 failure = "0.1.6"
 
 # runtime
@@ -19,11 +19,18 @@ toy-pack = {path = "../../../shared/toy-pack", features = ["derive"]}
 
 # config
 toy-pack-yaml = {path = "../../../shared/toy-pack-yaml"}
+toy-pack-json = {path = "../../../shared/toy-pack-json"}
 
 # plugin
 toy-plugin-file = {path = "../toy-plugin-file"}
 toy-plugin-map = {path = "../toy-plugin-map"}
+toy-plugin-timer = {path = "../toy-plugin-timer"}
+toy-plugin-fanout = {path = "../toy-plugin-fanout"}
 
 [[example]]
 name = "file"
 path = "file.rs"
+
+[[example]]
+name = "tick"
+path = "tick.rs"

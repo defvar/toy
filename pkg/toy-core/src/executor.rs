@@ -4,10 +4,9 @@ use crate::graph::{Graph, InputWire, OutputWire};
 use crate::mpsc;
 use crate::mpsc::{Incoming, Outgoing};
 use crate::registry::Delegator;
-use crate::service::{Service, ServiceFactory};
+use crate::service::{Service, ServiceContext, ServiceFactory};
 use crate::service_type::ServiceType;
 use crate::service_uri::Uri;
-use crate::supervisor::NodeMessage;
 use std::collections::HashMap;
 use std::future::Future;
 use toy_pack::deser::DeserializableOwned;
@@ -47,18 +46,13 @@ pub struct Executor<T> {
     graph: Graph,
     inputs: HashMap<Uri, Incoming<Frame, ServiceError>>,
     outputs: HashMap<Uri, Outgoing<Frame, ServiceError>>,
-    tx_to_sv: Outgoing<NodeMessage, ServiceError>,
 }
 
 impl<T> Executor<T>
 where
     T: AsyncSpawner,
 {
-    pub fn new(
-        spawner: T,
-        graph: Graph,
-        tx_to_sv: Outgoing<NodeMessage, ServiceError>,
-    ) -> (Self, HashMap<Uri, Outgoing<Frame, ServiceError>>) {
+    pub fn new(spawner: T, graph: Graph) -> (Self, HashMap<Uri, Outgoing<Frame, ServiceError>>) {
         let mut inputs: HashMap<Uri, Incoming<Frame, ServiceError>> = HashMap::new();
         let mut outputs: HashMap<Uri, Outgoing<Frame, ServiceError>> = HashMap::new();
 
@@ -132,7 +126,6 @@ where
                 graph,
                 inputs,
                 outputs,
-                tx_to_sv,
             },
             outputs_for_sv,
         )
@@ -185,7 +178,11 @@ where
                 Err(e) => tracing::error!("an error occured, awaiter. {:?}", e),
                 Ok(req) => {
                     if req.is_stop() {
-                        tracing::info!("receive stop signal awaiter.");
+                        tracing::info!("receive stop signal. awaiter.");
+                        break;
+                    }
+                    if req.is_upstream_finish() {
+                        tracing::info!("receive upstream finish signal. awaiter.");
                         break;
                     }
                 }
@@ -230,15 +227,13 @@ where
         }
 
         let s = self.spawner.clone();
-        let tx_to_sv = self.tx_to_sv.clone();
         match data::unpack::<F::Config>(config_value.unwrap().config()) {
             Ok(config) => {
                 s.spawn(async move {
                     match factory.new_service(service_type.clone()).await {
                         Ok(service) => match factory.new_context(service_type.clone(), config) {
                             Ok(ctx) => {
-                                if let Err(e) = process(rx, tx, service, ctx, &uri, tx_to_sv).await
-                                {
+                                if let Err(e) = process(rx, tx, service, ctx, &uri).await {
                                     tracing::error!(
                                         "an error occured; uri:{:?}, error:{:?}",
                                         uri,
@@ -271,39 +266,78 @@ async fn process<S, Ctx>(
     mut service: S,
     mut context: Ctx,
     uri: &Uri,
-    mut tx_to_sv: Outgoing<NodeMessage, ServiceError>,
 ) -> Result<(), ServiceError>
 where
     S: Service<Request = Frame, Error = ServiceError, Context = Ctx>,
 {
-    tracing::info!("start. uri:{:?}", uri);
+    tracing::info!("start node. uri:{:?}", uri);
     context = service.started(context);
 
-    let mut stopped = false;
+    let tx2 = tx.clone();
+    let mut force_next = false;
 
     //main loop, receive on message
-    while let Some(item) = rx.next().await {
+    loop {
+        let item = if force_next {
+            Some(Ok(Frame::default()))
+        } else {
+            rx.next().await
+        };
+
         match item {
-            Ok(req) => {
+            Some(Ok(req)) => {
                 if req.is_stop() {
                     tracing::info!("receive stop signal. uri:{:?}", uri);
-                    stopped = true;
+                    break;
+                }
+                if req.is_upstream_finish() {
+                    tracing::info!("receive upstream finish signal. uri:{:?}", uri);
+                    on_finish(tx2.clone(), uri).await;
                     break;
                 }
                 let tx = tx.clone();
-                context = service.handle(context, req, tx).await?;
+                match service.handle(context, req, tx).await? {
+                    ServiceContext::Complete(c) => {
+                        context = c;
+                        on_finish(tx2.clone(), uri).await;
+                        break;
+                    }
+                    ServiceContext::Ready(c) => {
+                        context = c;
+                        force_next = false;
+                    }
+                    ServiceContext::Next(c) => {
+                        context = c;
+                        force_next = true;
+                    }
+                }
             }
-            Err(e) => {
-                tracing::error!("process rx next error, :{:?}", e);
+            Some(Err(e)) => {
+                tracing::error!("node receive message error, :{:?}", e);
                 return Err(e);
+            }
+            None => {
+                break;
             }
         };
     }
 
     let _ = service.completed(context);
-    if stopped {
-        tx_to_sv.send_ok(NodeMessage::Stoped(uri.clone())).await?;
-    }
-    tracing::info!("end. uri:{:?}", uri);
+    tracing::info!("end node. uri:{:?}", uri);
     Ok(())
+}
+
+async fn on_finish(mut tx: Outgoing<Frame, ServiceError>, uri: &Uri) {
+    let results = tx.send_ok_all(Frame::upstream_finish()).await;
+    let results = results
+        .iter()
+        .filter_map(|x| x.as_ref().err())
+        .collect::<Vec<&ServiceError>>();
+    if results.len() > 0 {
+        tracing::error!(
+            "send upstream finish signal. uri:{:?}, ret:{:?}.",
+            uri,
+            results
+        );
+    }
 }

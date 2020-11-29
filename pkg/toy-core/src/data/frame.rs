@@ -1,12 +1,11 @@
 use super::value::Value;
 use crate::data::map::Map;
 use crate::mpsc::OutgoingMessage;
-use std::borrow::{Borrow, BorrowMut};
 
 #[derive(Debug, Clone)]
 pub struct Frame {
     header: Header,
-    payload: Box<Value>,
+    payload: Option<Value>,
 }
 
 #[derive(Debug, Clone)]
@@ -24,13 +23,14 @@ pub enum FrameType {
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum Signal {
     Stop,
+    UpstreamFinish,
 }
 
 impl Frame {
     pub fn from_value(v: Value) -> Self {
         Frame {
             header: Header::data(),
-            payload: Box::new(v),
+            payload: Some(v),
         }
     }
 
@@ -40,13 +40,16 @@ impl Frame {
     }
 
     #[inline]
-    pub fn value(&self) -> &Value {
-        self.payload.borrow()
+    pub fn value(&self) -> Option<&Value> {
+        match &self.payload {
+            Some(v) => Some(v),
+            None => None,
+        }
     }
 
     #[inline]
-    pub fn value_mut(&mut self) -> &mut Value {
-        self.payload.borrow_mut()
+    pub fn value_mut(&mut self) -> Option<&mut Value> {
+        self.payload.as_mut().map(|x| x)
     }
 
     #[inline]
@@ -62,12 +65,23 @@ impl Frame {
     pub fn stop() -> Frame {
         Frame {
             header: Header::signal(Signal::Stop),
-            payload: Box::new(Value::None),
+            payload: None,
+        }
+    }
+
+    pub fn upstream_finish() -> Frame {
+        Frame {
+            header: Header::signal(Signal::UpstreamFinish),
+            payload: None,
         }
     }
 
     pub fn is_stop(&self) -> bool {
         self.header.frame_type == FrameType::Signal(Signal::Stop)
+    }
+
+    pub fn is_upstream_finish(&self) -> bool {
+        self.header.frame_type == FrameType::Signal(Signal::UpstreamFinish)
     }
 }
 

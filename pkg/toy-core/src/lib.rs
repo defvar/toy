@@ -33,6 +33,7 @@ pub mod prelude {
     pub use super::graph::Graph;
     pub use super::mpsc::{Incoming, Outgoing};
     pub use super::registry::{app, plugin, App, Plugin, PluginRegistry, PortType, Registry};
+    pub use super::service::ServiceContext;
     pub use super::service_type::ServiceType;
     pub use super::service_uri::Uri;
     pub use super::{factory, map_value, seq_value};

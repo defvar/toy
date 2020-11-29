@@ -21,10 +21,16 @@ pub async fn typed(
     ctx: TypedContext,
     mut req: Frame,
     mut tx: Outgoing<Frame, ServiceError>,
-) -> Result<TypedContext, ServiceError> {
-    convert(&mut req.value_mut(), &ctx.config);
-    tx.send_ok(req).await?;
-    Ok(ctx)
+) -> Result<ServiceContext<TypedContext>, ServiceError> {
+    match req.value_mut() {
+        Some(v) => {
+            convert(v, &ctx.config);
+            tx.send_ok(req).await?;
+        }
+        None => (),
+    }
+
+    Ok(ServiceContext::Ready(ctx))
 }
 
 // transformer
@@ -56,10 +62,15 @@ macro_rules! transform {
             ctx: $ctx,
             mut req: Frame,
             mut tx: Outgoing<Frame, ServiceError>,
-        ) -> Result<$ctx, ServiceError> {
-            let _ = ctx.transformer.transform(&mut req.value_mut());
-            tx.send_ok(req).await?;
-            Ok(ctx)
+        ) -> Result<ServiceContext<$ctx>, ServiceError> {
+            match req.value_mut() {
+                Some(v) => {
+                    let _ = ctx.transformer.transform(v);
+                    tx.send_ok(req).await?;
+                }
+                None => (),
+            }
+            Ok(ServiceContext::Ready(ctx))
         }
     };
 }

@@ -1,5 +1,3 @@
-use std::thread;
-use std::time::Duration;
 use toy_core::prelude::*;
 use toy_core::registry::{app, plugin, PortType};
 use toy_core::supervisor::{Request, Supervisor};
@@ -57,8 +55,8 @@ async fn accumulate(
     mut ctx: AccumulateContext,
     req: Frame,
     mut tx: Outgoing<Frame, ServiceError>,
-) -> Result<AccumulateContext, ServiceError> {
-    match req.value() {
+) -> Result<ServiceContext<AccumulateContext>, ServiceError> {
+    match req.value().unwrap() {
         Value::U32(v) => ctx.count += *v,
         _ => (),
     };
@@ -69,24 +67,24 @@ async fn accumulate(
         ctx
     );
     let _ = tx.send_ok(Frame::default()).await?;
-    Ok(ctx)
+    Ok(ServiceContext::Ready(ctx))
 }
 
 async fn receive(
     ctx: ReceiveContext,
     req: Frame,
     mut tx: Outgoing<Frame, ServiceError>,
-) -> Result<ReceiveContext, ServiceError> {
+) -> Result<ServiceContext<ReceiveContext>, ServiceError> {
     tracing::info!("receive and send value {:?}.", req);
     let _ = tx.send_ok(req).await?;
-    Ok(ctx)
+    Ok(ServiceContext::Ready(ctx))
 }
 
 async fn publish(
     ctx: PublishContext,
     _req: Frame,
     mut tx: Outgoing<Frame, ServiceError>,
-) -> Result<PublishContext, ServiceError> {
+) -> Result<ServiceContext<PublishContext>, ServiceError> {
     tracing::info!("publish");
 
     let _ = tx.send_ok(Frame::from(1u32)).await?;
@@ -99,7 +97,7 @@ async fn publish(
     let _ = tx.send_ok_to(1, Frame::from(3u32)).await?;
     let _ = tx.send_ok_to(1, Frame::from(4u32)).await?;
 
-    Ok(ctx)
+    Ok(ServiceContext::Complete(ctx))
 }
 
 fn graph() -> Graph {
@@ -183,8 +181,7 @@ fn main() {
 
     // runtime for supervisor
     let mut rt = toy_rt::RuntimeBuilder::new()
-        .threaded()
-        .core_threads(4)
+        .worker_threads(4)
         .thread_name("toy-worker")
         .build()
         .unwrap();
@@ -198,20 +195,14 @@ fn main() {
 
     tracing::info!("send task request to supervisor");
     let _ = rt.block_on(async {
-        let _ = tx.send_ok(Request::Task(graph())).await;
-    });
-
-    thread::sleep(Duration::from_secs(3));
-
-    tracing::info!("send shutdown request to supervisor");
-    let _ = rt.block_on(async {
-        let _ = tx.send_ok(Request::Shutdown).await;
+        let (tx2, rx2) = toy_core::oneshot::channel();
+        let _ = tx.send_ok(Request::Task(graph(), tx2)).await;
+        let uuid = rx2.recv().await;
+        log::info!("task:{:?}", uuid);
     });
 
     tracing::info!("waiting shutdown reply from supervisor");
     let _ = rt.block_on(async {
         rx.next().await;
     });
-
-    thread::sleep(Duration::from_secs(3));
 }

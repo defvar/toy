@@ -190,7 +190,13 @@ impl Graph {
                             .ok()
                         })
                         .collect::<Vec<_>>();
-                    OutputWire::Fanout(uri.into(), wires)
+                    if wires.len() == 1 {
+                        OutputWire::Single(uri.into(), wires.get(0).unwrap().clone())
+                    } else if wires.len() > 1 {
+                        OutputWire::Fanout(uri.into(), wires)
+                    } else {
+                        OutputWire::None
+                    }
                 }
                 _ => {
                     return Err(ConfigError::invalid_key_type(

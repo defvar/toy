@@ -5,6 +5,7 @@ use std::io;
 use toy_core::data::{Frame, Map, Value};
 use toy_core::error::ServiceError;
 use toy_core::mpsc::Outgoing;
+use toy_core::service::ServiceContext;
 use toy_core::ServiceType;
 
 pub struct FileReadContext {
@@ -63,7 +64,7 @@ pub async fn read(
     mut ctx: FileReadContext,
     _req: Frame,
     mut tx: Outgoing<Frame, ServiceError>,
-) -> Result<FileReadContext, ServiceError> {
+) -> Result<ServiceContext<FileReadContext>, ServiceError> {
     while ctx.reader.read(&mut ctx.buf)? {
         let v = if ctx.reader.has_headers() {
             let v = ctx
@@ -81,16 +82,22 @@ pub async fn read(
         tx.send(Ok(v)).await?;
         ctx.line += 1;
     }
-    Ok(ctx)
+    Ok(ServiceContext::Complete(ctx))
 }
 
 pub async fn write(
     mut ctx: FileWriteContext,
     req: Frame,
     mut tx: Outgoing<Frame, ServiceError>,
-) -> Result<FileWriteContext, ServiceError> {
-    ctx.writer.write_value(req.value())?;
-    ctx.line += 1;
-    tx.send(Ok(Frame::none())).await?;
-    Ok(ctx)
+) -> Result<ServiceContext<FileWriteContext>, ServiceError> {
+    match req.value() {
+        Some(v) => {
+            ctx.writer.write_value(v)?;
+            ctx.line += 1;
+            tx.send(Ok(Frame::none())).await?;
+        }
+        None => (),
+    }
+
+    Ok(ServiceContext::Ready(ctx))
 }

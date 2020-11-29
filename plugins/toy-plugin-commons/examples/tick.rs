@@ -1,15 +1,10 @@
+use failure::_core::time::Duration;
 use std::io::Read;
-use std::time::Duration;
 use toy_core::prelude::*;
-use toy_core::registry::PortType;
 use toy_core::supervisor::{Request, Supervisor};
-use toy_plugin_file::config::*;
-use toy_plugin_file::service::*;
-use toy_plugin_map::config::*;
-use toy_plugin_map::service::*;
 use tracing_subscriber::fmt::format::FmtSpan;
 
-static CONFIG: &'static str = "./examples/file.yml";
+static CONFIG: &'static str = "./examples/tick.json";
 
 fn main() {
     tracing_subscriber::fmt()
@@ -19,31 +14,17 @@ fn main() {
         .with_thread_names(true)
         .init();
 
-    let c = plugin(
-        "example",
-        "write",
-        PortType::sink(),
-        factory!(write, FileWriteConfig, new_write_context),
-    )
-    .with(
-        "read",
-        PortType::source(),
-        factory!(read, FileReadConfig, new_read_context),
-    )
-    .with(
-        "mapping",
-        PortType::flow(),
-        factory!(mapping, MappingConfig, new_mapping_context),
-    );
-
-    let app = app(c);
+    let app = app(toy_plugin_timer::load())
+        .plugin(toy_plugin_file::load())
+        .plugin(toy_plugin_fanout::load());
 
     let mut f = std::fs::File::open(CONFIG).unwrap();
     let mut s = String::new();
     f.read_to_string(&mut s).unwrap();
 
-    if let Ok(config) = toy_pack_yaml::unpack::<Value>(s.as_str()) {
+    if let Ok(config) = toy_pack_json::unpack::<Value>(s.as_bytes()) {
         let g = Graph::from(config).unwrap();
+        tracing::info!("g:{:?}", g);
         // runtime for supervisor
         let mut rt = toy_rt::RuntimeBuilder::new()
             .worker_threads(4)
@@ -65,7 +46,7 @@ fn main() {
             tracing::info!("task:{:?}", uuid);
         });
 
-        std::thread::sleep(Duration::from_secs(5));
+        std::thread::sleep(Duration::from_secs(15));
 
         tracing::info!("send shutdown request to supervisor");
         let _ = rt.block_on(async {

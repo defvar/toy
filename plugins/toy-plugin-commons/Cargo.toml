@@ -3,5 +3,6 @@ members = [
     "examples",
     "toy-plugin-file",
     "toy-plugin-map",
-    "toy-plugin-fanout"
+    "toy-plugin-fanout",
+    "toy-plugin-timer"
 ]

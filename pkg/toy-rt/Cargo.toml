@@ -7,4 +7,4 @@ edition = "2018"
 [dependencies]
 toy-core = {path="../toy-core"}
 toy-pack = {path = "../../shared/toy-pack"}
-tokio = { version = "0.2", features = ["rt-threaded", "io-driver", "sync"] }
+tokio = { version = "0.3", features = ["rt-multi-thread", "sync"] }
