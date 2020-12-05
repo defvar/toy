@@ -1,12 +1,12 @@
 name: "file sample"
 services:
-  - type: example.read
+  - type: plugin.common.file.reader
     uri: "reader"
     config:
         kind: File
         path: "./examples/file.csv"
     wires: mapper
-  - type: example.mapping
+  - type: plugin.common.map.mapping
     uri: "mapper"
     config:
         mappings:
@@ -14,7 +14,7 @@ services:
             qtr: "qtr"
             description: "description"
     wires: writer
-  - type: example.write
+  - type: plugin.common.file.writer
     uri: "writer"
     config:
         kind: File

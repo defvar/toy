@@ -3,9 +3,9 @@ use crate::error::ServiceError;
 use crate::executor::{AsyncSpawner, Executor};
 use crate::graph::Graph;
 use crate::mpsc::{self, Incoming, Outgoing, OutgoingMessage};
+use crate::node_channel::SignalOutgoings;
 use crate::oneshot;
 use crate::registry::{App, Delegator, Registry, ServiceSchema};
-use crate::service_uri::Uri;
 use core::future::Future;
 use core::pin::Pin;
 use core::task::{Context, Poll};
@@ -61,18 +61,18 @@ pub struct RunningTask {
     graph: Graph,
 
     /// use running task.
-    txs: HashMap<Uri, Outgoing<Frame, ServiceError>>,
+    tx_signal: SignalOutgoings,
 }
 
 impl RunningTask {
-    pub fn new(uuid: Uuid, graph: Graph, txs: HashMap<Uri, Outgoing<Frame, ServiceError>>) -> Self {
+    pub fn new(uuid: Uuid, graph: Graph, tx_signal: SignalOutgoings) -> Self {
         Self {
             uuid,
             started_at: SystemTime::now()
                 .duration_since(UNIX_EPOCH)
                 .expect("Time went backwards"),
             graph,
-            txs,
+            tx_signal,
         }
     }
 
@@ -151,8 +151,8 @@ where
                         let s = self.spawner.clone();
                         let uuid = Uuid::new_v4();
                         let _ = self.spawner.spawn(async move {
-                            let (e, txs) = Executor::new(s, g);
-                            let task = RunningTask::new(uuid, graph, txs);
+                            let (e, tx_signal) = Executor::new(s, g);
+                            let task = RunningTask::new(uuid, graph, tx_signal);
                             {
                                 let mut tasks = tasks.lock().await;
                                 let _ = tasks.insert(uuid, task);
@@ -208,7 +208,7 @@ where
 }
 
 async fn send_stop_signal(task: &mut RunningTask) {
-    for (uri, tx) in task.txs.iter_mut() {
+    for (uri, tx) in task.tx_signal.iter_mut() {
         for p in tx.ports() {
             let r = tx.send_ok_to(p, Frame::stop()).await;
             tracing::debug!(

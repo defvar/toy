@@ -10,10 +10,12 @@ use toy_pack::schema::{to_schema, Schema};
 use toy_pack::Pack;
 
 mod app;
+mod layered;
 mod plugin;
 mod port_type;
 
 pub use app::App;
+pub use layered::Layered;
 pub use plugin::Plugin;
 pub use port_type::PortType;
 
@@ -23,13 +25,13 @@ pub fn plugin<F, R>(
     service_name: &str,
     port_type: PortType,
     callback: F,
-) -> Plugin<NoopEntry, F>
+) -> Plugin<F>
 where
     F: Fn() -> R + Clone,
     R: ServiceFactory,
     R::Config: Schema,
 {
-    Plugin::<NoopEntry, F>::new(name_space, service_name, port_type, callback)
+    Plugin::<F>::new(name_space, service_name, port_type, callback)
 }
 
 /// Create app.
@@ -92,6 +94,8 @@ impl ServiceSchema {
 
 #[derive(Debug, Clone)]
 pub struct NoopEntry;
+
+impl PluginRegistry for NoopEntry {}
 
 impl Registry for NoopEntry {
     fn service_types(&self) -> Vec<ServiceType> {

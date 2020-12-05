@@ -6,7 +6,9 @@
             "uri": "tick",
             "port_type": { "Source": 1 },
             "config": {
-                "interval_millis": 1000
+                "interval_millis": 1000,
+                "start": 5,
+                "end": 20
             },
             "wires": ["broadcast"]
         },

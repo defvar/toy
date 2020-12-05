@@ -27,8 +27,8 @@ fn main() {
         .unwrap();
 
     let regi = app(toy_plugin_file::load())
-        .plugin(toy_plugin_map::load())
-        .plugin(toy_plugin_fanout::load());
+        .with(toy_plugin_map::load())
+        .with(toy_plugin_fanout::load());
 
     let (sv, tx, rx) = Supervisor::new(toy_rt::Spawner, regi);
 

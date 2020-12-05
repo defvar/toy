@@ -62,6 +62,18 @@ impl ServiceType {
             service_name,
         })
     }
+
+    pub fn service_name(&self) -> &str {
+        &self.service_name
+    }
+
+    pub fn name_space(&self) -> &str {
+        &self.name_space
+    }
+
+    pub fn full_name(&self) -> &str {
+        &self.full_name
+    }
 }
 
 impl From<&ServiceType> for ServiceType {

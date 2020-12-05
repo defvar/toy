@@ -1,7 +1,7 @@
 use crate::data::Frame;
 use crate::error::ServiceError;
 use crate::executor::ServiceExecutor;
-use crate::registry::{Delegator, NoopEntry, Registry, ServiceSchema};
+use crate::registry::{Delegator, NoopEntry, PluginRegistry, Registry, ServiceSchema};
 use crate::service_type::ServiceType;
 use crate::service_uri::Uri;
 use std::fmt::{self, Debug};
@@ -34,7 +34,7 @@ where
         }
     }
 
-    pub fn plugin<P2>(self, plugin: P2) -> App<Self, P2>
+    pub fn with<P2>(self, plugin: P2) -> App<Self, P2>
     where
         Self: Sized,
         P2: Registry,
@@ -82,6 +82,13 @@ where
             },
         }
     }
+}
+
+impl<O, P> PluginRegistry for App<O, P>
+where
+    O: PluginRegistry,
+    P: PluginRegistry,
+{
 }
 
 impl<O, P> Registry for App<O, P> {

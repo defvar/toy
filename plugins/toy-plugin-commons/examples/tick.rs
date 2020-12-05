@@ -1,4 +1,3 @@
-use failure::_core::time::Duration;
 use std::io::Read;
 use toy_core::prelude::*;
 use toy_core::supervisor::{Request, Supervisor};
@@ -14,9 +13,7 @@ fn main() {
         .with_thread_names(true)
         .init();
 
-    let app = app(toy_plugin_timer::load())
-        .plugin(toy_plugin_file::load())
-        .plugin(toy_plugin_fanout::load());
+    let app = app(toy_plugin_commons::load());
 
     let mut f = std::fs::File::open(CONFIG).unwrap();
     let mut s = String::new();
@@ -46,12 +43,10 @@ fn main() {
             tracing::info!("task:{:?}", uuid);
         });
 
-        std::thread::sleep(Duration::from_secs(15));
-
-        tracing::info!("send shutdown request to supervisor");
-        let _ = rt.block_on(async {
-            let _ = tx.send_ok(Request::Shutdown).await;
-        });
+        // tracing::info!("send shutdown request to supervisor");
+        // let _ = rt.block_on(async {
+        //     let _ = tx.send_ok(Request::Shutdown).await;
+        // });
 
         tracing::info!("waiting shutdown reply from supervisor");
         let _ = rt.block_on(async {

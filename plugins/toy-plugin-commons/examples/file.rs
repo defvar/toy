@@ -1,12 +1,7 @@
 use std::io::Read;
 use std::time::Duration;
 use toy_core::prelude::*;
-use toy_core::registry::PortType;
 use toy_core::supervisor::{Request, Supervisor};
-use toy_plugin_file::config::*;
-use toy_plugin_file::service::*;
-use toy_plugin_map::config::*;
-use toy_plugin_map::service::*;
 use tracing_subscriber::fmt::format::FmtSpan;
 
 static CONFIG: &'static str = "./examples/file.yml";
@@ -19,24 +14,7 @@ fn main() {
         .with_thread_names(true)
         .init();
 
-    let c = plugin(
-        "example",
-        "write",
-        PortType::sink(),
-        factory!(write, FileWriteConfig, new_write_context),
-    )
-    .with(
-        "read",
-        PortType::source(),
-        factory!(read, FileReadConfig, new_read_context),
-    )
-    .with(
-        "mapping",
-        PortType::flow(),
-        factory!(mapping, MappingConfig, new_mapping_context),
-    );
-
-    let app = app(c);
+    let app = app(toy_plugin_commons::load());
 
     let mut f = std::fs::File::open(CONFIG).unwrap();
     let mut s = String::new();

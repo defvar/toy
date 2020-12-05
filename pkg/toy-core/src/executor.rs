@@ -1,17 +1,14 @@
 use crate::data::{self, Frame};
 use crate::error::ServiceError;
-use crate::graph::{Graph, InputWire, OutputWire};
-use crate::mpsc;
+use crate::graph::Graph;
 use crate::mpsc::{Incoming, Outgoing};
+use crate::node_channel::{self, Incomings, Outgoings, SignalOutgoings, Starters};
 use crate::registry::Delegator;
 use crate::service::{Service, ServiceContext, ServiceFactory};
 use crate::service_type::ServiceType;
 use crate::service_uri::Uri;
-use std::collections::HashMap;
 use std::future::Future;
 use toy_pack::deser::DeserializableOwned;
-
-const DEFAULT_CHANNEL_BUFFER_SIZE: usize = 128;
 
 pub trait AsyncSpawner: Clone + Send {
     fn spawn<F>(&self, future: F)
@@ -41,102 +38,42 @@ pub trait ServiceExecutor {
 
 pub struct Executor<T> {
     spawner: T,
-    starters: HashMap<Uri, Outgoing<Frame, ServiceError>>,
+    starters: Starters,
     awaiter: Incoming<Frame, ServiceError>,
     graph: Graph,
-    inputs: HashMap<Uri, Incoming<Frame, ServiceError>>,
-    outputs: HashMap<Uri, Outgoing<Frame, ServiceError>>,
+    incomings: Incomings,
+    outgoings: Outgoings,
 }
 
 impl<T> Executor<T>
 where
     T: AsyncSpawner,
 {
-    pub fn new(spawner: T, graph: Graph) -> (Self, HashMap<Uri, Outgoing<Frame, ServiceError>>) {
-        let mut inputs: HashMap<Uri, Incoming<Frame, ServiceError>> = HashMap::new();
-        let mut outputs: HashMap<Uri, Outgoing<Frame, ServiceError>> = HashMap::new();
-
-        let mut starters: HashMap<Uri, Outgoing<Frame, ServiceError>> = HashMap::new();
-
-        let (l_tx, l_rx) = mpsc::channel::<Frame, ServiceError>(DEFAULT_CHANNEL_BUFFER_SIZE);
-
-        // first channel
-        graph
-            .inputs()
-            .iter()
-            .filter(|(_, w)| **w == InputWire::None)
-            .for_each(|(uri, _)| {
-                let (f_tx, f_rx) =
-                    mpsc::channel::<Frame, ServiceError>(DEFAULT_CHANNEL_BUFFER_SIZE);
-                inputs.insert(uri.clone(), f_rx);
-                starters.insert(uri.clone(), f_tx);
-            });
-
-        // last channel
-        graph
-            .outputs()
-            .iter()
-            .filter(|(_, w)| **w == OutputWire::None)
-            .for_each(|(uri, _)| {
-                outputs
-                    .entry(uri.clone())
-                    .or_insert_with(|| Outgoing::empty())
-                    .merge(l_tx.clone());
-            });
-
-        for (_, wire) in graph.inputs() {
-            let (tx, rx) = mpsc::channel::<Frame, ServiceError>(DEFAULT_CHANNEL_BUFFER_SIZE);
-            match wire {
-                InputWire::Single(o, i) => {
-                    inputs.insert(i.clone(), rx);
-                    outputs
-                        .entry(o.clone())
-                        .or_insert_with(|| Outgoing::empty())
-                        .merge(tx.clone());
-                }
-                InputWire::Fanin(o, i) => {
-                    inputs.insert(i.clone(), rx);
-                    o.iter().enumerate().for_each(|(idx, x)| {
-                        outputs
-                            .entry(x.clone())
-                            .or_insert_with(|| Outgoing::empty())
-                            .merge_by(idx as u8, tx.clone());
-                    });
-                }
-                _ => (),
-            }
-        }
-
-        let outputs_for_sv = {
-            let mut map = HashMap::new();
-            starters.iter().for_each(|(k, v)| {
-                map.insert(k.clone(), v.clone());
-            });
-            outputs.iter().for_each(|(k, v)| {
-                map.insert(k.clone(), v.clone());
-            });
-            map
-        };
+    pub fn new(spawner: T, graph: Graph) -> (Self, SignalOutgoings) {
+        let (incomings, outgoings, awaiter, starters, signals) = node_channel::from_graph(&graph);
 
         (
             Self {
                 spawner,
                 starters,
-                awaiter: l_rx,
+                awaiter,
                 graph,
-                inputs,
-                outputs,
+                incomings,
+                outgoings,
             },
-            outputs_for_sv,
+            signals,
         )
     }
 
     fn pop_channels(
         &mut self,
         uri: &Uri,
-    ) -> (Outgoing<Frame, ServiceError>, Incoming<Frame, ServiceError>) {
-        if let Some(tx) = self.outputs.remove(uri) {
-            if let Some(rx) = self.inputs.remove(uri) {
+    ) -> (
+        Outgoing<Frame, ServiceError>,
+        (Incoming<Frame, ServiceError>, u32),
+    ) {
+        if let Some(tx) = self.outgoings.pop(uri) {
+            if let Some(rx) = self.incomings.pop(uri) {
                 return (tx, rx);
             }
         }
@@ -169,7 +106,7 @@ where
     async fn run_0(mut self, start_frame: Frame) -> Result<(), ServiceError> {
         tracing::info!("run executor");
 
-        for (_, tx) in &mut self.starters {
+        for (_, tx) in &mut self.starters.iter_mut() {
             tx.send(Ok(start_frame.clone())).await?
         }
 
@@ -216,7 +153,7 @@ where
         F::Context: Send,
         F::Config: DeserializableOwned + Send,
     {
-        let (tx, rx) = self.pop_channels(uri);
+        let (tx, (rx, upstream_count)) = self.pop_channels(uri);
         let uri = uri.clone();
         let service_type = service_type.clone();
 
@@ -233,7 +170,9 @@ where
                     match factory.new_service(service_type.clone()).await {
                         Ok(service) => match factory.new_context(service_type.clone(), config) {
                             Ok(ctx) => {
-                                if let Err(e) = process(rx, tx, service, ctx, &uri).await {
+                                if let Err(e) =
+                                    process(rx, upstream_count, tx, service, ctx, &uri).await
+                                {
                                     tracing::error!(
                                         "an error occured; uri:{:?}, error:{:?}",
                                         uri,
@@ -262,6 +201,7 @@ where
 
 async fn process<S, Ctx>(
     mut rx: Incoming<Frame, ServiceError>,
+    upstream_count: u32,
     tx: Outgoing<Frame, ServiceError>,
     mut service: S,
     mut context: Ctx,
@@ -273,8 +213,9 @@ where
     tracing::info!("start node. uri:{:?}", uri);
     context = service.started(context);
 
-    let tx2 = tx.clone();
+    let tx_signal = tx.clone();
     let mut force_next = false;
+    let mut finish_count = 0;
 
     //main loop, receive on message
     loop {
@@ -285,21 +226,25 @@ where
         };
 
         match item {
+            Some(Ok(req)) if req.is_stop() => {
+                tracing::info!("receive stop signal. uri:{:?}", uri);
+                break;
+            }
+            Some(Ok(req)) if req.is_upstream_finish() => {
+                finish_count += 1;
+                tracing::info!("receive upstream finish signal. uri:{:?}, finish_count:{:?}, upstream_count:{:?}", uri, finish_count, upstream_count);
+                if finish_count >= upstream_count {
+                    tracing::info!("all upstream finish. uri:{:?}", uri);
+                    on_finish(tx_signal, uri).await;
+                    break;
+                }
+            }
             Some(Ok(req)) => {
-                if req.is_stop() {
-                    tracing::info!("receive stop signal. uri:{:?}", uri);
-                    break;
-                }
-                if req.is_upstream_finish() {
-                    tracing::info!("receive upstream finish signal. uri:{:?}", uri);
-                    on_finish(tx2.clone(), uri).await;
-                    break;
-                }
                 let tx = tx.clone();
                 match service.handle(context, req, tx).await? {
                     ServiceContext::Complete(c) => {
                         context = c;
-                        on_finish(tx2.clone(), uri).await;
+                        on_finish(tx_signal, uri).await;
                         break;
                     }
                     ServiceContext::Ready(c) => {

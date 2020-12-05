@@ -1,8 +1,11 @@
 use crate::config::{
-    IndexingConfig, MappingConfig, NamingConfig, ReorderConfig, ToTransform, TypedConfig,
+    IndexingConfig, MappingConfig, NamingConfig, PutConfig, RemoveByIndexConfig,
+    RemoveByNameConfig, RenameConfig, ReorderConfig, ToTransform, TypedConfig,
 };
 use crate::typed::convert;
-use crate::{Indexing, Mapping, Naming, Reorder, Transformer};
+use crate::{
+    Indexing, Mapping, Naming, Put, RemoveByIndex, RemoveByName, Rename, Reorder, Transformer,
+};
 use toy_core::prelude::*;
 
 // typed
@@ -50,6 +53,22 @@ pub struct ReorderContext {
     transformer: Reorder,
 }
 
+pub struct RenameContext {
+    transformer: Rename,
+}
+
+pub struct RemoveByIndexContext {
+    transformer: RemoveByIndex,
+}
+
+pub struct RemoveByNameContext {
+    transformer: RemoveByName,
+}
+
+pub struct PutContext {
+    transformer: Put,
+}
+
 macro_rules! transform {
     ($service_func:ident, $new_context_func:ident, $config: ident, $ctx: ident) => {
         pub fn $new_context_func(_tp: ServiceType, config: $config) -> Result<$ctx, ServiceError> {
@@ -84,3 +103,17 @@ transform!(
     IndexingContext
 );
 transform!(reorder, new_reorder_context, ReorderConfig, ReorderContext);
+transform!(rename, new_rename_context, RenameConfig, RenameContext);
+transform!(
+    remove_by_index,
+    new_remove_by_index_context,
+    RemoveByIndexConfig,
+    RemoveByIndexContext
+);
+transform!(
+    remove_by_name,
+    new_remove_by_name_context,
+    RemoveByNameConfig,
+    RemoveByNameContext
+);
+transform!(put, new_put_context, PutConfig, PutContext);

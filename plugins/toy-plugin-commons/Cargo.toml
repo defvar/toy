@@ -4,5 +4,6 @@ members = [
     "toy-plugin-file",
     "toy-plugin-map",
     "toy-plugin-fanout",
-    "toy-plugin-timer"
+    "toy-plugin-timer",
+    "toy-plugin-commons"
 ]

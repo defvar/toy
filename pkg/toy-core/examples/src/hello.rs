@@ -10,11 +10,12 @@ pub struct PublishContext;
 pub struct PublishConfig {}
 
 #[derive(Debug)]
-pub struct ReceiveContext {}
+pub struct ReceiveContext {
+    prop1: u32,
+}
 
 #[derive(Clone, Debug, Default, Unpack, Schema)]
 pub struct ReceiveConfig {
-    uri: String,
     prop1: u32,
 }
 
@@ -24,7 +25,6 @@ pub struct AccumulateContext {
 }
 #[derive(Clone, Debug, Default, Unpack, Schema)]
 pub struct AccumulateConfig {
-    uri: String,
     prop1: u32,
 }
 
@@ -37,9 +37,11 @@ fn new_publish_context(
 
 fn new_receive_context(
     _tp: ServiceType,
-    _config: ReceiveConfig,
+    config: ReceiveConfig,
 ) -> Result<ReceiveContext, ServiceError> {
-    Ok(ReceiveContext {})
+    Ok(ReceiveContext {
+        prop1: config.prop1,
+    })
 }
 
 fn new_accumulate_context(
@@ -75,7 +77,7 @@ async fn receive(
     req: Frame,
     mut tx: Outgoing<Frame, ServiceError>,
 ) -> Result<ServiceContext<ReceiveContext>, ServiceError> {
-    tracing::info!("receive and send value {:?}.", req);
+    tracing::info!("receive/{:?}. send value {:?}.", ctx.prop1, req);
     let _ = tx.send_ok(req).await?;
     Ok(ServiceContext::Ready(ctx))
 }
@@ -114,7 +116,7 @@ fn graph() -> Graph {
         "type" => "example.rec",
         "uri" => "ex/rec/1",
         "config" => map_value! {
-            "prop1" => 0u32,
+            "prop1" => 1u32,
         },
         "wires" => "ex/acc"
     };
@@ -123,7 +125,7 @@ fn graph() -> Graph {
         "type" => "example.rec",
         "uri" => "ex/rec/2",
         "config" => map_value! {
-            "prop1" => 0u32,
+            "prop1" => 2u32,
         },
         "wires" => "ex/acc"
     };

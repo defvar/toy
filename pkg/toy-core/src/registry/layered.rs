@@ -1,34 +1,46 @@
 use crate::data::Frame;
 use crate::error::ServiceError;
 use crate::executor::ServiceExecutor;
-use crate::registry::{Delegator, Layered, PluginRegistry, PortType, Registry, ServiceSchema};
+use crate::registry::{Delegator, PluginRegistry, PortType, Registry, ServiceSchema};
 use crate::service::ServiceFactory;
-use crate::service_type::ServiceType;
 use crate::service_uri::Uri;
+use crate::ServiceType;
 use std::fmt::{self, Debug};
 use toy_pack::deser::DeserializableOwned;
 use toy_pack::schema::Schema;
 
 #[derive(Clone)]
-pub struct Plugin<F> {
+pub struct Layered<S, F> {
     callback: F,
     schema: ServiceSchema,
+    other: S,
+    schemas: Vec<ServiceSchema>,
 }
 
-impl<F> Plugin<F> {
+impl<S, F> Layered<S, F> {
     pub fn new<R>(
+        registry: S,
         name_space: &str,
         service_name: &str,
         port_type: PortType,
-        callback: F,
-    ) -> Plugin<F>
+        other: F,
+    ) -> Layered<S, F>
     where
+        Self: Sized,
+        S: Registry,
         F: Fn() -> R + Clone,
         R: ServiceFactory,
         R::Config: Schema,
     {
         let schema = ServiceSchema::new::<R::Config>(name_space, service_name, port_type);
-        Plugin { callback, schema }
+        let mut schemas = registry.schemas().clone();
+        schemas.push(schema.clone());
+        Layered {
+            callback: other,
+            schema,
+            other: registry,
+            schemas,
+        }
     }
 
     pub fn with<F2, R>(
@@ -48,24 +60,28 @@ impl<F> Plugin<F> {
     }
 }
 
-impl<F> Registry for Plugin<F> {
+impl<S, F> Registry for Layered<S, F> {
     fn service_types(&self) -> Vec<ServiceType> {
-        vec![self.schema.service_type.clone()]
+        self.schemas
+            .iter()
+            .map(|x| x.service_type.clone())
+            .collect()
     }
 
     fn schemas(&self) -> Vec<ServiceSchema> {
-        vec![self.schema.clone()]
+        self.schemas.clone()
     }
 }
 
-impl<F> Debug for Plugin<F> {
+impl<S, F> Debug for Layered<S, F> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Plugin {{ services:[{:?}] }}", self.service_types())
+        write!(f, "Registry {{ services:[{:?}] }}", self.service_types())
     }
 }
 
-impl<F, R> PluginRegistry for Plugin<F>
+impl<S, F, R> PluginRegistry for Layered<S, F>
 where
+    S: Delegator<Request = Frame, Error = ServiceError, InitError = ServiceError> + Clone,
     F: Fn() -> R + Clone,
     R: ServiceFactory<Request = Frame, Error = ServiceError, InitError = ServiceError>
         + Send
@@ -77,8 +93,9 @@ where
 {
 }
 
-impl<F, R> Delegator for Plugin<F>
+impl<S, F, R> Delegator for Layered<S, F>
 where
+    S: Delegator<Request = Frame, Error = ServiceError, InitError = ServiceError> + Clone,
     F: Fn() -> R + Clone,
     R: ServiceFactory<Request = Frame, Error = ServiceError, InitError = ServiceError>
         + Send
@@ -100,12 +117,17 @@ where
             InitError = Self::InitError,
         >,
     {
-        if self.schema.service_type == *tp {
-            let f = (self.callback)();
-            executor.spawn(tp, uri, f);
-            Ok(())
-        } else {
-            Err(ServiceError::service_not_found(tp))
+        match self.other.delegate(tp, uri, executor) {
+            Ok(_) => Ok(()),
+            Err(_) => {
+                if self.schema.service_type == *tp {
+                    let f = (self.callback)();
+                    executor.spawn(tp, uri, f);
+                    Ok(())
+                } else {
+                    Err(ServiceError::service_not_found(tp))
+                }
+            }
         }
     }
 }
