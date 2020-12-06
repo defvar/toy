@@ -1,6 +1,7 @@
 use tokio::time::Duration;
 use toy_core::prelude::{Frame, Outgoing, ServiceError, ServiceType};
 use toy_core::service::ServiceContext;
+use toy_core::task::TaskContext;
 use toy_pack::{Schema, Unpack};
 
 #[derive(Debug, Clone, Default, Unpack, Schema)]
@@ -23,6 +24,7 @@ pub fn new_tick_context(_tp: ServiceType, config: TickConfig) -> Result<TickCont
 }
 
 pub async fn tick(
+    _task_ctx: TaskContext,
     mut ctx: TickContext,
     _req: Frame,
     mut tx: Outgoing<Frame, ServiceError>,

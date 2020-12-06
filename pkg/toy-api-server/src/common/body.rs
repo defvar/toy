@@ -1,7 +1,7 @@
 use crate::common::error::ApiError;
 use toy_core::prelude::Value;
 use toy_pack::deser::DeserializableOwned;
-use warp::Filter;
+use warp::{Buf, Filter};
 
 pub fn yaml() -> impl Filter<Extract = (Value,), Error = warp::Rejection> + Clone {
     // warp::body::content_length_limit(1024 * 16).and(warp::body::json())
@@ -20,14 +20,15 @@ where
     T: DeserializableOwned,
 {
     // warp::body::content_length_limit(1024 * 16).and(warp::body::json())
-    warp::body::aggregate().and_then(|buf| async move {
-        let s = buf_to_string(buf);
-        match s {
-            Ok(x) => toy_pack_json::unpack::<T>(x.as_bytes())
-                .map_err(|e| warp::reject::custom(ApiError::from(e))),
-            Err(e) => Err(warp::reject::custom(e)),
-        }
+    warp::body::bytes().and_then(|buf| async move {
+        decode_json(buf).map_err(|e| warp::reject::custom(ApiError::from(e)))
     })
+}
+
+fn decode_json<B: Buf, T: DeserializableOwned>(
+    mut buf: B,
+) -> Result<T, toy_pack_json::DecodeError> {
+    toy_pack_json::unpack::<T>(&buf.to_bytes())
 }
 
 fn buf_to_string<T: warp::Buf>(buf: T) -> Result<String, ApiError> {

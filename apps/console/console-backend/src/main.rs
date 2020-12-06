@@ -20,17 +20,22 @@ fn main() {
         .build()
         .unwrap();
 
-    let mut api_rt = toy_rt::RuntimeBuilder::new()
+    // let mut api_rt = toy_rt::RuntimeBuilder::new()
+    //     .thread_name("api-server")
+    //     .worker_threads(2)
+    //     .build()
+    //     .unwrap();
+    let mut api_rt = tokio::runtime::Builder::new()
+        .threaded_scheduler()
         .thread_name("api-server")
-        .worker_threads(2)
+        .core_threads(2)
+        .enable_all()
         .build()
         .unwrap();
 
-    let regi = app(toy_plugin_file::load())
-        .with(toy_plugin_map::load())
-        .with(toy_plugin_fanout::load());
+    let app = app(toy_plugin_commons::load());
 
-    let (sv, tx, rx) = Supervisor::new(toy_rt::Spawner, regi);
+    let (sv, tx, rx) = Supervisor::new(toy_rt::Spawner, app);
 
     let server = toy_api_server::Server::new(EtcdStoreOpsFactory, FireAuth);
 

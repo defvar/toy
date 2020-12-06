@@ -54,6 +54,7 @@ fn new_accumulate_context(
 }
 
 async fn accumulate(
+    task_ctx: TaskContext,
     mut ctx: AccumulateContext,
     req: Frame,
     mut tx: Outgoing<Frame, ServiceError>,
@@ -63,7 +64,8 @@ async fn accumulate(
         _ => (),
     };
     tracing::info!(
-        "accumulate value:{:?} from port:{:?} -> ctx:{:?}",
+        "{:?} accumulate value:{:?} from port:{:?} -> ctx:{:?}",
+        task_ctx.uuid(),
         req,
         req.port(),
         ctx
@@ -73,21 +75,28 @@ async fn accumulate(
 }
 
 async fn receive(
+    task_ctx: TaskContext,
     ctx: ReceiveContext,
     req: Frame,
     mut tx: Outgoing<Frame, ServiceError>,
 ) -> Result<ServiceContext<ReceiveContext>, ServiceError> {
-    tracing::info!("receive/{:?}. send value {:?}.", ctx.prop1, req);
+    tracing::info!(
+        "{:?} receive/{:?}. send value {:?}.",
+        task_ctx.uuid(),
+        ctx.prop1,
+        req
+    );
     let _ = tx.send_ok(req).await?;
     Ok(ServiceContext::Ready(ctx))
 }
 
 async fn publish(
+    task_ctx: TaskContext,
     ctx: PublishContext,
     _req: Frame,
     mut tx: Outgoing<Frame, ServiceError>,
 ) -> Result<ServiceContext<PublishContext>, ServiceError> {
-    tracing::info!("publish");
+    tracing::info!("{:?} publish", task_ctx.uuid());
 
     let _ = tx.send_ok(Frame::from(1u32)).await?;
     let _ = tx.send_ok(Frame::from(2u32)).await?;

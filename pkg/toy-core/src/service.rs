@@ -1,5 +1,6 @@
 use crate::mpsc::Outgoing;
 use crate::service_type::ServiceType;
+use crate::task::TaskContext;
 use log::warn;
 use std::any;
 use std::fmt::{Debug, Error, Formatter};
@@ -10,7 +11,7 @@ use std::task::{Context, Poll};
 
 pub fn fn_service<F, Ctx, Req, Fut, Err>(tp: ServiceType, f: F) -> FnService<F, Ctx, Req, Fut, Err>
 where
-    F: FnMut(Ctx, Req, Outgoing<Req, Err>) -> Fut,
+    F: FnMut(TaskContext, Ctx, Req, Outgoing<Req, Err>) -> Fut,
     Fut: Future<Output = Result<ServiceContext<Ctx>, Err>> + Send,
 {
     FnService {
@@ -76,23 +77,26 @@ pub trait Service {
 
     fn handle(
         &mut self,
+        task_ctx: TaskContext,
         ctx: Self::Context,
         req: Self::Request,
         tx: Outgoing<Self::Request, Self::Error>,
     ) -> Self::Future;
 
-    fn started(&mut self, ctx: Self::Context) -> Self::Context {
+    fn started(&mut self, task_ctx: TaskContext, ctx: Self::Context) -> Self::Context {
+        let _ = task_ctx;
         ctx
     }
 
-    fn completed(&mut self, ctx: Self::Context) -> Self::Context {
+    fn completed(&mut self, task_ctx: TaskContext, ctx: Self::Context) -> Self::Context {
+        let _ = task_ctx;
         ctx
     }
 }
 
 pub struct FnService<F, Ctx, Req, Fut, Err>
 where
-    F: FnMut(Ctx, Req, Outgoing<Req, Err>) -> Fut,
+    F: FnMut(TaskContext, Ctx, Req, Outgoing<Req, Err>) -> Fut,
     Fut: Future<Output = Result<ServiceContext<Ctx>, Err>> + Send,
 {
     tp: ServiceType,
@@ -102,7 +106,7 @@ where
 
 impl<F, Ctx, Req, Fut, Err> Service for FnService<F, Ctx, Req, Fut, Err>
 where
-    F: FnMut(Ctx, Req, Outgoing<Req, Err>) -> Fut,
+    F: FnMut(TaskContext, Ctx, Req, Outgoing<Req, Err>) -> Fut,
     Fut: Future<Output = Result<ServiceContext<Ctx>, Err>> + Send,
 {
     type Context = Ctx;
@@ -112,17 +116,18 @@ where
 
     fn handle(
         &mut self,
+        task_ctx: TaskContext,
         ctx: Self::Context,
         req: Self::Request,
         tx: Outgoing<Self::Request, Self::Error>,
     ) -> Self::Future {
-        (self.f)(ctx, req, tx)
+        (self.f)(task_ctx, ctx, req, tx)
     }
 }
 
 impl<F, Ctx, Req, Fut, Err> Debug for FnService<F, Ctx, Req, Fut, Err>
 where
-    F: FnMut(Ctx, Req, Outgoing<Req, Err>) -> Fut,
+    F: FnMut(TaskContext, Ctx, Req, Outgoing<Req, Err>) -> Fut,
     Fut: Future<Output = Result<ServiceContext<Ctx>, Err>> + Send,
 {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), Error> {
@@ -217,6 +222,7 @@ impl Service for NoopService {
 
     fn handle(
         &mut self,
+        _task_ctx: TaskContext,
         _ctx: Self::Context,
         _req: Self::Request,
         _tx: Outgoing<Self::Request, Self::Error>,

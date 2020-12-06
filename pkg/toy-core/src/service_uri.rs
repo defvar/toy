@@ -1,4 +1,4 @@
-use std::fmt::{Debug, Error, Formatter};
+use std::fmt::{Debug, Display, Error, Formatter};
 
 #[derive(Clone, PartialEq, Eq, Hash)]
 pub struct Uri {
@@ -35,6 +35,12 @@ impl AsRef<Uri> for Uri {
 
 impl Debug for Uri {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), Error> {
+        write!(f, "{}", self.path.to_string())
+    }
+}
+
+impl Display for Uri {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.path.to_string())
     }
 }

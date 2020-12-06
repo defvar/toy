@@ -1,5 +1,6 @@
 use toy_core::prelude::{Frame, Outgoing, ServiceError, ServiceType};
 use toy_core::service::ServiceContext;
+use toy_core::task::TaskContext;
 use toy_pack::{Schema, Unpack};
 
 #[derive(Debug, Clone, Default, Unpack, Schema)]
@@ -15,6 +16,7 @@ pub fn new_broadcast_context(
 }
 
 pub async fn broadcast(
+    _task_ctx: TaskContext,
     ctx: BroadcastContext,
     req: Frame,
     mut tx: Outgoing<Frame, ServiceError>,

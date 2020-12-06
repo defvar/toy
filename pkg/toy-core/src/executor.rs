@@ -2,11 +2,12 @@ use crate::data::{self, Frame};
 use crate::error::ServiceError;
 use crate::graph::Graph;
 use crate::mpsc::{Incoming, Outgoing};
-use crate::node_channel::{self, Incomings, Outgoings, SignalOutgoings, Starters};
+use crate::node_channel::{self, Awaiter, Incomings, Outgoings, SignalOutgoings, Starters};
 use crate::registry::Delegator;
 use crate::service::{Service, ServiceContext, ServiceFactory};
 use crate::service_type::ServiceType;
 use crate::service_uri::Uri;
+use crate::task::TaskContext;
 use std::future::Future;
 use toy_pack::deser::DeserializableOwned;
 
@@ -39,19 +40,20 @@ pub trait ServiceExecutor {
 pub struct Executor<T> {
     spawner: T,
     starters: Starters,
-    awaiter: Incoming<Frame, ServiceError>,
+    awaiter: Awaiter,
     graph: Graph,
     incomings: Incomings,
     outgoings: Outgoings,
+    ctx: TaskContext,
 }
 
 impl<T> Executor<T>
 where
     T: AsyncSpawner,
 {
-    pub fn new(spawner: T, graph: Graph) -> (Self, SignalOutgoings) {
+    pub fn new(spawner: T, ctx: TaskContext) -> (Self, SignalOutgoings) {
+        let graph = ctx.graph().clone();
         let (incomings, outgoings, awaiter, starters, signals) = node_channel::from_graph(&graph);
-
         (
             Self {
                 spawner,
@@ -60,6 +62,7 @@ where
                 graph,
                 incomings,
                 outgoings,
+                ctx,
             },
             signals,
         )
@@ -110,6 +113,7 @@ where
             tx.send(Ok(start_frame.clone())).await?
         }
 
+        let mut finish_count = 0;
         while let Some(x) = self.awaiter.next().await {
             match x {
                 Err(e) => tracing::error!("an error occured, awaiter. {:?}", e),
@@ -119,8 +123,12 @@ where
                         break;
                     }
                     if req.is_upstream_finish() {
-                        tracing::info!("receive upstream finish signal. awaiter.");
-                        break;
+                        finish_count += 1;
+                        tracing::info!("receive upstream finish signal. awaiter, finish_count:{:?}, upstream_count:{:?}", finish_count, self.awaiter.upstream_count());
+                        if finish_count >= self.awaiter.upstream_count() {
+                            tracing::info!("all upstream finish. awaiter.");
+                            break;
+                        }
                     }
                 }
             }
@@ -164,32 +172,24 @@ where
         }
 
         let s = self.spawner.clone();
+        let task_ctx = self.ctx.clone();
         match data::unpack::<F::Config>(config_value.unwrap().config()) {
             Ok(config) => {
                 s.spawn(async move {
-                    match factory.new_service(service_type.clone()).await {
-                        Ok(service) => match factory.new_context(service_type.clone(), config) {
-                            Ok(ctx) => {
-                                if let Err(e) =
-                                    process(rx, upstream_count, tx, service, ctx, &uri).await
-                                {
-                                    tracing::error!(
-                                        "an error occured; uri:{:?}, error:{:?}",
-                                        uri,
-                                        e
-                                    );
-                                }
-                            }
-                            Err(e) => {
+                    let new_service = factory.new_service(service_type.clone()).await;
+                    let new_ctx = factory.new_context(service_type.clone(), config);
+                    match (new_service, new_ctx) {
+                        (Ok(service), Ok(ctx)) => {
+                            if let Err(e) =
+                                process(task_ctx, rx, upstream_count, tx, service, ctx, &uri).await
+                            {
                                 tracing::error!("an error occured; uri:{:?}, error:{:?}", uri, e);
                             }
-                        },
-                        Err(e) => {
-                            tracing::error!(
-                                "service initialize failed. uri:{:?}, error:{:?}",
-                                uri,
-                                e
-                            );
+                        }
+                        (s, c) => {
+                            let e1 = s.err();
+                            let e2 = c.err();
+                            tracing::error!("an error occured; uri:{:?}, service initialize error:{:?}. context initialize error:{:?}.", uri, e1, e2);
                         }
                     }
                 });
@@ -200,6 +200,7 @@ where
 }
 
 async fn process<S, Ctx>(
+    task_ctx: TaskContext,
     mut rx: Incoming<Frame, ServiceError>,
     upstream_count: u32,
     tx: Outgoing<Frame, ServiceError>,
@@ -210,8 +211,8 @@ async fn process<S, Ctx>(
 where
     S: Service<Request = Frame, Error = ServiceError, Context = Ctx>,
 {
-    tracing::info!("start node. uri:{:?}", uri);
-    context = service.started(context);
+    tracing::info!(uuid = ?task_ctx.uuid(), uri = ?uri, "start node.");
+    context = service.started(task_ctx.clone(), context);
 
     let tx_signal = tx.clone();
     let mut force_next = false;
@@ -227,21 +228,31 @@ where
 
         match item {
             Some(Ok(req)) if req.is_stop() => {
-                tracing::info!("receive stop signal. uri:{:?}", uri);
+                tracing::info!(
+                    uuid = ?task_ctx.uuid(),
+                    uri = ?uri,
+                    "receive stop signal.",
+                );
                 break;
             }
             Some(Ok(req)) if req.is_upstream_finish() => {
                 finish_count += 1;
-                tracing::info!("receive upstream finish signal. uri:{:?}, finish_count:{:?}, upstream_count:{:?}", uri, finish_count, upstream_count);
+                tracing::info!(
+                    uri = ?uri,
+                    finish_count,
+                    upstream_count,
+                    "receive upstream finish signal."
+                );
                 if finish_count >= upstream_count {
-                    tracing::info!("all upstream finish. uri:{:?}", uri);
+                    tracing::info!(uri = ?uri, "all upstream finish.");
                     on_finish(tx_signal, uri).await;
                     break;
                 }
             }
             Some(Ok(req)) => {
                 let tx = tx.clone();
-                match service.handle(context, req, tx).await? {
+                let task_ctx = task_ctx.clone();
+                match service.handle(task_ctx, context, req, tx).await? {
                     ServiceContext::Complete(c) => {
                         context = c;
                         on_finish(tx_signal, uri).await;
@@ -258,7 +269,7 @@ where
                 }
             }
             Some(Err(e)) => {
-                tracing::error!("node receive message error, :{:?}", e);
+                tracing::error!(err=?e, "node receive message error");
                 return Err(e);
             }
             None => {
@@ -267,8 +278,8 @@ where
         };
     }
 
-    let _ = service.completed(context);
-    tracing::info!("end node. uri:{:?}", uri);
+    let _ = service.completed(task_ctx.clone(), context);
+    tracing::info!(uuid = ?task_ctx.uuid(), uri = ?uri, "end node.");
     Ok(())
 }
 

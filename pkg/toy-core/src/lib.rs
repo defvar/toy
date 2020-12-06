@@ -17,6 +17,7 @@ pub mod service;
 mod service_type;
 mod service_uri;
 pub mod supervisor;
+pub mod task;
 
 pub mod prelude {
     //! The `toy-core` prelude.
@@ -39,6 +40,7 @@ pub mod prelude {
     pub use super::service::ServiceContext;
     pub use super::service_type::ServiceType;
     pub use super::service_uri::Uri;
+    pub use super::task::{RunningTask, TaskContext};
     pub use super::{factory, map_value, seq_value};
     #[doc(hidden)]
     pub use toy_pack::deser::from_primitive::FromPrimitive;

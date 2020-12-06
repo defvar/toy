@@ -20,12 +20,13 @@ toy-rt = { path = "../../../pkg/toy-rt"}
 toy-pack = {path = "../../../shared/toy-pack", features = ["derive"]}
 
 # plugins
-toy-plugin-file = { path = "../../../plugins/toy-plugin-commons/toy-plugin-file"}
-toy-plugin-map = { path = "../../../plugins/toy-plugin-commons/toy-plugin-map"}
-toy-plugin-fanout = { path = "../../../plugins/toy-plugin-commons/toy-plugin-fanout"}
+toy-plugin-commons = { path = "../../../plugins/toy-plugin-commons/toy-plugin-commons"}
 
 # store
 toy-api-store-etcd = { path = "../../../pkg/toy-api-store-etcd"}
 
 # auth
 toy-api-auth-firebase = { path = "../../../pkg/toy-api-auth-firebase"}
+
+# api serv rt
+tokio = { version = "0.2", features = ["rt-threaded", "io-driver", "time"] }

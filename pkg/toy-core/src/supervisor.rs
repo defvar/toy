@@ -3,15 +3,14 @@ use crate::error::ServiceError;
 use crate::executor::{AsyncSpawner, Executor};
 use crate::graph::Graph;
 use crate::mpsc::{self, Incoming, Outgoing, OutgoingMessage};
-use crate::node_channel::SignalOutgoings;
 use crate::oneshot;
 use crate::registry::{App, Delegator, Registry, ServiceSchema};
+use crate::task::{RunningTask, TaskContext};
 use core::future::Future;
 use core::pin::Pin;
 use core::task::{Context, Poll};
 use std::collections::HashMap;
 use std::sync::Arc;
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tokio::sync::Mutex;
 use uuid::Uuid;
 
@@ -52,37 +51,6 @@ impl OutgoingMessage for Response {
 
 impl OutgoingMessage for SystemMessage {
     fn set_port(&mut self, _port: u8) {}
-}
-
-#[derive(Debug)]
-pub struct RunningTask {
-    uuid: Uuid,
-    started_at: Duration,
-    graph: Graph,
-
-    /// use running task.
-    tx_signal: SignalOutgoings,
-}
-
-impl RunningTask {
-    pub fn new(uuid: Uuid, graph: Graph, tx_signal: SignalOutgoings) -> Self {
-        Self {
-            uuid,
-            started_at: SystemTime::now()
-                .duration_since(UNIX_EPOCH)
-                .expect("Time went backwards"),
-            graph,
-            tx_signal,
-        }
-    }
-
-    pub fn uuid(&self) -> Uuid {
-        self.uuid
-    }
-
-    pub fn started_at(&self) -> Duration {
-        self.started_at
-    }
 }
 
 #[derive(Debug)]
@@ -145,26 +113,27 @@ where
             match r {
                 Ok(m) => match m {
                     Request::Task(g, tx) => {
-                        let graph = g.clone();
                         let app = self.app.clone();
                         let tasks = Arc::clone(&self.tasks);
                         let s = self.spawner.clone();
-                        let uuid = Uuid::new_v4();
+                        let ctx = TaskContext::new(g);
+                        let uuid = ctx.uuid();
                         let _ = self.spawner.spawn(async move {
-                            let (e, tx_signal) = Executor::new(s, g);
-                            let task = RunningTask::new(uuid, graph, tx_signal);
+                            let (e, tx_signal) = Executor::new(s, ctx.clone());
+                            tracing::info!(uuid = ?ctx.uuid(), "start task.");
+                            let task = RunningTask::new(&ctx, tx_signal);
                             {
                                 let mut tasks = tasks.lock().await;
-                                let _ = tasks.insert(uuid, task);
-                                tracing::debug!("add task store. uuid:{:?}", uuid);
+                                let _ = tasks.insert(ctx.uuid(), task);
+                                tracing::debug!(uuid = ?ctx.uuid(), "add task store.");
                             }
                             let _ = e.run(app, Frame::default()).await;
                             {
                                 let mut tasks = tasks.lock().await;
-                                let _ = tasks.remove(&uuid);
-                                tracing::debug!("remove task store. uuid:{:?}", uuid);
+                                let _ = tasks.remove(&ctx.uuid());
+                                tracing::debug!(uuid = ?ctx.uuid(), "remove task store.");
                             }
-                            tracing::info!("end task. uuid:{:?}", uuid);
+                            tracing::info!(uuid = ?ctx.uuid(), "end task.");
                             ()
                         });
                         let _ = tx.send_ok(TaskResponse(uuid)).await;
@@ -198,7 +167,7 @@ where
                         break;
                     }
                 },
-                Err(e) => tracing::error!("an error occured; supervisor, error:{:?}", e),
+                Err(e) => tracing::error!(err = ?e, "an error occured; supervisor."),
             }
         }
         tracing::info!("shutdown supervisor");
@@ -208,18 +177,18 @@ where
 }
 
 async fn send_stop_signal(task: &mut RunningTask) {
-    for (uri, tx) in task.tx_signal.iter_mut() {
+    for (uri, tx) in task.tx_signal().iter_mut() {
         for p in tx.ports() {
             let r = tx.send_ok_to(p, Frame::stop()).await;
             tracing::debug!(
-                "send stop signal. uri:{:?}, port:{:?}. ret:{:?}.",
-                uri,
-                p,
-                r
+                uri = ?uri,
+                port = p,
+                ret = ?r,
+                "send stop signal.",
             );
         }
     }
-    tracing::info!("send stop signal to task. uuid:{:?}", task.uuid);
+    tracing::info!(uuid = ?task.uuid(), "send stop signal to task.");
 }
 
 struct Shutdown {

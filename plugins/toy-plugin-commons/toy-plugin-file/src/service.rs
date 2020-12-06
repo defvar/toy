@@ -6,6 +6,7 @@ use toy_core::data::{Frame, Map, Value};
 use toy_core::error::ServiceError;
 use toy_core::mpsc::Outgoing;
 use toy_core::service::ServiceContext;
+use toy_core::task::TaskContext;
 use toy_core::ServiceType;
 
 pub struct FileReadContext {
@@ -61,6 +62,7 @@ pub fn new_write_context(
 }
 
 pub async fn read(
+    _task_ctx: TaskContext,
     mut ctx: FileReadContext,
     _req: Frame,
     mut tx: Outgoing<Frame, ServiceError>,
@@ -86,6 +88,7 @@ pub async fn read(
 }
 
 pub async fn write(
+    _task_ctx: TaskContext,
     mut ctx: FileWriteContext,
     req: Frame,
     mut tx: Outgoing<Frame, ServiceError>,

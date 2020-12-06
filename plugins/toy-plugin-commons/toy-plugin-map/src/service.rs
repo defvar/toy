@@ -21,6 +21,7 @@ pub fn new_typed_context(
 }
 
 pub async fn typed(
+    _task_ctx: TaskContext,
     ctx: TypedContext,
     mut req: Frame,
     mut tx: Outgoing<Frame, ServiceError>,
@@ -78,6 +79,7 @@ macro_rules! transform {
         }
 
         pub async fn $service_func(
+            _task_ctx: TaskContext,
             ctx: $ctx,
             mut req: Frame,
             mut tx: Outgoing<Frame, ServiceError>,

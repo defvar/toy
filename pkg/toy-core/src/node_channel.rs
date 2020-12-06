@@ -1,3 +1,16 @@
+//! # node channel
+//! Channel for node communication.
+//! - `Incomings`
+//!   Receive channel for each URI.
+//! - `Outgoings`
+//!   Sending channel for each URI.
+//! - `Starters`
+//!   Sending channel for first node URI of task.
+//! - `Awaiters`
+//!   Receive channel for last node URI of task.
+//! - `SignalOutgoings`
+//!   Sending channel for Supervisor use. (Outgoins + Starters)
+
 use crate::error::ServiceError;
 use crate::graph::{Graph, InputWire, OutputWire};
 use crate::mpsc::{self, Incoming, Outgoing};
@@ -8,19 +21,24 @@ use std::collections::HashMap;
 const DEFAULT_CHANNEL_BUFFER_SIZE: usize = 128;
 
 #[derive(Debug)]
-struct Rx {
+struct IncomingInner {
     rx: Incoming<Frame, ServiceError>,
     upstream_count: u32,
 }
 
 #[derive(Debug)]
 pub struct Incomings {
-    map: HashMap<Uri, Rx>,
+    map: HashMap<Uri, IncomingInner>,
 }
 
 #[derive(Debug)]
 pub struct Outgoings {
     map: HashMap<Uri, Outgoing<Frame, ServiceError>>,
+}
+
+#[derive(Debug)]
+pub struct Awaiter {
+    inner: IncomingInner,
 }
 
 #[derive(Debug)]
@@ -33,13 +51,16 @@ pub struct SignalOutgoings {
     map: HashMap<Uri, Outgoing<Frame, ServiceError>>,
 }
 
-impl Rx {
-    pub fn from_rx(rx: Incoming<Frame, ServiceError>) -> Rx {
-        Rx::from_rx_and_count(rx, 1)
+impl IncomingInner {
+    pub fn from_rx(rx: Incoming<Frame, ServiceError>) -> IncomingInner {
+        IncomingInner::from_rx_and_count(rx, 1)
     }
 
-    pub fn from_rx_and_count(rx: Incoming<Frame, ServiceError>, upstream_count: u32) -> Rx {
-        Rx { rx, upstream_count }
+    pub fn from_rx_and_count(
+        rx: Incoming<Frame, ServiceError>,
+        upstream_count: u32,
+    ) -> IncomingInner {
+        IncomingInner { rx, upstream_count }
     }
 
     fn into_tuple(self) -> (Incoming<Frame, ServiceError>, u32) {
@@ -65,27 +86,31 @@ impl Starters {
     }
 }
 
+impl Awaiter {
+    pub async fn next(&mut self) -> Option<Result<Frame, ServiceError>> {
+        self.inner.rx.next().await
+    }
+
+    pub fn upstream_count(&self) -> u32 {
+        self.inner.upstream_count
+    }
+}
+
 impl SignalOutgoings {
     pub fn iter_mut(&mut self) -> impl Iterator<Item = (&Uri, &mut Outgoing<Frame, ServiceError>)> {
         self.map.iter_mut()
     }
 }
 
-pub fn from_graph(
-    graph: &Graph,
-) -> (
-    Incomings,
-    Outgoings,
-    Incoming<Frame, ServiceError>,
-    Starters,
-    SignalOutgoings,
-) {
-    let mut incomings: HashMap<Uri, Rx> = HashMap::new();
+pub fn from_graph(graph: &Graph) -> (Incomings, Outgoings, Awaiter, Starters, SignalOutgoings) {
+    let mut incomings: HashMap<Uri, IncomingInner> = HashMap::new();
     let mut outgoings: HashMap<Uri, Outgoing<Frame, ServiceError>> = HashMap::new();
 
     let mut starters: HashMap<Uri, Outgoing<Frame, ServiceError>> = HashMap::new();
 
-    let (l_tx, l_rx) = mpsc::channel::<Frame, ServiceError>(DEFAULT_CHANNEL_BUFFER_SIZE);
+    let mut awaiter_upsteram_count = 0;
+    let (awaiter_tx, awaiter_rx) =
+        mpsc::channel::<Frame, ServiceError>(DEFAULT_CHANNEL_BUFFER_SIZE);
 
     // first channel
     graph
@@ -94,7 +119,7 @@ pub fn from_graph(
         .filter(|(_, w)| **w == InputWire::None)
         .for_each(|(uri, _)| {
             let (tx, rx) = mpsc::channel::<Frame, ServiceError>(DEFAULT_CHANNEL_BUFFER_SIZE);
-            incomings.insert(uri.clone(), Rx::from_rx(rx));
+            incomings.insert(uri.clone(), IncomingInner::from_rx(rx));
             starters.insert(uri.clone(), tx);
         });
 
@@ -104,24 +129,28 @@ pub fn from_graph(
         .iter()
         .filter(|(_, w)| **w == OutputWire::None)
         .for_each(|(uri, _)| {
+            awaiter_upsteram_count += 1;
             outgoings
                 .entry(uri.clone())
                 .or_insert_with(|| Outgoing::empty())
-                .merge(l_tx.clone());
+                .merge(awaiter_tx.clone());
         });
 
     for (_, wire) in graph.inputs() {
         let (tx, rx) = mpsc::channel::<Frame, ServiceError>(DEFAULT_CHANNEL_BUFFER_SIZE);
         match wire {
             InputWire::Single(o, i) => {
-                incomings.insert(i.clone(), Rx::from_rx(rx));
+                incomings.insert(i.clone(), IncomingInner::from_rx(rx));
                 outgoings
                     .entry(o.clone())
                     .or_insert_with(|| Outgoing::empty())
                     .merge(tx.clone());
             }
             InputWire::Fanin(o, i) => {
-                incomings.insert(i.clone(), Rx::from_rx_and_count(rx, o.len() as u32));
+                incomings.insert(
+                    i.clone(),
+                    IncomingInner::from_rx_and_count(rx, o.len() as u32),
+                );
                 o.iter().enumerate().for_each(|(idx, x)| {
                     outgoings
                         .entry(x.clone())
@@ -147,7 +176,9 @@ pub fn from_graph(
     (
         Incomings { map: incomings },
         Outgoings { map: outgoings },
-        l_rx,
+        Awaiter {
+            inner: IncomingInner::from_rx_and_count(awaiter_rx, awaiter_upsteram_count),
+        },
         Starters { map: starters },
         SignalOutgoings { map: for_sv },
     )
