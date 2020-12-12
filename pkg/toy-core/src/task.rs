@@ -1,5 +1,6 @@
 use crate::graph::Graph;
 use crate::node_channel::SignalOutgoings;
+use crate::Uri;
 use std::fmt;
 use std::sync::Arc;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
@@ -10,6 +11,7 @@ use uuid::Uuid;
 #[derive(Clone)]
 pub struct TaskContext {
     inner: Arc<Inner>,
+    uri: Option<Uri>,
 }
 
 struct Inner {
@@ -38,6 +40,14 @@ impl TaskContext {
                     .expect("Time went backwards"),
                 graph,
             }),
+            uri: None,
+        }
+    }
+
+    pub fn with_uri(self, uri: &Uri) -> Self {
+        Self {
+            inner: self.inner,
+            uri: Some(uri.clone()),
         }
     }
 
@@ -51,6 +61,31 @@ impl TaskContext {
 
     pub fn graph(&self) -> &Graph {
         &self.inner.graph
+    }
+
+    pub fn uri(&self) -> Option<Uri> {
+        self.uri.as_ref().map(|x| x.clone())
+    }
+
+    pub fn trace_span(&self) -> tracing::span::Span {
+        match self.uri() {
+            Some(uri) => tracing::span!(tracing::Level::TRACE, "Task", task=?self.uuid(), uri=?uri),
+            None => tracing::span!(tracing::Level::TRACE, "Task", task=?self.uuid()),
+        }
+    }
+
+    pub fn debug_span(&self) -> tracing::span::Span {
+        match self.uri() {
+            Some(uri) => tracing::span!(tracing::Level::DEBUG, "Task", task=?self.uuid(), uri=?uri),
+            None => tracing::span!(tracing::Level::DEBUG, "Task", task=?self.uuid()),
+        }
+    }
+
+    pub fn info_span(&self) -> tracing::span::Span {
+        match self.uri() {
+            Some(uri) => tracing::span!(tracing::Level::INFO, "Task", task=?self.uuid(), uri=?uri),
+            None => tracing::span!(tracing::Level::INFO, "Task", task=?self.uuid()),
+        }
     }
 }
 

@@ -1,4 +1,4 @@
-#![feature(backtrace)]
+#![feature(backtrace, type_alias_impl_trait)]
 
 pub use self::service_type::ServiceType;
 pub use self::service_uri::Uri;
@@ -37,7 +37,7 @@ pub mod prelude {
     pub use super::registry::{
         app, plugin, App, Layered, Plugin, PluginRegistry, PortType, Registry,
     };
-    pub use super::service::ServiceContext;
+    pub use super::service::{Service, ServiceContext, ServiceFactory};
     pub use super::service_type::ServiceType;
     pub use super::service_uri::Uri;
     pub use super::task::{RunningTask, TaskContext};

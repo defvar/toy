@@ -8,7 +8,7 @@
             "config": {
                 "interval_millis": 1000,
                 "start": 5,
-                "end": 20
+                "end": 10
             },
             "wires": ["broadcast"]
         },
@@ -18,25 +18,21 @@
             "port_type": { "Flow": [1, 2] },
             "config": {
             },
-            "wires": ["write1", "write2"]
+            "wires": ["last1", "last2"]
         },
         {
-            "type": "plugin.common.file.writer",
-            "uri": "write1",
+            "type": "plugin.common.collect.last",
+            "uri": "last1",
             "port_type": { "Sink": 1 },
             "config": {
-                "kind": "File",
-                "path": "/tmp/tick1.out"
             },
             "wires": []
         },
         {
-            "type": "plugin.common.file.writer",
-            "uri": "write2",
+            "type": "plugin.common.collect.last",
+            "uri": "last2",
             "port_type": { "Sink": 1 },
             "config": {
-                "kind": "File",
-                "path": "/tmp/tick2.out"
             },
             "wires": []
         }

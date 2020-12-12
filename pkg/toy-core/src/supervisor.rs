@@ -120,20 +120,19 @@ where
                         let uuid = ctx.uuid();
                         let _ = self.spawner.spawn(async move {
                             let (e, tx_signal) = Executor::new(s, ctx.clone());
-                            tracing::info!(uuid = ?ctx.uuid(), "start task.");
+                            let span = ctx.info_span();
+                            tracing::info!(parent: &span, "start task.");
                             let task = RunningTask::new(&ctx, tx_signal);
                             {
                                 let mut tasks = tasks.lock().await;
                                 let _ = tasks.insert(ctx.uuid(), task);
-                                tracing::debug!(uuid = ?ctx.uuid(), "add task store.");
                             }
                             let _ = e.run(app, Frame::default()).await;
                             {
                                 let mut tasks = tasks.lock().await;
                                 let _ = tasks.remove(&ctx.uuid());
-                                tracing::debug!(uuid = ?ctx.uuid(), "remove task store.");
                             }
-                            tracing::info!(uuid = ?ctx.uuid(), "end task.");
+                            tracing::info!(parent: &span, "end task.");
                             ()
                         });
                         let _ = tx.send_ok(TaskResponse(uuid)).await;

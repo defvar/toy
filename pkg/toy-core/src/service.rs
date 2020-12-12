@@ -65,14 +65,28 @@ pub enum ServiceContext<T> {
     /// complete service. not waiting next request.
     Complete(T),
 
-    /// force next step, ignored request.
+    /// force next loop. not receiving next request.
     Next(T),
+}
+
+impl<T> ServiceContext<T> {
+    pub fn into(self) -> T {
+        match self {
+            ServiceContext::Ready(c) => c,
+            ServiceContext::Complete(c) => c,
+            ServiceContext::Next(c) => c,
+        }
+    }
 }
 
 pub trait Service {
     type Context;
     type Request;
     type Future: Future<Output = Result<ServiceContext<Self::Context>, Self::Error>> + Send;
+    type UpstreamFinishFuture: Future<Output = Result<ServiceContext<Self::Context>, Self::Error>>
+        + Send;
+    type UpstreamFinishAllFuture: Future<Output = Result<ServiceContext<Self::Context>, Self::Error>>
+        + Send;
     type Error;
 
     fn handle(
@@ -83,15 +97,34 @@ pub trait Service {
         tx: Outgoing<Self::Request, Self::Error>,
     ) -> Self::Future;
 
-    fn started(&mut self, task_ctx: TaskContext, ctx: Self::Context) -> Self::Context {
+    fn started(
+        &mut self,
+        task_ctx: TaskContext,
+        ctx: Self::Context,
+    ) -> ServiceContext<Self::Context> {
         let _ = task_ctx;
-        ctx
+        ServiceContext::Ready(ctx)
     }
 
-    fn completed(&mut self, task_ctx: TaskContext, ctx: Self::Context) -> Self::Context {
+    fn completed(&mut self, task_ctx: TaskContext, ctx: Self::Context) {
         let _ = task_ctx;
-        ctx
+        let _ = ctx;
     }
+
+    fn upstream_finish(
+        &mut self,
+        task_ctx: TaskContext,
+        ctx: Self::Context,
+        req: Self::Request,
+        tx: Outgoing<Self::Request, Self::Error>,
+    ) -> Self::UpstreamFinishFuture;
+
+    fn upstream_finish_all(
+        &mut self,
+        task_ctx: TaskContext,
+        ctx: Self::Context,
+        tx: Outgoing<Self::Request, Self::Error>,
+    ) -> Self::UpstreamFinishAllFuture;
 }
 
 pub struct FnService<F, Ctx, Req, Fut, Err>
@@ -108,10 +141,14 @@ impl<F, Ctx, Req, Fut, Err> Service for FnService<F, Ctx, Req, Fut, Err>
 where
     F: FnMut(TaskContext, Ctx, Req, Outgoing<Req, Err>) -> Fut,
     Fut: Future<Output = Result<ServiceContext<Ctx>, Err>> + Send,
+    Ctx: Send,
+    Err: Send,
 {
     type Context = Ctx;
     type Request = Req;
     type Future = Fut;
+    type UpstreamFinishFuture = Ready<Result<ServiceContext<Ctx>, Err>>;
+    type UpstreamFinishAllFuture = Ready<Result<ServiceContext<Ctx>, Err>>;
     type Error = Err;
 
     fn handle(
@@ -122,6 +159,25 @@ where
         tx: Outgoing<Self::Request, Self::Error>,
     ) -> Self::Future {
         (self.f)(task_ctx, ctx, req, tx)
+    }
+
+    fn upstream_finish(
+        &mut self,
+        _task_ctx: TaskContext,
+        ctx: Self::Context,
+        _req: Self::Request,
+        _tx: Outgoing<Self::Request, Self::Error>,
+    ) -> Self::UpstreamFinishFuture {
+        ok(ServiceContext::Ready(ctx))
+    }
+
+    fn upstream_finish_all(
+        &mut self,
+        _task_ctx: TaskContext,
+        ctx: Self::Context,
+        _tx: Outgoing<Self::Request, Self::Error>,
+    ) -> Self::UpstreamFinishAllFuture {
+        ok(ServiceContext::Complete(ctx))
     }
 }
 
@@ -218,6 +274,8 @@ impl Service for NoopService {
     type Context = NoopContext;
     type Request = ();
     type Future = Ready<Result<ServiceContext<NoopContext>, ()>>;
+    type UpstreamFinishFuture = Ready<Result<ServiceContext<NoopContext>, ()>>;
+    type UpstreamFinishAllFuture = Ready<Result<ServiceContext<NoopContext>, ()>>;
     type Error = ();
 
     fn handle(
@@ -227,6 +285,25 @@ impl Service for NoopService {
         _req: Self::Request,
         _tx: Outgoing<Self::Request, Self::Error>,
     ) -> Self::Future {
+        ok(ServiceContext::Complete(NoopContext))
+    }
+
+    fn upstream_finish(
+        &mut self,
+        _task_ctx: TaskContext,
+        _ctx: Self::Context,
+        _req: Self::Request,
+        _tx: Outgoing<Self::Request, Self::Error>,
+    ) -> Self::UpstreamFinishFuture {
+        ok(ServiceContext::Ready(NoopContext))
+    }
+
+    fn upstream_finish_all(
+        &mut self,
+        _task_ctx: TaskContext,
+        _ctx: Self::Context,
+        _tx: Outgoing<Self::Request, Self::Error>,
+    ) -> Self::UpstreamFinishAllFuture {
         ok(ServiceContext::Complete(NoopContext))
     }
 }

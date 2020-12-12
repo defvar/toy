@@ -160,11 +160,17 @@ fn graph() -> Graph {
 }
 
 fn main() {
+    let file_appender = tracing_appender::rolling::daily("/tmp/toy", "hello.example.log");
+    let (non_blocking, _guard) = tracing_appender::non_blocking(file_appender);
+    let time = tracing_subscriber::fmt::time::ChronoUtc::rfc3339();
     tracing_subscriber::fmt()
+        .with_ansi(false)
         .with_max_level(tracing::Level::DEBUG)
         .with_span_events(FmtSpan::CLOSE)
         .with_thread_ids(true)
         .with_thread_names(true)
+        .with_writer(non_blocking)
+        .with_timer(time)
         .init();
 
     let c = plugin(
