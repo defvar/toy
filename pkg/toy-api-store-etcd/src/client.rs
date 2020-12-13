@@ -27,7 +27,7 @@ impl Client {
         let param = toy_pack_json::pack(&RangeRequest::single(key.as_ref())).unwrap();
         let bytes = self.range(param).await?.bytes().await?;
         let res = toy_pack_json::unpack::<RangeResponse>(&bytes)?;
-        tracing::debug!(key= ?key.as_ref(), response = ?res, "get");
+        tracing::debug!(key= ?key.as_ref(), "get");
         res.into_single()
     }
 
@@ -38,7 +38,7 @@ impl Client {
         let param = toy_pack_json::pack(&RangeRequest::range_from(key.as_ref())).unwrap();
         let bytes = self.range(param).await?.bytes().await?;
         let res = toy_pack_json::unpack::<RangeResponse>(&bytes)?;
-        tracing::debug!(key= ?key.as_ref(), response = ?res, "list");
+        tracing::debug!(key= ?key.as_ref(), "list");
         Ok(res)
     }
 
@@ -54,7 +54,7 @@ impl Client {
         let param = toy_pack_json::pack(&txn).unwrap();
         let bytes = self.txn(param).await?.bytes().await?;
         let res = toy_pack_json::unpack::<TxnResponse>(&bytes)?;
-        tracing::debug!(key= ?key.as_ref(), response = ?res, "create");
+        tracing::debug!(key= ?key.as_ref(), "create");
         Ok(res)
     }
 
@@ -80,7 +80,7 @@ impl Client {
         let param = toy_pack_json::pack(&txn).unwrap();
         let bytes = self.txn(param).await?.bytes().await?;
         let res = toy_pack_json::unpack::<TxnResponse>(&bytes)?;
-        tracing::debug!(key= ?key.as_ref(), version= ?version, response= ?res, "update");
+        tracing::debug!(key= ?key.as_ref(), version= ?version, "update");
         Ok(res)
     }
 
@@ -100,7 +100,7 @@ impl Client {
         let param = toy_pack_json::pack(&txn).unwrap();
         let bytes = self.txn(param).await?.bytes().await?;
         let res = toy_pack_json::unpack::<TxnResponse>(&bytes)?;
-        tracing::debug!(key= ?key.as_ref(), response= ?res, "remove");
+        tracing::debug!(key= ?key.as_ref(), "remove");
         Ok(res)
     }
 
