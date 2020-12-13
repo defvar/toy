@@ -28,9 +28,9 @@ pub fn load() -> impl PluginRegistry {
         factory!(indexing, IndexingConfig, new_indexing_context),
     )
     .with(
-        "reorder",
+        "reindexing",
         PortType::flow(),
-        factory!(reorder, ReorderConfig, new_reorder_context),
+        factory!(reindexing, ReindexingConfig, new_reindexing_context),
     )
     .with(
         "rename",
@@ -59,5 +59,10 @@ pub fn load() -> impl PluginRegistry {
         "put",
         PortType::flow(),
         factory!(put, PutConfig, new_put_context),
+    )
+    .with(
+        "singleValue",
+        PortType::flow(),
+        factory!(single_value, SingleValueConfig, new_single_value_context),
     )
 }

@@ -8,8 +8,20 @@ pub trait Transformer {
     fn transform(&self, value: &mut Value) -> Result<(), ()>;
 }
 
+#[derive(Debug, Clone, PartialEq, Unpack, Schema)]
+pub enum NameOrIndex {
+    Name(String),
+    Index(u32),
+}
+
+impl Default for NameOrIndex {
+    fn default() -> Self {
+        NameOrIndex::Index(0)
+    }
+}
+
 #[derive(Debug)]
-pub struct Mapping(pub HashMap<String, String>);
+pub struct Mapping(pub Map<String, String>);
 
 #[derive(Debug)]
 pub struct Naming(pub HashMap<String, u32>);
@@ -18,7 +30,7 @@ pub struct Naming(pub HashMap<String, u32>);
 pub struct Indexing(pub Vec<String>);
 
 #[derive(Debug)]
-pub struct Reorder(pub Vec<u32>);
+pub struct Reindexing(pub Vec<u32>);
 
 #[derive(Debug)]
 pub struct Rename(pub HashMap<String, String>);
@@ -37,6 +49,15 @@ pub struct PutValue {
     value: Option<String>,
     tp: AllowedTypes,
 }
+
+#[derive(Debug)]
+pub struct SingleValue(pub NameOrIndex);
+
+#[derive(Debug)]
+pub struct ToMap(pub String);
+
+#[derive(Debug)]
+pub struct ToSeq(pub Option<u32>);
 
 impl Transformer for Mapping {
     fn transform(&self, value: &mut Value) -> Result<(), ()> {
@@ -67,6 +88,14 @@ impl Transformer for Naming {
                 *value = r;
                 Ok(())
             }
+            ref v if self.0.keys().len() == 1 => {
+                let map = Map::with_capacity(1);
+                let mut r = Value::from(map);
+                let name = self.0.keys().nth(0).unwrap();
+                r.insert_by_path(name, (*v).clone());
+                *value = r;
+                Ok(())
+            }
             _ => Err(()),
         }
     }
@@ -83,12 +112,18 @@ impl Transformer for Indexing {
                 *value = Value::from(r);
                 Ok(())
             }
+            ref v if self.0.len() == 1 => {
+                let mut r = Vec::with_capacity(1);
+                r.push((*v).clone());
+                *value = Value::from(r);
+                Ok(())
+            }
             _ => Err(()),
         }
     }
 }
 
-impl Transformer for Reorder {
+impl Transformer for Reindexing {
     fn transform(&self, value: &mut Value) -> Result<(), ()> {
         match value {
             Value::Seq(src) => {
@@ -108,7 +143,9 @@ impl Transformer for Rename {
     fn transform(&self, value: &mut Value) -> Result<(), ()> {
         match value {
             Value::Map(src) => {
-                let mut r = Map::with_capacity(self.0.len());
+                // keep original field ordering.
+
+                let mut r = Map::with_capacity(src.len());
                 for (k, v) in src {
                     let new_key = self.0.get(k).unwrap_or(k);
                     r.insert(new_key.clone(), v.clone());
@@ -181,5 +218,28 @@ impl PutValue {
             .map(|x| Value::from(x))
             .unwrap_or(Value::None);
         typed::cast(&v, self.tp).unwrap_or(Value::None)
+    }
+}
+
+impl Transformer for SingleValue {
+    fn transform(&self, value: &mut Value) -> Result<(), ()> {
+        let v = match value {
+            Value::Map(_) => match &self.0 {
+                NameOrIndex::Name(k) => Ok(value.path(&k)),
+                _ => Err(Option::<&Value>::None),
+            },
+            Value::Seq(vec) => match &self.0 {
+                NameOrIndex::Index(i) => Ok(vec.get(*i as usize)),
+                _ => Err(Option::<&Value>::None),
+            },
+            _ => Err(Option::<&Value>::None),
+        };
+        match v {
+            Ok(Some(v)) => {
+                *value = v.clone();
+                Ok(())
+            }
+            _ => Err(()),
+        }
     }
 }

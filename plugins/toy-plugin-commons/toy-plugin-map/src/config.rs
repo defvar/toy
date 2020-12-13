@@ -1,9 +1,10 @@
 use crate::transform::{
-    Indexing, Mapping, Naming, Put, PutValue, RemoveByIndex, RemoveByName, Rename, Reorder,
-    Transformer,
+    Indexing, Mapping, NameOrIndex, Naming, Put, PutValue, Reindexing, RemoveByIndex, RemoveByName,
+    Rename, SingleValue, Transformer,
 };
 use crate::typed::AllowedTypes;
 use std::collections::HashMap;
+use toy_core::data::Map;
 use toy_pack::{Schema, Unpack};
 
 /// config for type convert.
@@ -35,7 +36,7 @@ pub struct TypedConfigOption {
 #[derive(Debug, Clone, Default, Unpack, Schema)]
 pub struct MappingConfig {
     /// key: filed name, value: new field name.
-    pub mappings: HashMap<String, String>,
+    pub mappings: Map<String, String>,
 }
 
 /// transform to seq value from map value.
@@ -44,10 +45,10 @@ pub struct IndexingConfig {
     pub names: Vec<String>,
 }
 
-/// reorder element for seq value.
+/// reindexing element for seq value.
 #[derive(Debug, Clone, Default, Unpack, Schema)]
-pub struct ReorderConfig {
-    pub reorder: Vec<u32>,
+pub struct ReindexingConfig {
+    pub reindexing: Vec<u32>,
 }
 
 /// transform to map value from seq value.
@@ -69,14 +70,22 @@ pub struct PutConfig {
     pub put: HashMap<String, PutValue>,
 }
 
+/// remove field by Index.
 #[derive(Debug, Clone, Default, Unpack, Schema)]
 pub struct RemoveByIndexConfig {
     pub remove_by_index: Vec<u32>,
 }
 
+/// remove field by name.
 #[derive(Debug, Clone, Default, Unpack, Schema)]
 pub struct RemoveByNameConfig {
     pub remove_by_name: Vec<String>,
+}
+
+/// create single value from map or seq.
+#[derive(Debug, Clone, Default, Unpack, Schema)]
+pub struct SingleValueConfig {
+    pub name_or_index: NameOrIndex,
 }
 
 pub trait ToTransform<T>
@@ -98,9 +107,9 @@ impl ToTransform<Indexing> for IndexingConfig {
     }
 }
 
-impl ToTransform<Reorder> for ReorderConfig {
-    fn into_transform(self) -> Reorder {
-        Reorder(self.reorder)
+impl ToTransform<Reindexing> for ReindexingConfig {
+    fn into_transform(self) -> Reindexing {
+        Reindexing(self.reindexing)
     }
 }
 
@@ -133,5 +142,11 @@ impl ToTransform<RemoveByIndex> for RemoveByIndexConfig {
 impl ToTransform<RemoveByName> for RemoveByNameConfig {
     fn into_transform(self) -> RemoveByName {
         RemoveByName(self.remove_by_name)
+    }
+}
+
+impl ToTransform<SingleValue> for SingleValueConfig {
+    fn into_transform(self) -> SingleValue {
+        SingleValue(self.name_or_index)
     }
 }

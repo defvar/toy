@@ -1,5 +1,4 @@
 use super::config::*;
-use super::last::Last;
 use super::service::*;
 use toy_core::prelude::{factory, plugin, PluginRegistry, PortType};
 
@@ -13,4 +12,5 @@ pub fn load() -> impl PluginRegistry {
         factory!(first, FirstConfig, new_first_context),
     )
     .with("last", PortType::sink(), || Last)
+    .with("count", PortType::sink(), || Count)
 }

@@ -5,3 +5,6 @@ pub struct FirstConfig {}
 
 #[derive(Debug, Clone, Default, Unpack, Schema)]
 pub struct LastConfig {}
+
+#[derive(Debug, Clone, Default, Unpack, Schema)]
+pub struct CountConfig {}

@@ -1,10 +1,10 @@
 use std::collections::HashMap;
 use toy_core::prelude::*;
 use toy_plugin_map::config::{
-    IndexingConfig, MappingConfig, NamingConfig, PutConfig, RenameConfig, ReorderConfig,
-    ToTransform,
+    IndexingConfig, MappingConfig, NamingConfig, PutConfig, ReindexingConfig, RenameConfig,
+    SingleValueConfig, ToTransform,
 };
-use toy_plugin_map::AllowedTypes;
+use toy_plugin_map::{AllowedTypes, NameOrIndex};
 use toy_plugin_map::{PutValue, Transformer};
 
 #[test]
@@ -26,7 +26,7 @@ fn mapping() {
     };
 
     let mappings = {
-        let mut map = HashMap::new();
+        let mut map = Map::new();
         map.insert("a".to_string(), "aa".to_string());
         map.insert("c".to_string(), "cc".to_string());
         map.insert("xxx".to_string(), "dd".to_string());
@@ -58,7 +58,7 @@ fn mapping_flatten() {
     };
 
     let mappings = {
-        let mut map = HashMap::new();
+        let mut map = Map::new();
         map.insert("a".to_string(), "a".to_string());
         map.insert("c.A".to_string(), "c".to_string());
         map.insert("c.B".to_string(), "d".to_string());
@@ -73,7 +73,7 @@ fn mapping_flatten() {
 }
 
 #[test]
-fn named() {
+fn naming() {
     let mut target = seq_value![0, 1, 2, 3, 4, 5];
 
     let expected = map_value! {
@@ -100,7 +100,28 @@ fn named() {
 }
 
 #[test]
-fn indexed() {
+fn naming_single_value() {
+    let mut target = Value::from(1u32);
+
+    let expected = map_value! {
+        "a" => 1u32,
+    };
+
+    let names = {
+        let mut map = HashMap::new();
+        map.insert("a".to_string(), 9 /*- index ignore -*/);
+        map
+    };
+
+    NamingConfig { names }
+        .into_transform()
+        .transform(&mut target)
+        .unwrap();
+    assert_eq!(target, expected);
+}
+
+#[test]
+fn indexing() {
     let mut target = map_value! {
       "a" => 1,
       "b" => 2,
@@ -122,12 +143,27 @@ fn indexed() {
 }
 
 #[test]
-fn reorder() {
-    let mut target = seq_value![3, 1, 2];
-    let expected = seq_value![1, 2, 3];
+fn indexing_single_value() {
+    let mut target = Value::from(1u32);
 
-    ReorderConfig {
-        reorder: vec![1, 2, 0],
+    let expected = seq_value![1u32];
+
+    let names = vec!["xxxx".to_string()];
+
+    IndexingConfig { names }
+        .into_transform()
+        .transform(&mut target)
+        .unwrap();
+    assert_eq!(target, expected);
+}
+
+#[test]
+fn reindexing() {
+    let mut target = seq_value![3, 1, 2, 4, 5];
+    let expected = seq_value![5, 4, 3];
+
+    ReindexingConfig {
+        reindexing: vec![4, 3, 0],
     }
     .into_transform()
     .transform(&mut target)
@@ -208,5 +244,36 @@ fn put_map_err() {
         .into_transform()
         .transform(&mut target)
         .unwrap();
+    assert_eq!(target, expected);
+}
+
+#[test]
+fn single_value_from_map() {
+    let mut target = map_value! {
+      "a" => 1u32,
+      "b" => 2u64,
+    };
+    let expected = Value::from(2u64);
+
+    SingleValueConfig {
+        name_or_index: NameOrIndex::Name("b".to_string()),
+    }
+    .into_transform()
+    .transform(&mut target)
+    .unwrap();
+    assert_eq!(target, expected);
+}
+
+#[test]
+fn single_value_from_seq() {
+    let mut target = seq_value![10u32, 20u32, 30u32];
+    let expected = Value::from(20u32);
+
+    SingleValueConfig {
+        name_or_index: NameOrIndex::Index(1),
+    }
+    .into_transform()
+    .transform(&mut target)
+    .unwrap();
     assert_eq!(target, expected);
 }

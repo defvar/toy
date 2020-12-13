@@ -151,15 +151,18 @@ macro_rules! delegate_iterator {
 
 ///////////////////////////////////////////////////////////////////////////////////
 
-pub struct Iter<'a> {
-    iter: indexmap::map::Iter<'a, String, Value>,
+pub struct Iter<'a, K, V> {
+    iter: indexmap::map::Iter<'a, K, V>,
 }
 
-delegate_iterator!((Iter<'a>) => (&'a String, &'a Value));
+delegate_iterator!((Iter<'a, K, V>) => (&'a K, &'a V));
 
-impl<'a> IntoIterator for &'a Map<String, Value> {
-    type Item = (&'a String, &'a Value);
-    type IntoIter = Iter<'a>;
+impl<'a, K, V> IntoIterator for &'a Map<K, V>
+where
+    K: Eq + Hash,
+{
+    type Item = (&'a K, &'a V);
+    type IntoIter = Iter<'a, K, V>;
     #[inline]
     fn into_iter(self) -> Self::IntoIter {
         Iter {
@@ -170,15 +173,18 @@ impl<'a> IntoIterator for &'a Map<String, Value> {
 
 ///////////////////////////////////////////////////////////////////////////////////
 
-pub struct IntoIter {
-    iter: indexmap::map::IntoIter<String, Value>,
+pub struct IntoIter<K, V> {
+    iter: indexmap::map::IntoIter<K, V>,
 }
 
-delegate_iterator!((IntoIter) => (String, Value));
+delegate_iterator!((IntoIter<K, V>) => (K, V));
 
-impl IntoIterator for Map<String, Value> {
-    type Item = (String, Value);
-    type IntoIter = IntoIter;
+impl<K, V> IntoIterator for Map<K, V>
+where
+    K: Eq + Hash,
+{
+    type Item = (K, V);
+    type IntoIter = IntoIter<K, V>;
     #[inline]
     fn into_iter(self) -> Self::IntoIter {
         IntoIter {
@@ -189,15 +195,18 @@ impl IntoIterator for Map<String, Value> {
 
 ///////////////////////////////////////////////////////////////////////////////////
 
-pub struct IterMut<'a> {
-    iter: indexmap::map::IterMut<'a, String, Value>,
+pub struct IterMut<'a, K, V> {
+    iter: indexmap::map::IterMut<'a, K, V>,
 }
 
-delegate_iterator!((IterMut<'a>) => (&'a String, &'a mut Value));
+delegate_iterator!((IterMut<'a, K, V>) => (&'a K, &'a mut V));
 
-impl<'a> IntoIterator for &'a mut Map<String, Value> {
-    type Item = (&'a String, &'a mut Value);
-    type IntoIter = IterMut<'a>;
+impl<'a, K, V> IntoIterator for &'a mut Map<K, V>
+where
+    K: Eq + Hash,
+{
+    type Item = (&'a K, &'a mut V);
+    type IntoIter = IterMut<'a, K, V>;
 
     #[inline]
     fn into_iter(self) -> Self::IntoIter {
@@ -209,7 +218,10 @@ impl<'a> IntoIterator for &'a mut Map<String, Value> {
 
 ///////////////////////////////////////////////////////////////////////////////////
 
-impl Default for Map<String, Value> {
+impl<K, V> Default for Map<K, V>
+where
+    K: Eq + Hash,
+{
     #[inline]
     fn default() -> Self {
         Map {

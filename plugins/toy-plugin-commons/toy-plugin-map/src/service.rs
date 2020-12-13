@@ -1,10 +1,11 @@
 use crate::config::{
-    IndexingConfig, MappingConfig, NamingConfig, PutConfig, RemoveByIndexConfig,
-    RemoveByNameConfig, RenameConfig, ReorderConfig, ToTransform, TypedConfig,
+    IndexingConfig, MappingConfig, NamingConfig, PutConfig, ReindexingConfig, RemoveByIndexConfig,
+    RemoveByNameConfig, RenameConfig, SingleValueConfig, ToTransform, TypedConfig,
 };
 use crate::typed::convert;
 use crate::{
-    Indexing, Mapping, Naming, Put, RemoveByIndex, RemoveByName, Rename, Reorder, Transformer,
+    Indexing, Mapping, Naming, Put, Reindexing, RemoveByIndex, RemoveByName, Rename, SingleValue,
+    Transformer,
 };
 use toy_core::prelude::*;
 
@@ -50,8 +51,8 @@ pub struct IndexingContext {
     transformer: Indexing,
 }
 
-pub struct ReorderContext {
-    transformer: Reorder,
+pub struct RindexingContext {
+    transformer: Reindexing,
 }
 
 pub struct RenameContext {
@@ -68,6 +69,10 @@ pub struct RemoveByNameContext {
 
 pub struct PutContext {
     transformer: Put,
+}
+
+pub struct SingleValueContext {
+    transformer: SingleValue,
 }
 
 macro_rules! transform {
@@ -104,7 +109,12 @@ transform!(
     IndexingConfig,
     IndexingContext
 );
-transform!(reorder, new_reorder_context, ReorderConfig, ReorderContext);
+transform!(
+    reindexing,
+    new_reindexing_context,
+    ReindexingConfig,
+    RindexingContext
+);
 transform!(rename, new_rename_context, RenameConfig, RenameContext);
 transform!(
     remove_by_index,
@@ -119,3 +129,9 @@ transform!(
     RemoveByNameContext
 );
 transform!(put, new_put_context, PutConfig, PutContext);
+transform!(
+    single_value,
+    new_single_value_context,
+    SingleValueConfig,
+    SingleValueContext
+);

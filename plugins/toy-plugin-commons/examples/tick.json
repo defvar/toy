@@ -18,19 +18,19 @@
             "port_type": { "Flow": [1, 2] },
             "config": {
             },
-            "wires": ["last1", "last2"]
+            "wires": ["last", "count"]
         },
         {
             "type": "plugin.common.collect.last",
-            "uri": "last1",
+            "uri": "last",
             "port_type": { "Sink": 1 },
             "config": {
             },
             "wires": []
         },
         {
-            "type": "plugin.common.collect.last",
-            "uri": "last2",
+            "type": "plugin.common.collect.count",
+            "uri": "count",
             "port_type": { "Sink": 1 },
             "config": {
             },
