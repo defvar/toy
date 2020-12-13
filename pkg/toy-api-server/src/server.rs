@@ -1,4 +1,4 @@
-use crate::api::{graphs, services};
+use crate::api::{graphs, services, tasks};
 use crate::auth::{auth_filter, Auth};
 use crate::store::{StoreConnection, StoreOpsFactory};
 use core::marker::PhantomData;
@@ -75,8 +75,13 @@ where
         };
         let routes = auth_filter(self.auth.clone())
             .and(
-                graphs(store_connection.clone(), store_factory, tx.clone())
-                    .or(services(tx.clone())),
+                graphs(store_connection.clone(), store_factory.clone(), tx.clone())
+                    .or(services(tx.clone()))
+                    .or(tasks(
+                        store_connection.clone(),
+                        store_factory.clone(),
+                        tx.clone(),
+                    )),
             )
             .map(|_, r| r)
             .with(

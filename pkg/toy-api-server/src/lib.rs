@@ -12,6 +12,7 @@
 
 mod graph;
 mod service;
+mod task;
 
 pub use common::error::ApiError;
 pub use server::Server;
@@ -21,6 +22,7 @@ pub mod api {
 
     pub use super::graph::graphs;
     pub use super::service::services;
+    pub use super::task::tasks;
 }
 
 pub mod auth;
