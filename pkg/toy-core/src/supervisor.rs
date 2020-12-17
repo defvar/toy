@@ -5,19 +5,20 @@ use crate::graph::Graph;
 use crate::mpsc::{self, Incoming, Outgoing, OutgoingMessage};
 use crate::oneshot;
 use crate::registry::{App, Delegator, Registry, ServiceSchema};
-use crate::task::{RunningTask, TaskContext};
+use crate::task::{RunningTask, TaskContext, TaskId};
 use core::future::Future;
 use core::pin::Pin;
 use core::task::{Context, Poll};
+use core::time::Duration;
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::Mutex;
-use uuid::Uuid;
 
 #[derive(Debug)]
 pub enum Request {
-    Task(Graph, oneshot::Outgoing<TaskResponse, ServiceError>),
-    Stop(Uuid),
+    RunTask(Graph, oneshot::Outgoing<RunTaskResponse, ServiceError>),
+    Tasks(oneshot::Outgoing<Vec<TaskResponse>, ServiceError>),
+    Stop(TaskId),
     Services(oneshot::Outgoing<Response, ServiceError>),
     Shutdown,
 }
@@ -28,11 +29,32 @@ pub enum Response {
 }
 
 #[derive(Debug, Clone)]
-pub struct TaskResponse(Uuid);
+pub struct RunTaskResponse(TaskId);
+
+impl RunTaskResponse {
+    pub fn id(&self) -> TaskId {
+        self.0
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct TaskResponse {
+    id: TaskId,
+    started_at: Duration,
+    graph: Graph,
+}
 
 impl TaskResponse {
-    pub fn uuid(&self) -> Uuid {
-        self.0
+    pub fn id(&self) -> TaskId {
+        self.id
+    }
+
+    pub fn started_at(&self) -> Duration {
+        self.started_at
+    }
+
+    pub fn graph(&self) -> &Graph {
+        &self.graph
     }
 }
 
@@ -65,7 +87,7 @@ pub struct Supervisor<T, O, P> {
     /// receive any request from api server.
     rx: Incoming<Request, ServiceError>,
 
-    tasks: Arc<Mutex<HashMap<Uuid, RunningTask>>>,
+    tasks: Arc<Mutex<HashMap<TaskId, RunningTask>>>,
 }
 
 impl<T, O, P> Supervisor<T, O, P>
@@ -112,12 +134,12 @@ where
         while let Some(r) = self.rx.next().await {
             match r {
                 Ok(m) => match m {
-                    Request::Task(g, tx) => {
+                    Request::RunTask(g, tx) => {
                         let app = self.app.clone();
                         let tasks = Arc::clone(&self.tasks);
                         let s = self.spawner.clone();
                         let ctx = TaskContext::new(g);
-                        let uuid = ctx.uuid();
+                        let uuid = ctx.id();
                         let _ = self.spawner.spawn(async move {
                             let (e, tx_signal) = Executor::new(s, ctx.clone());
                             let span = ctx.info_span();
@@ -125,17 +147,31 @@ where
                             let task = RunningTask::new(&ctx, tx_signal);
                             {
                                 let mut tasks = tasks.lock().await;
-                                let _ = tasks.insert(ctx.uuid(), task);
+                                let _ = tasks.insert(ctx.id(), task);
                             }
                             let _ = e.run(app, Frame::default()).await;
                             {
                                 let mut tasks = tasks.lock().await;
-                                let _ = tasks.remove(&ctx.uuid());
+                                let _ = tasks.remove(&ctx.id());
                             }
                             tracing::info!(parent: &span, "end task.");
                             ()
                         });
-                        let _ = tx.send_ok(TaskResponse(uuid)).await;
+                        let _ = tx.send_ok(RunTaskResponse(uuid)).await;
+                    }
+                    Request::Tasks(tx) => {
+                        let r = {
+                            let tasks = self.tasks.lock().await;
+                            tasks
+                                .iter()
+                                .map(|(_, v)| TaskResponse {
+                                    id: v.id(),
+                                    started_at: v.started_at(),
+                                    graph: v.graph().clone(),
+                                })
+                                .collect::<Vec<_>>()
+                        };
+                        let _ = tx.send_ok(r).await;
                     }
                     Request::Stop(uuid) => {
                         let tasks = Arc::clone(&self.tasks);
@@ -187,11 +223,11 @@ async fn send_stop_signal(task: &mut RunningTask) {
             );
         }
     }
-    tracing::info!(uuid = ?task.uuid(), "send stop signal to task.");
+    tracing::info!(uuid = ?task.id(), "send stop signal to task.");
 }
 
 struct Shutdown {
-    tasks: Arc<Mutex<HashMap<Uuid, RunningTask>>>,
+    tasks: Arc<Mutex<HashMap<TaskId, RunningTask>>>,
 }
 
 impl Unpin for Shutdown {}

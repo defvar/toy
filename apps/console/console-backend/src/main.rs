@@ -6,12 +6,13 @@ use tracing_subscriber::fmt::format::FmtSpan;
 
 fn main() {
     dotenv::dotenv().ok();
-
+    let time = tracing_subscriber::fmt::time::ChronoUtc::rfc3339();
     tracing_subscriber::fmt()
         .with_max_level(tracing::Level::DEBUG)
         .with_span_events(FmtSpan::CLOSE)
         .with_thread_ids(true)
         .with_thread_names(true)
+        .with_timer(time)
         .init();
 
     let sv_rt = toy_rt::RuntimeBuilder::new()

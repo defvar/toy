@@ -38,7 +38,7 @@ fn main() {
 
         let _ = rt.block_on(async {
             let (tx2, rx2) = toy_core::oneshot::channel();
-            let _ = tx.send_ok(Request::Task(g, tx2)).await;
+            let _ = tx.send_ok(Request::RunTask(g, tx2)).await;
             let uuid = rx2.recv().await;
             tracing::info!("task:{:?}", uuid);
         });

@@ -12,6 +12,7 @@ pub struct Graph {
     outputs: HashMap<Uri, OutputWire>,
     inputs: HashMap<Uri, InputWire>,
     config_value: Value,
+    original: Value,
 }
 
 #[derive(Debug, Clone)]
@@ -57,6 +58,7 @@ impl Graph {
             outputs: HashMap::<Uri, OutputWire>::from(seq.1),
             inputs: HashMap::<Uri, InputWire>::from(seq.2),
             config_value,
+            original: v.clone(),
         })
     }
 
@@ -90,6 +92,10 @@ impl Graph {
 
     pub fn config(&self) -> Value {
         self.config_value.clone()
+    }
+
+    pub fn original(&self) -> Value {
+        self.original.clone()
     }
 
     fn try_traverse_services(

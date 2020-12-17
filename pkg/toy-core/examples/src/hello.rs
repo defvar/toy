@@ -65,7 +65,7 @@ async fn accumulate(
     };
     tracing::info!(
         "{:?} accumulate value:{:?} from port:{:?} -> ctx:{:?}",
-        task_ctx.uuid(),
+        task_ctx.id(),
         req,
         req.port(),
         ctx
@@ -82,7 +82,7 @@ async fn receive(
 ) -> Result<ServiceContext<ReceiveContext>, ServiceError> {
     tracing::info!(
         "{:?} receive/{:?}. send value {:?}.",
-        task_ctx.uuid(),
+        task_ctx.id(),
         ctx.prop1,
         req
     );
@@ -96,7 +96,7 @@ async fn publish(
     _req: Frame,
     mut tx: Outgoing<Frame, ServiceError>,
 ) -> Result<ServiceContext<PublishContext>, ServiceError> {
-    tracing::info!("{:?} publish", task_ctx.uuid());
+    tracing::info!("{:?} publish", task_ctx.id());
 
     let _ = tx.send_ok(Frame::from(1u32)).await?;
     let _ = tx.send_ok(Frame::from(2u32)).await?;
@@ -213,7 +213,7 @@ fn main() {
     tracing::info!("send task request to supervisor");
     let _ = rt.block_on(async {
         let (tx2, rx2) = toy_core::oneshot::channel();
-        let _ = tx.send_ok(Request::Task(graph(), tx2)).await;
+        let _ = tx.send_ok(Request::RunTask(graph(), tx2)).await;
         let uuid = rx2.recv().await;
         log::info!("task:{:?}", uuid);
     });

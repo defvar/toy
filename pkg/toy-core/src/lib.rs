@@ -40,7 +40,7 @@ pub mod prelude {
     pub use super::service::{Service, ServiceContext, ServiceFactory};
     pub use super::service_type::ServiceType;
     pub use super::service_uri::Uri;
-    pub use super::task::{RunningTask, TaskContext};
+    pub use super::task::{RunningTask, TaskContext, TaskId};
     pub use super::{factory, map_value, seq_value};
     #[doc(hidden)]
     pub use toy_pack::deser::from_primitive::FromPrimitive;

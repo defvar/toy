@@ -6,11 +6,13 @@ use tracing_subscriber::fmt::format::FmtSpan;
 static CONFIG: &'static str = "./examples/tick.json";
 
 fn main() {
+    let time = tracing_subscriber::fmt::time::ChronoUtc::rfc3339();
     tracing_subscriber::fmt()
         .with_max_level(tracing::Level::DEBUG)
         .with_span_events(FmtSpan::CLOSE)
         .with_thread_ids(true)
         .with_thread_names(true)
+        .with_timer(time)
         .init();
 
     let app = app(toy_plugin_commons::load());
@@ -38,7 +40,7 @@ fn main() {
 
         let _ = rt.block_on(async {
             let (tx2, rx2) = toy_core::oneshot::channel();
-            let _ = tx.send_ok(Request::Task(g, tx2)).await;
+            let _ = tx.send_ok(Request::RunTask(g, tx2)).await;
             let uuid = rx2.recv().await;
             tracing::info!("task:{:?}", uuid);
         });

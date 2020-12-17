@@ -1,23 +1,22 @@
 use crate::common;
 use crate::store::{Find, FindOption, StoreConnection, StoreOpsFactory};
+use crate::task::models::{ListTaskEntity, RunTaskEntity};
 use std::convert::Infallible;
 use toy_core::error::ServiceError;
 use toy_core::graph::Graph;
 use toy_core::mpsc::Outgoing;
 use toy_core::oneshot;
 use toy_core::prelude::Value;
-use toy_core::supervisor::{Request, Response, TaskResponse};
+use toy_core::supervisor::{Request, RunTaskResponse, TaskResponse};
 use warp::http::StatusCode;
 use warp::reply::Reply;
 
 pub async fn list(mut tx: Outgoing<Request, ServiceError>) -> Result<impl warp::Reply, Infallible> {
-    let (tx_, rx_) = oneshot::channel::<Response, ServiceError>();
-    let _ = tx.send_ok(Request::Services(tx_)).await;
+    let (tx_, rx_) = oneshot::channel::<Vec<TaskResponse>, ServiceError>();
+    let _ = tx.send_ok(Request::Tasks(tx_)).await;
     if let Some(Ok(r)) = rx_.recv().await {
-        match r {
-            Response::Services(ref services) => Ok(common::reply::json(services).into_response()),
-            // _ => Ok(StatusCode::INTERNAL_SERVER_ERROR.into_response()),
-        }
+        let vec = ListTaskEntity::from(r);
+        Ok(common::reply::json(&vec).into_response())
     } else {
         Ok(StatusCode::INTERNAL_SERVER_ERROR.into_response())
     }
@@ -50,10 +49,10 @@ where
                     return Ok(StatusCode::INTERNAL_SERVER_ERROR.into_response());
                 }
             };
-            let (tx_, rx_) = oneshot::channel::<TaskResponse, ServiceError>();
-            let _ = tx.send_ok(Request::Task(graph, tx_)).await;
+            let (tx_, rx_) = oneshot::channel::<RunTaskResponse, ServiceError>();
+            let _ = tx.send_ok(Request::RunTask(graph, tx_)).await;
             if let Some(Ok(r)) = rx_.recv().await {
-                Ok(common::reply::json(&(r.uuid().to_string())).into_response())
+                Ok(common::reply::json(&(RunTaskEntity::from(r))).into_response())
             } else {
                 Ok(StatusCode::INTERNAL_SERVER_ERROR.into_response())
             }
