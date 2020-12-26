@@ -8,8 +8,8 @@ pub struct AuthUser {
 }
 
 impl AuthUser {
-    pub fn new(uid: String) -> AuthUser {
-        Self { uid }
+    pub fn new<T: Into<String>>(uid: T) -> AuthUser {
+        Self { uid: uid.into() }
     }
 }
 
