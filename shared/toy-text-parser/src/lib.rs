@@ -1,10 +1,10 @@
 mod dfa_parser;
 mod edges;
-mod liine;
+mod line;
 mod terminator;
 
 pub use self::edges::Edges;
-pub use self::liine::{ColumnIterator, Line};
+pub use self::line::{ColumnIterator, Line};
 pub use self::terminator::Terminator;
 
 pub mod dfa {
