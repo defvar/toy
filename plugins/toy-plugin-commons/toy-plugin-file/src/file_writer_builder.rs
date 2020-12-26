@@ -3,7 +3,8 @@ use std::io::{self, BufWriter, Error, ErrorKind};
 use std::path::Path;
 
 use super::config::{self, char_to_u8, FileWriteConfig, SinkType};
-use super::{FileWriter, QuoteStyle, Terminator};
+use super::{FileWriter, QuoteStyle};
+use toy_text_parser::Terminator;
 
 #[derive(Clone)]
 pub struct FileWriterBuilder {

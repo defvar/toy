@@ -1,7 +1,7 @@
 use std::fmt;
 use std::ops::Mul;
 
-use super::states::{Action, ReadResult, State};
+use super::states::{Action, ParseResult, State};
 use crate::Terminator;
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
@@ -261,19 +261,19 @@ impl Dfa {
         in_done: bool,
         out_done: bool,
         idx_done: bool,
-    ) -> ReadResult {
+    ) -> ParseResult {
         if state >= self.final_record {
-            ReadResult::Record
+            ParseResult::Record
         } else if is_final_trans && state.is_start() {
-            ReadResult::End
+            ParseResult::End
         } else {
             debug_assert!(state < self.final_record);
             if !in_done && out_done {
-                ReadResult::OutputFull
+                ParseResult::OutputFull
             } else if !in_done && idx_done {
-                ReadResult::OutputEdgeFull
+                ParseResult::OutputEdgeFull
             } else {
-                ReadResult::InputEmpty
+                ParseResult::InputEmpty
             }
         }
     }

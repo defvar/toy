@@ -1,8 +1,9 @@
 use std::fmt;
 use std::io::{BufWriter, Error, IntoInnerError, Write};
 
-use super::{QuoteStyle, Row, Terminator};
+use super::QuoteStyle;
 use toy_core::data::Value;
+use toy_text_parser::{Line, Terminator};
 
 macro_rules! itoa_write {
     ($tp: ident, $fun_name: ident) => {
@@ -102,8 +103,8 @@ impl<W: Write> FileWriter<W> {
         Ok(())
     }
 
-    pub fn write(&mut self, row: &Row) -> Result<(), Error> {
-        self.write_iter(row)
+    pub fn write(&mut self, line: &Line) -> Result<(), Error> {
+        self.write_iter(line)
     }
 
     pub fn flush(&mut self) -> Result<(), Error> {

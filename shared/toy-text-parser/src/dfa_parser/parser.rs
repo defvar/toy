@@ -1,5 +1,5 @@
 use super::dfa::{Dfa, DfaState};
-use super::states::ReadResult;
+use super::states::ParseResult;
 
 #[derive(Debug)]
 pub struct ByteParser {
@@ -37,7 +37,7 @@ impl ByteParser {
         input: &[u8],
         output: &mut [u8],
         edges: &mut [usize],
-    ) -> (ReadResult, usize, usize, usize) {
+    ) -> (ParseResult, usize, usize, usize) {
         let (input, bom) = self.strip_utf8_bom(input);
         let (r, in_pos, out_pos, column) = self.read_record_core(input, output, edges);
         self.has_read = true;
@@ -50,16 +50,16 @@ impl ByteParser {
         input: &[u8],
         output: &mut [u8],
         edges: &mut [usize],
-    ) -> (ReadResult, usize, usize, usize) {
+    ) -> (ParseResult, usize, usize, usize) {
         if input.is_empty() {
             let s = self.dfa.transition_final_dfa(self.current_state);
             let res = self
                 .dfa
                 .new_read_record_result(s, true, false, false, false);
             return match res {
-                ReadResult::Record => {
+                ParseResult::Record => {
                     if edges.is_empty() {
-                        return (ReadResult::OutputEdgeFull, 0, 0, 0);
+                        return (ParseResult::OutputEdgeFull, 0, 0, 0);
                     }
                     self.current_state = s;
                     edges[0] = self.output_pos;
@@ -73,10 +73,10 @@ impl ByteParser {
             };
         }
         if output.is_empty() {
-            return (ReadResult::OutputFull, 0, 0, 0);
+            return (ParseResult::OutputFull, 0, 0, 0);
         }
         if edges.is_empty() {
-            return (ReadResult::OutputEdgeFull, 0, 0, 0);
+            return (ParseResult::OutputEdgeFull, 0, 0, 0);
         }
 
         let (mut in_pos, mut out_pos, mut column) = (0, 0, 0);

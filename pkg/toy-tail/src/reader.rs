@@ -1,5 +1,5 @@
 use std::io::{BufRead, BufReader, Error, Read};
-use toy_text_parser::dfa::{ByteParser, ReadResult};
+use toy_text_parser::dfa::{ByteParser, ParseResult};
 use toy_text_parser::Line;
 
 #[derive(Debug)]
@@ -47,19 +47,19 @@ impl<R: Read> LineReader<R> {
             out_pos += out_size;
 
             match state {
-                ReadResult::OutputFull => {
+                ParseResult::OutputFull => {
                     line.expand_force_columns();
                     continue;
                 }
-                ReadResult::OutputEdgeFull => {
+                ParseResult::OutputEdgeFull => {
                     line.expand_force_edges();
                     continue;
                 }
-                ReadResult::InputEmpty => continue,
-                ReadResult::End => {
+                ParseResult::InputEmpty => continue,
+                ParseResult::End => {
                     return Ok(false);
                 }
-                ReadResult::Record => {
+                ParseResult::Record => {
                     line.set_len(column);
                     return Ok(true);
                 }

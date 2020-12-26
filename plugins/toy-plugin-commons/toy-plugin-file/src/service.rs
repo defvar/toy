@@ -1,5 +1,5 @@
 use crate::config::{FileReadConfig, FileWriteConfig};
-use crate::{FileReader, FileReaderBuilder, FileWriter, FileWriterBuilder, Row};
+use crate::{FileReader, FileReaderBuilder, FileWriter, FileWriterBuilder};
 use core::fmt::Formatter;
 use std::io;
 use toy_core::data::{Frame, Map, Value};
@@ -8,11 +8,12 @@ use toy_core::mpsc::Outgoing;
 use toy_core::service::ServiceContext;
 use toy_core::task::TaskContext;
 use toy_core::ServiceType;
+use toy_text_parser::Line;
 
 pub struct FileReadContext {
     line: u32,
     reader: FileReader<Box<dyn io::Read + Send>>,
-    buf: Row,
+    buf: Line,
 }
 
 pub struct FileWriteContext {
@@ -44,7 +45,7 @@ pub fn new_read_context(
         .map(|r| FileReadContext {
             line: 0u32,
             reader: r,
-            buf: Row::new(),
+            buf: Line::new(),
         })
         .map_err(|e| e.into())
 }

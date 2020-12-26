@@ -5,4 +5,4 @@ mod states;
 
 pub use self::parser::ByteParser;
 pub use self::parser_builder::ByteParserBuilder;
-pub use self::states::ReadResult;
+pub use self::states::ParseResult;

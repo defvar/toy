@@ -1,4 +1,6 @@
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+use toy_pack::{Pack, Schema, Unpack};
+
+#[derive(Copy, Clone, Debug, Eq, PartialEq, Pack, Unpack, Schema)]
 pub enum Terminator {
     CRLF,
     Any(u8),

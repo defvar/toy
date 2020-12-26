@@ -1,4 +1,4 @@
-use toy_text_parser::dfa::{ByteParserBuilder, ReadResult};
+use toy_text_parser::dfa::{ByteParserBuilder, ParseResult};
 
 macro_rules! exp {
   ($([$($field:expr),*]),*) => {{
@@ -116,17 +116,17 @@ fn parse(text: &[u8]) -> Vec<Row> {
         out_pos += out_size;
         data = &data[in_size..];
         match state {
-            ReadResult::OutputFull => panic!("output full"),
-            ReadResult::OutputEdgeFull => panic!("index full"),
-            ReadResult::InputEmpty => {
+            ParseResult::OutputFull => panic!("output full"),
+            ParseResult::OutputEdgeFull => panic!("index full"),
+            ParseResult::InputEmpty => {
                 if !data.is_empty() {
                     panic!("missing input data")
                 }
             }
-            ReadResult::End => {
+            ParseResult::End => {
                 break;
             }
-            ReadResult::Record => {
+            ParseResult::Record => {
                 let s = std::str::from_utf8(&buf[..out_pos]).unwrap();
                 if !s.is_empty() {
                     let mut row = Row::new();

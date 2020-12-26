@@ -8,6 +8,7 @@ edition = "2018"
 log = "0.4"
 toy-core = {path = "../../../pkg/toy-core"}
 toy-pack = { path = "../../../shared/toy-pack", features = ["derive"] }
+toy-text-parser = {path = "../../../shared/toy-text-parser"}
 itoa = "0.4"
 ryu = "1.0"
 

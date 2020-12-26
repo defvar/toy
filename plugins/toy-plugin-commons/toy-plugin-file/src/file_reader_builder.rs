@@ -1,13 +1,14 @@
 use super::config::{char_to_u8, default_capacity, FileReadConfig, SourceType};
-use super::parse::ReaderBuilder;
-use super::{FileReader, FileReaderState, Terminator};
+use super::{FileReader, FileReaderState};
 use std::fs::File;
 use std::io::{self, BufReader, Error, ErrorKind};
 use std::path::Path;
+use toy_text_parser::dfa::ByteParserBuilder;
+use toy_text_parser::Terminator;
 
 #[derive(Clone)]
 pub struct FileReaderBuilder {
-    reader_builder: ReaderBuilder,
+    reader_builder: ByteParserBuilder,
     capacity: usize,
     has_headers: bool,
     flexible: bool,
@@ -88,7 +89,7 @@ impl FileReaderBuilder {
     }
 
     pub fn terminator(&mut self, t: Terminator) -> &mut Self {
-        self.reader_builder.terminator(t.to_parse());
+        self.reader_builder.terminator(t);
         self
     }
 
@@ -111,7 +112,7 @@ impl FileReaderBuilder {
 impl Default for FileReaderBuilder {
     fn default() -> Self {
         Self {
-            reader_builder: ReaderBuilder::default(),
+            reader_builder: ByteParserBuilder::default(),
             capacity: default_capacity(),
             has_headers: true,
             flexible: false,

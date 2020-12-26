@@ -1,8 +1,7 @@
+use super::QuoteStyle;
 use std::path::PathBuf;
-
 use toy_pack::{Schema, Unpack};
-
-use super::{QuoteStyle, Terminator};
+use toy_text_parser::Terminator;
 
 pub const fn default_capacity() -> usize {
     8 * (1 << 10)

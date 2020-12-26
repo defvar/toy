@@ -24,7 +24,7 @@ pub enum Action {
 }
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
-pub enum ReadResult {
+pub enum ParseResult {
     InputEmpty,
     OutputFull,
     OutputEdgeFull,
@@ -32,8 +32,8 @@ pub enum ReadResult {
     End,
 }
 
-impl ReadResult {
+impl ParseResult {
     pub fn is_record(&self) -> bool {
-        *self == ReadResult::Record
+        *self == ParseResult::Record
     }
 }
