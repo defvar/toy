@@ -113,7 +113,9 @@ where
             tx.send(Ok(start_frame.clone())).await?
         }
 
-        let span = self.ctx.info_span();
+        let uri: Uri = "awaiter".into();
+        let awaiter_ctx = self.ctx.with_uri(&uri);
+        let span = awaiter_ctx.info_span();
         let mut finish_count = 0;
         while let Some(x) = self.awaiter.next().await {
             match x {
@@ -202,7 +204,7 @@ where
 }
 
 async fn process<S, Ctx>(
-    task_ctx: TaskContext,
+    mut task_ctx: TaskContext,
     mut rx: Incoming<Frame, ServiceError>,
     upstream_count: u32,
     tx: Outgoing<Frame, ServiceError>,
@@ -216,10 +218,9 @@ where
     let mut finish_count = 0;
     let mut sc = ServiceContext::Ready(context);
 
-    let debug_span = task_ctx.debug_span();
     let info_span = task_ctx.info_span();
+    task_ctx.set_span(info_span.clone());
 
-    tracing::debug!(parent: &debug_span, "call service started.");
     sc = service.started(task_ctx.clone(), sc.into());
 
     //main loop, receive on message

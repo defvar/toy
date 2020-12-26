@@ -142,8 +142,6 @@ where
                         let uuid = ctx.id();
                         let _ = self.spawner.spawn(async move {
                             let (e, tx_signal) = Executor::new(s, ctx.clone());
-                            let span = ctx.info_span();
-                            tracing::info!(parent: &span, "start task.");
                             let task = RunningTask::new(&ctx, tx_signal);
                             {
                                 let mut tasks = tasks.lock().await;
@@ -154,7 +152,6 @@ where
                                 let mut tasks = tasks.lock().await;
                                 let _ = tasks.remove(&ctx.id());
                             }
-                            tracing::info!(parent: &span, "end task.");
                             ()
                         });
                         let _ = tx.send_ok(RunTaskResponse(uuid)).await;

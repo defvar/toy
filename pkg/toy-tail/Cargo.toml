@@ -1,5 +1,5 @@
 [package]
-name = "toy-log-collector"
+name = "toy-tail"
 version = "0.1.0"
 authors = ["defvar <def.daisuke@gmail.com>"]
 edition = "2018"
@@ -9,3 +9,7 @@ edition = "2018"
 [dependencies]
 crossbeam-channel = "0.4.0"
 notify = "5.0.0-pre.3"
+regex = "1.4.2"
+toy-text-parser = {path = "../../shared/toy-text-parser"}
+chrono = "0.4"
+thiserror = "1.0"

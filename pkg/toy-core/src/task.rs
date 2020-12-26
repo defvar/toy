@@ -14,12 +14,14 @@ pub struct TaskId {
     id: Uuid,
 }
 
+/// Context of Running Task.
 /// You do **not** have to wrap the `TaskContext` it in an [`Rc`] or [`Arc`] to **reuse** it,
 /// because it already uses an [`Arc`] internally.
 #[derive(Clone)]
 pub struct TaskContext {
     inner: Arc<Inner>,
     uri: Option<Uri>,
+    current_span: Option<tracing::Span>,
 }
 
 struct Inner {
@@ -28,6 +30,8 @@ struct Inner {
     graph: Graph,
 }
 
+/// Infomation Of Running Task.
+/// Use Supervisor.
 #[derive(Debug)]
 pub struct RunningTask {
     id: TaskId,
@@ -66,6 +70,21 @@ impl Default for TaskId {
     }
 }
 
+macro_rules! task_span {
+    ($name: ident, $level: ident) => {
+        pub fn $name(&self) -> tracing::span::Span {
+            match self.uri() {
+              Some(uri) => {
+                  tracing::span!(tracing::Level::$level, "Task", task=%self.id(), graph=%self.name(), uri=%uri)
+               }
+               None => {
+                  tracing::span!(tracing::Level::$level, "Task", task=%self.id(), graph=%self.name())
+               }
+            }
+         }
+    };
+}
+
 impl TaskContext {
     pub fn new(graph: Graph) -> Self {
         Self {
@@ -77,6 +96,7 @@ impl TaskContext {
                 graph,
             }),
             uri: None,
+            current_span: None,
         }
     }
 
@@ -84,6 +104,7 @@ impl TaskContext {
         Self {
             inner: self.inner,
             uri: Some(uri.clone()),
+            current_span: self.current_span,
         }
     }
 
@@ -99,30 +120,26 @@ impl TaskContext {
         &self.inner.graph
     }
 
+    pub fn name(&self) -> &str {
+        self.inner.graph.name()
+    }
+
     pub fn uri(&self) -> Option<Uri> {
         self.uri.as_ref().map(|x| x.clone())
     }
 
-    pub fn trace_span(&self) -> tracing::span::Span {
-        match self.uri() {
-            Some(uri) => tracing::span!(tracing::Level::TRACE, "Task", task=?self.id(), uri=?uri),
-            None => tracing::span!(tracing::Level::TRACE, "Task", task=?self.id()),
-        }
+    /// Get current span.
+    pub fn span(&self) -> &tracing::Span {
+        assert!(self.current_span.is_some(), "illegal task span.");
+        self.current_span.as_ref().unwrap()
     }
 
-    pub fn debug_span(&self) -> tracing::span::Span {
-        match self.uri() {
-            Some(uri) => tracing::span!(tracing::Level::DEBUG, "Task", task=?self.id(), uri=?uri),
-            None => tracing::span!(tracing::Level::DEBUG, "Task", task=?self.id()),
-        }
+    pub(crate) fn set_span(&mut self, span: tracing::Span) {
+        self.current_span = Some(span);
     }
 
-    pub fn info_span(&self) -> tracing::span::Span {
-        match self.uri() {
-            Some(uri) => tracing::span!(tracing::Level::INFO, "Task", task=?self.id(), uri=?uri),
-            None => tracing::span!(tracing::Level::INFO, "Task", task=?self.id()),
-        }
-    }
+    task_span!(debug_span, DEBUG);
+    task_span!(info_span, INFO);
 }
 
 impl fmt::Debug for TaskContext {

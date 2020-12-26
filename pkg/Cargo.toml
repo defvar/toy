@@ -5,5 +5,5 @@ members = [
     "toy-api-server",
     "toy-api-store-etcd",
     "toy-api-auth-firebase",
-    "toy-log-collector"
+    "toy-tail"
 ]

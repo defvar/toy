@@ -63,13 +63,7 @@ async fn accumulate(
         Value::U32(v) => ctx.count += *v,
         _ => (),
     };
-    tracing::info!(
-        "{:?} accumulate value:{:?} from port:{:?} -> ctx:{:?}",
-        task_ctx.id(),
-        req,
-        req.port(),
-        ctx
-    );
+    tracing::debug!(parent: task_ctx.span(), req=?req, port=%req.port(), ctx=?ctx);
     let _ = tx.send_ok(Frame::default()).await?;
     Ok(ServiceContext::Ready(ctx))
 }
@@ -81,23 +75,20 @@ async fn receive(
     mut tx: Outgoing<Frame, ServiceError>,
 ) -> Result<ServiceContext<ReceiveContext>, ServiceError> {
     tracing::info!(
-        "{:?} receive/{:?}. send value {:?}.",
-        task_ctx.id(),
-        ctx.prop1,
-        req
+        parent: task_ctx.span(),
+        prop1 = ?ctx.prop1,
+        send = ?req,
     );
     let _ = tx.send_ok(req).await?;
     Ok(ServiceContext::Ready(ctx))
 }
 
 async fn publish(
-    task_ctx: TaskContext,
+    _task_ctx: TaskContext,
     ctx: PublishContext,
     _req: Frame,
     mut tx: Outgoing<Frame, ServiceError>,
 ) -> Result<ServiceContext<PublishContext>, ServiceError> {
-    tracing::info!("{:?} publish", task_ctx.id());
-
     let _ = tx.send_ok(Frame::from(1u32)).await?;
     let _ = tx.send_ok(Frame::from(2u32)).await?;
     let _ = tx.send_ok(Frame::from(3u32)).await?;
@@ -166,7 +157,7 @@ fn main() {
     tracing_subscriber::fmt()
         .with_ansi(false)
         .with_max_level(tracing::Level::DEBUG)
-        .with_span_events(FmtSpan::CLOSE)
+        .with_span_events(FmtSpan::FULL)
         .with_thread_ids(true)
         .with_thread_names(true)
         .with_writer(non_blocking)
