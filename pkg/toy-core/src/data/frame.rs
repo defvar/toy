@@ -1,6 +1,7 @@
 use super::value::Value;
 use crate::data::map::Map;
 use crate::mpsc::OutgoingMessage;
+use std::fmt;
 
 #[derive(Debug, Clone)]
 pub struct Frame {
@@ -98,6 +99,29 @@ impl Header {
             port: 0,
             frame_type: FrameType::Signal(v),
         }
+    }
+}
+
+impl fmt::Display for Frame {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str("Frame { ")?;
+        self.header.fmt(f)?;
+        if self.payload.is_some() {
+            f.write_str(", ")?;
+            f.write_str("payload: ")?;
+            self.payload.as_ref().unwrap().fmt(f)?;
+        }
+        f.write_str(" } ")?;
+        Ok(())
+    }
+}
+
+impl fmt::Display for Header {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Header")
+            .field("frame_type", &self.frame_type)
+            .field("port", &self.port)
+            .finish()
     }
 }
 

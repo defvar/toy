@@ -1,5 +1,6 @@
 use crate::data::map::Map;
 use core::time::Duration;
+use std::fmt;
 use std::str::FromStr;
 use toy_pack::deser::from_primitive::FromPrimitive;
 
@@ -335,6 +336,30 @@ fn parse_index(s: &str) -> Option<usize> {
 impl Default for Value {
     fn default() -> Self {
         Value::None
+    }
+}
+
+impl fmt::Display for Value {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Value::Map(map) => map.fmt(f),
+            Value::Seq(vec) => {
+                let mut first = true;
+                f.write_str("[")?;
+                for v in vec {
+                    if first {
+                        first = false;
+                    } else {
+                        f.write_str(", ")?;
+                    }
+                    f.write_fmt(format_args!("{}", v))?;
+                }
+                f.write_str("]")
+            }
+            Value::Unit => f.write_str("Unit"),
+            Value::None => f.write_str("None"),
+            _ => f.write_str(&self.parse_str().unwrap_or_else(|| "".to_string())),
+        }
     }
 }
 

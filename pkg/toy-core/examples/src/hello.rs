@@ -63,7 +63,9 @@ async fn accumulate(
         Value::U32(v) => ctx.count += *v,
         _ => (),
     };
-    tracing::debug!(parent: task_ctx.span(), req=?req, port=%req.port(), ctx=?ctx);
+    tracing::info!(parent: task_ctx.span(), req=%req, ctx=?ctx);
+    tracing::debug!(parent: task_ctx.span(), req=%req, ctx=?ctx);
+
     let _ = tx.send_ok(Frame::default()).await?;
     Ok(ServiceContext::Ready(ctx))
 }
@@ -76,8 +78,8 @@ async fn receive(
 ) -> Result<ServiceContext<ReceiveContext>, ServiceError> {
     tracing::info!(
         parent: task_ctx.span(),
-        prop1 = ?ctx.prop1,
-        send = ?req,
+        prop1 = %ctx.prop1,
+        send = %req,
     );
     let _ = tx.send_ok(req).await?;
     Ok(ServiceContext::Ready(ctx))
@@ -145,7 +147,7 @@ fn graph() -> Graph {
     services.insert("name".to_string(), Value::from("example"));
     services.insert("services".to_string(), seq);
 
-    let r = Graph::from(Value::Map(services)).unwrap();
+    let r = Graph::from(Value::Map(services.clone())).unwrap();
     tracing::info!("{:?}", r);
     r
 }

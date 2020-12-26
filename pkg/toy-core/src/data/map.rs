@@ -240,6 +240,27 @@ where
     }
 }
 
+impl<K, V> fmt::Display for Map<K, V>
+where
+    K: fmt::Display + Hash + Eq,
+    V: fmt::Display,
+{
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        let mut first = true;
+        f.write_str("Map(")?;
+        for (k, v) in self.iter() {
+            if first {
+                first = false;
+            } else {
+                f.write_str(", ")?;
+            }
+            f.write_fmt(format_args!("{}: {}", k, v))?;
+        }
+        f.write_str(")")?;
+        Ok(())
+    }
+}
+
 impl PartialEq for Map<String, Value> {
     #[inline]
     fn eq(&self, other: &Self) -> bool {
