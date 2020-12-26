@@ -1,5 +1,5 @@
 use std::io::BufReader;
-use toy_log_collector::LineReader;
+use toy_tail::LineReader;
 use toy_text_parser::dfa::ByteParserBuilder;
 use toy_text_parser::Line;
 
