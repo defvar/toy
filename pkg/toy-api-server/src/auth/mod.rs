@@ -23,5 +23,5 @@ impl warp::Reply for AuthUser {
 pub trait Auth: Send + Sync {
     type F: std::future::Future<Output = Result<AuthUser, crate::ApiError>> + Send;
 
-    fn verify(&self, token: String) -> Self::F;
+    fn verify(&self, client: reqwest::Client, token: String) -> Self::F;
 }

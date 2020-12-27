@@ -29,3 +29,6 @@ pub mod auth;
 mod common;
 mod server;
 pub mod store;
+
+#[doc(hidden)]
+pub use reqwest;

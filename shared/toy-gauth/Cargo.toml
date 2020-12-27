@@ -13,3 +13,5 @@ reqwest = { version = "0.10", features = ["json"] }
 tokio = { version = "0.2", features = ["full"] }
 tracing = "0.1"
 thiserror = "1.0"
+toy-pack = {path = "../toy-pack", features = ["derive"] }
+toy-pack-json = {path = "../toy-pack-json"}

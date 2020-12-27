@@ -14,6 +14,7 @@ use warp::{Filter, Reply};
 pub struct Server<C, SF, A> {
     sf: SF,
     auth: A,
+    client: Option<reqwest::Client>,
     _t: PhantomData<C>,
 }
 
@@ -27,8 +28,15 @@ where
         Server {
             sf,
             auth,
+            client: None,
             _t: PhantomData,
         }
+    }
+
+    /// Use http client.
+    pub fn with_client(mut self, client: reqwest::Client) -> Self {
+        self.client = Some(client);
+        self
     }
 
     /// Run this `Server` forever on the current thread, specified routes.
@@ -73,7 +81,18 @@ where
                 return;
             }
         };
-        let routes = auth_filter(self.auth.clone())
+
+        let client = match self.client {
+            Some(ref c) => c.clone(),
+            None => match reqwest::Client::builder().build() {
+                Ok(c) => c,
+                Err(e) => {
+                    tracing::error!("error client builder failed. error:{:?}", e);
+                    return;
+                }
+            },
+        };
+        let routes = auth_filter(self.auth.clone(), client)
             .and(
                 graphs(store_connection.clone(), store_factory.clone(), tx.clone())
                     .or(services(tx.clone()))

@@ -33,7 +33,7 @@ impl KeyCache {
     }
 }
 
-pub async fn verify_token(token: &str) -> Result<Claims, GAuthError> {
+pub async fn verify_token(client: reqwest::Client, token: &str) -> Result<Claims, GAuthError> {
     let project_id = match std::env::var(constants::ENV_KEY_FIREBASE_ID).map_err(|_| {
         GAuthError::error(format!(
             "not found firebase config. please set env {}.",
@@ -51,7 +51,7 @@ pub async fn verify_token(token: &str) -> Result<Claims, GAuthError> {
     };
 
     // validate: kid
-    let jwk = match get_firebase_jwk(&kid).await {
+    let jwk = match get_firebase_jwk(client, &kid).await {
         Ok(Some(k)) => k,
         Ok(None) => {
             return Err(GAuthError::authentication_failed("unknwon kid."));
@@ -85,7 +85,10 @@ pub async fn verify_token(token: &str) -> Result<Claims, GAuthError> {
     decoded_token.map(|x| x.claims)
 }
 
-async fn get_firebase_jwk(kid: &str) -> Result<Option<JWK>, reqwest::Error> {
+async fn get_firebase_jwk(
+    client: reqwest::Client,
+    kid: &str,
+) -> Result<Option<JWK>, reqwest::Error> {
     let max_age_secs = KEYS.with(|kc| kc.borrow().max_age_secs);
     let start = SystemTime::now();
     let now = start
@@ -106,7 +109,7 @@ async fn get_firebase_jwk(kid: &str) -> Result<Option<JWK>, reqwest::Error> {
     }
 
     tracing::info!("reflesh jwk list.");
-    let resp = reqwest::get(constants::JWK_URL).await?;
+    let resp = client.get(constants::JWK_URL).send().await?;
 
     let max_age_secs = match resp.headers().get(header::CACHE_CONTROL) {
         Some(v) => v

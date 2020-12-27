@@ -2,11 +2,11 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Claims {
-    exp: u64,
-    iat: u64,
-    aud: String,
-    iss: String,
-    sub: String,
+    pub(crate) exp: u64,
+    pub(crate) iat: u64,
+    pub(crate) aud: String,
+    pub(crate) iss: String,
+    pub(crate) sub: String,
 }
 
 impl Claims {
@@ -29,4 +29,13 @@ impl Claims {
     pub fn sub(&self) -> &str {
         &self.sub
     }
+}
+
+#[derive(Debug, Serialize)]
+pub struct RequestTokenClaims {
+    pub(crate) exp: u64,
+    pub(crate) iat: u64,
+    pub(crate) aud: String,
+    pub(crate) iss: String,
+    pub(crate) scope: String,
 }
