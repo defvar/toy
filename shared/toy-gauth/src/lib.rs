@@ -1,7 +1,6 @@
 #![feature(backtrace)]
 
 mod claims;
-mod client;
 mod constants;
 mod credential;
 pub mod error;
