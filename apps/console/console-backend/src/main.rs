@@ -36,7 +36,7 @@ fn main() {
 
     let app = app(toy_plugin_commons::load());
 
-    let (sv, tx, rx) = Supervisor::new(toy_rt::Spawner, app);
+    let (sv, tx, rx) = Supervisor::new(app);
 
     let server = toy_api_server::Server::new(EtcdStoreOpsFactory, FireAuth);
 

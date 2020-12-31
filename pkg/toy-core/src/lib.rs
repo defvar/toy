@@ -31,7 +31,7 @@ pub mod prelude {
 
     pub use super::data::{self, Frame, Map, Value};
     pub use super::error::ServiceError;
-    pub use super::executor::{AsyncSpawner, Executor};
+    pub use super::executor::Executor;
     pub use super::graph::Graph;
     pub use super::mpsc::{Incoming, Outgoing};
     pub use super::registry::{

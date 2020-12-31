@@ -2,7 +2,7 @@ use std::future::Future;
 
 mod async_rt;
 
-pub use async_rt::{Runtime, RuntimeBuilder, Spawner};
+pub use async_rt::{Runtime, RuntimeBuilder};
 
 pub fn spawn<F>(future: F)
 where

@@ -8,15 +8,7 @@ use crate::service::{Service, ServiceContext, ServiceFactory};
 use crate::service_type::ServiceType;
 use crate::service_uri::Uri;
 use crate::task::TaskContext;
-use std::future::Future;
 use toy_pack::deser::DeserializableOwned;
-
-pub trait AsyncSpawner: Clone + Send {
-    fn spawn<F>(&self, future: F)
-    where
-        F: Future + Send + 'static,
-        F::Output: Send + 'static;
-}
 
 pub trait ServiceExecutor {
     type Request;
@@ -26,10 +18,10 @@ pub trait ServiceExecutor {
     fn spawn<F>(&mut self, service_type: &ServiceType, uri: &Uri, factory: F)
     where
         F: ServiceFactory<
-                Request = Self::Request,
-                Error = Self::Error,
-                InitError = Self::InitError,
-            > + Send
+            Request = Self::Request,
+            Error = Self::Error,
+            InitError = Self::InitError,
+        > + Send
             + Sync
             + 'static,
         F::Service: Send,
@@ -37,8 +29,7 @@ pub trait ServiceExecutor {
         F::Config: DeserializableOwned + Send;
 }
 
-pub struct Executor<T> {
-    spawner: T,
+pub struct Executor {
     starters: Starters,
     awaiter: Awaiter,
     graph: Graph,
@@ -47,16 +38,12 @@ pub struct Executor<T> {
     ctx: TaskContext,
 }
 
-impl<T> Executor<T>
-where
-    T: AsyncSpawner,
-{
-    pub fn new(spawner: T, ctx: TaskContext) -> (Self, SignalOutgoings) {
+impl Executor {
+    pub fn new(ctx: TaskContext) -> (Self, SignalOutgoings) {
         let graph = ctx.graph().clone();
         let (incomings, outgoings, awaiter, starters, signals) = node_channel::from_graph(&graph);
         (
             Self {
-                spawner,
                 starters,
                 awaiter,
                 graph,
@@ -143,10 +130,7 @@ where
     }
 }
 
-impl<T> ServiceExecutor for Executor<T>
-where
-    T: AsyncSpawner,
-{
+impl ServiceExecutor for Executor {
     type Request = Frame;
     type Error = ServiceError;
     type InitError = ServiceError;
@@ -154,10 +138,10 @@ where
     fn spawn<F>(&mut self, service_type: &ServiceType, uri: &Uri, factory: F)
     where
         F: ServiceFactory<
-                Request = Self::Request,
-                Error = Self::Error,
-                InitError = Self::InitError,
-            > + Send
+            Request = Self::Request,
+            Error = Self::Error,
+            InitError = Self::InitError,
+        > + Send
             + Sync
             + 'static,
         F::Service: Send,
@@ -174,12 +158,11 @@ where
             return;
         }
 
-        let s = self.spawner.clone();
         let task_ctx = self.ctx.clone();
         let task_ctx = task_ctx.with_uri(&uri);
         match data::unpack::<F::Config>(config_value.unwrap().config()) {
             Ok(config) => {
-                s.spawn(async move {
+                toy_rt::spawn(async move {
                     let new_service = factory.new_service(service_type.clone()).await;
                     let new_ctx = factory.new_context(service_type.clone(), config);
                     match (new_service, new_ctx) {

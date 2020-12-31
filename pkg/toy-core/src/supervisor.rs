@@ -1,6 +1,6 @@
 use crate::data::Frame;
 use crate::error::ServiceError;
-use crate::executor::{AsyncSpawner, Executor};
+use crate::executor::Executor;
 use crate::graph::Graph;
 use crate::mpsc::{self, Incoming, Outgoing, OutgoingMessage};
 use crate::oneshot;
@@ -76,9 +76,7 @@ impl OutgoingMessage for SystemMessage {
 }
 
 #[derive(Debug)]
-pub struct Supervisor<T, O, P> {
-    spawner: T,
-
+pub struct Supervisor<O, P> {
     app: App<O, P>,
 
     /// send system message to api server.
@@ -90,9 +88,8 @@ pub struct Supervisor<T, O, P> {
     tasks: Arc<Mutex<HashMap<TaskId, RunningTask>>>,
 }
 
-impl<T, O, P> Supervisor<T, O, P>
+impl<O, P> Supervisor<O, P>
 where
-    T: AsyncSpawner + 'static,
     O: Delegator<Request = Frame, Error = ServiceError, InitError = ServiceError>
         + Registry
         + Clone
@@ -105,10 +102,9 @@ where
         + 'static,
 {
     pub fn new(
-        spawner: T,
         registry: App<O, P>,
     ) -> (
-        Supervisor<T, O, P>,
+        Supervisor<O, P>,
         Outgoing<Request, ServiceError>,
         Incoming<SystemMessage, ServiceError>,
     ) {
@@ -116,7 +112,6 @@ where
         let (tx_sys, rx_sys) = mpsc::channel::<SystemMessage, ServiceError>(1024);
         (
             Supervisor {
-                spawner,
                 app: registry,
                 tx: tx_sys,
                 rx: rx_req,
@@ -137,11 +132,10 @@ where
                     Request::RunTask(g, tx) => {
                         let app = self.app.clone();
                         let tasks = Arc::clone(&self.tasks);
-                        let s = self.spawner.clone();
                         let ctx = TaskContext::new(g);
                         let uuid = ctx.id();
-                        let _ = self.spawner.spawn(async move {
-                            let (e, tx_signal) = Executor::new(s, ctx.clone());
+                        let _ = toy_rt::spawn(async move {
+                            let (e, tx_signal) = Executor::new(ctx.clone());
                             let task = RunningTask::new(&ctx, tx_signal);
                             {
                                 let mut tasks = tasks.lock().await;

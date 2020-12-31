@@ -196,7 +196,7 @@ fn main() {
         .build()
         .unwrap();
 
-    let (sv, mut tx, mut rx) = Supervisor::new(toy_rt::Spawner, app);
+    let (sv, mut tx, mut rx) = Supervisor::new(app);
 
     // supervisor start
     rt.spawn(async {

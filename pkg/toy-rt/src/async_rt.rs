@@ -1,14 +1,10 @@
 use std::future::Future;
 use std::io;
 use tokio::runtime::{Builder, Runtime as TokioRuntime};
-use toy_core::executor::AsyncSpawner;
 
 pub struct Runtime {
     rt: TokioRuntime,
 }
-
-#[derive(Clone)]
-pub struct Spawner;
 
 pub struct RuntimeBuilder {
     builder: Builder,
@@ -28,16 +24,6 @@ impl Runtime {
         F::Output: Send + 'static,
     {
         let _ = self.rt.spawn(future);
-    }
-}
-
-impl AsyncSpawner for Spawner {
-    fn spawn<F>(&self, future: F)
-    where
-        F: Future + Send + 'static,
-        F::Output: Send + 'static,
-    {
-        let _ = tokio::spawn(future);
     }
 }
 
