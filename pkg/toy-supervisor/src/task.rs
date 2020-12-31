@@ -1,7 +1,7 @@
 use std::time::Duration;
 use toy_core::graph::Graph;
+use toy_core::node_channel::SignalOutgoings;
 use toy_core::task::{TaskContext, TaskId};
-use toy_executor::node_channel::SignalOutgoings;
 
 /// Infomation Of Running Task.
 /// Use Supervisor.

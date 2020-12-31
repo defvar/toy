@@ -9,6 +9,7 @@ edition = "2018"
 [dependencies]
 toy-core = {path="../toy-core"}
 toy-supervisor = {path="../toy-supervisor"}
+toy-executor = {path="../toy-executor"}
 
 [dev-dependencies]
 tracing = "0.1"

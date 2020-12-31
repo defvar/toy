@@ -1,5 +1,6 @@
 use std::io::Read;
 use toy::core::prelude::*;
+use toy::executor::ExecutorFactory;
 use toy::supervisor::{Request, Supervisor};
 use tracing_subscriber::fmt::format::FmtSpan;
 
@@ -31,7 +32,7 @@ fn main() {
             .build()
             .unwrap();
 
-        let (sv, mut tx, mut rx) = Supervisor::new(app);
+        let (sv, mut tx, mut rx) = Supervisor::new(ExecutorFactory, app);
 
         // supervisor start
         rt.spawn(async {

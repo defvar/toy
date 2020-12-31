@@ -1,9 +1,10 @@
-use crate::node_channel::{self, Awaiter, Incomings, Outgoings, SignalOutgoings, Starters};
+use async_trait::async_trait;
 use toy_core::data::{self, Frame};
 use toy_core::error::ServiceError;
-use toy_core::executor::ServiceExecutor;
+use toy_core::executor::{ServiceExecutor, TaskExecutor, TaskExecutorFactory};
 use toy_core::graph::Graph;
 use toy_core::mpsc::{Incoming, Outgoing};
+use toy_core::node_channel::{self, Awaiter, Incomings, Outgoings, SignalOutgoings, Starters};
 use toy_core::registry::Delegator;
 use toy_core::service::{Service, ServiceContext, ServiceFactory};
 use toy_core::task::TaskContext;
@@ -19,6 +20,8 @@ pub struct Executor {
     outgoings: Outgoings,
     ctx: TaskContext,
 }
+
+pub struct ExecutorFactory;
 
 impl Executor {
     pub fn new(ctx: TaskContext) -> (Self, SignalOutgoings) {
@@ -50,31 +53,6 @@ impl Executor {
             }
         }
         panic!("invalid channel stack...");
-    }
-
-    pub async fn run(
-        mut self,
-        delegator: impl Delegator<Request = Frame, Error = ServiceError, InitError = ServiceError>,
-        start_frame: Frame,
-    ) -> Result<(), ServiceError> {
-        let span = self.ctx.info_span();
-
-        // need to reverse ....
-        let nodes = self
-            .graph
-            .iter()
-            .rev()
-            .map(|x| (x.service_type(), x.uri()))
-            .collect::<Vec<_>>();
-
-        for (stype, uri) in &nodes {
-            if let Err(e) = delegator.delegate(stype, uri, &mut self) {
-                tracing::error!(parent: &span, "an error occured; {:?}", e);
-                return Err(e);
-            }
-        }
-
-        self.run_0(start_frame).await
     }
 
     async fn run_0(mut self, start_frame: Frame) -> Result<(), ServiceError> {
@@ -165,6 +143,44 @@ impl ServiceExecutor for Executor {
             }
             Err(e) => tracing::error!("config initialize failed. uri:{:?}, error:{:?}", uri, e),
         }
+    }
+}
+
+#[async_trait]
+impl TaskExecutor for Executor {
+    async fn run(
+        mut self,
+        delegator: impl Delegator<Request = Frame, Error = ServiceError, InitError = ServiceError>
+            + Send
+            + 'static,
+        start_frame: Frame,
+    ) -> Result<(), ServiceError> {
+        let span = self.ctx.info_span();
+
+        // need to reverse ....
+        let nodes = self
+            .graph
+            .iter()
+            .rev()
+            .map(|x| (x.service_type(), x.uri()))
+            .collect::<Vec<_>>();
+
+        for (stype, uri) in &nodes {
+            if let Err(e) = delegator.delegate(stype, uri, &mut self) {
+                tracing::error!(parent: &span, "an error occured; {:?}", e);
+                return Err(e);
+            }
+        }
+
+        self.run_0(start_frame).await
+    }
+}
+
+impl TaskExecutorFactory for ExecutorFactory {
+    type Executor = Executor;
+
+    fn new(ctx: TaskContext) -> (Self::Executor, SignalOutgoings) {
+        Executor::new(ctx)
     }
 }
 

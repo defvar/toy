@@ -11,4 +11,3 @@ tracing = "0.1"
 tokio = { version = "0.3", features = ["sync"] }
 toy-core = {path="../toy-core"}
 toy-rt = { path = "../toy-rt"}
-toy-executor = {path="../toy-executor"}

@@ -1,5 +1,6 @@
 use toy::core::prelude::*;
 use toy::core::registry::{app, plugin, PortType};
+use toy::executor::ExecutorFactory;
 use toy::supervisor::{Request, Supervisor};
 use toy_pack::{Pack, Schema, Unpack};
 use tracing_subscriber::fmt::format::FmtSpan;
@@ -196,7 +197,7 @@ fn main() {
         .build()
         .unwrap();
 
-    let (sv, mut tx, mut rx) = Supervisor::new(app);
+    let (sv, mut tx, mut rx) = Supervisor::new(ExecutorFactory, app);
 
     // supervisor start
     rt.spawn(async {

@@ -11,6 +11,7 @@ pub mod mpsc;
 pub mod oneshot;
 #[macro_use]
 mod macros;
+pub mod node_channel;
 pub mod registry;
 pub mod service;
 mod service_type;

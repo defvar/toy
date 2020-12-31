@@ -8,12 +8,12 @@ use std::sync::Arc;
 use tokio::sync::Mutex;
 use toy_core::data::Frame;
 use toy_core::error::ServiceError;
+use toy_core::executor::{TaskExecutor, TaskExecutorFactory};
 use toy_core::graph::Graph;
 use toy_core::mpsc::{self, Incoming, Outgoing, OutgoingMessage};
 use toy_core::oneshot;
 use toy_core::registry::{App, Delegator, Registry, ServiceSchema};
 use toy_core::task::{TaskContext, TaskId};
-use toy_executor::Executor;
 
 #[derive(Debug)]
 pub enum Request {
@@ -77,7 +77,9 @@ impl OutgoingMessage for SystemMessage {
 }
 
 #[derive(Debug)]
-pub struct Supervisor<O, P> {
+pub struct Supervisor<TF, O, P> {
+    factory: TF,
+
     app: App<O, P>,
 
     /// send system message to api server.
@@ -89,8 +91,9 @@ pub struct Supervisor<O, P> {
     tasks: Arc<Mutex<HashMap<TaskId, RunningTask>>>,
 }
 
-impl<O, P> Supervisor<O, P>
+impl<TF, O, P> Supervisor<TF, O, P>
 where
+    TF: TaskExecutorFactory + Send,
     O: Delegator<Request = Frame, Error = ServiceError, InitError = ServiceError>
         + Registry
         + Clone
@@ -103,9 +106,10 @@ where
         + 'static,
 {
     pub fn new(
-        registry: App<O, P>,
+        factory: TF,
+        app: App<O, P>,
     ) -> (
-        Supervisor<O, P>,
+        Supervisor<TF, O, P>,
         Outgoing<Request, ServiceError>,
         Incoming<SystemMessage, ServiceError>,
     ) {
@@ -113,7 +117,8 @@ where
         let (tx_sys, rx_sys) = mpsc::channel::<SystemMessage, ServiceError>(1024);
         (
             Supervisor {
-                app: registry,
+                factory,
+                app,
                 tx: tx_sys,
                 rx: rx_req,
                 tasks: Arc::new(Mutex::new(HashMap::new())),
@@ -136,7 +141,7 @@ where
                         let ctx = TaskContext::new(g);
                         let uuid = ctx.id();
                         let _ = toy_rt::spawn(async move {
-                            let (e, tx_signal) = Executor::new(ctx.clone());
+                            let (e, tx_signal) = TF::new(ctx.clone());
                             let task = RunningTask::new(&ctx, tx_signal);
                             {
                                 let mut tasks = tasks.lock().await;

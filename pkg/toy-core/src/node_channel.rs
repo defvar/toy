@@ -5,18 +5,18 @@
 //! - `Outgoings`
 //!   Sending channel for each URI.
 //! - `Starters`
-//!   Sending channel for first node URI of task.
+//!   Sending channel for auto created first node of task.
 //! - `Awaiters`
-//!   Receive channel for last node URI of task.
+//!   Receive channel for auto created last node of task.
 //! - `SignalOutgoings`
-//!   Sending channel for Supervisor use. (Outgoins + Starters)
+//!   Sending channel for all node. (`Outgoings` + `Starters`)
 
+use crate::data::Frame;
+use crate::error::ServiceError;
+use crate::graph::{Graph, InputWire, OutputWire};
+use crate::mpsc::{self, Incoming, Outgoing};
+use crate::Uri;
 use std::collections::HashMap;
-use toy_core::data::Frame;
-use toy_core::error::ServiceError;
-use toy_core::graph::{Graph, InputWire, OutputWire};
-use toy_core::mpsc::{self, Incoming, Outgoing};
-use toy_core::Uri;
 
 const DEFAULT_CHANNEL_BUFFER_SIZE: usize = 128;
 

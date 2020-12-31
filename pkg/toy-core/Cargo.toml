@@ -7,6 +7,7 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+async-trait = "0.1.42"
 tokio = { version = "0.3", features = ["sync"] }
 thiserror = "1.0"
 tracing = "0.1"
@@ -19,9 +20,4 @@ uuid = { version = "0.8", features = ["v4"] }
 [dev-dependencies]
 toy-pack-derive = {path = "../../shared/toy-pack-derive"}
 toy-pack-json = {path = "../../shared/toy-pack-json"}
-tracing-appender = "0.1"
-tracing-subscriber = "0.2"
-
-[[example]]
-name = "hello"
-path = "examples/src/hello.rs"
+tokio = { version = "0.3", features = ["rt-multi-thread"] }

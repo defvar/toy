@@ -1,4 +1,5 @@
 use toy::core::prelude::*;
+use toy::executor::ExecutorFactory;
 use toy::supervisor::Supervisor;
 use toy_api_auth_firebase::FireAuth;
 use toy_api_store_etcd::EtcdStoreOpsFactory;
@@ -36,7 +37,7 @@ fn main() {
 
     let app = app(toy_plugin_commons::load());
 
-    let (sv, tx, rx) = Supervisor::new(app);
+    let (sv, tx, rx) = Supervisor::new(ExecutorFactory, app);
 
     let server = toy_api_server::Server::new(EtcdStoreOpsFactory, FireAuth);
 

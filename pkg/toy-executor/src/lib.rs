@@ -1,4 +1,5 @@
-mod executor;
-pub mod node_channel;
+#![feature(type_alias_impl_trait)]
 
-pub use self::executor::Executor;
+mod executor;
+
+pub use self::executor::{Executor, ExecutorFactory};
