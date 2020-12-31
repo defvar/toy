@@ -82,7 +82,7 @@ impl ServiceSchema {
     {
         let tp = ServiceType::new(name_space, service_name).unwrap();
         let schema = to_schema::<T, JsonSchemaVisitor>(service_name, JsonSchemaVisitor)
-            .map_err(|e| log::error!("an error occured; {:?}", e))
+            .map_err(|e| tracing::error!("an error occured; {:?}", e))
             .ok();
         Self {
             service_type: tp,

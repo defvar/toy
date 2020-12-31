@@ -11,12 +11,12 @@
 //! - `SignalOutgoings`
 //!   Sending channel for Supervisor use. (Outgoins + Starters)
 
-use crate::error::ServiceError;
-use crate::graph::{Graph, InputWire, OutputWire};
-use crate::mpsc::{self, Incoming, Outgoing};
-use crate::prelude::Frame;
-use crate::Uri;
 use std::collections::HashMap;
+use toy_core::data::Frame;
+use toy_core::error::ServiceError;
+use toy_core::graph::{Graph, InputWire, OutputWire};
+use toy_core::mpsc::{self, Incoming, Outgoing};
+use toy_core::Uri;
 
 const DEFAULT_CHANNEL_BUFFER_SIZE: usize = 128;
 

@@ -1,7 +1,7 @@
+use toy::core::prelude::*;
+use toy::supervisor::Supervisor;
 use toy_api_auth_firebase::FireAuth;
 use toy_api_store_etcd::EtcdStoreOpsFactory;
-use toy_core::prelude::*;
-use toy_core::supervisor::Supervisor;
 use tracing_subscriber::fmt::format::FmtSpan;
 
 fn main() {

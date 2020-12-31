@@ -1,7 +1,7 @@
-use toy_core::prelude::*;
-use toy_core::registry::{app, plugin, PortType};
-use toy_core::supervisor::{Request, Supervisor};
-use toy_pack_derive::*;
+use toy::core::prelude::*;
+use toy::core::registry::{app, plugin, PortType};
+use toy::supervisor::{Request, Supervisor};
+use toy_pack::{Pack, Schema, Unpack};
 use tracing_subscriber::fmt::format::FmtSpan;
 
 #[derive(Debug)]
@@ -208,7 +208,7 @@ fn main() {
         let (tx2, rx2) = toy_core::oneshot::channel();
         let _ = tx.send_ok(Request::RunTask(graph(), tx2)).await;
         let uuid = rx2.recv().await;
-        log::info!("task:{:?}", uuid);
+        tracing::info!("task:{:?}", uuid);
     });
 
     tracing::info!("waiting shutdown reply from supervisor");

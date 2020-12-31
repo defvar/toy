@@ -1,7 +1,10 @@
 [workspace]
 members = [
+    "toy",
     "toy-core",
+    "toy-executor",
     "toy-rt",
+    "toy-supervisor",
     "toy-api-server",
     "toy-api-store-etcd",
     "toy-api-auth-firebase",

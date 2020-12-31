@@ -1,5 +1,4 @@
 use crate::graph::Graph;
-use crate::node_channel::SignalOutgoings;
 use crate::Uri;
 use std::fmt;
 use std::sync::Arc;
@@ -28,18 +27,6 @@ struct Inner {
     id: TaskId,
     started_at: Duration,
     graph: Graph,
-}
-
-/// Infomation Of Running Task.
-/// Use Supervisor.
-#[derive(Debug)]
-pub struct RunningTask {
-    id: TaskId,
-    started_at: Duration,
-    graph: Graph,
-
-    /// use running task.
-    tx_signal: SignalOutgoings,
 }
 
 impl TaskId {
@@ -134,7 +121,7 @@ impl TaskContext {
         self.current_span.as_ref().unwrap()
     }
 
-    pub(crate) fn set_span(&mut self, span: tracing::Span) {
+    pub fn set_span(&mut self, span: tracing::Span) {
         self.current_span = Some(span);
     }
 
@@ -149,33 +136,6 @@ impl fmt::Debug for TaskContext {
             .field("started_at", &self.inner.started_at)
             .field("graph", &self.inner.graph)
             .finish()
-    }
-}
-
-impl RunningTask {
-    pub fn new(ctx: &TaskContext, tx_signal: SignalOutgoings) -> Self {
-        Self {
-            id: ctx.id(),
-            started_at: ctx.started_at(),
-            graph: ctx.graph().clone(),
-            tx_signal,
-        }
-    }
-
-    pub fn id(&self) -> TaskId {
-        self.id
-    }
-
-    pub fn started_at(&self) -> Duration {
-        self.started_at
-    }
-
-    pub fn graph(&self) -> &Graph {
-        &self.graph
-    }
-
-    pub fn tx_signal(&mut self) -> &mut SignalOutgoings {
-        &mut self.tx_signal
     }
 }
 

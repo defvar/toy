@@ -1,7 +1,7 @@
 use crate::service::handlers;
-use toy_core::error::ServiceError;
-use toy_core::mpsc::Outgoing;
-use toy_core::supervisor::Request;
+use toy::core::error::ServiceError;
+use toy::core::mpsc::Outgoing;
+use toy::supervisor::Request;
 use warp::Filter;
 
 pub fn services(

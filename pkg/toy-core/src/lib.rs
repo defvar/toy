@@ -11,12 +11,10 @@ pub mod mpsc;
 pub mod oneshot;
 #[macro_use]
 mod macros;
-mod node_channel;
 pub mod registry;
 pub mod service;
 mod service_type;
 mod service_uri;
-pub mod supervisor;
 pub mod task;
 
 pub mod prelude {
@@ -31,7 +29,6 @@ pub mod prelude {
 
     pub use super::data::{self, Frame, Map, Value};
     pub use super::error::ServiceError;
-    pub use super::executor::Executor;
     pub use super::graph::Graph;
     pub use super::mpsc::{Incoming, Outgoing};
     pub use super::registry::{
@@ -40,7 +37,7 @@ pub mod prelude {
     pub use super::service::{Service, ServiceContext, ServiceFactory};
     pub use super::service_type::ServiceType;
     pub use super::service_uri::Uri;
-    pub use super::task::{RunningTask, TaskContext, TaskId};
+    pub use super::task::{TaskContext, TaskId};
     pub use super::{factory, map_value, seq_value};
     #[doc(hidden)]
     pub use toy_pack::deser::from_primitive::FromPrimitive;

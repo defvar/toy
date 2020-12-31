@@ -2,9 +2,9 @@ use crate::common::body;
 use crate::graph::handlers;
 use crate::graph::models::GraphEntity;
 use crate::store::{StoreConnection, StoreOpsFactory};
-use toy_core::error::ServiceError;
-use toy_core::mpsc::Outgoing;
-use toy_core::supervisor::Request;
+use toy::core::error::ServiceError;
+use toy::core::mpsc::Outgoing;
+use toy::supervisor::Request;
 use warp::Filter;
 
 pub fn graphs<C>(

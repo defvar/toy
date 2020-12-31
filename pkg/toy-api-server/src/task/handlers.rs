@@ -2,12 +2,12 @@ use crate::common;
 use crate::store::{Find, FindOption, StoreConnection, StoreOpsFactory};
 use crate::task::models::{ListTaskEntity, RunTaskEntity};
 use std::convert::Infallible;
-use toy_core::error::ServiceError;
-use toy_core::graph::Graph;
-use toy_core::mpsc::Outgoing;
-use toy_core::oneshot;
-use toy_core::prelude::Value;
-use toy_core::supervisor::{Request, RunTaskResponse, TaskResponse};
+use toy::core::error::ServiceError;
+use toy::core::graph::Graph;
+use toy::core::mpsc::Outgoing;
+use toy::core::oneshot;
+use toy::core::prelude::Value;
+use toy::supervisor::{Request, RunTaskResponse, TaskResponse};
 use warp::http::StatusCode;
 use warp::reply::Reply;
 

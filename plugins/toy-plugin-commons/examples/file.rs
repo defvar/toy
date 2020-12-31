@@ -1,7 +1,7 @@
 use std::io::Read;
 use std::time::Duration;
-use toy_core::prelude::*;
-use toy_core::supervisor::{Request, Supervisor};
+use toy::core::prelude::*;
+use toy::supervisor::{Request, Supervisor};
 use tracing_subscriber::fmt::format::FmtSpan;
 
 static CONFIG: &'static str = "./examples/file.yml";
@@ -37,7 +37,7 @@ fn main() {
         });
 
         let _ = rt.block_on(async {
-            let (tx2, rx2) = toy_core::oneshot::channel();
+            let (tx2, rx2) = toy::core::oneshot::channel();
             let _ = tx.send_ok(Request::RunTask(g, tx2)).await;
             let uuid = rx2.recv().await;
             tracing::info!("task:{:?}", uuid);

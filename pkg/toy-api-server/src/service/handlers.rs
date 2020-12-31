@@ -1,9 +1,9 @@
 use crate::common;
 use std::convert::Infallible;
-use toy_core::error::ServiceError;
-use toy_core::mpsc::Outgoing;
-use toy_core::oneshot;
-use toy_core::supervisor::{Request, Response};
+use toy::core::error::ServiceError;
+use toy::core::mpsc::Outgoing;
+use toy::core::oneshot;
+use toy::supervisor::{Request, Response};
 use warp::http::StatusCode;
 use warp::reply::Reply;
 

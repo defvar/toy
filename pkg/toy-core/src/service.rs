@@ -1,7 +1,6 @@
 use crate::mpsc::Outgoing;
 use crate::service_type::ServiceType;
 use crate::task::TaskContext;
-use log::warn;
 use std::any;
 use std::fmt::{Debug, Error, Formatter};
 use std::future::Future;
@@ -85,8 +84,9 @@ pub trait Service {
     type Future: Future<Output = Result<ServiceContext<Self::Context>, Self::Error>> + Send;
     type UpstreamFinishFuture: Future<Output = Result<ServiceContext<Self::Context>, Self::Error>>
         + Send;
-    type UpstreamFinishAllFuture: Future<Output = Result<ServiceContext<Self::Context>, Self::Error>>
-        + Send;
+    type UpstreamFinishAllFuture: Future<
+        Output = Result<ServiceContext<Self::Context>, Self::Error>,
+    > + Send;
     type Error;
 
     fn handle(
@@ -320,7 +320,7 @@ impl ServiceFactory for NoopServiceFactory {
     type InitError = ();
 
     fn new_service(&self, tp: ServiceType) -> Self::Future {
-        warn!(
+        tracing::warn!(
             "create noop service. not found service? service_type: {:?}",
             tp
         );

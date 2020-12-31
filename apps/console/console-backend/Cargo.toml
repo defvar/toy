@@ -14,7 +14,7 @@ tracing-subscriber = "0.2"
 dotenv = "0.15.0"
 
 # core
-toy-core = { path = "../../../pkg/toy-core" }
+toy = { path = "../../../pkg/toy" }
 toy-api-server = { path = "../../../pkg/toy-api-server"}
 toy-rt = { path = "../../../pkg/toy-rt"}
 toy-pack = {path = "../../../shared/toy-pack", features = ["derive"]}

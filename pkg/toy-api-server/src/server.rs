@@ -3,9 +3,9 @@ use crate::auth::{auth_filter, Auth};
 use crate::store::{StoreConnection, StoreOpsFactory};
 use core::marker::PhantomData;
 use std::net::SocketAddr;
-use toy_core::error::ServiceError;
-use toy_core::mpsc::{Incoming, Outgoing};
-use toy_core::supervisor::{Request, SystemMessage};
+use toy::core::error::ServiceError;
+use toy::core::mpsc::{Incoming, Outgoing};
+use toy::supervisor::{Request, SystemMessage};
 use warp::http::Method;
 use warp::{Filter, Reply};
 

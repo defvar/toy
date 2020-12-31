@@ -1,0 +1,43 @@
+use std::time::Duration;
+use toy_core::graph::Graph;
+use toy_core::task::{TaskContext, TaskId};
+use toy_executor::node_channel::SignalOutgoings;
+
+/// Infomation Of Running Task.
+/// Use Supervisor.
+#[derive(Debug)]
+pub struct RunningTask {
+    id: TaskId,
+    started_at: Duration,
+    graph: Graph,
+
+    /// use running task.
+    tx_signal: SignalOutgoings,
+}
+
+impl RunningTask {
+    pub fn new(ctx: &TaskContext, tx_signal: SignalOutgoings) -> Self {
+        Self {
+            id: ctx.id(),
+            started_at: ctx.started_at(),
+            graph: ctx.graph().clone(),
+            tx_signal,
+        }
+    }
+
+    pub fn id(&self) -> TaskId {
+        self.id
+    }
+
+    pub fn started_at(&self) -> Duration {
+        self.started_at
+    }
+
+    pub fn graph(&self) -> &Graph {
+        &self.graph
+    }
+
+    pub fn tx_signal(&mut self) -> &mut SignalOutgoings {
+        &mut self.tx_signal
+    }
+}

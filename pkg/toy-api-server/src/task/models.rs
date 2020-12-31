@@ -1,6 +1,6 @@
 use core::time::Duration;
-use toy_core::prelude::{TaskId, Value};
-use toy_core::supervisor::{RunTaskResponse, TaskResponse};
+use toy::core::prelude::{TaskId, Value};
+use toy::supervisor::{RunTaskResponse, TaskResponse};
 use toy_pack::Pack;
 
 #[derive(Debug, Pack)]

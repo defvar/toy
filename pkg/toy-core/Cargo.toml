@@ -9,14 +9,12 @@ edition = "2018"
 [dependencies]
 tokio = { version = "0.3", features = ["sync"] }
 thiserror = "1.0"
-log = "0.4"
 tracing = "0.1"
 toy-pack = {path = "../../shared/toy-pack", features = ["derive"]}
 indexmap = "1.3.2"
 itoa = "0.4"
 ryu = "1.0"
 uuid = { version = "0.8", features = ["v4"] }
-toy-rt = { path = "../toy-rt"}
 
 [dev-dependencies]
 toy-pack-derive = {path = "../../shared/toy-pack-derive"}
