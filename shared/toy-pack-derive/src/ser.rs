@@ -160,7 +160,13 @@ fn body_struct(target: &Model) -> Result<TokenStream, syn::Error> {
             };
             Ok(q)
         }
-        Style::Unit => unimplemented!(),
+        Style::Unit => {
+            let q = quote! {
+                let mut serializer = serializer.serialize_struct(#struct_name_str, 0)?;
+                serializer.end()
+            };
+            Ok(q)
+        }
         Style::Tuple => unimplemented!(),
         Style::Newtype => unimplemented!(),
     }

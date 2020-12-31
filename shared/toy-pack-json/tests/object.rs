@@ -52,6 +52,19 @@ fn ser_de_nested_struct() {
 }
 
 #[test]
+fn ser_de_unit_struct() {
+    #[derive(Debug, Pack, Unpack, PartialEq, Default)]
+    struct Unit;
+    let expected = Unit;
+    let json = "{}";
+    let r = unpack::<Unit>(json.as_bytes()).unwrap();
+    assert_eq!(r, expected);
+
+    let r = pack_to_string(&expected).unwrap();
+    assert_eq!(r, unindent(json));
+}
+
+#[test]
 fn de_struct_err_eof() {
     #[derive(Debug, Unpack, PartialEq, Default)]
     struct Data {

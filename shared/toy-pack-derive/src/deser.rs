@@ -244,7 +244,7 @@ fn struct_visitor_impl(
                 match style {
                     Style::Tuple | Style::Newtype => construct_field_tuple(i),
                     Style::Struct => construct_field_struct(i, field),
-                    Style::Unit => unimplemented!(),
+                    Style::Unit => quote! {},
                 },
             )
         })
@@ -284,7 +284,11 @@ fn struct_visitor_impl(
                  };
             }
         }
-        Style::Unit => unimplemented!(),
+        Style::Unit => {
+            quote! {
+                let r = #struct_name;
+            }
+        }
         Style::Tuple | Style::Newtype => {
             let n = if let Some(v) = variant {
                 quote!(#ident::#v)

@@ -1,7 +1,10 @@
-use toy_tail::{watch, PrintHandler, RegexParser, TailContext};
+use toy_tail::{watch, RegexParser, TailContext};
+use toy_tail_glogging::GLoggingHandler;
 use tracing_subscriber::fmt::format::FmtSpan;
 
 fn main() {
+    dotenv::dotenv().ok();
+
     tracing_subscriber::fmt()
         .with_ansi(false)
         .with_max_level(tracing::Level::DEBUG)
@@ -13,15 +16,6 @@ fn main() {
     let path = "/tmp/toy";
     let prefix = "hello.example.log";
 
-    // runtime for tail handler
-    let mut rt = tokio::runtime::Builder::new()
-        .threaded_scheduler()
-        .thread_name("tail-worker")
-        .core_threads(4)
-        .enable_all()
-        .build()
-        .unwrap();
-
     println!("watching dir:{}, prefix:{}", path, prefix);
     let parser = RegexParser::new();
     if let Err(e) = parser {
@@ -29,10 +23,23 @@ fn main() {
         return;
     }
 
-    let (mut ctx, mut timer) = TailContext::new(PrintHandler::new(), parser.unwrap());
+    // runtime for tail handler
+    let rt = tokio::runtime::Builder::new()
+        .threaded_scheduler()
+        .core_threads(3)
+        .thread_name("tail-worker")
+        .enable_all()
+        .build()
+        .unwrap();
+
+    let c = toy_glogging::reqwest::Client::builder().build().unwrap();
+
+    let (mut ctx, mut timer) = TailContext::new(GLoggingHandler::from(c, 10), parser.unwrap());
     rt.spawn(async move { timer.run().await });
 
     let (tx, rx) = std::sync::mpsc::channel();
+
+    let tx = tx.clone();
     rt.spawn(async move {
         match watch(path, prefix, &mut ctx).await {
             Ok(_) => {

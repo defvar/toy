@@ -16,7 +16,7 @@ impl RegexParser {
     (?P<level>\S+)\s+
     (?P<thread_name>\S+)\s+
     (?P<thread_id>\S+)\s+
-    (?P<span>.*):\s+
+    (?P<span>Task.*}:\s)?
     (?P<target>\S+):\s+
     (?P<message>.*)
     ",

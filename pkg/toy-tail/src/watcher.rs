@@ -1,9 +1,9 @@
 use crate::{Handler, TailContext, TailError};
 use notify::event::{ModifyKind, RenameMode};
 use notify::{Event, EventKind, RecommendedWatcher, RecursiveMode, Watcher};
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
-pub fn watch<P: AsRef<Path>, T: Handler>(
+pub async fn watch<P: AsRef<Path>, T: Handler>(
     path: P,
     prefix: &str,
     ctx: &mut TailContext<T>,
@@ -23,74 +23,64 @@ pub fn watch<P: AsRef<Path>, T: Handler>(
                     paths,
                     ..
                 } => {
-                    on_event(path_prefix_str, paths, ctx, |p, ctx| {
-                        println!("new reader. path={}", p.to_str().unwrap_or(""));
+                    for p in paths
+                        .iter()
+                        .filter(|x| x.to_str().unwrap_or("").starts_with(path_prefix_str))
+                    {
+                        tracing::info!("new reader. path={}", p.to_str().unwrap_or(""));
                         ctx.follow(p, false)?;
-                        ctx.read(&p)?;
-                        Ok(())
-                    })?;
+                        ctx.read(&p).await?;
+                    }
                 }
                 Event {
                     kind: EventKind::Modify(ModifyKind::Data(_)),
                     paths,
                     ..
                 } => {
-                    on_event(path_prefix_str, paths, ctx, |p, ctx| {
+                    for p in paths
+                        .iter()
+                        .filter(|x| x.to_str().unwrap_or("").starts_with(path_prefix_str))
+                    {
                         if ctx.is_reading(&p) {
-                            ctx.read(&p)?;
+                            ctx.read(&p).await?;
                         } else {
                             ctx.follow(&p, true)?;
-                            ctx.read(&p)?;
+                            ctx.read(&p).await?;
                         }
-                        Ok(())
-                    })?;
+                    }
                 }
                 Event {
                     kind: EventKind::Modify(ModifyKind::Name(RenameMode::To)),
                     paths,
                     ..
                 } => {
-                    on_event(path_prefix_str, paths, ctx, |p, ctx| {
-                        println!("file rename or move? new reader.");
+                    for p in paths
+                        .iter()
+                        .filter(|x| x.to_str().unwrap_or("").starts_with(path_prefix_str))
+                    {
+                        tracing::info!("file rename or move? new reader.");
                         ctx.follow(&p, false)?;
-                        ctx.read(&p)?;
-                        Ok(())
-                    })?;
+                        ctx.read(&p).await?;
+                    }
                 }
                 Event {
                     kind: EventKind::Remove(_),
                     paths,
                     ..
                 } => {
-                    on_event(path_prefix_str, paths, ctx, |p, ctx| {
-                        println!("file remove?");
+                    for p in paths
+                        .iter()
+                        .filter(|x| x.to_str().unwrap_or("").starts_with(path_prefix_str))
+                    {
+                        tracing::info!("file remove?");
                         ctx.remove(p);
-                        Ok(())
-                    })?;
+                    }
                 }
                 _ => (),
             },
-            Err(e) => println!("watch error: {:?}", e),
+            Err(e) => tracing::error!("watch error: {:?}", e),
         }
     }
 
-    Ok(())
-}
-
-fn on_event<F, H>(
-    path_prefix: &str,
-    paths: Vec<PathBuf>,
-    ctx: &mut TailContext<H>,
-    f: F,
-) -> Result<(), TailError>
-where
-    F: Fn(&Path, &mut TailContext<H>) -> Result<(), TailError>,
-{
-    for p in paths
-        .iter()
-        .filter(|x| x.to_str().unwrap_or("").starts_with(path_prefix))
-    {
-        f(p, ctx)?;
-    }
     Ok(())
 }
