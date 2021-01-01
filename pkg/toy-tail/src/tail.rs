@@ -1,4 +1,4 @@
-use crate::{Handler, LineReader, RegexParser, TailError};
+use crate::{Handler, LineReader, RegexParser, TailConfig, TailError};
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::{BufReader, Seek, SeekFrom};
@@ -9,55 +9,50 @@ use tokio::sync::Mutex;
 use toy_text_parser::dfa::ByteParserBuilder;
 use toy_text_parser::Line;
 
-pub struct TailContext<T> {
+pub struct TailContext {
     position: u64,
     line_buffer: Line,
     reader: HashMap<PathBuf, LineReader<File>>,
     parser: RegexParser,
-    handler: Arc<Mutex<T>>,
     last_handle_at: Arc<Mutex<Option<Instant>>>,
+    handlers: Arc<Mutex<Vec<Box<dyn Handler>>>>,
 }
 
-pub struct FlushTimer<T> {
-    handler: Arc<Mutex<T>>,
+pub struct FlushTimer {
     last_handle_at: Arc<Mutex<Option<Instant>>>,
     prev_handle_at: Option<Instant>,
     check_interval_millis: u64,
     threshold_millis: u64,
+    handlers: Arc<Mutex<Vec<Box<dyn Handler>>>>,
 }
 
-const DEFAULT_CAPACITY: usize = 8 * (1 << 10);
-
-impl<T> TailContext<T>
-where
-    T: Handler,
-{
-    pub fn new(handler: T, parser: RegexParser) -> (Self, FlushTimer<T>) {
-        TailContext::with_capacity(handler, parser, DEFAULT_CAPACITY)
+impl TailContext {
+    pub fn new(handler: Vec<Box<dyn Handler>>, parser: RegexParser) -> (Self, FlushTimer) {
+        TailContext::with_capacity(handler, parser, TailConfig::default())
     }
 
     pub fn with_capacity(
-        handler: T,
+        handler: Vec<Box<dyn Handler>>,
         parser: RegexParser,
-        capacity: usize,
-    ) -> (Self, FlushTimer<T>) {
+        config: TailConfig,
+    ) -> (Self, FlushTimer) {
         let handler = Arc::new(Mutex::new(handler));
         let last_handle_at = Arc::new(Mutex::new(None));
         (
             Self {
                 position: 0,
-                line_buffer: Line::with_capacity(capacity, 1),
+                line_buffer: Line::with_capacity(config.buffer_capacity(), 1),
                 reader: HashMap::new(),
                 parser,
-                handler: Arc::clone(&handler),
+                handlers: Arc::clone(&handler),
                 last_handle_at: Arc::clone(&last_handle_at),
             },
             FlushTimer {
-                handler: Arc::clone(&handler),
+                handlers: Arc::clone(&handler),
                 last_handle_at: Arc::clone(&last_handle_at),
                 prev_handle_at: None,
-                check_interval_millis: 2000,
-                threshold_millis: 2000,
+                check_interval_millis: config.check_interval_millis(),
+                threshold_millis: config.threshold_millis(),
             },
         )
     }
@@ -104,9 +99,20 @@ where
                         let fl = self.parser.parse(&self.line_buffer);
                         {
                             let mut handle_at = self.last_handle_at.lock().await;
-                            let mut handler = self.handler.lock().await;
+                            let mut handlers = self.handlers.lock().await;
                             let now = Instant::now();
-                            handler.flagments(fl).await?;
+                            let parsed = fl.is_some();
+                            if handlers.len() == 1 {
+                                let h = handlers.get_mut(0).unwrap();
+                                h.flagments(fl).await?;
+                                h.raw(&self.line_buffer, parsed).await?;
+                            } else {
+                                for h in handlers.iter_mut() {
+                                    h.flagments(fl.clone()).await?;
+                                    h.raw(&self.line_buffer, parsed).await?;
+                                }
+                            }
+
                             *handle_at = Some(now);
                         }
                         self.line_buffer.clear();
@@ -118,12 +124,20 @@ where
 
         Ok(())
     }
+
+    pub async fn handler_names(&self) -> Vec<String> {
+        let mut buf = Vec::new();
+        {
+            let handlers = self.handlers.lock().await;
+            for h in handlers.iter() {
+                buf.push(h.name().to_string());
+            }
+        }
+        buf
+    }
 }
 
-impl<T> FlushTimer<T>
-where
-    T: Handler,
-{
+impl FlushTimer {
     pub async fn run(&mut self) {
         let mut interval = tokio::time::interval(Duration::from_millis(self.check_interval_millis));
 
@@ -131,26 +145,26 @@ where
             interval.tick().await;
 
             let now = Instant::now();
-            let r = {
-                let handle_at = self.last_handle_at.lock().await;
-                if self.prev_handle_at == *handle_at {
-                    continue;
-                }
 
-                match *handle_at {
-                    Some(last)
-                        if now.duration_since(last)
-                            > Duration::from_millis(self.threshold_millis) =>
-                    {
-                        let mut handler = self.handler.lock().await;
-                        self.prev_handle_at = Some(last);
-                        handler.flush().await
+            let handle_at = self.last_handle_at.lock().await;
+            if self.prev_handle_at == *handle_at {
+                continue;
+            }
+
+            match *handle_at {
+                Some(last)
+                    if now.duration_since(last) > Duration::from_millis(self.threshold_millis) =>
+                {
+                    let mut handler = self.handlers.lock().await;
+                    self.prev_handle_at = Some(last);
+                    for h in handler.iter_mut() {
+                        let r = h.flush().await;
+                        if let Err(e) = r {
+                            tracing::error!("error flush timer. error:{:?}", e);
+                        }
                     }
-                    _ => Ok(()),
                 }
-            };
-            if let Err(e) = r {
-                tracing::error!("error flush timer. error:{:?}", e);
+                _ => (),
             }
         }
     }

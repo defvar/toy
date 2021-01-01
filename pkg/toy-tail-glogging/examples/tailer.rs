@@ -1,4 +1,5 @@
-use toy_tail::{watch, RegexParser, TailContext};
+use toy_tail::handlers::PrintHandler;
+use toy_tail::{watch, Handler, RegexParser, TailContext};
 use toy_tail_glogging::GLoggingHandler;
 use tracing_subscriber::fmt::format::FmtSpan;
 
@@ -19,10 +20,10 @@ fn main() {
     let log_name = std::env::var("TOY_GLOGGING_LOG_NAME")
         .expect("not found log name. please set env TOY_GLOGGING_LOG_NAME");
 
-    println!("watching dir:{}, prefix:{}", path, prefix);
+    tracing::info!("watching dir:{}, prefix:{}", path, prefix);
     let parser = RegexParser::new();
     if let Err(e) = parser {
-        println!("regex build error. {}", e);
+        tracing::error!("regex build error. {}", e);
         return;
     }
 
@@ -37,8 +38,12 @@ fn main() {
 
     let c = toy_glogging::reqwest::Client::builder().build().unwrap();
 
-    let (mut ctx, mut timer) =
-        TailContext::new(GLoggingHandler::from(c, log_name, 100), parser.unwrap());
+    let handlers: Vec<Box<dyn Handler>> = vec![
+        Box::new(GLoggingHandler::from(c, log_name, 100)),
+        Box::new(PrintHandler::new()),
+    ];
+
+    let (mut ctx, mut timer) = TailContext::new(handlers, parser.unwrap());
     rt.spawn(async move { timer.run().await });
 
     let (tx, rx) = std::sync::mpsc::channel();
@@ -47,10 +52,10 @@ fn main() {
     rt.spawn(async move {
         match watch(path, prefix, &mut ctx).await {
             Ok(_) => {
-                println!("watch end.");
+                tracing::info!("watch end.");
             }
             Err(e) => {
-                println!("error: {:?}", e);
+                tracing::error!("error: {:?}", e);
             }
         }
         let _ = tx.send(());

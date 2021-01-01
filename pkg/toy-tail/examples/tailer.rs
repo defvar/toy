@@ -1,4 +1,5 @@
-use toy_tail::{watch, PrintHandler, RegexParser, TailContext};
+use toy_tail::handlers::PrintHandler;
+use toy_tail::{watch, Handler, RegexParser, TailContext};
 use tracing_subscriber::fmt::format::FmtSpan;
 
 fn main() {
@@ -14,7 +15,7 @@ fn main() {
     let prefix = "hello.example.log";
 
     // runtime for tail handler
-    let mut rt = tokio::runtime::Builder::new()
+    let rt = tokio::runtime::Builder::new()
         .threaded_scheduler()
         .thread_name("tail-worker")
         .core_threads(4)
@@ -22,24 +23,26 @@ fn main() {
         .build()
         .unwrap();
 
-    println!("watching dir:{}, prefix:{}", path, prefix);
+    tracing::info!("watching dir:{}, prefix:{}", path, prefix);
     let parser = RegexParser::new();
     if let Err(e) = parser {
-        println!("regex build error. {}", e);
+        tracing::error!("regex build error. {}", e);
         return;
     }
 
-    let (mut ctx, mut timer) = TailContext::new(PrintHandler::new(), parser.unwrap());
+    let handlers: Vec<Box<dyn Handler>> = vec![Box::new(PrintHandler::new())];
+
+    let (mut ctx, mut timer) = TailContext::new(handlers, parser.unwrap());
     rt.spawn(async move { timer.run().await });
 
     let (tx, rx) = std::sync::mpsc::channel();
     rt.spawn(async move {
         match watch(path, prefix, &mut ctx).await {
             Ok(_) => {
-                println!("watch end.");
+                tracing::info!("watch end.");
             }
             Err(e) => {
-                println!("error: {:?}", e);
+                tracing::error!("error: {:?}", e);
             }
         }
         let _ = tx.send(());

@@ -36,6 +36,10 @@ impl GLoggingHandler {
 
 #[async_trait]
 impl Handler for GLoggingHandler {
+    fn name(&self) -> &'static str {
+        "GLogging"
+    }
+
     async fn flagments(&mut self, fl: Flagments<'_>) -> Result<(), TailError> {
         let e = EntryBuilder::new(&self.log_name, Resource::new("global"))
             .severity(Severity::INFO)

@@ -1,13 +1,16 @@
-use crate::{Handler, TailContext, TailError};
+use crate::{TailContext, TailError};
 use notify::event::{ModifyKind, RenameMode};
 use notify::{Event, EventKind, RecommendedWatcher, RecursiveMode, Watcher};
 use std::path::Path;
 
-pub async fn watch<P: AsRef<Path>, T: Handler>(
+pub async fn watch<P: AsRef<Path>>(
     path: P,
     prefix: &str,
-    ctx: &mut TailContext<T>,
+    ctx: &mut TailContext,
 ) -> Result<(), TailError> {
+    let names = ctx.handler_names().await;
+    tracing::info!("enable handler:{:?}", names);
+
     let (tx, rx) = std::sync::mpsc::channel();
 
     let mut watcher: RecommendedWatcher = Watcher::new_immediate(move |res| tx.send(res).unwrap())?;

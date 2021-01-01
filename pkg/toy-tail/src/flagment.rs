@@ -1,6 +1,6 @@
 use std::fmt;
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub enum Flagment<'a> {
     Datetime(&'a str),
     Level(&'a str),
@@ -16,7 +16,7 @@ pub enum Flagment<'a> {
     NodeIdleTime(&'a str),
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Flagments<'a> {
     datetime: Option<Flagment<'a>>,
     level: Option<Flagment<'a>>,
