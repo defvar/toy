@@ -22,8 +22,8 @@ pub struct FlushTimer<T> {
     handler: Arc<Mutex<T>>,
     last_handle_at: Arc<Mutex<Option<Instant>>>,
     prev_handle_at: Option<Instant>,
-    check_interval_secs: u64,
-    threshold_secs: u64,
+    check_interval_millis: u64,
+    threshold_millis: u64,
 }
 
 const DEFAULT_CAPACITY: usize = 8 * (1 << 10);
@@ -56,8 +56,8 @@ where
                 handler: Arc::clone(&handler),
                 last_handle_at: Arc::clone(&last_handle_at),
                 prev_handle_at: None,
-                check_interval_secs: 2,
-                threshold_secs: 2,
+                check_interval_millis: 2000,
+                threshold_millis: 2000,
             },
         )
     }
@@ -125,7 +125,7 @@ where
     T: Handler,
 {
     pub async fn run(&mut self) {
-        let mut interval = tokio::time::interval(Duration::from_secs(self.check_interval_secs));
+        let mut interval = tokio::time::interval(Duration::from_millis(self.check_interval_millis));
 
         loop {
             interval.tick().await;
@@ -139,7 +139,8 @@ where
 
                 match *handle_at {
                     Some(last)
-                        if now.duration_since(last) > Duration::from_secs(self.threshold_secs) =>
+                        if now.duration_since(last)
+                            > Duration::from_millis(self.threshold_millis) =>
                     {
                         let mut handler = self.handler.lock().await;
                         self.prev_handle_at = Some(last);

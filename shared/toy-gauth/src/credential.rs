@@ -13,10 +13,10 @@ pub struct Credential {
 impl Credential {
     pub fn from_key_file() -> Result<Credential, GAuthError> {
         let key_file_path =
-            match std::env::var(constants::ENV_KEY_LOGGING_API_CREDENTIALS).map_err(|_| {
+            match std::env::var(constants::ENV_KEY_GOOGLE_API_CREDENTIALS).map_err(|_| {
                 GAuthError::error(format!(
                     "not found key file. please set env {}.",
-                    constants::ENV_KEY_LOGGING_API_CREDENTIALS
+                    constants::ENV_KEY_GOOGLE_API_CREDENTIALS
                 ))
             }) {
                 Ok(id) => id,

@@ -46,7 +46,7 @@ impl Client {
         token: GToken,
         req: WriteRequest,
     ) -> Result<WriteResponse, GLoggingError> {
-        tracing::debug!(req= ?req, "write");
+        tracing::debug!("write");
 
         let param = toy_pack_json::pack(&req).unwrap();
         let res = self
@@ -56,7 +56,6 @@ impl Client {
                 param,
             )
             .await?;
-        tracing::debug!("{:?}", res);
         self.to_response::<WriteResponse, ErrorResponse>(res).await
     }
 
@@ -86,11 +85,9 @@ impl Client {
     {
         if res.status().is_success() {
             let bytes = res.bytes().await?;
-            tracing::debug!("{:?}", std::str::from_utf8(&bytes));
             Ok(toy_pack_json::unpack::<T>(&bytes)?)
         } else {
             let bytes = res.bytes().await?;
-            tracing::debug!("{:?}", std::str::from_utf8(&bytes));
             let e = toy_pack_json::unpack::<E>(&bytes)?;
             Err(e.into())
         }

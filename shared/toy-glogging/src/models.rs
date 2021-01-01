@@ -222,6 +222,14 @@ impl EntryBuilder {
         self
     }
 
+    /// push json payload
+    pub fn kv_opt<K: Into<String>, V: Into<String>>(self, k: K, v: Option<V>) -> EntryBuilder {
+        match v {
+            Some(v) => self.kv(k, v),
+            None => self,
+        }
+    }
+
     /// replace labels
     pub fn labels(mut self, map: HashMap<String, String>) -> EntryBuilder {
         self.e.labels = Some(map);
@@ -235,6 +243,14 @@ impl EntryBuilder {
         }
         self.e.labels.as_mut().map(|x| x.insert(k.into(), v.into()));
         self
+    }
+
+    /// push label
+    pub fn label_opt<K: Into<String>, V: Into<String>>(self, k: K, v: Option<V>) -> EntryBuilder {
+        match v {
+            Some(v) => self.label(k, v),
+            None => self,
+        }
     }
 
     /// build `Entry`

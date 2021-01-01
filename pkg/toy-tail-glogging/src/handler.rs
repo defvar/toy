@@ -9,14 +9,16 @@ pub struct GLoggingHandler {
     client: Client,
     buffer_size: usize,
     buffer: Option<Vec<Entry>>,
+    log_name: String,
 }
 
 impl GLoggingHandler {
-    pub fn from(c: reqwest::Client, buffer_size: usize) -> GLoggingHandler {
+    pub fn from(c: reqwest::Client, log_name: String, buffer_size: usize) -> GLoggingHandler {
         Self {
             client: Client::from(c),
             buffer_size,
             buffer: Some(Vec::with_capacity(buffer_size)),
+            log_name,
         }
     }
 
@@ -35,15 +37,20 @@ impl GLoggingHandler {
 #[async_trait]
 impl Handler for GLoggingHandler {
     async fn flagments(&mut self, fl: Flagments<'_>) -> Result<(), TailError> {
-        let e = EntryBuilder::new(
-            "projects/crested-sunup-195408/logs/toy",
-            Resource::new("global"),
-        )
-        .severity(Severity::INFO)
-        .kv("task_id", fl.task_id().unwrap_or_else(|| ""))
-        .kv("message", fl.message().unwrap_or_else(|| ""))
-        .label("task_id", fl.task_id().unwrap_or_else(|| ""))
-        .build();
+        let e = EntryBuilder::new(&self.log_name, Resource::new("global"))
+            .severity(Severity::INFO)
+            .timestamp(fl.datetime().unwrap_or_else(|| ""))
+            .kv_opt("task_id", fl.task_id())
+            .kv_opt("graph", fl.graph())
+            .kv_opt("message", fl.message())
+            .kv_opt("target", fl.target())
+            .kv_opt("uri", fl.uri())
+            .kv_opt("busy", fl.node_busy_time())
+            .kv_opt("idle", fl.node_idle_time())
+            .label_opt("task_id", fl.task_id())
+            .label_opt("graph", fl.graph())
+            .label_opt("uri", fl.uri())
+            .build();
         self.buffer.as_mut().map(|x| x.push(e));
         self.flush_if_needed(false)
             .await

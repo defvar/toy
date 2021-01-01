@@ -9,8 +9,8 @@ pub const REVOKE_TOKEN_URL: &'static str = "https://accounts.google.com/o/oauth2
 pub const TOKEN_REQUEST_GRANT_TYPE: &'static str =
     "urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Ajwt-bearer";
 
-// logging
-pub const ENV_KEY_LOGGING_API_CREDENTIALS: &'static str = "TOY_LOGGING_API_CREDENTIALS";
+// credential
+pub const ENV_KEY_GOOGLE_API_CREDENTIALS: &'static str = "TOY_GOOGLE_API_CREDENTIALS";
 
 // firebase
 pub const FIREBASE_VALID_ISS_PREFIX: &'static str = "https://securetoken.google.com";

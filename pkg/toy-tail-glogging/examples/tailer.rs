@@ -16,6 +16,9 @@ fn main() {
     let path = "/tmp/toy";
     let prefix = "hello.example.log";
 
+    let log_name = std::env::var("TOY_GLOGGING_LOG_NAME")
+        .expect("not found log name. please set env TOY_GLOGGING_LOG_NAME");
+
     println!("watching dir:{}, prefix:{}", path, prefix);
     let parser = RegexParser::new();
     if let Err(e) = parser {
@@ -34,7 +37,8 @@ fn main() {
 
     let c = toy_glogging::reqwest::Client::builder().build().unwrap();
 
-    let (mut ctx, mut timer) = TailContext::new(GLoggingHandler::from(c, 10), parser.unwrap());
+    let (mut ctx, mut timer) =
+        TailContext::new(GLoggingHandler::from(c, log_name, 100), parser.unwrap());
     rt.spawn(async move { timer.run().await });
 
     let (tx, rx) = std::sync::mpsc::channel();
