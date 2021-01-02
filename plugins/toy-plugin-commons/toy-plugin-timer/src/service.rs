@@ -30,13 +30,13 @@ pub async fn tick(
     mut tx: Outgoing<Frame, ServiceError>,
 ) -> Result<ServiceContext<TickContext>, ServiceError> {
     tokio::time::sleep(Duration::from_millis(ctx.config.interval_millis)).await;
-    let span = task_ctx.debug_span();
-    tracing::debug!(parent: &span, send = ctx.count);
+    let span = task_ctx.span();
+    tracing::debug!(parent: span, send = ctx.count);
 
     tx.send_ok(Frame::from(ctx.count)).await?;
     match ctx.config.end {
         Some(end) if end <= ctx.count => {
-            tracing::debug!(parent: &span, "count end");
+            tracing::debug!(parent: span, "count end");
             Ok(ServiceContext::Complete(ctx))
         }
         _ => {

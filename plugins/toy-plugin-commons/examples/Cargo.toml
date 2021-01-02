@@ -8,6 +8,7 @@ edition = "2018"
 [dev-dependencies]
 tracing = "0.1"
 tracing-subscriber = "0.2"
+tracing-appender = "0.1"
 
 # runtime
 toy-rt = { path = "../../../pkg/toy-rt"}

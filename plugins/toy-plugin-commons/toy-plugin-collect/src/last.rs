@@ -56,8 +56,8 @@ impl Service for Last {
         async move {
             let _ = match ctx.v.clone() {
                 Some(v) => {
-                    let span = task_ctx.debug_span();
-                    tracing::debug!(parent: &span, send =?v);
+                    let span = task_ctx.span();
+                    tracing::debug!(parent: span, send =?v);
                     tx.send_ok(v).await
                 }
                 None => Ok(()),

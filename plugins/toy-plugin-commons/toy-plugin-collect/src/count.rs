@@ -51,8 +51,8 @@ impl Service for Count {
         mut tx: Outgoing<Self::Request, Self::Error>,
     ) -> Self::UpstreamFinishAllFuture {
         async move {
-            let span = task_ctx.debug_span();
-            tracing::debug!(parent: &span, send =?ctx.count);
+            let span = task_ctx.span();
+            tracing::debug!(parent: span, send =?ctx.count);
             tx.send_ok(Frame::from(ctx.count)).await?;
             Ok(ServiceContext::Complete(ctx))
         }
