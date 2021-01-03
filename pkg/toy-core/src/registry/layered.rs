@@ -9,6 +9,7 @@ use std::fmt::{self, Debug};
 use toy_pack::deser::DeserializableOwned;
 use toy_pack::schema::Schema;
 
+/// Multiple registered plugins.
 #[derive(Clone)]
 pub struct Layered<S, F> {
     callback: F,

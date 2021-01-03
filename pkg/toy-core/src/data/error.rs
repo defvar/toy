@@ -1,3 +1,6 @@
+//! Error returned from the Serialize or Deserialize.
+//!
+
 use crate::data::Value;
 use std::fmt::Display;
 use thiserror::Error as ThisError;

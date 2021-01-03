@@ -1,5 +1,7 @@
 #![feature(backtrace, type_alias_impl_trait)]
 
+//! Core module of Toy.
+
 pub use self::service_type::ServiceType;
 pub use self::service_uri::Uri;
 

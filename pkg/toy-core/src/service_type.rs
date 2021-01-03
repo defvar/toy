@@ -1,7 +1,11 @@
+//! The type of service.
+//!
+
 use crate::error::ConfigError;
 use std::fmt::{Debug, Error, Formatter};
 use toy_pack::{Pack, Unpack};
 
+/// The type of service.
 #[derive(Clone, PartialEq, Eq, Hash, Pack, Unpack)]
 pub struct ServiceType {
     full_name: String,

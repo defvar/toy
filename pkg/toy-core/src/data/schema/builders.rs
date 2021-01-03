@@ -1,3 +1,5 @@
+//! Builder for JsonSchema Object. (Const, Object, Array, etc...)
+
 use crate::data::schema::json_schema::RangeValue;
 use crate::data::schema::{JsonSchema, SchemaTypes};
 use crate::data::Map;

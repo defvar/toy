@@ -1,4 +1,9 @@
-pub use self::frame::Frame;
+//! This is a data type that is commonly used.
+//!
+//! It is used for passing data between nodes and serializing graph information.
+//!
+
+pub use self::frame::{Frame, FrameType, Signal};
 pub use self::map::Map;
 pub use self::value::Value;
 

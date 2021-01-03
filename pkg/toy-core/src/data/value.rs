@@ -4,6 +4,7 @@ use std::fmt;
 use std::str::FromStr;
 use toy_pack::deser::from_primitive::FromPrimitive;
 
+/// The value itself is represented by a scalar, key-value pair, array, etc.
 #[derive(Debug, Clone, PartialEq)]
 pub enum Value {
     Bool(bool),

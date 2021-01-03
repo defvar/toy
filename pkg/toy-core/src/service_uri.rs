@@ -1,5 +1,9 @@
+//! The URI of Node.
+//!
+
 use std::fmt::{Debug, Display, Error, Formatter};
 
+/// The URI of Node.
 #[derive(Clone, PartialEq, Eq, Hash)]
 pub struct Uri {
     path: String,

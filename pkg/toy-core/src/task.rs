@@ -1,3 +1,6 @@
+//! A task is an workflow created based on graph.
+//!
+
 use crate::graph::Graph;
 use crate::Uri;
 use std::fmt;

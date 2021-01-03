@@ -6,6 +6,7 @@ use crate::service_type::ServiceType;
 use crate::service_uri::Uri;
 use std::fmt::{self, Debug};
 
+/// An application that collects plugins.
 #[derive(Clone)]
 pub struct App<O, P> {
     inner: Inner<O, P>,

@@ -1,3 +1,5 @@
+//! Schema Visitor for JsonSchema.
+
 use crate::data::schema::builders::{ArrayBuilder, ObjectBuilder, OneOfBuilder, SchemaBuilders};
 use crate::data::schema::{JsonSchema, SchemaScanError, SchemaTypes};
 use toy_pack::schema::{

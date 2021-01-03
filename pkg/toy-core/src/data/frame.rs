@@ -3,6 +3,7 @@ use crate::data::map::Map;
 use crate::mpsc::OutgoingMessage;
 use std::fmt;
 
+/// A Value with header information added, which is used when transferring between channels.
 #[derive(Debug, Clone)]
 pub struct Frame {
     header: Header,
@@ -15,12 +16,18 @@ struct Header {
     frame_type: FrameType,
 }
 
+/// Represents the type of frame.
+///
+/// In the case of Data, the payload exists, but in the case of Signal, it does not exist.
+/// Generally, the message exchanged between nodes is Data.
+/// Signal is used for special messages for each node.
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum FrameType {
     Data,
     Signal(Signal),
 }
 
+/// Special messages for each node.
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum Signal {
     Stop,

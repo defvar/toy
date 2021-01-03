@@ -1,3 +1,6 @@
+//! Traits for Task and Service Execution.
+//!
+
 use crate::data::Frame;
 use crate::error::ServiceError;
 use crate::node_channel::SignalOutgoings;

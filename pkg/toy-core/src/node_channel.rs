@@ -1,15 +1,4 @@
-//! # node channel
 //! Channel for node communication.
-//! - `Incomings`
-//!   Receive channel for each URI.
-//! - `Outgoings`
-//!   Sending channel for each URI.
-//! - `Starters`
-//!   Sending channel for auto created first node of task.
-//! - `Awaiters`
-//!   Receive channel for auto created last node of task.
-//! - `SignalOutgoings`
-//!   Sending channel for all node. (`Outgoings` + `Starters`)
 
 use crate::data::Frame;
 use crate::error::ServiceError;
@@ -26,26 +15,31 @@ struct IncomingInner {
     upstream_count: u32,
 }
 
+/// Receive channel for each URI.
 #[derive(Debug)]
 pub struct Incomings {
     map: HashMap<Uri, IncomingInner>,
 }
 
+/// Sending channel for each URI.
 #[derive(Debug)]
 pub struct Outgoings {
     map: HashMap<Uri, Outgoing<Frame, ServiceError>>,
 }
 
+/// Receive channel for auto created last node of task.
 #[derive(Debug)]
 pub struct Awaiter {
     inner: IncomingInner,
 }
 
+/// Sending channel for auto created first node of task.
 #[derive(Debug)]
 pub struct Starters {
     map: HashMap<Uri, Outgoing<Frame, ServiceError>>,
 }
 
+/// Sending channel for all node. (`Outgoings` + `Starters`)
 #[derive(Debug)]
 pub struct SignalOutgoings {
     map: HashMap<Uri, Outgoing<Frame, ServiceError>>,
@@ -102,6 +96,7 @@ impl SignalOutgoings {
     }
 }
 
+/// Create channels from `Graph`.
 pub fn from_graph(graph: &Graph) -> (Incomings, Outgoings, Awaiter, Starters, SignalOutgoings) {
     let mut incomings: HashMap<Uri, IncomingInner> = HashMap::new();
     let mut outgoings: HashMap<Uri, Outgoing<Frame, ServiceError>> = HashMap::new();

@@ -1,3 +1,6 @@
+//! Traits for Service.
+//!
+
 use crate::mpsc::Outgoing;
 use crate::service_type::ServiceType;
 use crate::task::TaskContext;

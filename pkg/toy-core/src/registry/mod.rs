@@ -1,3 +1,7 @@
+//! Registry for services.
+//! Register a service that can be defined as a Graph.
+//!
+
 use crate::data::schema::visitors::JsonSchemaVisitor;
 use crate::data::schema::JsonSchema;
 use crate::data::Frame;

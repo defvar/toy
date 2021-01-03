@@ -2,6 +2,7 @@ use std::fmt::Display;
 use thiserror::Error as ThisError;
 use toy_pack::schema;
 
+/// Error parsing Struct to create Json Schema.
 #[derive(Debug, ThisError)]
 pub enum SchemaScanError {
     #[error("error: {:?}", inner)]

@@ -1,3 +1,9 @@
+//! Workflow definition information created by combining various services.
+//!
+//! Graph is just a definition, and the executed Graph is called Task.
+//! The steps that execute a service are called Nodes, and each Node exchanges messages through channels to perform tasks.
+//!
+
 use crate::data::Value;
 use crate::error::ConfigError;
 use crate::service_type::ServiceType;
@@ -5,6 +11,7 @@ use crate::service_uri::Uri;
 use std::collections::HashMap;
 use std::sync::Arc;
 
+/// Workflow definition information
 #[derive(Debug, Clone)]
 pub struct Graph {
     name: String,
@@ -15,6 +22,7 @@ pub struct Graph {
     original: Value,
 }
 
+/// One step to run one service.
 #[derive(Debug, Clone)]
 pub struct Node(Inner);
 
@@ -62,10 +70,16 @@ impl Graph {
         })
     }
 
+    /// Get this [`Graph`] name.
+    ///
+    /// [`Graph`]: crate::graph::Graph
     pub fn name(&self) -> &str {
         &self.name
     }
 
+    /// Get [`Node`] by uri.
+    ///
+    /// [`Node`]: crate::graph::Node
     pub fn by_uri<U: AsRef<Uri>>(&self, uri: U) -> Option<Arc<Node>> {
         self.nodes
             .iter()
@@ -232,6 +246,9 @@ fn get_config_value(v: &Value) -> Result<Value, ConfigError> {
     }
 }
 
+/// Iterate [`Node`] of This Graph.
+///
+/// [`Node`]: crate::graph::Node
 pub struct NodeIterator<'a> {
     graph: &'a Graph,
     cur: usize,
@@ -286,37 +303,35 @@ impl Node {
     }
 }
 
+/// Join information between nodes.
+/// Indicates which URI you need to output.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum OutputWire {
     /// Wire of "One to One".
     /// Sender is "0" Value of Tuple.
     /// "0" of Tuple is Me.
-    ///
     Single(Uri, Uri),
 
     /// Wire of "One To Many".
-    ///
     Fanout(Uri, Vec<Uri>),
 
     /// Without output.
-    ///
     None,
 }
 
+/// Join information between nodes.
+/// Indicates from which URI the input comes from for you.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum InputWire {
     /// Wire of "One to One".
     /// Sender is "0" of Tuple.
     /// "1" of Tuple is Me.
-    ///
     Single(Uri, Uri),
 
     /// Wire of "Many to One".
-    ///
     Fanin(Vec<Uri>, Uri),
 
     /// Without Input.
-    ///
     None,
 }
 

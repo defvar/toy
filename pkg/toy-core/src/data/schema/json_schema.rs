@@ -2,6 +2,7 @@ use crate::data::Map;
 use toy_pack::ser::{Serializable, Serializer};
 use toy_pack::Pack;
 
+/// JsonSchema Object Type.
 #[derive(Clone, Copy, Debug, PartialEq, Pack)]
 pub enum SchemaTypes {
     #[toy(rename = "array")]
@@ -20,6 +21,7 @@ pub enum SchemaTypes {
     String,
 }
 
+/// JsonSchema Structure.
 #[derive(Clone, Debug, Pack)]
 #[toy(ignore_pack_if_none)]
 pub struct JsonSchema {
@@ -107,6 +109,7 @@ impl JsonSchema {
     }
 }
 
+/// A range which can be used to 'minimum' or 'maximum'.
 #[derive(Debug, Clone)]
 pub enum RangeValue {
     U64(u64),

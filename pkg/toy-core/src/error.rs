@@ -1,3 +1,6 @@
+//! Error returned from the Executed Service by Node.
+//!
+
 use crate::ServiceType;
 use std::backtrace::Backtrace;
 use std::fmt::Display;

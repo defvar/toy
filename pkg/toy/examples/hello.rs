@@ -2,7 +2,7 @@ use toy::core::prelude::*;
 use toy::core::registry::{app, plugin, PortType};
 use toy::executor::ExecutorFactory;
 use toy::supervisor::{Request, Supervisor};
-use toy_pack::{Pack, Schema, Unpack};
+use toy_pack::{Schema, Unpack};
 use tracing_subscriber::fmt::format::FmtSpan;
 
 #[derive(Debug)]

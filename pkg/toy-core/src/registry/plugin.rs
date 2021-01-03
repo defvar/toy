@@ -9,6 +9,7 @@ use std::fmt::{self, Debug};
 use toy_pack::deser::DeserializableOwned;
 use toy_pack::schema::Schema;
 
+/// One service as a plug-in.
 #[derive(Clone)]
 pub struct Plugin<F> {
     callback: F,
