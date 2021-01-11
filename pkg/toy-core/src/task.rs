@@ -40,6 +40,12 @@ impl TaskId {
     pub fn from(uuid: Uuid) -> Self {
         Self { id: uuid }
     }
+
+    pub fn parse_str<T: AsRef<str>>(uuid: T) -> Result<TaskId, ()> {
+        Uuid::parse_str(uuid.as_ref())
+            .map(|id| TaskId::from(id))
+            .map_err(|_| ())
+    }
 }
 
 impl fmt::Display for TaskId {
