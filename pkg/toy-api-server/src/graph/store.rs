@@ -1,6 +1,17 @@
+//! Trait for graph store operations.
+
+use crate::graph::models::GraphEntity;
 use crate::store::StoreConnection;
 use std::fmt::Debug;
 use std::future::Future;
+
+/// Trait Composit graph store operations.
+pub trait GraphStoreOps<C>:
+    Clone + Send + Sync + Find<Con = C> + List<Con = C> + Put<Con = C> + Delete<Con = C>
+where
+    C: StoreConnection,
+{
+}
 
 #[derive(Clone, Debug)]
 pub struct FindOption {}
@@ -53,18 +64,20 @@ pub enum DeleteResult {
 /// Find one entity by specified key.
 pub trait Find {
     type Con: StoreConnection;
-    type T: Future<Output = Result<Option<Vec<u8>>, Self::Err>> + Send;
+    type T: Future<Output = Result<Option<GraphEntity>, Self::Err>> + Send;
     type Err: Debug + Send;
 
+    /// Find one entity by specified key.
     fn find(&self, con: Self::Con, key: String, opt: FindOption) -> Self::T;
 }
 
 /// List all or part entities by specified prefix of key.
 pub trait List {
     type Con: StoreConnection;
-    type T: Future<Output = Result<Vec<Vec<u8>>, Self::Err>> + Send;
+    type T: Future<Output = Result<Vec<GraphEntity>, Self::Err>> + Send;
     type Err: Debug + Send;
 
+    /// List all or part entities by specified prefix of key.
     fn list(&self, con: Self::Con, prefix: String, opt: ListOption) -> Self::T;
 }
 
@@ -74,7 +87,8 @@ pub trait Put {
     type T: Future<Output = Result<PutResult, Self::Err>> + Send;
     type Err: Debug + Send;
 
-    fn put(&self, con: Self::Con, key: String, v: Vec<u8>, opt: PutOption) -> Self::T;
+    /// Put one entity by specified key.
+    fn put(&self, con: Self::Con, key: String, v: GraphEntity, opt: PutOption) -> Self::T;
 }
 
 /// Delete one entity by specified key.
@@ -83,5 +97,6 @@ pub trait Delete {
     type T: Future<Output = Result<DeleteResult, Self::Err>> + Send;
     type Err: Debug + Send;
 
+    /// Delete one entity by specified key.
     fn delete(&self, con: Self::Con, key: String, opt: DeleteOption) -> Self::T;
 }

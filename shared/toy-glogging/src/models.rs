@@ -22,12 +22,15 @@ pub struct Entry {
     #[toy(rename = "insertId")]
     insert_id: Option<String>,
     labels: Option<HashMap<String, String>>,
+    operation: Option<Operation>,
     #[toy(rename = "jsonPayload")]
     json_payload: Option<HashMap<String, String>>,
 }
 
 pub struct EntryBuilder {
     e: Entry,
+
+    json_payload: HashMap<String, String>,
 }
 
 #[derive(Default, Clone, Debug, Pack, Unpack)]
@@ -36,6 +39,15 @@ pub struct Resource {
     #[toy(rename = "type")]
     tp: String,
     labels: Option<HashMap<String, String>>,
+}
+
+#[derive(Default, Clone, Debug, Pack, Unpack)]
+#[toy(ignore_pack_if_none)]
+pub struct Operation {
+    id: Option<String>,
+    producer: Option<String>,
+    first: Option<bool>,
+    last: Option<bool>,
 }
 
 #[derive(Default, Clone, Debug, Unpack)]
@@ -178,6 +190,74 @@ impl Resource {
     }
 }
 
+impl Operation {
+    pub fn is_first(&self) -> bool {
+        self.first.is_some() && self.first.unwrap()
+    }
+
+    pub fn is_last(&self) -> bool {
+        self.last.is_some() && self.last.unwrap()
+    }
+
+    pub fn first<T: Into<String>>(id: T) -> Operation {
+        Operation {
+            id: Some(id.into()),
+            producer: None,
+            first: Some(true),
+            last: None,
+        }
+    }
+
+    pub fn last<T: Into<String>>(id: T) -> Operation {
+        Operation {
+            id: Some(id.into()),
+            producer: None,
+            first: None,
+            last: Some(true),
+        }
+    }
+
+    pub fn with_producer<T: Into<String>>(self, producer: T) -> Operation {
+        Operation {
+            producer: Some(producer.into()),
+            ..self
+        }
+    }
+}
+
+impl Entry {
+    /// Get timestamp.
+    pub fn timestamp(&self) -> Option<&String> {
+        self.timestamp.as_ref()
+    }
+
+    /// Get json payload.
+    pub fn json_payload(&self) -> Option<&HashMap<String, String>> {
+        self.json_payload.as_ref()
+    }
+
+    /// Convert to `String` json payload.
+    pub fn json_payload_raw(&self) -> Option<String> {
+        match self.json_payload.as_ref() {
+            Some(v) => toy_pack_json::pack_to_string(v).map_or_else(|_| None, Some),
+            None => None,
+        }
+    }
+
+    /// Get label.
+    pub fn label<K: AsRef<str>>(&self, k: K) -> Option<&String> {
+        match self.labels {
+            Some(ref map) => map.get(k.as_ref()),
+            None => None,
+        }
+    }
+
+    /// Get operation.
+    pub fn operation(&self) -> Option<&Operation> {
+        self.operation.as_ref()
+    }
+}
+
 impl EntryBuilder {
     pub fn new<T: Into<String>>(log_name: T, resource: Resource) -> EntryBuilder {
         EntryBuilder {
@@ -189,8 +269,10 @@ impl EntryBuilder {
                 severity: None,
                 insert_id: None,
                 labels: None,
+                operation: None,
                 json_payload: None,
             },
+            json_payload: HashMap::new(),
         }
     }
 
@@ -204,21 +286,17 @@ impl EntryBuilder {
         self
     }
 
-    /// replace json payload
-    pub fn json_payload(mut self, map: HashMap<String, String>) -> EntryBuilder {
-        self.e.json_payload = Some(map);
+    /// replace json payload.
+    /// clear builing 'kv'.
+    pub fn json_payload(mut self, json: HashMap<String, String>) -> EntryBuilder {
+        self.e.json_payload = Some(json);
+        self.json_payload.clear();
         self
     }
 
     /// push json payload
     pub fn kv<K: Into<String>, V: Into<String>>(mut self, k: K, v: V) -> EntryBuilder {
-        if self.e.json_payload.is_none() {
-            self.e.json_payload = Some(HashMap::new());
-        }
-        self.e
-            .json_payload
-            .as_mut()
-            .map(|x| x.insert(k.into(), v.into()));
+        self.json_payload.insert(k.into(), v.into());
         self
     }
 
@@ -253,8 +331,23 @@ impl EntryBuilder {
         }
     }
 
+    pub fn opelation(mut self, v: Operation) -> EntryBuilder {
+        self.e.operation = Some(v);
+        self
+    }
+
+    pub fn opelation_opt(self, v: Option<Operation>) -> EntryBuilder {
+        match v {
+            Some(v) => self.opelation(v),
+            None => self,
+        }
+    }
+
     /// build `Entry`
-    pub fn build(self) -> Entry {
+    pub fn build(mut self) -> Entry {
+        if !self.json_payload.is_empty() {
+            self.e.json_payload = Some(self.json_payload.clone());
+        }
         self.e
     }
 }

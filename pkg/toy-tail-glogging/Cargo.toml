@@ -9,6 +9,7 @@ edition = "2018"
 [dependencies]
 toy-tail = {path = "../toy-tail"}
 toy-glogging = {path = "../../shared/toy-glogging"}
+toy-pack-json = {path = "../../shared/toy-pack-json"}
 async-trait = "0.1.42"
 tracing = "0.1"
 

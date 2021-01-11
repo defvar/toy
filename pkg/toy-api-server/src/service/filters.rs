@@ -4,6 +4,7 @@ use toy::core::mpsc::Outgoing;
 use toy::supervisor::Request;
 use warp::Filter;
 
+/// warp filter for services api.
 pub fn services(
     tx: Outgoing<Request, ServiceError>,
 ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {

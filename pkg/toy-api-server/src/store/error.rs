@@ -1,3 +1,5 @@
+//! Error returned from the Store.
+
 use std::backtrace::Backtrace;
 use std::fmt::Display;
 use thiserror::Error;

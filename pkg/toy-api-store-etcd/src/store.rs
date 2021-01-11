@@ -1,11 +1,12 @@
 use crate::error::StoreEtcdError;
 use crate::Client;
 use std::future::Future;
-use toy_api_server::store::error::StoreError;
-use toy_api_server::store::{
-    Delete, DeleteOption, DeleteResult, Find, FindOption, List, ListOption, Put, PutOption,
-    PutResult, StoreConnection, StoreOps, StoreOpsFactory,
+use toy_api_server::graph::models::GraphEntity;
+use toy_api_server::graph::store::{
+    Delete, DeleteOption, DeleteResult, Find, FindOption, GraphStoreOps, List, ListOption, Put,
+    PutOption, PutResult,
 };
+use toy_api_server::store::{error::StoreError, StoreConnection, StoreOpsFactory};
 use tracing::{span, Instrument, Level};
 
 #[derive(Clone, Debug)]
@@ -21,11 +22,11 @@ pub struct EtcdStoreOpsFactory;
 
 impl StoreConnection for EtcdStoreConnection {}
 
-impl StoreOps<EtcdStoreConnection> for EtcdStoreOps {}
+impl GraphStoreOps<EtcdStoreConnection> for EtcdStoreOps {}
 
 impl Find for EtcdStoreOps {
     type Con = EtcdStoreConnection;
-    type T = impl Future<Output = Result<Option<Vec<u8>>, Self::Err>> + Send;
+    type T = impl Future<Output = Result<Option<GraphEntity>, Self::Err>> + Send;
     type Err = StoreEtcdError;
 
     fn find(&self, con: Self::Con, key: String, opt: FindOption) -> Self::T {
@@ -33,10 +34,13 @@ impl Find for EtcdStoreOps {
         async move {
             let res = con.client.get(&key).await?.value()?;
             match res {
-                Some(v) => Ok(Some(v.into_data())),
+                Some(v) => {
+                    let r = toy_pack_json::unpack(&v.into_data())?;
+                    Ok(Some(r))
+                }
                 None => {
                     tracing::debug!("[find] not found. key:{:?}, opt:{:?}", key, opt);
-                    Ok(Option::<Vec<u8>>::None)
+                    Ok(Option::<GraphEntity>::None)
                 }
             }
         }
@@ -46,14 +50,26 @@ impl Find for EtcdStoreOps {
 
 impl List for EtcdStoreOps {
     type Con = EtcdStoreConnection;
-    type T = impl Future<Output = Result<Vec<Vec<u8>>, Self::Err>> + Send;
+    type T = impl Future<Output = Result<Vec<GraphEntity>, Self::Err>> + Send;
     type Err = StoreEtcdError;
 
     fn list(&self, con: Self::Con, prefix: String, _opt: ListOption) -> Self::T {
         let span = span!(Level::DEBUG, "list", prefix = ?prefix);
         async move {
             let res = con.client.list(&prefix).await?.values()?;
-            Ok(res.into_iter().map(|x| x.into_data()).collect())
+
+            let r = res.into_iter().try_fold(Vec::new(), |mut vec, x| {
+                let r = toy_pack_json::unpack::<GraphEntity>(&x.into_data());
+                match r {
+                    Ok(entity) => {
+                        vec.push(entity);
+                        Ok(vec)
+                    }
+                    Err(e) => Err(e),
+                }
+            })?;
+
+            Ok(r)
         }
         .instrument(span)
     }
@@ -64,11 +80,11 @@ impl Put for EtcdStoreOps {
     type T = impl Future<Output = Result<PutResult, Self::Err>> + Send;
     type Err = StoreEtcdError;
 
-    fn put(&self, con: Self::Con, key: String, v: Vec<u8>, _opt: PutOption) -> Self::T {
+    fn put(&self, con: Self::Con, key: String, v: GraphEntity, _opt: PutOption) -> Self::T {
         let span = span!(Level::DEBUG, "put", key = ?key);
         async move {
-            let s = std::str::from_utf8(&v)?;
-            let create_res = con.client.create(&key, s).await?;
+            let s = toy_pack_json::pack_to_string(&v)?;
+            let create_res = con.client.create(&key, &s).await?;
             if create_res.is_success() {
                 Ok(PutResult::Create)
             } else {
@@ -77,7 +93,7 @@ impl Put for EtcdStoreOps {
                 match res {
                     Some(v) => {
                         let version = v.version();
-                        let upd_res = con.client.update(&key, s, version).await?;
+                        let upd_res = con.client.update(&key, &s, version).await?;
                         if upd_res.is_success() {
                             Ok(PutResult::Update)
                         } else {
@@ -117,7 +133,8 @@ impl Delete for EtcdStoreOps {
     }
 }
 
-impl StoreOpsFactory<EtcdStoreConnection> for EtcdStoreOpsFactory {
+impl StoreOpsFactory for EtcdStoreOpsFactory {
+    type Con = EtcdStoreConnection;
     type Ops = EtcdStoreOps;
 
     fn create(&self) -> Result<Self::Ops, StoreError> {

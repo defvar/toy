@@ -24,6 +24,7 @@ toy-plugin-commons = { path = "../../../plugins/toy-plugin-commons/toy-plugin-co
 
 # store
 toy-api-store-etcd = { path = "../../../pkg/toy-api-store-etcd"}
+toy-api-store-glogging = { path = "../../../pkg/toy-api-store-glogging"}
 
 # auth
 toy-api-auth-firebase = { path = "../../../pkg/toy-api-auth-firebase"}

@@ -2,8 +2,25 @@ use toy::core::prelude::*;
 use toy::executor::ExecutorFactory;
 use toy::supervisor::Supervisor;
 use toy_api_auth_firebase::FireAuth;
+use toy_api_server::ServerConfig;
 use toy_api_store_etcd::EtcdStoreOpsFactory;
+use toy_api_store_glogging::GLoggingStore;
 use tracing_subscriber::fmt::format::FmtSpan;
+
+struct ToyConfig;
+
+impl ServerConfig for ToyConfig {
+    type Auth = FireAuth;
+    type TaskLogStore = GLoggingStore;
+
+    fn auth(&self) -> Self::Auth {
+        FireAuth
+    }
+
+    fn task_log_store(&self) -> Self::TaskLogStore {
+        GLoggingStore::new()
+    }
+}
 
 fn main() {
     dotenv::dotenv().ok();
@@ -39,7 +56,7 @@ fn main() {
 
     let (sv, tx, rx) = Supervisor::new(ExecutorFactory, app);
 
-    let server = toy_api_server::Server::new(EtcdStoreOpsFactory, FireAuth);
+    let server = toy_api_server::Server::new(EtcdStoreOpsFactory, FireAuth, ToyConfig);
 
     sv_rt.spawn(async {
         let _ = sv.run().await;

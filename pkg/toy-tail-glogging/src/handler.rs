@@ -1,8 +1,10 @@
 use async_trait::async_trait;
-use toy_glogging::client::Client;
 use toy_glogging::error::GLoggingError;
-use toy_glogging::models::{Entry, EntryBuilder, Resource, Severity, WriteRequest, WriteResponse};
+use toy_glogging::models::{
+    Entry, EntryBuilder, Operation, Resource, Severity, WriteRequest, WriteResponse,
+};
 use toy_glogging::reqwest;
+use toy_glogging::Client;
 use toy_tail::{Flagments, Handler, TailError};
 
 pub struct GLoggingHandler {
@@ -41,6 +43,12 @@ impl Handler for GLoggingHandler {
     }
 
     async fn flagments(&mut self, fl: Flagments<'_>) -> Result<(), TailError> {
+        let ope = match (fl.graph(), fl.uri(), fl.node_busy_time()) {
+            (Some(_), None, None) => Some(Operation::first(fl.task_id().unwrap_or_else(|| ""))),
+            (Some(_), None, Some(_)) => Some(Operation::last(fl.task_id().unwrap_or_else(|| ""))),
+            _ => None,
+        };
+
         let e = EntryBuilder::new(&self.log_name, Resource::new("global"))
             .severity(Severity::INFO)
             .timestamp(fl.datetime().unwrap_or_else(|| ""))
@@ -54,7 +62,9 @@ impl Handler for GLoggingHandler {
             .label_opt("task_id", fl.task_id())
             .label_opt("graph", fl.graph())
             .label_opt("uri", fl.uri())
+            .opelation_opt(ope)
             .build();
+
         self.buffer.as_mut().map(|x| x.push(e));
         self.flush_if_needed(false)
             .await

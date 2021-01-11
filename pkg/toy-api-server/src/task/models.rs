@@ -1,37 +1,58 @@
 use core::time::Duration;
 use toy::core::prelude::{TaskId, Value};
-use toy::supervisor::{RunTaskResponse, TaskResponse};
-use toy_pack::Pack;
+use toy::supervisor::TaskResponse;
+use toy_pack::{Pack, Unpack};
 
 #[derive(Debug, Pack)]
-pub struct RunTaskEntity {
-    task_id: TaskId,
-}
-
-impl RunTaskEntity {
-    pub fn from(r: RunTaskResponse) -> Self {
-        Self { task_id: r.id() }
-    }
-}
-
-#[derive(Debug, Pack)]
-pub struct ListTaskEntity {
-    tasks: Vec<Inner>,
+pub struct RunningTasksEntity {
+    tasks: Vec<RunningTasksInner>,
     count: u32,
 }
 
 #[derive(Debug, Pack)]
-struct Inner {
+struct RunningTasksInner {
     task_id: TaskId,
     started_at: Duration,
     graph: Value,
 }
 
-impl ListTaskEntity {
+#[derive(Debug, Pack, Unpack)]
+pub struct TaskLogEntity {
+    task_id: TaskId,
+    payload: Vec<TaskLogInner>,
+    count: u32,
+}
+
+#[derive(Debug, Pack, Unpack)]
+#[toy(ignore_pack_if_none)]
+pub struct TaskLogInner {
+    message: String,
+    target: String,
+    graph: String,
+    uri: Option<String>,
+    busy: Option<String>,
+    idle: Option<String>,
+}
+
+#[derive(Debug, Pack, Unpack)]
+pub struct TasksEntity {
+    tasks: Vec<TasksInner>,
+    count: u32,
+}
+
+#[derive(Debug, Pack, Unpack)]
+#[toy(ignore_pack_if_none)]
+pub struct TasksInner {
+    task_id: TaskId,
+    started_at: Option<String>,
+    ended_at: Option<String>,
+}
+
+impl RunningTasksEntity {
     pub fn from(r: Vec<TaskResponse>) -> Self {
         let tasks = r
             .iter()
-            .map(|x| Inner {
+            .map(|x| RunningTasksInner {
                 task_id: x.id(),
                 started_at: x.started_at(),
                 graph: x.graph().original(),
@@ -39,5 +60,51 @@ impl ListTaskEntity {
             .collect::<Vec<_>>();
         let count = tasks.len() as u32;
         Self { tasks, count }
+    }
+}
+
+impl TaskLogEntity {
+    pub fn new(task_id: TaskId, payload: Vec<TaskLogInner>) -> Self {
+        let count = payload.len() as u32;
+        Self {
+            task_id,
+            payload,
+            count,
+        }
+    }
+}
+
+impl TasksEntity {
+    pub fn new(tasks: Vec<TasksInner>) -> Self {
+        let count = tasks.len() as u32;
+        Self { tasks, count }
+    }
+}
+
+impl TasksInner {
+    pub fn new<T: AsRef<str>>(task_id: T) -> Result<Self, ()> {
+        let id = match TaskId::parse_str(task_id.as_ref()) {
+            Ok(id) => id,
+            Err(_) => return Err(()),
+        };
+        Ok(Self {
+            task_id: id,
+            started_at: None,
+            ended_at: None,
+        })
+    }
+
+    pub fn with_started_at<T: AsRef<str>>(self, started_at: T) -> Self {
+        Self {
+            started_at: Some(started_at.as_ref().to_owned()),
+            ..self
+        }
+    }
+
+    pub fn with_ended_at<T: AsRef<str>>(self, ended_at: T) -> Self {
+        Self {
+            ended_at: Some(ended_at.as_ref().to_owned()),
+            ..self
+        }
     }
 }

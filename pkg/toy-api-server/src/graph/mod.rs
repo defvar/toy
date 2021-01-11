@@ -2,6 +2,9 @@
 
 mod filters;
 mod handlers;
-mod models;
+
+pub mod btree_store;
+pub mod models;
+pub mod store;
 
 pub use filters::graphs;

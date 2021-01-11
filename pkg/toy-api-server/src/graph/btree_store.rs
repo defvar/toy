@@ -1,13 +1,17 @@
+//! In Memory Store.(BTreeMap)
+//!
+
+use crate::graph::models::GraphEntity;
+use crate::graph::store::*;
 use crate::store::error::StoreError;
-use crate::store::store_op::*;
-use crate::store::{StoreConnection, StoreOps, StoreOpsFactory};
+use crate::store::StoreConnection;
 use std::collections::BTreeMap;
 use std::future::Future;
 use std::sync::{Arc, Mutex};
 
 #[derive(Clone, Debug)]
 pub struct BTreeStoreConnection {
-    map: Arc<Mutex<BTreeMap<String, Vec<u8>>>>,
+    map: Arc<Mutex<BTreeMap<String, GraphEntity>>>,
 }
 
 impl StoreConnection for BTreeStoreConnection {}
@@ -15,14 +19,11 @@ impl StoreConnection for BTreeStoreConnection {}
 #[derive(Clone, Debug)]
 pub struct BTreeStoreOps;
 
-#[derive(Clone, Debug)]
-pub struct BTreeStoreOpsFactory;
-
-impl StoreOps<BTreeStoreConnection> for BTreeStoreOps {}
+impl GraphStoreOps<BTreeStoreConnection> for BTreeStoreOps {}
 
 impl List for BTreeStoreOps {
     type Con = BTreeStoreConnection;
-    type T = impl Future<Output = Result<Vec<Vec<u8>>, Self::Err>> + Send;
+    type T = impl Future<Output = Result<Vec<GraphEntity>, Self::Err>> + Send;
     type Err = StoreError;
 
     fn list(&self, con: Self::Con, prefix: String, opt: ListOption) -> Self::T {
@@ -43,7 +44,7 @@ impl List for BTreeStoreOps {
 
 impl Find for BTreeStoreOps {
     type Con = BTreeStoreConnection;
-    type T = impl Future<Output = Result<Option<Vec<u8>>, Self::Err>> + Send;
+    type T = impl Future<Output = Result<Option<GraphEntity>, Self::Err>> + Send;
     type Err = StoreError;
 
     fn find(&self, con: Self::Con, key: String, opt: FindOption) -> Self::T {
@@ -53,7 +54,7 @@ impl Find for BTreeStoreOps {
                 Some(v) => Ok(Some(v.clone())),
                 _ => {
                     log::debug!("[find] not found. key:{:?}, opt:{:?}", key, opt);
-                    Ok(Option::<Vec<u8>>::None)
+                    Ok(Option::<GraphEntity>::None)
                 }
             }
         }
@@ -65,7 +66,7 @@ impl Put for BTreeStoreOps {
     type T = impl Future<Output = Result<PutResult, Self::Err>> + Send;
     type Err = StoreError;
 
-    fn put(&self, con: Self::Con, key: String, v: Vec<u8>, opt: PutOption) -> Self::T {
+    fn put(&self, con: Self::Con, key: String, v: GraphEntity, opt: PutOption) -> Self::T {
         async move {
             let mut map = con.map.lock().unwrap();
             if let Some(prev) = map.insert(key.clone(), v) {
@@ -99,19 +100,5 @@ impl Delete for BTreeStoreOps {
                 _ => Ok(DeleteResult::Deleted),
             }
         }
-    }
-}
-
-impl StoreOpsFactory<BTreeStoreConnection> for BTreeStoreOpsFactory {
-    type Ops = BTreeStoreOps;
-
-    fn create(&self) -> Result<Self::Ops, StoreError> {
-        Ok(BTreeStoreOps)
-    }
-
-    fn connect(&self) -> Result<BTreeStoreConnection, StoreError> {
-        Ok(BTreeStoreConnection {
-            map: Arc::new(Mutex::new(BTreeMap::new())),
-        })
     }
 }

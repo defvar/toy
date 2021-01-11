@@ -4,17 +4,23 @@
 //!
 //! Execution toy-api.
 //! - CRUD for graphs.
-//! - execute graph.
-//! - graph status.
-//! - log.
+//! - Execute task, and get Log.
 //! - list executable service.
 //!
 
-mod graph;
-mod service;
-mod task;
+mod common;
+mod server;
+
+pub mod config;
+pub mod graph;
+pub mod service;
+pub mod store;
+pub mod task;
+
+pub mod auth;
 
 pub use common::error::ApiError;
+pub use config::{DefaultConfig, ServerConfig};
 pub use server::Server;
 
 pub mod api {
@@ -25,10 +31,7 @@ pub mod api {
     pub use super::task::tasks;
 }
 
-pub mod auth;
-mod common;
-mod server;
-pub mod store;
-
 #[doc(hidden)]
 pub use reqwest;
+#[doc(hidden)]
+pub use toy::core::task::TaskId;
