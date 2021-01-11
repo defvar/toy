@@ -1,7 +1,6 @@
 //! Create Json Schema from Graph setting information.
 //!
 //! ```
-//! # use toy_pack_derive::Schema;
 //! use toy_pack::{schema::to_schema, Schema};
 //! use toy_core::data::schema::visitors::*;
 //!
@@ -11,7 +10,7 @@
 //!   path: String,
 //! }
 //!
-//! let json_schema = to_schema::<Dum, JsonSchemaVisitor>("config", JsonSchemaVisitor).unwrap();
+//! let json_schema = to_schema::<Config, JsonSchemaVisitor>("config", JsonSchemaVisitor).unwrap();
 //!
 //! ```
 
