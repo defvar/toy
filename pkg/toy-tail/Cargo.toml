@@ -19,8 +19,8 @@ chrono = "0.4"
 regex = "1.4.2"
 toy-text-parser = {path = "../../shared/toy-text-parser"}
 async-trait = "0.1.42"
-tokio = { version = "0.2", features = ["sync", "time"] }
+tokio = { version = "1", features = ["sync", "time"] }
 
 [dev-dependencies]
-tokio = { version = "0.2", features = ["full"] }
+tokio = { version = "1", features = ["full"] }
 tracing-subscriber = "0.2"

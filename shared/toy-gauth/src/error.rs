@@ -3,6 +3,7 @@ use std::backtrace::Backtrace;
 use std::fmt::Display;
 use std::io;
 use thiserror::Error as ThisError;
+use toy_h::error::HError;
 
 #[derive(Debug, ThisError)]
 pub enum GAuthError {
@@ -33,10 +34,10 @@ pub enum GAuthError {
         backtrace: Backtrace,
     },
 
-    #[error("io error: {:?}", source)]
-    RequestError {
+    #[error("error: {:?}", source)]
+    HError {
         #[from]
-        source: reqwest::Error,
+        source: HError,
         backtrace: Backtrace,
     },
 

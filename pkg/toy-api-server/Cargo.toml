@@ -5,13 +5,12 @@ authors = ["defvar <def.daisuke@gmail.com>"]
 edition = "2018"
 
 [dependencies]
-tokio = { version = "0.2", features = ["full"] }
 tracing = "0.1"
 warp = "0.2"
-reqwest = { version = "0.10" }
 toy = { path = "../toy" }
 toy-pack = {path = "../../shared/toy-pack", features = ["derive"]}
 toy-pack-yaml = {path = "../../shared/toy-pack-yaml"}
 toy-pack-json = {path = "../../shared/toy-pack-json"}
+toy-h = {path = "../../shared/toy-h"}
 log = "0.4"
 thiserror = "1.0"

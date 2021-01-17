@@ -1,6 +1,7 @@
 use serde::Deserialize;
+use toy_pack::Unpack;
 
-#[derive(Debug, Clone, Deserialize, Eq, PartialEq)]
+#[derive(Debug, Clone, Deserialize, Unpack, Eq, PartialEq)]
 pub struct JWK {
     e: String,
     alg: String,

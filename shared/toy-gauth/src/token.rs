@@ -4,6 +4,7 @@ use crate::credential::Credential;
 use crate::error::GAuthError;
 use crate::scope::Scope;
 use std::time::{SystemTime, UNIX_EPOCH};
+use toy_h::{HttpClient, RequestBuilder, Response, Uri};
 use toy_pack::Unpack;
 
 #[derive(Debug, Clone, Unpack)]
@@ -33,7 +34,10 @@ pub struct GTokenError {
     error_description: String,
 }
 
-pub async fn request_token(client: reqwest::Client, scope: Scope) -> Result<GToken, GAuthError> {
+pub async fn request_token<T>(client: T, scope: Scope) -> Result<GToken, GAuthError>
+where
+    T: HttpClient,
+{
     let key = Credential::from_key_file()?;
 
     let jws = create_jwt(key, scope)?;
@@ -45,9 +49,9 @@ pub async fn request_token(client: reqwest::Client, scope: Scope) -> Result<GTok
     );
 
     let res = client
-        .post(constants::TOKEN_URL)
+        .post(Uri::from_static(constants::TOKEN_URL))
         .header(
-            reqwest::header::CONTENT_TYPE,
+            toy_h::header::CONTENT_TYPE,
             "application/x-www-form-urlencoded",
         )
         .body(body)

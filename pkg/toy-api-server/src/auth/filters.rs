@@ -1,19 +1,26 @@
 use crate::auth::{Auth, AuthUser};
 use crate::ApiError;
+use toy_h::HttpClient;
 use warp::{Filter, Rejection};
 
 /// warp filter for auth.
-pub fn auth_filter(
-    auth: impl Auth + Clone,
-    client: reqwest::Client,
-) -> impl Filter<Extract = (AuthUser,), Error = Rejection> + Clone {
+pub fn auth_filter<T>(
+    auth: impl Auth<T> + Clone,
+    client: T,
+) -> impl Filter<Extract = (AuthUser,), Error = Rejection> + Clone
+where
+    T: HttpClient,
+{
     auth_bearer(auth, client).or_else(|e| auth_dev(e))
 }
 
-fn auth_bearer(
-    auth: impl Auth + Clone,
-    client: reqwest::Client,
-) -> impl Filter<Extract = (AuthUser,), Error = Rejection> + Clone {
+fn auth_bearer<T>(
+    auth: impl Auth<T> + Clone,
+    client: T,
+) -> impl Filter<Extract = (AuthUser,), Error = Rejection> + Clone
+where
+    T: HttpClient,
+{
     warp::any()
         .map(move || (auth.clone(), client.clone()))
         .and(warp::header::header::<String>("Authorization"))
@@ -29,11 +36,14 @@ async fn auth_dev(e: Rejection) -> Result<(AuthUser,), Rejection> {
     Err(e)
 }
 
-async fn handle_auth(
-    auth: impl Auth + Clone,
-    client: reqwest::Client,
+async fn handle_auth<T>(
+    auth: impl Auth<T> + Clone,
+    client: T,
     authen_str: String,
-) -> Result<AuthUser, Rejection> {
+) -> Result<AuthUser, Rejection>
+where
+    T: HttpClient,
+{
     if authen_str.starts_with("bearer") || authen_str.starts_with("Bearer") {
         let token = authen_str[6..authen_str.len()].trim();
         let user = auth.verify(client, token.to_string()).await;

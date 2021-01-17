@@ -11,7 +11,7 @@ use toy::core::task::TaskId;
 ///
 ///  - Create or get establish connection.
 ///  - Get composit operation trait.
-pub trait TaskLogStore: Clone + Send + Sync {
+pub trait TaskLogStore<T>: Clone + Send + Sync {
     type Con: StoreConnection;
     type Ops: TaskLogStoreOps<Self::Con>;
 
@@ -19,7 +19,7 @@ pub trait TaskLogStore: Clone + Send + Sync {
 
     fn ops(&self) -> Self::Ops;
 
-    fn establish(&mut self, client: reqwest::Client) -> Result<(), StoreError>;
+    fn establish(&mut self, client: T) -> Result<(), StoreError>;
 }
 
 /// Trait Composit log store operations.

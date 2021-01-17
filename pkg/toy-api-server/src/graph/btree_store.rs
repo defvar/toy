@@ -8,18 +8,50 @@ use crate::store::StoreConnection;
 use std::collections::BTreeMap;
 use std::future::Future;
 use std::sync::{Arc, Mutex};
+use toy_h::NoopHttpClient;
+
+#[derive(Clone, Debug)]
+pub struct BTreeStore {
+    con: Option<BTreeStoreConnection>,
+}
 
 #[derive(Clone, Debug)]
 pub struct BTreeStoreConnection {
     map: Arc<Mutex<BTreeMap<String, GraphEntity>>>,
 }
 
-impl StoreConnection for BTreeStoreConnection {}
-
 #[derive(Clone, Debug)]
 pub struct BTreeStoreOps;
 
+impl BTreeStore {
+    pub fn new() -> BTreeStore {
+        Self { con: None }
+    }
+}
+
+impl StoreConnection for BTreeStoreConnection {}
+
 impl GraphStoreOps<BTreeStoreConnection> for BTreeStoreOps {}
+
+impl GraphStore<NoopHttpClient> for BTreeStore {
+    type Con = BTreeStoreConnection;
+    type Ops = BTreeStoreOps;
+
+    fn con(&self) -> Option<Self::Con> {
+        self.con.clone()
+    }
+
+    fn ops(&self) -> Self::Ops {
+        BTreeStoreOps
+    }
+
+    fn establish(&mut self, _client: NoopHttpClient) -> Result<(), StoreError> {
+        self.con = Some(BTreeStoreConnection {
+            map: Arc::new(Mutex::new(BTreeMap::new())),
+        });
+        Ok(())
+    }
+}
 
 impl List for BTreeStoreOps {
     type Con = BTreeStoreConnection;

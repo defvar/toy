@@ -10,10 +10,12 @@ edition = "2018"
 toy-tail = {path = "../toy-tail"}
 toy-glogging = {path = "../../shared/toy-glogging"}
 toy-pack-json = {path = "../../shared/toy-pack-json"}
+toy-h = {path = "../../shared/toy-h"}
 async-trait = "0.1.42"
 tracing = "0.1"
 
 [dev-dependencies]
-tokio = { version = "0.2", features = ["full"] }
+toy-h = {path = "../../shared/toy-h", features = ["impl_reqwest"]}
+tokio = { version = "1", features = ["full"] }
 tracing-subscriber = "0.2"
 dotenv = "0.15.0"

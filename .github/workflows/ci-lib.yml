@@ -36,6 +36,18 @@ jobs:
         command: test
         args: --manifest-path ${{ github.workspace }}/shared/toy-gauth/Cargo.toml
 
+    - name: test-shared-glogging
+      uses: actions-rs/cargo@v1
+      with:
+        command: test
+        args: --manifest-path ${{ github.workspace }}/shared/toy-glogging/Cargo.toml
+
+    - name: test-shared-h
+      uses: actions-rs/cargo@v1
+      with:
+        command: test
+        args: --manifest-path ${{ github.workspace }}/shared/toy-h/Cargo.toml
+
     - name: test-shared-pack
       uses: actions-rs/cargo@v1
       with:

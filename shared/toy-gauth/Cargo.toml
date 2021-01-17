@@ -9,8 +9,8 @@ edition = "2018"
 [dependencies]
 jsonwebtoken = "7"
 serde = {version = "1.0", features = ["derive"] }
-reqwest = { version = "0.10", features = ["json"] }
 tracing = "0.1"
 thiserror = "1.0"
 toy-pack = {path = "../toy-pack", features = ["derive"] }
 toy-pack-json = {path = "../toy-pack-json"}
+toy-h = {path = "../toy-h"}

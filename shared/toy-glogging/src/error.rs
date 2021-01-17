@@ -20,13 +20,6 @@ pub enum GLoggingError {
     },
 
     #[error("error: {:?}", source)]
-    RequestError {
-        #[from]
-        source: reqwest::Error,
-        backtrace: Backtrace,
-    },
-
-    #[error("error: {:?}", source)]
     AuthenticationFailed {
         #[from]
         source: toy_gauth::error::GAuthError,
@@ -34,6 +27,12 @@ pub enum GLoggingError {
 
     #[error("error: {:?}", inner)]
     GApiError { inner: Vec<ErrorInfo> },
+
+    #[error("error: {:?}", source)]
+    HError {
+        #[from]
+        source: toy_h::error::HError,
+    },
 
     #[error("error: {:?}", inner)]
     Error { inner: String },

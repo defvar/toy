@@ -1,31 +1,76 @@
 use crate::error::StoreEtcdError;
 use crate::Client;
 use std::future::Future;
+use std::marker::PhantomData;
 use toy_api_server::graph::models::GraphEntity;
 use toy_api_server::graph::store::{
-    Delete, DeleteOption, DeleteResult, Find, FindOption, GraphStoreOps, List, ListOption, Put,
-    PutOption, PutResult,
+    Delete, DeleteOption, DeleteResult, Find, FindOption, GraphStore, GraphStoreOps, List,
+    ListOption, Put, PutOption, PutResult,
 };
-use toy_api_server::store::{error::StoreError, StoreConnection, StoreOpsFactory};
+use toy_api_server::store::{error::StoreError, StoreConnection};
+use toy_h::HttpClient;
 use tracing::{span, Instrument, Level};
 
 #[derive(Clone, Debug)]
-pub struct EtcdStoreConnection {
-    client: Client,
+pub struct EtcdStore<T> {
+    con: Option<EtcdStoreConnection<T>>,
 }
 
 #[derive(Clone, Debug)]
-pub struct EtcdStoreOps;
+pub struct EtcdStoreConnection<T> {
+    client: Client<T>,
+}
 
 #[derive(Clone, Debug)]
-pub struct EtcdStoreOpsFactory;
+pub struct EtcdStoreOps<T> {
+    _t: PhantomData<T>,
+}
 
-impl StoreConnection for EtcdStoreConnection {}
+impl<T> EtcdStore<T> {
+    pub fn new() -> Self {
+        EtcdStore { con: None }
+    }
+}
 
-impl GraphStoreOps<EtcdStoreConnection> for EtcdStoreOps {}
+impl<T> StoreConnection for EtcdStoreConnection<T> where T: HttpClient {}
 
-impl Find for EtcdStoreOps {
-    type Con = EtcdStoreConnection;
+impl<T> GraphStoreOps<EtcdStoreConnection<T>> for EtcdStoreOps<T> where T: HttpClient {}
+
+impl<T> GraphStore<T> for EtcdStore<T>
+where
+    T: HttpClient,
+{
+    type Con = EtcdStoreConnection<T>;
+    type Ops = EtcdStoreOps<T>;
+
+    fn con(&self) -> Option<Self::Con> {
+        self.con.clone()
+    }
+
+    fn ops(&self) -> Self::Ops {
+        EtcdStoreOps { _t: PhantomData }
+    }
+
+    fn establish(&mut self, client: T) -> Result<(), StoreError> {
+        let host = std::env::var("TOY_STORE_ETCD_HOST").unwrap_or_else(|_| "localhost".to_string());
+        let port = std::env::var("TOY_STORE_ETCD_PORT").unwrap_or_else(|_| "2379".to_string());
+        let url = format!("http://{}:{}", host, port);
+        tracing::info!("toy store=etcd. connecting:{}", &url);
+        match Client::new(client, url) {
+            Ok(c) => {
+                self.con = Some(EtcdStoreConnection { client: c });
+            }
+            Err(e) => return Err(StoreError::error(e)),
+        };
+        Ok(())
+    }
+}
+
+impl<T> Find for EtcdStoreOps<T>
+where
+    T: HttpClient,
+{
+    type Con = EtcdStoreConnection<T>;
     type T = impl Future<Output = Result<Option<GraphEntity>, Self::Err>> + Send;
     type Err = StoreEtcdError;
 
@@ -48,8 +93,11 @@ impl Find for EtcdStoreOps {
     }
 }
 
-impl List for EtcdStoreOps {
-    type Con = EtcdStoreConnection;
+impl<T> List for EtcdStoreOps<T>
+where
+    T: HttpClient,
+{
+    type Con = EtcdStoreConnection<T>;
     type T = impl Future<Output = Result<Vec<GraphEntity>, Self::Err>> + Send;
     type Err = StoreEtcdError;
 
@@ -75,8 +123,11 @@ impl List for EtcdStoreOps {
     }
 }
 
-impl Put for EtcdStoreOps {
-    type Con = EtcdStoreConnection;
+impl<T> Put for EtcdStoreOps<T>
+where
+    T: HttpClient,
+{
+    type Con = EtcdStoreConnection<T>;
     type T = impl Future<Output = Result<PutResult, Self::Err>> + Send;
     type Err = StoreEtcdError;
 
@@ -108,8 +159,11 @@ impl Put for EtcdStoreOps {
     }
 }
 
-impl Delete for EtcdStoreOps {
-    type Con = EtcdStoreConnection;
+impl<T> Delete for EtcdStoreOps<T>
+where
+    T: HttpClient,
+{
+    type Con = EtcdStoreConnection<T>;
     type T = impl Future<Output = Result<DeleteResult, Self::Err>> + Send;
     type Err = StoreEtcdError;
 
@@ -130,26 +184,5 @@ impl Delete for EtcdStoreOps {
             }
         }
         .instrument(span)
-    }
-}
-
-impl StoreOpsFactory for EtcdStoreOpsFactory {
-    type Con = EtcdStoreConnection;
-    type Ops = EtcdStoreOps;
-
-    fn create(&self) -> Result<Self::Ops, StoreError> {
-        Ok(EtcdStoreOps)
-    }
-
-    fn connect(&self) -> Result<EtcdStoreConnection, StoreError> {
-        let host = std::env::var("TOY_STORE_ETCD_HOST").unwrap_or_else(|_| "localhost".to_string());
-        let port = std::env::var("TOY_STORE_ETCD_PORT").unwrap_or_else(|_| "2379".to_string());
-        let url = format!("http://{}:{}", host, port);
-        tracing::info!("toy store=etcd. connecting:{}", &url);
-        let c = match Client::new(&url) {
-            Ok(c) => c,
-            Err(e) => return Err(StoreError::error(e)),
-        };
-        Ok(EtcdStoreConnection { client: c })
     }
 }

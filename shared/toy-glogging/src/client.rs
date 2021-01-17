@@ -3,23 +3,28 @@ use crate::models::{
     ErrorResponse, ListRequest, ListResponse, TailRequest, TailResponse, WriteRequest,
     WriteResponse,
 };
-use reqwest::header::{HeaderValue, AUTHORIZATION, CONTENT_TYPE};
-use reqwest::{Body, IntoUrl};
 use toy_gauth::GToken;
+use toy_h::{
+    header::HeaderValue, header::AUTHORIZATION, header::CONTENT_TYPE, Bytes, HttpClient,
+    RequestBuilder, Response, StatusCode, Uri,
+};
 use toy_pack::deser::DeserializableOwned;
 
 #[derive(Clone, Debug)]
-pub struct Client {
-    inner: reqwest::Client,
+pub struct Client<T> {
+    inner: T,
 }
 
-impl Client {
-    pub fn from(c: reqwest::Client) -> Client {
+impl<T> Client<T>
+where
+    T: HttpClient,
+{
+    pub fn from(c: T) -> Client<T> {
         Client { inner: c }
     }
 
     /// clone raw client.
-    pub fn raw(&self) -> reqwest::Client {
+    pub fn raw(&self) -> T {
         self.inner.clone()
     }
 
@@ -31,14 +36,15 @@ impl Client {
         tracing::debug!(req= ?req, "list");
 
         let param = toy_pack_json::pack(&req).unwrap();
-        let res = self
+        let (status, bytes) = self
             .request(
-                "https://logging.googleapis.com/v2/entries:list",
+                Uri::from_static("https://logging.googleapis.com/v2/entries:list"),
                 token,
                 param,
             )
             .await?;
-        self.to_response::<ListResponse, ErrorResponse>(res).await
+        self.to_response::<ListResponse, ErrorResponse>(status, bytes)
+            .await
     }
 
     pub async fn write(
@@ -49,14 +55,15 @@ impl Client {
         tracing::debug!("write");
 
         let param = toy_pack_json::pack(&req).unwrap();
-        let res = self
+        let (status, bytes) = self
             .request(
-                "https://logging.googleapis.com/v2/entries:write",
+                Uri::from_static("https://logging.googleapis.com/v2/entries:write"),
                 token,
                 param,
             )
             .await?;
-        self.to_response::<WriteResponse, ErrorResponse>(res).await
+        self.to_response::<WriteResponse, ErrorResponse>(status, bytes)
+            .await
     }
 
     pub async fn tail(
@@ -67,47 +74,48 @@ impl Client {
         tracing::debug!(req= ?req, "tail");
 
         let param = toy_pack_json::pack(&req).unwrap();
-        let res = self
+        let (status, bytes) = self
             .request(
-                "https://logging.googleapis.com/v2/entries:tail",
+                Uri::from_static("https://logging.googleapis.com/v2/entries:tail"),
                 token,
                 param,
             )
             .await?;
-        self.to_response::<TailResponse, Vec<ErrorResponse>>(res)
+        self.to_response::<TailResponse, Vec<ErrorResponse>>(status, bytes)
             .await
     }
 
-    async fn to_response<T, E>(&self, res: reqwest::Response) -> Result<T, GLoggingError>
+    async fn to_response<R, E>(&self, status: StatusCode, bytes: Bytes) -> Result<R, GLoggingError>
     where
-        T: DeserializableOwned,
+        R: DeserializableOwned,
         E: DeserializableOwned + Into<GLoggingError>,
     {
-        if res.status().is_success() {
-            let bytes = res.bytes().await?;
-            Ok(toy_pack_json::unpack::<T>(&bytes)?)
+        if status.is_success() {
+            Ok(toy_pack_json::unpack::<R>(&bytes)?)
         } else {
-            let bytes = res.bytes().await?;
             let e = toy_pack_json::unpack::<E>(&bytes)?;
             Err(e.into())
         }
     }
 
-    async fn request<T: IntoUrl, B: Into<Body>>(
+    async fn request<U: Into<Uri>, B: Into<Bytes>>(
         &self,
-        url: T,
+        url: U,
         token: GToken,
         body: B,
-    ) -> Result<reqwest::Response, GLoggingError> {
+    ) -> Result<(StatusCode, Bytes), GLoggingError> {
         let auth = HeaderValue::from_str(&format!("Bearer {}", token.access_token()))
             .map_err(|e| GLoggingError::error(e))?;
-        self.inner
+        let res = self
+            .inner
             .post(url)
             .header(CONTENT_TYPE, HeaderValue::from_static("application/json"))
             .header(AUTHORIZATION, auth)
             .body(body)
             .send()
-            .await
-            .map_err(|e| e.into())
+            .await?;
+
+        let status = res.status();
+        res.bytes().await.map(|x| (status, x)).map_err(|e| e.into())
     }
 }

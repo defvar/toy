@@ -1,47 +1,37 @@
 use crate::api::{graphs, services, tasks};
-use crate::auth::{auth_filter, Auth};
+use crate::auth::auth_filter;
 use crate::config::ServerConfig;
-use crate::graph::store::GraphStoreOps;
-use crate::store::{StoreConnection, StoreOpsFactory};
+use crate::graph::store::GraphStore;
 use crate::task::store::TaskLogStore;
-use core::marker::PhantomData;
 use std::net::SocketAddr;
 use toy::core::error::ServiceError;
 use toy::core::mpsc::{Incoming, Outgoing};
 use toy::supervisor::{Request, SystemMessage};
+use toy_h::HttpClient;
 use warp::http::Method;
 use warp::{Filter, Reply};
 
 /// toy-api Server.
 #[derive(Debug)]
-pub struct Server<C, SF, A, Config> {
-    sf: SF,
-    auth: A,
-    client: Option<reqwest::Client>,
+pub struct Server<Config, Http> {
+    client: Option<Http>,
     config: Config,
-    _t: PhantomData<C>,
 }
 
-impl<C, S, SF, A, Config> Server<C, SF, A, Config>
+impl<Config, Http> Server<Config, Http>
 where
-    C: StoreConnection + 'static,
-    S: GraphStoreOps<C> + 'static,
-    SF: StoreOpsFactory<Con = C, Ops = S> + Clone + 'static,
-    A: Auth + Clone + 'static,
-    Config: ServerConfig,
+    Config: ServerConfig<Http>,
+    Http: HttpClient + 'static,
 {
-    pub fn new(sf: SF, auth: A, config: Config) -> Server<C, SF, A, Config> {
+    pub fn new(config: Config) -> Server<Config, Http> {
         Server {
-            sf,
-            auth,
             client: None,
             config,
-            _t: PhantomData,
         }
     }
 
     /// Use http client.
-    pub fn with_client(mut self, client: reqwest::Client) -> Self {
+    pub fn with_client(mut self, client: Http) -> Self {
         self.client = Some(client);
         self
     }
@@ -80,33 +70,26 @@ where
         tx: Outgoing<Request, ServiceError>,
         rx: Incoming<SystemMessage, ServiceError>,
     ) {
-        let store_ops = self.sf.create().unwrap();
-        let store_connection = match self.sf.connect() {
-            Ok(c) => c,
-            Err(e) => {
-                tracing::error!("error store connection failed. error:{:?}", e);
+        let client = match self.client {
+            Some(ref c) => c.clone(),
+            None => {
+                tracing::error!("http client not build.");
                 return;
             }
         };
-
-        let client = match self.client {
-            Some(ref c) => c.clone(),
-            None => match reqwest::Client::builder().build() {
-                Ok(c) => c,
-                Err(e) => {
-                    tracing::error!("error client builder failed. error:{:?}", e);
-                    return;
-                }
-            },
-        };
+        let mut graph_store = self.config.graph_store();
         let mut log_store = self.config.task_log_store();
+        if let Err(e) = graph_store.establish(client.clone()) {
+            tracing::error!("graph store connection failed. error:{:?}", e);
+            return;
+        };
         if let Err(e) = log_store.establish(client.clone()) {
-            tracing::error!("error log store connection failed. error:{:?}", e);
+            tracing::error!("log store connection failed. error:{:?}", e);
             return;
         };
         let routes = auth_filter(self.config.auth(), client)
             .and(
-                graphs(store_connection.clone(), store_ops.clone(), tx.clone())
+                graphs(graph_store, tx.clone())
                     .or(services(tx.clone()))
                     .or(tasks(log_store, tx.clone())),
             )

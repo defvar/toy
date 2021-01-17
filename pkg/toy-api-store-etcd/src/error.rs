@@ -2,6 +2,8 @@ use std::backtrace::Backtrace;
 use std::fmt::Display;
 use std::num::ParseIntError;
 use thiserror::Error;
+use toy_h::error::HError;
+use toy_h::http::uri::InvalidUri;
 use toy_pack_json::{DecodeError, EncodeError};
 
 #[derive(Debug, Error)]
@@ -10,13 +12,6 @@ pub enum StoreEtcdError {
     IO {
         #[from]
         source: std::io::Error,
-        backtrace: Backtrace,
-    },
-
-    #[error("request error: {:?}", source)]
-    Request {
-        #[from]
-        source: reqwest::Error,
         backtrace: Backtrace,
     },
 
@@ -41,6 +36,13 @@ pub enum StoreEtcdError {
         backtrace: Backtrace,
     },
 
+    #[error("invalid uri: {:?}", source)]
+    InvalidUri {
+        #[from]
+        source: InvalidUri,
+        backtrace: Backtrace,
+    },
+
     #[error("deserialize error: {:?}", source)]
     DeserializeJsonValue {
         #[from]
@@ -61,6 +63,12 @@ pub enum StoreEtcdError {
 
     #[error("failed operation. operation: {:?} key:{:?}", ops, key)]
     FailedOperation { ops: String, key: String },
+
+    #[error("failed http request: {:?}", source)]
+    HError {
+        #[from]
+        source: HError,
+    },
 
     #[error("error: {:?}", inner)]
     Error { inner: String },

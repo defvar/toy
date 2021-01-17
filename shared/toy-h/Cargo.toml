@@ -1,5 +1,5 @@
 [package]
-name = "toy-glogging"
+name = "toy-h"
 version = "0.1.0"
 authors = ["defvar <def.daisuke@gmail.com>"]
 edition = "2018"
@@ -7,9 +7,16 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-tracing = { version = "0.1" }
-toy-pack = {path = "../toy-pack", features = ["derive"]}
-toy-pack-json = {path = "../toy-pack-json"}
-toy-gauth = {path = "../toy-gauth"}
-toy-h = {path = "../toy-h"}
+http = "0.2"
+bytes = "1"
+http-body = "0.4"
 thiserror = "1.0"
+async-trait = "0.1.42"
+
+reqwest = { version = "0.11", optional = true }
+
+[features]
+# Nothing by default
+default = []
+
+impl_reqwest = ["reqwest"]

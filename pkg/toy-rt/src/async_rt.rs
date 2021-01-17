@@ -39,11 +39,6 @@ impl RuntimeBuilder {
         self
     }
 
-    pub fn max_threads(&mut self, v: usize) -> &mut RuntimeBuilder {
-        self.builder.max_threads(v);
-        self
-    }
-
     pub fn thread_name(&mut self, v: impl Into<String>) -> &mut RuntimeBuilder {
         self.builder.thread_name(v);
         self

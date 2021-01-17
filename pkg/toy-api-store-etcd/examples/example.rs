@@ -1,4 +1,5 @@
 use toy_api_store_etcd::error::StoreEtcdError;
+use toy_h::impl_reqwest::ReqwestClient;
 use toy_pack::{Pack, Unpack};
 use tracing_subscriber::fmt::format::FmtSpan;
 
@@ -20,7 +21,8 @@ async fn main() -> Result<(), StoreEtcdError> {
     let prefix = "/hoge1";
     let key = "/hoge1/aiueo";
 
-    let c = toy_api_store_etcd::Client::new("http://localhost:2379").unwrap();
+    let c = ReqwestClient::from(toy_h::reqwest::Client::builder().build().unwrap());
+    let c = toy_api_store_etcd::Client::new(c, "http://localhost:2379").unwrap();
     let data = Test {
         name: "aiueo".to_string(),
         age: 32,

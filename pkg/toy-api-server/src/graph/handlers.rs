@@ -1,29 +1,28 @@
 use super::store::{
-    DeleteOption, DeleteResult, FindOption, GraphStoreOps, ListOption, PutOption, PutResult,
+    Delete, DeleteOption, DeleteResult, Find, FindOption, List, ListOption, Put, PutOption,
+    PutResult,
 };
 use crate::common;
 use crate::graph::models::{GraphEntity, RunTaskEntity};
-use crate::store::StoreConnection;
+use crate::graph::store::GraphStore;
 use std::convert::Infallible;
 use toy::core::error::ServiceError;
 use toy::core::graph::Graph;
 use toy::core::mpsc::Outgoing;
 use toy::core::oneshot;
 use toy::supervisor::{Request, RunTaskResponse};
+use toy_h::HttpClient;
 use warp::http::StatusCode;
 use warp::reply::Reply;
 
-pub async fn list<C>(
-    con: C,
-    ops: impl GraphStoreOps<C>,
-) -> Result<impl warp::Reply, warp::Rejection>
+pub async fn list<T>(store: impl GraphStore<T>) -> Result<impl warp::Reply, warp::Rejection>
 where
-    C: StoreConnection,
+    T: HttpClient,
 {
-    //let ops = ops.create().unwrap();
-    match ops
+    match store
+        .ops()
         .list(
-            con,
+            store.con().unwrap(),
             common::constants::GRAPHS_KEY_PREFIX.to_string(),
             ListOption::new(),
         )
@@ -37,16 +36,19 @@ where
     }
 }
 
-pub async fn find<C>(
+pub async fn find<T>(
     key: String,
-    con: C,
-    ops: impl GraphStoreOps<C>,
+    store: impl GraphStore<T>,
 ) -> Result<impl warp::Reply, warp::Rejection>
 where
-    C: StoreConnection,
+    T: HttpClient,
 {
     let key = common::constants::graph_key(key);
-    match ops.find(con, key, FindOption::new()).await {
+    match store
+        .ops()
+        .find(store.con().unwrap(), key, FindOption::new())
+        .await
+    {
         Ok(v) => match v {
             Some(v) => Ok(common::reply::json(&v).into_response()),
             None => Ok(StatusCode::NOT_FOUND.into_response()),
@@ -58,20 +60,23 @@ where
     }
 }
 
-pub async fn put<C>(
+pub async fn put<T>(
     key: String,
     v: GraphEntity,
-    con: C,
-    ops: impl GraphStoreOps<C>,
+    store: impl GraphStore<T>,
 ) -> Result<impl warp::Reply, warp::Rejection>
 where
-    C: StoreConnection,
+    T: HttpClient,
 {
     let key = common::constants::graph_key(key);
     //
     // validation...?
     //
-    match ops.put(con, key, v, PutOption::new()).await {
+    match store
+        .ops()
+        .put(store.con().unwrap(), key, v, PutOption::new())
+        .await
+    {
         Ok(r) => match r {
             PutResult::Create => Ok(StatusCode::CREATED),
             PutResult::Update => Ok(StatusCode::OK),
@@ -83,16 +88,19 @@ where
     }
 }
 
-pub async fn delete<C>(
+pub async fn delete<T>(
     key: String,
-    con: C,
-    ops: impl GraphStoreOps<C>,
+    store: impl GraphStore<T>,
 ) -> Result<impl warp::Reply, Infallible>
 where
-    C: StoreConnection,
+    T: HttpClient,
 {
     let key = common::constants::graph_key(key);
-    match ops.delete(con, key, DeleteOption::new()).await {
+    match store
+        .ops()
+        .delete(store.con().unwrap(), key, DeleteOption::new())
+        .await
+    {
         Ok(r) => match r {
             DeleteResult::Deleted => Ok(StatusCode::NO_CONTENT),
             DeleteResult::NotFound => Ok(StatusCode::NOT_FOUND),
@@ -104,17 +112,20 @@ where
     }
 }
 
-pub async fn run<C>(
+pub async fn run<T>(
     key: String,
-    con: C,
-    ops: impl GraphStoreOps<C>,
+    store: impl GraphStore<T>,
     mut tx: Outgoing<Request, ServiceError>,
 ) -> Result<impl warp::Reply, warp::Rejection>
 where
-    C: StoreConnection,
+    T: HttpClient,
 {
     let key = common::constants::graph_key(key);
-    match ops.find(con, key, FindOption::new()).await {
+    match store
+        .ops()
+        .find(store.con().unwrap(), key, FindOption::new())
+        .await
+    {
         Ok(Some(v)) => {
             let v = match toy::core::data::pack(&v) {
                 Ok(v) => v,

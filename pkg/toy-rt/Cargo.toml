@@ -5,4 +5,4 @@ authors = ["defvar <def.daisuke@gmail.com>"]
 edition = "2018"
 
 [dependencies]
-tokio = { version = "0.3", features = ["rt-multi-thread", "sync"] }
+tokio = { version = "1", features = ["rt-multi-thread", "sync"] }

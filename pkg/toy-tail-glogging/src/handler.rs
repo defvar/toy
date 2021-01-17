@@ -3,19 +3,22 @@ use toy_glogging::error::GLoggingError;
 use toy_glogging::models::{
     Entry, EntryBuilder, Operation, Resource, Severity, WriteRequest, WriteResponse,
 };
-use toy_glogging::reqwest;
 use toy_glogging::Client;
+use toy_h::HttpClient;
 use toy_tail::{Flagments, Handler, TailError};
 
-pub struct GLoggingHandler {
-    client: Client,
+pub struct GLoggingHandler<T> {
+    client: Client<T>,
     buffer_size: usize,
     buffer: Option<Vec<Entry>>,
     log_name: String,
 }
 
-impl GLoggingHandler {
-    pub fn from(c: reqwest::Client, log_name: String, buffer_size: usize) -> GLoggingHandler {
+impl<T> GLoggingHandler<T>
+where
+    T: HttpClient,
+{
+    pub fn from(c: T, log_name: String, buffer_size: usize) -> GLoggingHandler<T> {
         Self {
             client: Client::from(c),
             buffer_size,
@@ -37,7 +40,10 @@ impl GLoggingHandler {
 }
 
 #[async_trait]
-impl Handler for GLoggingHandler {
+impl<T> Handler for GLoggingHandler<T>
+where
+    T: HttpClient,
+{
     fn name(&self) -> &'static str {
         "GLogging"
     }
@@ -78,7 +84,10 @@ impl Handler for GLoggingHandler {
     }
 }
 
-async fn flush(client: Client, entries: Vec<Entry>) -> Result<WriteResponse, GLoggingError> {
+async fn flush<T>(client: Client<T>, entries: Vec<Entry>) -> Result<WriteResponse, GLoggingError>
+where
+    T: HttpClient,
+{
     let token =
         toy_glogging::auth::request_token(client.raw(), toy_glogging::auth::Scope::LoggingWrite)
             .await?;

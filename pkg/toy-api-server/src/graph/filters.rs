@@ -1,116 +1,108 @@
-use super::store::GraphStoreOps;
 use crate::common::body;
 use crate::graph::handlers;
 use crate::graph::models::GraphEntity;
-use crate::store::StoreConnection;
+use crate::graph::store::GraphStore;
 use toy::core::error::ServiceError;
 use toy::core::mpsc::Outgoing;
 use toy::supervisor::Request;
+use toy_h::HttpClient;
 use warp::Filter;
 
 /// warp filter for graphs api.
-pub fn graphs<C>(
-    con: C,
-    ops: impl GraphStoreOps<C>,
+pub fn graphs<T>(
+    store: impl GraphStore<T>,
     tx: Outgoing<Request, ServiceError>,
 ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone
 where
-    C: StoreConnection,
+    T: HttpClient,
 {
-    graphs_list(con.clone(), ops.clone())
-        .or(graphs_find(con.clone(), ops.clone()))
-        .or(graphs_put(con.clone(), ops.clone()))
-        .or(graphs_delete(con.clone(), ops.clone()))
-        .or(graphs_run(con.clone(), ops.clone(), tx))
+    graphs_list(store.clone())
+        .or(graphs_find(store.clone()))
+        .or(graphs_put(store.clone()))
+        .or(graphs_delete(store.clone()))
+        .or(graphs_run(store.clone(), tx))
 }
 
-pub fn graphs_list<C>(
-    store: C,
-    ops: impl GraphStoreOps<C>,
+pub fn graphs_list<T>(
+    store: impl GraphStore<T>,
 ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone
 where
-    C: StoreConnection,
+    T: HttpClient,
 {
     warp::path!("graphs")
         .and(warp::get())
-        .and(with_ops(store, ops))
-        .and_then(|(a, b)| handlers::list(a, b))
+        .and(with_ops2(store))
+        .and_then(handlers::list)
 }
 
-pub fn graphs_find<C>(
-    store: C,
-    ops: impl GraphStoreOps<C>,
+pub fn graphs_find<T>(
+    store: impl GraphStore<T>,
 ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone
 where
-    C: StoreConnection,
+    T: HttpClient,
 {
     warp::path!("graphs" / String)
         .and(warp::get())
-        .and(with_ops(store, ops))
-        .and_then(|a, (b, c)| handlers::find(a, b, c))
+        .and(with_ops2(store))
+        .and_then(|a, b| handlers::find(a, b))
 }
 
-pub fn graphs_put<C>(
-    store: C,
-    ops: impl GraphStoreOps<C>,
+pub fn graphs_put<T>(
+    store: impl GraphStore<T>,
 ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone
 where
-    C: StoreConnection,
+    T: HttpClient,
 {
     warp::path!("graphs" / String)
         .and(warp::put())
         .and(body::json::<GraphEntity>())
-        .and(with_ops(store, ops))
-        .and_then(|a, b, (c, d)| handlers::put(a, b, c, d))
+        .and(with_ops2(store))
+        .and_then(|a, b, c| handlers::put(a, b, c))
 }
 
-pub fn graphs_delete<C>(
-    store: C,
-    ops: impl GraphStoreOps<C>,
+pub fn graphs_delete<T>(
+    store: impl GraphStore<T>,
 ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone
 where
-    C: StoreConnection,
+    T: HttpClient,
 {
     warp::path!("graphs" / String)
         .and(warp::delete())
-        .and(with_ops(store, ops))
-        .and_then(|a, (b, c)| handlers::delete(a, b, c))
+        .and(with_ops2(store))
+        .and_then(|a, b| handlers::delete(a, b))
 }
 
-pub fn graphs_run<C>(
-    store: C,
-    ops: impl GraphStoreOps<C>,
+pub fn graphs_run<T>(
+    store: impl GraphStore<T>,
     tx: Outgoing<Request, ServiceError>,
 ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone
 where
-    C: StoreConnection,
+    T: HttpClient,
 {
     warp::path!("graphs" / String / "run")
         .and(warp::post())
-        .and(with_ops_and_tx(store, ops, tx))
-        .and_then(|a, (b, c, d)| handlers::run(a, b, c, d))
+        .and(with_ops_and_tx2(store, tx))
+        .and_then(|a, (b, c)| handlers::run(a, b, c))
 }
 
-fn with_ops<C>(
-    con: C,
-    ops: impl GraphStoreOps<C>,
-) -> impl Filter<Extract = ((C, impl GraphStoreOps<C>),), Error = std::convert::Infallible> + Clone
+fn with_ops2<T>(
+    ops: impl GraphStore<T>,
+) -> impl Filter<Extract = (impl GraphStore<T>,), Error = std::convert::Infallible> + Clone
 where
-    C: StoreConnection,
+    T: HttpClient,
 {
-    warp::any().map(move || (con.clone(), ops.clone()))
+    warp::any().map(move || ops.clone())
 }
 
-fn with_ops_and_tx<C>(
-    con: C,
-    ops: impl GraphStoreOps<C>,
+fn with_ops_and_tx2<T>(
+    ops: impl GraphStore<T>,
     tx: Outgoing<Request, ServiceError>,
 ) -> impl Filter<
-    Extract = ((C, impl GraphStoreOps<C>, Outgoing<Request, ServiceError>),),
+    Extract = ((impl GraphStore<T>, Outgoing<Request, ServiceError>),),
     Error = std::convert::Infallible,
 > + Clone
 where
-    C: StoreConnection,
+    T: HttpClient,
 {
-    warp::any().map(move || (con.clone(), ops.clone(), tx.clone()))
+    warp::any().map(move || (ops.clone(), tx.clone()))
 }

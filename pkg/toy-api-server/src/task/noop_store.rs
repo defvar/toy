@@ -5,12 +5,14 @@ use crate::store::error::StoreError;
 use crate::store::StoreConnection;
 use crate::task::models::{TaskLogEntity, TasksEntity};
 use crate::task::store::{Find, FindOption, List, ListOption, TaskLogStore, TaskLogStoreOps};
+use std::marker::PhantomData;
 use toy::core::task::TaskId;
+use toy_h::HttpClient;
 
 #[derive(Clone, Debug)]
-pub struct NoopLogStore {
-    ops: NoopLogStoreOps,
+pub struct NoopLogStore<T> {
     con: Option<NoopLogConnection>,
+    _t: PhantomData<T>,
 }
 
 #[derive(Clone, Debug)]
@@ -19,16 +21,19 @@ pub struct NoopLogConnection;
 #[derive(Clone, Debug)]
 pub struct NoopLogStoreOps;
 
-impl NoopLogStore {
+impl<T> NoopLogStore<T> {
     pub fn new() -> Self {
         Self {
-            ops: NoopLogStoreOps,
             con: None,
+            _t: PhantomData,
         }
     }
 }
 
-impl TaskLogStore for NoopLogStore {
+impl<T> TaskLogStore<T> for NoopLogStore<T>
+where
+    T: HttpClient,
+{
     type Con = NoopLogConnection;
     type Ops = NoopLogStoreOps;
 
@@ -40,7 +45,7 @@ impl TaskLogStore for NoopLogStore {
         NoopLogStoreOps
     }
 
-    fn establish(&mut self, _client: reqwest::Client) -> Result<(), StoreError> {
+    fn establish(&mut self, _client: T) -> Result<(), StoreError> {
         if self.con.is_none() {
             self.con = Some(NoopLogConnection);
         }

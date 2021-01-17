@@ -2,6 +2,7 @@ use crate::constants;
 use crate::error::StoreGLoggingError;
 use std::collections::HashMap;
 use std::future::Future;
+use std::marker::PhantomData;
 use toy_api_server::store::error::StoreError;
 use toy_api_server::store::StoreConnection;
 use toy_api_server::task::models::{TaskLogEntity, TaskLogInner, TasksEntity, TasksInner};
@@ -10,25 +11,30 @@ use toy_api_server::task::store::{
 };
 use toy_api_server::TaskId;
 use toy_glogging::models::ListRequest;
+use toy_h::HttpClient;
 use tracing::{Instrument, Level};
 
 #[derive(Clone, Debug)]
-pub struct GLoggingStore {
-    con: Option<GloggingStoreConnection>,
+pub struct GLoggingStore<T> {
+    con: Option<GloggingStoreConnection<T>>,
     log_name: String,
 }
 
 #[derive(Clone, Debug)]
-pub struct GloggingStoreConnection {
-    client: toy_glogging::Client,
+pub struct GloggingStoreConnection<T> {
+    client: toy_glogging::Client<T>,
 }
 
 #[derive(Clone, Debug)]
-pub struct GLoggingStoreOps {
+pub struct GLoggingStoreOps<T> {
     log_name: String,
+    _t: PhantomData<T>,
 }
 
-impl GLoggingStore {
+impl<T> GLoggingStore<T>
+where
+    T: HttpClient,
+{
     pub fn new() -> Self {
         let log_name =
             std::env::var(constants::ENV_KEY_TOY_API_STORE_GLOGGING_LOG_NAME).expect(&format!(
@@ -42,9 +48,12 @@ impl GLoggingStore {
     }
 }
 
-impl TaskLogStore for GLoggingStore {
-    type Con = GloggingStoreConnection;
-    type Ops = GLoggingStoreOps;
+impl<T> TaskLogStore<T> for GLoggingStore<T>
+where
+    T: HttpClient,
+{
+    type Con = GloggingStoreConnection<T>;
+    type Ops = GLoggingStoreOps<T>;
 
     fn con(&self) -> Option<Self::Con> {
         self.con.clone()
@@ -53,22 +62,26 @@ impl TaskLogStore for GLoggingStore {
     fn ops(&self) -> Self::Ops {
         GLoggingStoreOps {
             log_name: self.log_name.to_owned(),
+            _t: PhantomData,
         }
     }
 
-    fn establish(&mut self, client: reqwest::Client) -> Result<(), StoreError> {
+    fn establish(&mut self, client: T) -> Result<(), StoreError> {
         let c = toy_glogging::Client::from(client);
         self.con = Some(GloggingStoreConnection { client: c });
         Ok(())
     }
 }
 
-impl StoreConnection for GloggingStoreConnection {}
+impl<T> StoreConnection for GloggingStoreConnection<T> where T: HttpClient {}
 
-impl TaskLogStoreOps<GloggingStoreConnection> for GLoggingStoreOps {}
+impl<T> TaskLogStoreOps<GloggingStoreConnection<T>> for GLoggingStoreOps<T> where T: HttpClient {}
 
-impl Find for GLoggingStoreOps {
-    type Con = GloggingStoreConnection;
+impl<T> Find for GLoggingStoreOps<T>
+where
+    T: HttpClient,
+{
+    type Con = GloggingStoreConnection<T>;
     type T = impl Future<Output = Result<Option<TaskLogEntity>, Self::Err>> + Send;
     type Err = StoreGLoggingError;
 
@@ -112,8 +125,11 @@ impl Find for GLoggingStoreOps {
     }
 }
 
-impl List for GLoggingStoreOps {
-    type Con = GloggingStoreConnection;
+impl<T> List for GLoggingStoreOps<T>
+where
+    T: HttpClient,
+{
+    type Con = GloggingStoreConnection<T>;
     type T = impl Future<Output = Result<TasksEntity, Self::Err>> + Send;
     type Err = StoreGLoggingError;
 

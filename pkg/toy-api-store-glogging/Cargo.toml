@@ -8,7 +8,6 @@ edition = "2018"
 
 [dependencies]
 thiserror = "1.0"
-reqwest = { version = "0.10" }
 tracing = { version = "0.1" }
 
 toy-pack = {path = "../../shared/toy-pack", features = ["derive"]}
@@ -16,3 +15,4 @@ toy-pack-json = {path = "../../shared/toy-pack-json"}
 toy-api-server = {path = "../toy-api-server"}
 
 toy-glogging = {path = "../../shared/toy-glogging"}
+toy-h = {path = "../../shared/toy-h"}

@@ -3,17 +3,18 @@ use crate::constants;
 use crate::error::GAuthError;
 use crate::jwk::JWK;
 use jsonwebtoken::DecodingKey;
-use reqwest::{header, Url};
 use serde::Deserialize;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use toy_h::{header, HttpClient, RequestBuilder, Response, Uri};
+use toy_pack::Unpack;
 
 thread_local! {
   static KEYS: RefCell<KeyCache> = RefCell::new(KeyCache::new());
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Unpack)]
 struct KeysResponse {
     keys: Vec<JWK>,
 }
@@ -33,7 +34,10 @@ impl KeyCache {
     }
 }
 
-pub async fn verify_token(client: reqwest::Client, token: &str) -> Result<Claims, GAuthError> {
+pub async fn verify_token<T>(client: T, token: &str) -> Result<Claims, GAuthError>
+where
+    T: HttpClient,
+{
     let project_id = match std::env::var(constants::ENV_KEY_FIREBASE_ID).map_err(|_| {
         GAuthError::error(format!(
             "not found firebase config. please set env {}.",
@@ -61,14 +65,11 @@ pub async fn verify_token(client: reqwest::Client, token: &str) -> Result<Claims
         }
     };
 
-    let iss = match Url::parse(constants::FIREBASE_VALID_ISS_PREFIX)
-        .unwrap()
-        .join(&project_id)
-        .map(|x| x.to_string())
-    {
-        Ok(iss) => iss,
-        Err(e) => return Err(GAuthError::error(e)),
-    };
+    let iss =
+        match format!("{}/{}", constants::FIREBASE_VALID_ISS_PREFIX, project_id).parse::<Uri>() {
+            Ok(v) => v.to_string(),
+            Err(e) => return Err(GAuthError::authentication_failed(e)),
+        };
 
     // validate: alg, iss
     let mut validation = jsonwebtoken::Validation {
@@ -85,10 +86,10 @@ pub async fn verify_token(client: reqwest::Client, token: &str) -> Result<Claims
     decoded_token.map(|x| x.claims)
 }
 
-async fn get_firebase_jwk(
-    client: reqwest::Client,
-    kid: &str,
-) -> Result<Option<JWK>, reqwest::Error> {
+async fn get_firebase_jwk<T>(client: T, kid: &str) -> Result<Option<JWK>, GAuthError>
+where
+    T: HttpClient,
+{
     let max_age_secs = KEYS.with(|kc| kc.borrow().max_age_secs);
     let start = SystemTime::now();
     let now = start
@@ -109,7 +110,10 @@ async fn get_firebase_jwk(
     }
 
     tracing::info!("reflesh jwk list.");
-    let resp = client.get(constants::JWK_URL).send().await?;
+    let resp = client
+        .get(Uri::from_static(constants::JWK_URL))
+        .send()
+        .await?;
 
     let max_age_secs = match resp.headers().get(header::CACHE_CONTROL) {
         Some(v) => v
@@ -118,7 +122,8 @@ async fn get_firebase_jwk(
             .unwrap_or_else(|_| 0),
         None => 0,
     };
-    let body = resp.json::<KeysResponse>().await?;
+
+    let body = toy_pack_json::unpack::<KeysResponse>(&resp.bytes().await?)?;
 
     let mut key_map = HashMap::new();
     for key in body.keys {

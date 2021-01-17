@@ -7,6 +7,7 @@ use toy::core::mpsc::Outgoing;
 use toy::core::oneshot;
 use toy::core::task::TaskId;
 use toy::supervisor::{Request, TaskResponse};
+use toy_h::HttpClient;
 use warp::http::StatusCode;
 use warp::reply::Reply;
 
@@ -23,7 +24,10 @@ pub async fn running_tasks(
     }
 }
 
-pub async fn tasks(log_store: impl TaskLogStore) -> Result<impl warp::Reply, Infallible> {
+pub async fn tasks<T>(log_store: impl TaskLogStore<T>) -> Result<impl warp::Reply, Infallible>
+where
+    T: HttpClient,
+{
     match log_store
         .ops()
         .list(log_store.con().unwrap(), ListOption::new())
@@ -37,10 +41,13 @@ pub async fn tasks(log_store: impl TaskLogStore) -> Result<impl warp::Reply, Inf
     }
 }
 
-pub async fn log(
+pub async fn log<T>(
     key: String,
-    log_store: impl TaskLogStore,
-) -> Result<impl warp::Reply, warp::Rejection> {
+    log_store: impl TaskLogStore<T>,
+) -> Result<impl warp::Reply, warp::Rejection>
+where
+    T: HttpClient,
+{
     let id = match TaskId::parse_str(key) {
         Ok(id) => id,
         Err(_) => return Ok(StatusCode::INTERNAL_SERVER_ERROR.into_response()),

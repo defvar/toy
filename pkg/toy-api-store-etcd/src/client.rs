@@ -1,23 +1,35 @@
 use crate::error::StoreEtcdError;
 use crate::kv::*;
 use crate::txn::{Compare, CompareResult, CompareTarget, RequestOp, TxnRequest, TxnResponse};
-use reqwest::header::{HeaderValue, CONTENT_TYPE};
-use reqwest::{IntoUrl, Url};
+use std::convert::TryFrom;
+use toy_h::error::HError;
+use toy_h::{
+    header::HeaderValue, header::CONTENT_TYPE, HttpClient, InvalidUri, RequestBuilder, Response,
+    Uri,
+};
 
 /// etcd api client.
 #[derive(Clone, Debug)]
-pub struct Client {
-    inner: reqwest::Client,
-    root: Url,
+pub struct Client<T> {
+    inner: T,
+    root: Uri,
 }
 
-impl Client {
+impl<T> Client<T>
+where
+    T: HttpClient,
+{
     /// Create new client.
     /// Url is ectd api endpoint address.
-    pub fn new(url: impl IntoUrl) -> Result<Client, StoreEtcdError> {
-        let c = reqwest::Client::builder().build()?;
-        let root = url.into_url()?;
-        Ok(Client { inner: c, root })
+    pub fn new<U>(client: T, uri: U) -> Result<Client<T>, StoreEtcdError>
+    where
+        Uri: TryFrom<U, Error = InvalidUri>,
+    {
+        let uri = TryFrom::try_from(uri)?;
+        Ok(Client {
+            inner: client,
+            root: uri,
+        })
     }
 
     pub async fn get<K>(&self, key: K) -> Result<SingleResponse, StoreEtcdError>
@@ -25,7 +37,7 @@ impl Client {
         K: AsRef<str>,
     {
         let param = toy_pack_json::pack(&RangeRequest::single(key.as_ref())).unwrap();
-        let bytes = self.range(param).await?.bytes().await?;
+        let bytes = self.range(param).await?;
         let res = toy_pack_json::unpack::<RangeResponse>(&bytes)?;
         tracing::debug!(key= ?key.as_ref(), "get");
         res.into_single()
@@ -36,7 +48,7 @@ impl Client {
         K: AsRef<str>,
     {
         let param = toy_pack_json::pack(&RangeRequest::range_from(key.as_ref())).unwrap();
-        let bytes = self.range(param).await?.bytes().await?;
+        let bytes = self.range(param).await?;
         let res = toy_pack_json::unpack::<RangeResponse>(&bytes)?;
         tracing::debug!(key= ?key.as_ref(), "list");
         Ok(res)
@@ -52,7 +64,7 @@ impl Client {
             RequestOp::put(PutRequest::from(key.as_ref(), value.as_ref())),
         );
         let param = toy_pack_json::pack(&txn).unwrap();
-        let bytes = self.txn(param).await?.bytes().await?;
+        let bytes = self.txn(param).await?;
         let res = toy_pack_json::unpack::<TxnResponse>(&bytes)?;
         tracing::debug!(key= ?key.as_ref(), "create");
         Ok(res)
@@ -78,7 +90,7 @@ impl Client {
             RequestOp::put(PutRequest::from(key.as_ref(), value.as_ref())),
         );
         let param = toy_pack_json::pack(&txn).unwrap();
-        let bytes = self.txn(param).await?.bytes().await?;
+        let bytes = self.txn(param).await?;
         let res = toy_pack_json::unpack::<TxnResponse>(&bytes)?;
         tracing::debug!(key= ?key.as_ref(), version= ?version, "update");
         Ok(res)
@@ -98,27 +110,33 @@ impl Client {
             RequestOp::delete(DeleteRangeRequest::single(key.as_ref())),
         );
         let param = toy_pack_json::pack(&txn).unwrap();
-        let bytes = self.txn(param).await?.bytes().await?;
+        let bytes = self.txn(param).await?;
         let res = toy_pack_json::unpack::<TxnResponse>(&bytes)?;
         tracing::debug!(key= ?key.as_ref(), "remove");
         Ok(res)
     }
 
-    async fn txn(&self, body: Vec<u8>) -> Result<reqwest::Response, reqwest::Error> {
+    async fn txn(&self, body: Vec<u8>) -> Result<toy_h::bytes::Bytes, HError> {
+        let uri = format!("{}v3/kv/txn", self.root).parse::<Uri>()?;
         self.inner
-            .post(format!("{}v3/kv/txn", self.root).as_str())
+            .post(uri)
             .header(CONTENT_TYPE, HeaderValue::from_static("application/json"))
             .body(body)
             .send()
+            .await?
+            .bytes()
             .await
     }
 
-    async fn range(&self, body: Vec<u8>) -> Result<reqwest::Response, reqwest::Error> {
+    async fn range(&self, body: Vec<u8>) -> Result<toy_h::bytes::Bytes, HError> {
+        let uri = format!("{}v3/kv/range", self.root).parse::<Uri>()?;
         self.inner
-            .post(format!("{}v3/kv/range", self.root).as_str())
+            .post(uri)
             .header(CONTENT_TYPE, HeaderValue::from_static("application/json"))
             .body(body)
             .send()
+            .await?
+            .bytes()
             .await
     }
 }

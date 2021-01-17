@@ -9,4 +9,4 @@ mod store;
 pub mod txn;
 
 pub use client::Client;
-pub use store::{EtcdStoreConnection, EtcdStoreOpsFactory};
+pub use store::{EtcdStore, EtcdStoreConnection};

@@ -28,16 +28,14 @@ fn main() {
     }
 
     // runtime for tail handler
-    let rt = tokio::runtime::Builder::new()
-        .threaded_scheduler()
-        .core_threads(3)
+    let rt = tokio::runtime::Builder::new_multi_thread()
+        .worker_threads(3)
         .thread_name("tail-worker")
         .enable_all()
         .build()
         .unwrap();
 
-    let c = toy_glogging::reqwest::Client::builder().build().unwrap();
-
+    let c = toy_h::impl_reqwest::ReqwestClient::new().unwrap();
     let handlers: Vec<Box<dyn Handler>> = vec![
         Box::new(GLoggingHandler::from(c, log_name, 100)),
         Box::new(PrintHandler::new()),

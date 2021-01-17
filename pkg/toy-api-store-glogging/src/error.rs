@@ -7,13 +7,6 @@ use toy_pack_json::{DecodeError, EncodeError};
 
 #[derive(Debug, Error)]
 pub enum StoreGLoggingError {
-    #[error("request error: {:?}", source)]
-    Request {
-        #[from]
-        source: reqwest::Error,
-        backtrace: Backtrace,
-    },
-
     #[error("deserialize error: {:?}", source)]
     DeserializeJsonValue {
         #[from]

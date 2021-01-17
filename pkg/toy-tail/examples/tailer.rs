@@ -15,10 +15,9 @@ fn main() {
     let prefix = "hello.example.log";
 
     // runtime for tail handler
-    let rt = tokio::runtime::Builder::new()
-        .threaded_scheduler()
+    let rt = tokio::runtime::Builder::new_multi_thread()
         .thread_name("tail-worker")
-        .core_threads(4)
+        .worker_threads(4)
         .enable_all()
         .build()
         .unwrap();

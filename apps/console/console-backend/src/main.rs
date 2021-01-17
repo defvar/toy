@@ -1,24 +1,36 @@
+#![feature(type_alias_impl_trait)]
+
+use std::sync::Arc;
 use toy::core::prelude::*;
 use toy::executor::ExecutorFactory;
 use toy::supervisor::Supervisor;
-use toy_api_auth_firebase::FireAuth;
+use toy_api_server::auth::NoAuth;
+use toy_api_server::task::noop_store::NoopLogStore;
 use toy_api_server::ServerConfig;
-use toy_api_store_etcd::EtcdStoreOpsFactory;
-use toy_api_store_glogging::GLoggingStore;
+use toy_api_store_etcd::EtcdStore;
 use tracing_subscriber::fmt::format::FmtSpan;
+
+mod impl_hyper02;
+
+use impl_hyper02::Hyper02Client;
 
 struct ToyConfig;
 
-impl ServerConfig for ToyConfig {
-    type Auth = FireAuth;
-    type TaskLogStore = GLoggingStore;
+impl ServerConfig<Hyper02Client> for ToyConfig {
+    type Auth = NoAuth<Hyper02Client>;
+    type TaskLogStore = NoopLogStore<Hyper02Client>;
+    type GraphStore = EtcdStore<Hyper02Client>;
 
     fn auth(&self) -> Self::Auth {
-        FireAuth
+        NoAuth::new()
     }
 
     fn task_log_store(&self) -> Self::TaskLogStore {
-        GLoggingStore::new()
+        NoopLogStore::new()
+    }
+
+    fn graph_store(&self) -> Self::GraphStore {
+        EtcdStore::new()
     }
 }
 
@@ -56,7 +68,9 @@ fn main() {
 
     let (sv, tx, rx) = Supervisor::new(ExecutorFactory, app);
 
-    let server = toy_api_server::Server::new(EtcdStoreOpsFactory, FireAuth, ToyConfig);
+    let hyper_client = Arc::new(toy_api_server::warp::hyper::Client::new());
+    let hyper_client = Hyper02Client::from(hyper_client);
+    let server = toy_api_server::Server::new(ToyConfig).with_client(hyper_client);
 
     sv_rt.spawn(async {
         let _ = sv.run().await;

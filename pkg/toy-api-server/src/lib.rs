@@ -32,6 +32,8 @@ pub mod api {
 }
 
 #[doc(hidden)]
-pub use reqwest;
-#[doc(hidden)]
 pub use toy::core::task::TaskId;
+#[doc(hidden)]
+pub use toy_h;
+#[doc(hidden)]
+pub use warp;
