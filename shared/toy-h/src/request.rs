@@ -1,3 +1,6 @@
+//! Trait for HTTP Request.
+//!
+
 use crate::error::HError;
 use crate::response::{NoopResponse, Response};
 use async_trait::async_trait;
@@ -6,6 +9,7 @@ use http::header::{HeaderName, HeaderValue};
 use http::HeaderMap;
 use std::convert::TryFrom;
 
+/// Build a `Request` and get a `Response`.
 #[async_trait]
 pub trait RequestBuilder {
     type Builder: RequestBuilder + Send;

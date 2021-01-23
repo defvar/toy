@@ -1,3 +1,5 @@
+//! Implementation for reqwest.
+
 use crate::error::HError;
 use crate::response::Response;
 use crate::{HttpClient, RequestBuilder};

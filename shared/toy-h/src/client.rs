@@ -1,22 +1,33 @@
+//! Trait for HTTP Client.
+//!
+
 use crate::request::NoopRequestBuilder;
 use crate::RequestBuilder;
 use http::{Method, Uri};
 
+/// A Client to make outgoing HTTP requests.
 pub trait HttpClient: Clone + Send + Sync {
     type Builder: RequestBuilder + Send;
 
+    /// Start building a `GET` request to `Uri`.
     fn get<T: Into<Uri>>(&self, uri: T) -> Self::Builder;
 
+    /// Start building a `POST` request to `Uri`.
     fn post<T: Into<Uri>>(&self, uri: T) -> Self::Builder;
 
+    /// Start building a `PUT` request to `Uri`.
     fn put<T: Into<Uri>>(&self, uri: T) -> Self::Builder;
 
+    /// Start building a `PATCH` request to `Uri`.
     fn patch<T: Into<Uri>>(&self, uri: T) -> Self::Builder;
 
+    /// Start building a `DELETE` request to `Uri`.
     fn delete<T: Into<Uri>>(&self, uri: T) -> Self::Builder;
 
+    /// Start building a `HEAD` request to `Uri`.
     fn head<T: Into<Uri>>(&self, uri: T) -> Self::Builder;
 
+    /// Start building a request with the `Method` and `Uri`.
     fn request<T: Into<Uri>>(&self, method: http::Method, uri: T) -> Self::Builder;
 }
 

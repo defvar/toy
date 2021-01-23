@@ -1,16 +1,24 @@
+//! Trait for HTTP Response.
+//!
+
 use crate::error::HError;
 use async_trait::async_trait;
 use bytes::Bytes;
 use http::{HeaderMap, StatusCode, Version};
 
+/// A `Response`.
 #[async_trait]
 pub trait Response {
+    /// Get the `StatusCode` of this `Response`.
     fn status(&self) -> StatusCode;
 
+    /// Get the `Headers` of this `Response`.
     fn headers(&self) -> &HeaderMap;
 
+    /// Get the full response body as `Bytes`.
     async fn bytes(self) -> Result<Bytes, HError>;
 
+    /// Get the `Version` of this `Response`.
     fn version(&self) -> Version;
 }
 

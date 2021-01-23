@@ -28,11 +28,11 @@ where
 fn decode_json<B: Buf, T: DeserializableOwned>(
     mut buf: B,
 ) -> Result<T, toy_pack_json::DecodeError> {
-    toy_pack_json::unpack::<T>(&buf.to_bytes())
+    toy_pack_json::unpack::<T>(&buf.copy_to_bytes(buf.remaining()))
 }
 
-fn buf_to_string<T: warp::Buf>(buf: T) -> Result<String, ApiError> {
-    std::str::from_utf8(buf.bytes())
+fn buf_to_string<T: warp::Buf>(mut buf: T) -> Result<String, ApiError> {
+    std::str::from_utf8(&buf.copy_to_bytes(buf.remaining()))
         .map(|x| {
             tracing::debug!("receive:{:?}", x.to_string());
             x.to_string()

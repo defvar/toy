@@ -1,6 +1,5 @@
 #![feature(type_alias_impl_trait)]
 
-use std::sync::Arc;
 use toy::core::prelude::*;
 use toy::executor::ExecutorFactory;
 use toy::supervisor::Supervisor;
@@ -8,18 +7,15 @@ use toy_api_server::auth::NoAuth;
 use toy_api_server::task::noop_store::NoopLogStore;
 use toy_api_server::ServerConfig;
 use toy_api_store_etcd::EtcdStore;
+use toy_h::impl_reqwest::ReqwestClient;
 use tracing_subscriber::fmt::format::FmtSpan;
-
-mod impl_hyper02;
-
-use impl_hyper02::Hyper02Client;
 
 struct ToyConfig;
 
-impl ServerConfig<Hyper02Client> for ToyConfig {
-    type Auth = NoAuth<Hyper02Client>;
-    type TaskLogStore = NoopLogStore<Hyper02Client>;
-    type GraphStore = EtcdStore<Hyper02Client>;
+impl ServerConfig<ReqwestClient> for ToyConfig {
+    type Auth = NoAuth<ReqwestClient>;
+    type TaskLogStore = NoopLogStore<ReqwestClient>;
+    type GraphStore = EtcdStore<ReqwestClient>;
 
     fn auth(&self) -> Self::Auth {
         NoAuth::new()
@@ -51,16 +47,9 @@ fn main() {
         .build()
         .unwrap();
 
-    // let mut api_rt = toy_rt::RuntimeBuilder::new()
-    //     .thread_name("api-server")
-    //     .worker_threads(2)
-    //     .build()
-    //     .unwrap();
-    let mut api_rt = tokio::runtime::Builder::new()
-        .threaded_scheduler()
+    let mut api_rt = toy_rt::RuntimeBuilder::new()
         .thread_name("api-server")
-        .core_threads(2)
-        .enable_all()
+        .worker_threads(2)
         .build()
         .unwrap();
 
@@ -68,9 +57,8 @@ fn main() {
 
     let (sv, tx, rx) = Supervisor::new(ExecutorFactory, app);
 
-    let hyper_client = Arc::new(toy_api_server::warp::hyper::Client::new());
-    let hyper_client = Hyper02Client::from(hyper_client);
-    let server = toy_api_server::Server::new(ToyConfig).with_client(hyper_client);
+    let client = ReqwestClient::new().unwrap();
+    let server = toy_api_server::Server::new(ToyConfig).with_client(client);
 
     sv_rt.spawn(async {
         let _ = sv.run().await;

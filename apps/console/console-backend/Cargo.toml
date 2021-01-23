@@ -16,9 +16,11 @@ async-trait = "0.1.42"
 
 # core
 toy = { path = "../../../pkg/toy" }
-toy-api-server = { path = "../../../pkg/toy-api-server"}
 toy-rt = { path = "../../../pkg/toy-rt"}
-toy-pack = {path = "../../../shared/toy-pack", features = ["derive"]}
+
+# api
+toy-api-server = { path = "../../../pkg/toy-api-server"}
+toy-h = { path = "../../../shared/toy-h", features = ["impl_reqwest"]}
 
 # plugins
 toy-plugin-commons = { path = "../../../plugins/toy-plugin-commons/toy-plugin-commons"}
@@ -29,6 +31,3 @@ toy-api-store-glogging = { path = "../../../pkg/toy-api-store-glogging"}
 
 # auth
 toy-api-auth-firebase = { path = "../../../pkg/toy-api-auth-firebase"}
-
-# api serv rt
-tokio = { version = "0.2", features = ["rt-threaded", "io-driver", "time"] }
