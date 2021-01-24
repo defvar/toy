@@ -13,7 +13,7 @@ http-body = "0.4"
 thiserror = "1.0"
 async-trait = "0.1.42"
 url = "2.2"
-futures-core = { version = "0.3", default-features = false }
+futures-core = { version = "0.3" }
 futures-util = { version = "0.3", default-features = false }
 pin-project-lite = "0.2"
 
