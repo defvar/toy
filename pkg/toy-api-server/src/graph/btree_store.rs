@@ -1,7 +1,7 @@
 //! In Memory Store.(BTreeMap)
 //!
 
-use crate::graph::models::GraphEntity;
+use crate::common::models::GraphEntity;
 use crate::graph::store::*;
 use crate::store::error::StoreError;
 use crate::store::StoreConnection;

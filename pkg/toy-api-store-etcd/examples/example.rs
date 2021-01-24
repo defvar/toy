@@ -1,3 +1,4 @@
+use futures_util::StreamExt;
 use toy_api_store_etcd::error::StoreEtcdError;
 use toy_h::impl_reqwest::ReqwestClient;
 use toy_pack::{Pack, Unpack};
@@ -48,6 +49,12 @@ async fn main() -> Result<(), StoreEtcdError> {
     let range_res = c.get(key).await?.value()?.unwrap();
     let rm_res = c.remove(key, range_res.version()).await?;
     tracing::info!("remove {:?}", rm_res);
+
+    // watch...
+    let mut watch_res = c.watch("/hoge1").await?;
+    while let Some(item) = watch_res.next().await {
+        tracing::info!("watch {:?}", item);
+    }
 
     Ok(())
 }

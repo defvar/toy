@@ -3,14 +3,9 @@ use super::store::{
     PutResult,
 };
 use crate::common;
-use crate::graph::models::{GraphEntity, RunTaskEntity};
+use crate::common::models::GraphEntity;
 use crate::graph::store::GraphStore;
 use std::convert::Infallible;
-use toy::core::error::ServiceError;
-use toy::core::graph::Graph;
-use toy::core::mpsc::Outgoing;
-use toy::core::oneshot;
-use toy::supervisor::{Request, RunTaskResponse};
 use toy_h::HttpClient;
 use warp::http::StatusCode;
 use warp::reply::Reply;
@@ -112,47 +107,36 @@ where
     }
 }
 
-pub async fn run<T>(
-    key: String,
-    store: impl GraphStore<T>,
-    mut tx: Outgoing<Request, ServiceError>,
-) -> Result<impl warp::Reply, warp::Rejection>
-where
-    T: HttpClient,
-{
-    let key = common::constants::graph_key(key);
-    match store
-        .ops()
-        .find(store.con().unwrap(), key, FindOption::new())
-        .await
-    {
-        Ok(Some(v)) => {
-            let v = match toy::core::data::pack(&v) {
-                Ok(v) => v,
-                Err(e) => {
-                    tracing::error!("error:{:?}", e);
-                    return Ok(StatusCode::INTERNAL_SERVER_ERROR.into_response());
-                }
-            };
-            let graph = match Graph::from(v) {
-                Ok(g) => g,
-                Err(e) => {
-                    tracing::error!("error:{:?}", e);
-                    return Ok(StatusCode::INTERNAL_SERVER_ERROR.into_response());
-                }
-            };
-            let (tx_, rx_) = oneshot::channel::<RunTaskResponse, ServiceError>();
-            let _ = tx.send_ok(Request::RunTask(graph, tx_)).await;
-            if let Some(Ok(r)) = rx_.recv().await {
-                Ok(common::reply::json(&(RunTaskEntity::from(r))).into_response())
-            } else {
-                Ok(StatusCode::INTERNAL_SERVER_ERROR.into_response())
-            }
-        }
-        Ok(None) => Ok(StatusCode::NOT_FOUND.into_response()),
-        Err(e) => {
-            tracing::error!("error:{:?}", e);
-            Ok(StatusCode::INTERNAL_SERVER_ERROR.into_response())
-        }
-    }
-}
+// pub async fn run<T>(
+//     key: String,
+//     store: impl GraphStore<T>,
+// ) -> Result<impl warp::Reply, warp::Rejection>
+// where
+//     T: HttpClient,
+// {
+//     let key = common::constants::graph_key(key);
+//     match store
+//         .ops()
+//         .find(store.con().unwrap(), key, FindOption::new())
+//         .await
+//     {
+//         Ok(Some(v)) => {
+//             let pending = PendingEntity::new(v);
+//             let id = TaskId::new();
+//             let key = common::constants::pending_key(id);
+//             match store
+//                 .ops()
+//                 .pending(store.con().unwrap(), key, pending)
+//                 .await
+//             {
+//                 Ok(()) => Ok(common::reply::json(&(PendingResult::from_id(id))).into_response()),
+//                 Err(_) => Ok(StatusCode::INTERNAL_SERVER_ERROR.into_response()),
+//             }
+//         }
+//         Ok(None) => Ok(StatusCode::NOT_FOUND.into_response()),
+//         Err(e) => {
+//             tracing::error!("error:{:?}", e);
+//             Ok(StatusCode::INTERNAL_SERVER_ERROR.into_response())
+//         }
+//     }
+// }

@@ -1,6 +1,7 @@
 use crate::common;
-use crate::task::models::RunningTasksEntity;
-use crate::task::store::{Find, FindOption, List, ListOption, TaskLogStore};
+use crate::common::models::GraphEntity;
+use crate::task::models::{PendingEntity, PendingResult, RunningTasksEntity};
+use crate::task::store::{Find, FindOption, List, ListOption, Pending, TaskLogStore, TaskStore};
 use std::convert::Infallible;
 use toy::core::error::ServiceError;
 use toy::core::mpsc::Outgoing;
@@ -10,6 +11,30 @@ use toy::supervisor::{Request, TaskResponse};
 use toy_h::HttpClient;
 use warp::http::StatusCode;
 use warp::reply::Reply;
+
+pub async fn post<T>(
+    v: GraphEntity,
+    store: impl TaskStore<T>,
+) -> Result<impl warp::Reply, warp::Rejection>
+where
+    T: HttpClient,
+{
+    /*
+     validate...
+    */
+
+    let pending = PendingEntity::new(v);
+    let id = TaskId::new();
+    let key = common::constants::pending_key(id);
+    match store
+        .ops()
+        .pending(store.con().unwrap(), key, pending)
+        .await
+    {
+        Ok(()) => Ok(common::reply::json(&(PendingResult::from_id(id))).into_response()),
+        Err(_) => Ok(StatusCode::INTERNAL_SERVER_ERROR.into_response()),
+    }
+}
 
 pub async fn running_tasks(
     mut tx: Outgoing<Request, ServiceError>,

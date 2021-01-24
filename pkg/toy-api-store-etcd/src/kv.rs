@@ -1,8 +1,10 @@
 use crate::error::StoreEtcdError;
+use toy_pack::deser::DeserializableOwned;
 use toy_pack::{Pack, Unpack};
 
 #[derive(Debug)]
 pub struct Versioning {
+    key: Vec<u8>,
     data: Vec<u8>,
     version: u64,
 }
@@ -15,7 +17,7 @@ pub struct ResponseHeader {
     raft_term: String,
 }
 
-#[derive(Debug, Pack, Unpack)]
+#[derive(Debug, Default, Pack, Unpack)]
 pub struct Kv {
     key: String,
     create_revision: String,
@@ -87,8 +89,12 @@ pub struct DeleteRangeResponse {
 ///////////////////////////////
 
 impl Versioning {
-    pub fn from(data: Vec<u8>, version: u64) -> Versioning {
-        Versioning { data, version }
+    pub fn from(key: Vec<u8>, data: Vec<u8>, version: u64) -> Versioning {
+        Versioning { key, data, version }
+    }
+
+    pub fn key(&self) -> &str {
+        unsafe { std::str::from_utf8_unchecked(&self.key) }
     }
 
     pub fn data(&self) -> &Vec<u8> {
@@ -99,8 +105,40 @@ impl Versioning {
         self.data
     }
 
+    pub fn unpack<T, F>(self, f: F) -> Result<T, StoreEtcdError>
+    where
+        T: DeserializableOwned,
+        F: FnOnce(Self) -> Result<T, StoreEtcdError>,
+    {
+        f(self)
+    }
+
     pub fn version(&self) -> u64 {
         self.version
+    }
+}
+
+impl Kv {
+    pub fn key(&self) -> &str {
+        &self.key
+    }
+
+    pub fn value(&self) -> &str {
+        &self.value
+    }
+
+    pub fn mod_revision(&self) -> &str {
+        &self.mod_revision
+    }
+
+    pub fn to_versioning(&self) -> Result<Versioning, StoreEtcdError> {
+        match (decode(&self.key), decode(&self.value)) {
+            (Ok(k), Ok(v)) => {
+                let version = self.mod_revision.parse::<u64>()?;
+                Ok(Versioning::from(k, v, version))
+            }
+            (Err(e), _) | (_, Err(e)) => Err(e.into()),
+        }
     }
 }
 
@@ -136,16 +174,24 @@ impl RangeRequest {
 
 impl RangeResponse {
     pub fn values(&self) -> Result<Vec<Versioning>, StoreEtcdError> {
-        self.kvs
-            .iter()
-            .try_fold(Vec::new(), |mut vec, x| match decode(&x.value) {
-                Ok(v) => {
-                    let version = x.mod_revision.parse::<u64>()?;
-                    vec.push(Versioning::from(v, version));
-                    Ok(vec)
-                }
-                Err(e) => Err(e.into()),
-            })
+        self.kvs.iter().try_fold(Vec::new(), |mut vec, x| {
+            let v = x.to_versioning()?;
+            vec.push(v);
+            Ok(vec)
+        })
+    }
+
+    pub fn unpack<T, F>(&self, mut f: F) -> Result<Vec<T>, StoreEtcdError>
+    where
+        T: DeserializableOwned,
+        F: FnMut(Versioning) -> Result<T, StoreEtcdError>,
+    {
+        self.kvs.iter().try_fold(Vec::new(), |mut vec, x| {
+            let v = x.to_versioning()?;
+            let v = f(v)?;
+            vec.push(v);
+            Ok(vec)
+        })
     }
 
     pub fn into_single(mut self) -> Result<SingleResponse, StoreEtcdError> {
@@ -171,13 +217,7 @@ impl RangeResponse {
 impl SingleResponse {
     pub fn value(&self) -> Result<Option<Versioning>, StoreEtcdError> {
         match &self.kv {
-            Some(kv) => match decode(&kv.value) {
-                Ok(v) => {
-                    let version = kv.mod_revision.parse::<u64>()?;
-                    Ok(Some(Versioning::from(v, version)))
-                }
-                Err(e) => Err(e.into()),
-            },
+            Some(kv) => kv.to_versioning().map(Some),
             None => Ok(None),
         }
     }
@@ -212,7 +252,7 @@ pub(crate) fn decode<T: AsRef<[u8]>>(input: T) -> Result<Vec<u8>, base64::Decode
     base64::decode_config(input.as_ref(), base64::URL_SAFE)
 }
 
-fn get_range_end(key: &str) -> Vec<u8> {
+pub(crate) fn get_range_end(key: &str) -> Vec<u8> {
     let mut end = key.clone().as_bytes().to_vec();
     for i in (0..end.len()).rev() {
         if end[i] < 0xff {

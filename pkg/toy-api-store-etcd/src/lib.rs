@@ -7,6 +7,7 @@ pub mod error;
 pub mod kv;
 mod store;
 pub mod txn;
+pub mod watch;
 
 pub use client::Client;
 pub use store::{EtcdStore, EtcdStoreConnection};

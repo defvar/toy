@@ -1,11 +1,13 @@
 use crate::error::StoreEtcdError;
 use crate::kv::*;
 use crate::txn::{Compare, CompareResult, CompareTarget, RequestOp, TxnRequest, TxnResponse};
+use crate::watch::{WatchCreateRequest, WatchResponse};
+use futures_util::StreamExt;
 use std::convert::TryFrom;
 use toy_h::error::HError;
 use toy_h::{
-    header::HeaderValue, header::CONTENT_TYPE, HttpClient, InvalidUri, RequestBuilder, Response,
-    Uri,
+    header::HeaderValue, header::CONTENT_TYPE, ByteStream, HttpClient, InvalidUri, RequestBuilder,
+    Response, Uri,
 };
 
 /// etcd api client.
@@ -43,15 +45,32 @@ where
         res.into_single()
     }
 
-    pub async fn list<K>(&self, key: K) -> Result<RangeResponse, StoreEtcdError>
+    pub async fn list<K>(&self, prefix: K) -> Result<RangeResponse, StoreEtcdError>
     where
         K: AsRef<str>,
     {
-        let param = toy_pack_json::pack(&RangeRequest::range_from(key.as_ref())).unwrap();
+        let param = toy_pack_json::pack(&RangeRequest::range_from(prefix.as_ref())).unwrap();
         let bytes = self.range(param).await?;
         let res = toy_pack_json::unpack::<RangeResponse>(&bytes)?;
-        tracing::debug!(key= ?key.as_ref(), "list");
+        tracing::debug!(prefix= ?prefix.as_ref(), "list");
         Ok(res)
+    }
+
+    pub async fn watch<K>(
+        &self,
+        prefix: K,
+    ) -> Result<impl toy_h::Stream<Item = Result<WatchResponse, StoreEtcdError>>, StoreEtcdError>
+    where
+        K: AsRef<str>,
+    {
+        tracing::debug!(prefix= ?prefix.as_ref(), "watch start");
+        let param = toy_pack_json::pack(&WatchCreateRequest::range_from(prefix.as_ref())).unwrap();
+        self.watch0(param).await.map(|byte_stream| {
+            byte_stream.map(|x| match x {
+                Ok(v) => toy_pack_json::unpack::<WatchResponse>(&v).map_err(|e| e.into()),
+                Err(e) => Err(e.into()),
+            })
+        })
     }
 
     pub async fn create<K, V>(&self, key: K, value: V) -> Result<TxnResponse, StoreEtcdError>
@@ -138,5 +157,17 @@ where
             .await?
             .bytes()
             .await
+    }
+
+    async fn watch0(&self, body: Vec<u8>) -> Result<ByteStream, StoreEtcdError> {
+        let uri = format!("{}v3/watch", self.root).parse::<Uri>()?;
+        Ok(self
+            .inner
+            .post(uri)
+            .header(CONTENT_TYPE, HeaderValue::from_static("application/json"))
+            .body(body)
+            .send()
+            .await?
+            .stream())
     }
 }

@@ -1,13 +1,18 @@
 use crate::error::StoreEtcdError;
+use crate::watch::WatchResponse;
 use crate::Client;
+use futures_util::StreamExt;
+use once_cell::sync::Lazy;
 use std::future::Future;
 use std::marker::PhantomData;
-use toy_api_server::graph::models::GraphEntity;
 use toy_api_server::graph::store::{
     Delete, DeleteOption, DeleteResult, Find, FindOption, GraphStore, GraphStoreOps, List,
     ListOption, Put, PutOption, PutResult,
 };
+use toy_api_server::models::GraphEntity;
 use toy_api_server::store::{error::StoreError, StoreConnection};
+use toy_api_server::task::models::PendingEntity;
+use toy_api_server::task::store::{Pending, TaskStore, TaskStoreOps, WatchPending};
 use toy_h::HttpClient;
 use tracing::{span, Instrument, Level};
 
@@ -35,6 +40,7 @@ impl<T> EtcdStore<T> {
 impl<T> StoreConnection for EtcdStoreConnection<T> where T: HttpClient {}
 
 impl<T> GraphStoreOps<EtcdStoreConnection<T>> for EtcdStoreOps<T> where T: HttpClient {}
+impl<T> TaskStoreOps<EtcdStoreConnection<T>> for EtcdStoreOps<T> where T: HttpClient {}
 
 impl<T> GraphStore<T> for EtcdStore<T>
 where
@@ -52,10 +58,48 @@ where
     }
 
     fn establish(&mut self, client: T) -> Result<(), StoreError> {
+        if self.con.is_some() {
+            return Ok(());
+        }
+
         let host = std::env::var("TOY_STORE_ETCD_HOST").unwrap_or_else(|_| "localhost".to_string());
         let port = std::env::var("TOY_STORE_ETCD_PORT").unwrap_or_else(|_| "2379".to_string());
         let url = format!("http://{}:{}", host, port);
-        tracing::info!("toy store=etcd. connecting:{}", &url);
+        tracing::info!("toy graph store=etcd. connecting:{}", &url);
+        match Client::new(client, url) {
+            Ok(c) => {
+                self.con = Some(EtcdStoreConnection { client: c });
+            }
+            Err(e) => return Err(StoreError::error(e)),
+        };
+        Ok(())
+    }
+}
+
+impl<T> TaskStore<T> for EtcdStore<T>
+where
+    T: HttpClient,
+{
+    type Con = EtcdStoreConnection<T>;
+    type Ops = EtcdStoreOps<T>;
+
+    fn con(&self) -> Option<Self::Con> {
+        self.con.clone()
+    }
+
+    fn ops(&self) -> Self::Ops {
+        EtcdStoreOps { _t: PhantomData }
+    }
+
+    fn establish(&mut self, client: T) -> Result<(), StoreError> {
+        if self.con.is_some() {
+            return Ok(());
+        }
+
+        let host = std::env::var("TOY_STORE_ETCD_HOST").unwrap_or_else(|_| "localhost".to_string());
+        let port = std::env::var("TOY_STORE_ETCD_PORT").unwrap_or_else(|_| "2379".to_string());
+        let url = format!("http://{}:{}", host, port);
+        tracing::info!("toy task store=etcd. connecting:{}", &url);
         match Client::new(client, url) {
             Ok(c) => {
                 self.con = Some(EtcdStoreConnection { client: c });
@@ -104,20 +148,9 @@ where
     fn list(&self, con: Self::Con, prefix: String, _opt: ListOption) -> Self::T {
         let span = span!(Level::DEBUG, "list", prefix = ?prefix);
         async move {
-            let res = con.client.list(&prefix).await?.values()?;
-
-            let r = res.into_iter().try_fold(Vec::new(), |mut vec, x| {
-                let r = toy_pack_json::unpack::<GraphEntity>(&x.into_data());
-                match r {
-                    Ok(entity) => {
-                        vec.push(entity);
-                        Ok(vec)
-                    }
-                    Err(e) => Err(e),
-                }
-            })?;
-
-            Ok(r)
+            con.client.list(&prefix).await?.unpack(|x| {
+                toy_pack_json::unpack::<GraphEntity>(&x.into_data()).map_err(|e| e.into())
+            })
         }
         .instrument(span)
     }
@@ -182,6 +215,59 @@ where
                 }
                 None => Ok(DeleteResult::NotFound),
             }
+        }
+        .instrument(span)
+    }
+}
+
+impl<T> Pending for EtcdStoreOps<T>
+where
+    T: HttpClient,
+{
+    type Con = EtcdStoreConnection<T>;
+    type T = impl Future<Output = Result<(), Self::Err>> + Send;
+    type Err = StoreEtcdError;
+
+    fn pending(&self, con: Self::Con, key: String, v: PendingEntity) -> Self::T {
+        let span = span!(Level::DEBUG, "put", key = ?key);
+        async move {
+            let s = toy_pack_json::pack_to_string(&v)?;
+            let create_res = con.client.create(&key, &s).await?;
+            if create_res.is_success() {
+                Ok(())
+            } else {
+                Err(StoreEtcdError::error(format!(
+                    "failed create pending entity by dupplicate key. key:{}.",
+                    key
+                )))
+            }
+        }
+        .instrument(span)
+    }
+}
+
+impl<T> WatchPending for EtcdStoreOps<T>
+where
+    T: HttpClient,
+{
+    type Con = EtcdStoreConnection<T>;
+    type Stream = impl toy_h::Stream<Item = Result<Vec<PendingEntity>, Self::Err>>;
+    type T = impl Future<Output = Result<Self::Stream, Self::Err>> + Send;
+    type Err = StoreEtcdError;
+
+    fn watch_pending(&self, con: Self::Con, prefix: String) -> Self::T {
+        let span = span!(Level::DEBUG, "watch", prefix = ?prefix);
+        let prefix = prefix.clone();
+        async move {
+            let stream = con.client.watch(prefix).await?;
+            Ok(
+                stream.map(|x: Result<WatchResponse, StoreEtcdError>| match x {
+                    Ok(res) => res.unpack(|x| {
+                        toy_pack_json::unpack::<PendingEntity>(&x.into_data()).map_err(|e| e.into())
+                    }),
+                    Err(e) => Err(e.into()),
+                }),
+            )
         }
         .instrument(span)
     }

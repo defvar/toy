@@ -1,7 +1,18 @@
+use crate::common::models::GraphEntity;
 use core::time::Duration;
 use toy::core::prelude::{TaskId, Value};
 use toy::supervisor::TaskResponse;
 use toy_pack::{Pack, Unpack};
+
+#[derive(Debug, Clone, Pack, Unpack)]
+pub struct PendingEntity {
+    graph: Option<GraphEntity>,
+}
+
+#[derive(Debug, Clone, Pack)]
+pub struct PendingResult {
+    task_id: TaskId,
+}
 
 #[derive(Debug, Pack)]
 pub struct RunningTasksEntity {
@@ -46,6 +57,18 @@ pub struct TasksInner {
     task_id: TaskId,
     started_at: Option<String>,
     ended_at: Option<String>,
+}
+
+impl PendingEntity {
+    pub fn new(graph: GraphEntity) -> Self {
+        Self { graph: Some(graph) }
+    }
+}
+
+impl PendingResult {
+    pub fn from_id(id: TaskId) -> Self {
+        Self { task_id: id }
+    }
 }
 
 impl RunningTasksEntity {

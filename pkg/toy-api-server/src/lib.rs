@@ -20,7 +20,8 @@ pub mod task;
 pub mod auth;
 
 pub use common::error::ApiError;
-pub use config::{DefaultConfig, ServerConfig};
+pub use common::models;
+pub use config::ServerConfig;
 pub use server::Server;
 
 pub mod api {

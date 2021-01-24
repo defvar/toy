@@ -2,10 +2,25 @@
 
 use crate::store::error::StoreError;
 use crate::store::StoreConnection;
-use crate::task::models::{TaskLogEntity, TasksEntity};
+use crate::task::models::{PendingEntity, TaskLogEntity, TasksEntity};
 use std::fmt;
 use std::future::Future;
 use toy::core::task::TaskId;
+
+/// This trait represents the concept of a Task Store.
+///
+///  - Create or get establish connection.
+///  - Get composit operation trait.
+pub trait TaskStore<T>: Clone + Send + Sync {
+    type Con: StoreConnection;
+    type Ops: TaskStoreOps<Self::Con>;
+
+    fn con(&self) -> Option<Self::Con>;
+
+    fn ops(&self) -> Self::Ops;
+
+    fn establish(&mut self, client: T) -> Result<(), StoreError>;
+}
 
 /// This trait represents the concept of a Log Store.
 ///
@@ -23,10 +38,38 @@ pub trait TaskLogStore<T>: Clone + Send + Sync {
 }
 
 /// Trait Composit log store operations.
+pub trait TaskStoreOps<C>: Send + Sync + Pending<Con = C> + WatchPending<Con = C>
+where
+    C: StoreConnection,
+{
+}
+
+/// Trait Composit log store operations.
 pub trait TaskLogStoreOps<C>: Send + Sync + Find<Con = C> + List<Con = C>
 where
     C: StoreConnection,
 {
+}
+
+/// Create Pending task entity.
+pub trait Pending {
+    type Con: StoreConnection;
+    type T: Future<Output = Result<(), Self::Err>> + Send;
+    type Err: fmt::Debug + Send;
+
+    /// Create Pending task entity.
+    fn pending(&self, con: Self::Con, key: String, v: PendingEntity) -> Self::T;
+}
+
+/// Watch Pending task entity.
+pub trait WatchPending {
+    type Con: StoreConnection;
+    type Stream: toy_h::Stream<Item = Result<Vec<PendingEntity>, Self::Err>>;
+    type T: Future<Output = Result<Self::Stream, Self::Err>> + Send;
+    type Err: fmt::Debug + Send;
+
+    /// Watch Pending task entity.
+    fn watch_pending(&self, con: Self::Con, prefix: String) -> Self::T;
 }
 
 /// Find task log.
