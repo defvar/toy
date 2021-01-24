@@ -5,6 +5,8 @@ members = [
     "toy-executor",
     "toy-rt",
     "toy-supervisor",
+    "toy-api",
+    "toy-api-client",
     "toy-api-server",
     "toy-api-store-etcd",
     "toy-api-store-glogging",

@@ -15,6 +15,7 @@ tracing = { version = "0.1", features = ["log", "std"] }
 toy-pack = {path = "../../shared/toy-pack", features = ["derive"]}
 toy-pack-json = {path = "../../shared/toy-pack-json"}
 toy-h = {path = "../../shared/toy-h"}
+toy-api = {path = "../toy-api"}
 toy-api-server = {path = "../toy-api-server"}
 
 [dev-dependencies]

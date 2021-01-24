@@ -1,10 +1,10 @@
 //! Trait for graph store operations.
 
-use crate::common::models::GraphEntity;
 use crate::store::error::StoreError;
 use crate::store::StoreConnection;
 use std::fmt::Debug;
 use std::future::Future;
+use toy_api::graph::GraphEntity;
 
 /// This trait represents the concept of a Graph Store.
 ///

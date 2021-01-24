@@ -1,6 +1,5 @@
 pub mod body;
 pub mod error;
-pub mod models;
 pub mod reply;
 
 pub mod constants {

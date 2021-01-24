@@ -1,10 +1,10 @@
 use crate::common::body;
-use crate::common::models::GraphEntity;
 use crate::task::handlers;
 use crate::task::store::{TaskLogStore, TaskStore};
 use toy::core::error::ServiceError;
 use toy::core::mpsc::Outgoing;
 use toy::supervisor::Request;
+use toy_api::graph::GraphEntity;
 use toy_h::HttpClient;
 use warp::Filter;
 

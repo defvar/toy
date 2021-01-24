@@ -1,13 +1,13 @@
 //! In Memory Store.(BTreeMap)
 //!
 
-use crate::common::models::GraphEntity;
 use crate::graph::store::*;
 use crate::store::error::StoreError;
 use crate::store::StoreConnection;
 use std::collections::BTreeMap;
 use std::future::Future;
 use std::sync::{Arc, Mutex};
+use toy_api::graph::GraphEntity;
 use toy_h::NoopHttpClient;
 
 #[derive(Clone, Debug)]

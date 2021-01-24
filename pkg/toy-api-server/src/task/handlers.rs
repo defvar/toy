@@ -1,6 +1,5 @@
 use crate::common;
-use crate::common::models::GraphEntity;
-use crate::task::models::{PendingEntity, PendingResult, RunningTasksEntity};
+use crate::task::models::RunningTasksEntity;
 use crate::task::store::{
     Find, FindOption, List, ListOption, Pending, TaskLogStore, TaskStore, WatchPending,
 };
@@ -11,6 +10,8 @@ use toy::core::mpsc::Outgoing;
 use toy::core::oneshot;
 use toy::core::task::TaskId;
 use toy::supervisor::{Request, TaskResponse};
+use toy_api::graph::GraphEntity;
+use toy_api::task::{PendingEntity, PendingResult};
 use toy_h::HttpClient;
 use toy_pack_json::EncodeError;
 use warp::http::StatusCode;

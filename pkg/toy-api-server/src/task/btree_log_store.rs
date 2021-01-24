@@ -1,12 +1,12 @@
 use crate::store::error::StoreError;
 use crate::store::StoreConnection;
-use crate::task::models::{TaskLogEntity, TasksEntity};
 use crate::task::store::*;
 use std::collections::BTreeMap;
 use std::future::Future;
 use std::marker::PhantomData;
 use std::sync::{Arc, Mutex};
 use toy::core::task::TaskId;
+use toy_api::task::{TaskLogEntity, TasksEntity};
 use toy_h::HttpClient;
 
 #[derive(Clone, Debug)]

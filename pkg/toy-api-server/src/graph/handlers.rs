@@ -3,9 +3,9 @@ use super::store::{
     PutResult,
 };
 use crate::common;
-use crate::common::models::GraphEntity;
 use crate::graph::store::GraphStore;
 use std::convert::Infallible;
+use toy_api::graph::GraphEntity;
 use toy_h::HttpClient;
 use warp::http::StatusCode;
 use warp::reply::Reply;

@@ -4,13 +4,13 @@ use crate::Client;
 use futures_util::StreamExt;
 use std::future::Future;
 use std::marker::PhantomData;
+use toy_api::graph::GraphEntity;
+use toy_api::task::PendingEntity;
 use toy_api_server::graph::store::{
     Delete, DeleteOption, DeleteResult, Find, FindOption, GraphStore, GraphStoreOps, List,
     ListOption, Put, PutOption, PutResult,
 };
-use toy_api_server::models::GraphEntity;
 use toy_api_server::store::{error::StoreError, StoreConnection};
-use toy_api_server::task::models::PendingEntity;
 use toy_api_server::task::store::{Pending, TaskStore, TaskStoreOps, WatchPending};
 use toy_h::HttpClient;
 use tracing::{span, Instrument, Level};

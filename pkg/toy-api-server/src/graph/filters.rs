@@ -1,7 +1,7 @@
 use crate::common::body;
-use crate::common::models::GraphEntity;
 use crate::graph::handlers;
 use crate::graph::store::GraphStore;
+use toy_api::graph::GraphEntity;
 use toy_h::HttpClient;
 use warp::Filter;
 
@@ -67,18 +67,6 @@ where
         .and(with_store(store))
         .and_then(|a, b| handlers::delete(a, b))
 }
-
-// pub fn graphs_run<T>(
-//     store: impl GraphStore<T>,
-// ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone
-// where
-//     T: HttpClient,
-// {
-//     warp::path!("graphs" / String / "run")
-//         .and(warp::post())
-//         .and(with_store(store))
-//         .and_then(|a, b| handlers::run(a, b))
-// }
 
 fn with_store<T>(
     store: impl GraphStore<T>,

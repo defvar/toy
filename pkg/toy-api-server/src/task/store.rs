@@ -2,10 +2,10 @@
 
 use crate::store::error::StoreError;
 use crate::store::StoreConnection;
-use crate::task::models::{PendingEntity, TaskLogEntity, TasksEntity};
 use std::fmt;
 use std::future::Future;
 use toy::core::task::TaskId;
+use toy_api::task::{PendingEntity, TaskLogEntity, TasksEntity};
 
 /// This trait represents the concept of a Task Store.
 ///

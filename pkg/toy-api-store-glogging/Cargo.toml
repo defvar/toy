@@ -12,6 +12,8 @@ tracing = { version = "0.1" }
 
 toy-pack = {path = "../../shared/toy-pack", features = ["derive"]}
 toy-pack-json = {path = "../../shared/toy-pack-json"}
+
+toy-api = {path = "../toy-api"}
 toy-api-server = {path = "../toy-api-server"}
 
 toy-glogging = {path = "../../shared/toy-glogging"}
