@@ -1,7 +1,10 @@
 use crate::common;
 use crate::common::models::GraphEntity;
 use crate::task::models::{PendingEntity, PendingResult, RunningTasksEntity};
-use crate::task::store::{Find, FindOption, List, ListOption, Pending, TaskLogStore, TaskStore};
+use crate::task::store::{
+    Find, FindOption, List, ListOption, Pending, TaskLogStore, TaskStore, WatchPending,
+};
+use futures_util::StreamExt;
 use std::convert::Infallible;
 use toy::core::error::ServiceError;
 use toy::core::mpsc::Outgoing;
@@ -9,6 +12,7 @@ use toy::core::oneshot;
 use toy::core::task::TaskId;
 use toy::supervisor::{Request, TaskResponse};
 use toy_h::HttpClient;
+use toy_pack_json::EncodeError;
 use warp::http::StatusCode;
 use warp::reply::Reply;
 
@@ -32,6 +36,29 @@ where
         .await
     {
         Ok(()) => Ok(common::reply::json(&(PendingResult::from_id(id))).into_response()),
+        Err(_) => Ok(StatusCode::INTERNAL_SERVER_ERROR.into_response()),
+    }
+}
+
+pub async fn watch<T>(store: impl TaskStore<T>) -> Result<impl warp::Reply, warp::Rejection>
+where
+    T: HttpClient,
+{
+    match store
+        .ops()
+        .watch_pending(
+            store.con().unwrap(),
+            common::constants::PENDINGS_KEY_PREFIX.to_string(),
+        )
+        .await
+    {
+        Ok(stream) => {
+            let stream = stream.map(|x| match x {
+                Ok(v) => toy_pack_json::pack_to_string(&v),
+                Err(_) => Err(EncodeError::error("failed get stream data")),
+            });
+            Ok(common::reply::json_stream(stream).into_response())
+        }
         Err(_) => Ok(StatusCode::INTERNAL_SERVER_ERROR.into_response()),
     }
 }

@@ -21,6 +21,7 @@ where
         .or(tasks_create(task_store.clone()))
         .or(tasks_list(log_store.clone()))
         .or(tasks_log(log_store))
+        .or(tasks_watch(task_store.clone()))
 }
 
 pub fn tasks_create<T>(
@@ -34,6 +35,18 @@ where
         .and(body::json::<GraphEntity>())
         .and(with_task_store(task_store))
         .and_then(|a, b| handlers::post(a, b))
+}
+
+pub fn tasks_watch<T>(
+    task_store: impl TaskStore<T>,
+) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone
+where
+    T: HttpClient,
+{
+    warp::path!("tasks" / "watch")
+        .and(warp::get())
+        .and(with_task_store(task_store))
+        .and_then(handlers::watch)
 }
 
 pub fn tasks_running(

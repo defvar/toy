@@ -64,8 +64,8 @@ pub trait Pending {
 /// Watch Pending task entity.
 pub trait WatchPending {
     type Con: StoreConnection;
-    type Stream: toy_h::Stream<Item = Result<Vec<PendingEntity>, Self::Err>>;
-    type T: Future<Output = Result<Self::Stream, Self::Err>> + Send;
+    type Stream: toy_h::Stream<Item = Result<Vec<PendingEntity>, Self::Err>> + Send + 'static;
+    type T: Future<Output = Result<Self::Stream, Self::Err>> + Send + 'static;
     type Err: fmt::Debug + Send;
 
     /// Watch Pending task entity.

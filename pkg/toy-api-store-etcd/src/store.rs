@@ -2,7 +2,6 @@ use crate::error::StoreEtcdError;
 use crate::watch::WatchResponse;
 use crate::Client;
 use futures_util::StreamExt;
-use once_cell::sync::Lazy;
 use std::future::Future;
 use std::marker::PhantomData;
 use toy_api_server::graph::store::{
@@ -40,7 +39,7 @@ impl<T> EtcdStore<T> {
 impl<T> StoreConnection for EtcdStoreConnection<T> where T: HttpClient {}
 
 impl<T> GraphStoreOps<EtcdStoreConnection<T>> for EtcdStoreOps<T> where T: HttpClient {}
-impl<T> TaskStoreOps<EtcdStoreConnection<T>> for EtcdStoreOps<T> where T: HttpClient {}
+impl<T> TaskStoreOps<EtcdStoreConnection<T>> for EtcdStoreOps<T> where T: HttpClient + 'static {}
 
 impl<T> GraphStore<T> for EtcdStore<T>
 where
@@ -78,7 +77,7 @@ where
 
 impl<T> TaskStore<T> for EtcdStore<T>
 where
-    T: HttpClient,
+    T: HttpClient + 'static,
 {
     type Con = EtcdStoreConnection<T>;
     type Ops = EtcdStoreOps<T>;
@@ -248,11 +247,11 @@ where
 
 impl<T> WatchPending for EtcdStoreOps<T>
 where
-    T: HttpClient,
+    T: HttpClient + 'static,
 {
     type Con = EtcdStoreConnection<T>;
-    type Stream = impl toy_h::Stream<Item = Result<Vec<PendingEntity>, Self::Err>>;
-    type T = impl Future<Output = Result<Self::Stream, Self::Err>> + Send;
+    type Stream = impl toy_h::Stream<Item = Result<Vec<PendingEntity>, Self::Err>> + Send + 'static;
+    type T = impl Future<Output = Result<Self::Stream, Self::Err>> + Send + 'static;
     type Err = StoreEtcdError;
 
     fn watch_pending(&self, con: Self::Con, prefix: String) -> Self::T {
