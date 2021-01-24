@@ -11,7 +11,7 @@ pub mod error;
 
 pub use client::{HttpClient, NoopHttpClient};
 pub use request::{NoopRequestBuilder, RequestBuilder};
-pub use response::{NoopResponse, Response};
+pub use response::{ByteStream, NoopResponse, Response};
 
 #[cfg(feature = "impl_reqwest")]
 pub mod impl_reqwest;
@@ -20,6 +20,8 @@ pub mod impl_reqwest;
 pub use bytes;
 #[doc(hidden)]
 pub use bytes::Bytes;
+#[doc(hidden)]
+pub use futures_core::Stream;
 #[doc(hidden)]
 pub use http;
 #[doc(hidden)]

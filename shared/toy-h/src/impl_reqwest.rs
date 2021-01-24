@@ -1,7 +1,7 @@
 //! Implementation for reqwest.
 
 use crate::error::HError;
-use crate::response::Response;
+use crate::response::{ByteStream, Response};
 use crate::{HttpClient, RequestBuilder};
 use async_trait::async_trait;
 use bytes::Bytes;
@@ -128,6 +128,14 @@ impl Response for ReqwestResponse {
 
     async fn bytes(self) -> Result<Bytes, HError> {
         self.raw.bytes().await.map_err(|x| HError::error(x))
+    }
+
+    async fn chunk(&mut self) -> Result<Option<Bytes>, HError> {
+        self.raw.chunk().await.map_err(|x| HError::error(x))
+    }
+
+    fn stream(self) -> ByteStream {
+        ByteStream::from(self.raw.bytes_stream())
     }
 
     fn version(&self) -> Version {
