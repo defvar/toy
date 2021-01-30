@@ -11,7 +11,7 @@ use toy::core::oneshot;
 use toy::core::task::TaskId;
 use toy::supervisor::{Request, TaskResponse};
 use toy_api::graph::GraphEntity;
-use toy_api::task::{PendingEntity, PendingResult};
+use toy_api::task::{PendingEntity, PendingResult, PendingsEntity};
 use toy_h::HttpClient;
 use toy_pack_json::EncodeError;
 use warp::http::StatusCode;
@@ -55,7 +55,10 @@ where
     {
         Ok(stream) => {
             let stream = stream.map(|x| match x {
-                Ok(v) => toy_pack_json::pack_to_string(&v),
+                Ok(v) => {
+                    let pendings = PendingsEntity::new(v);
+                    toy_pack_json::pack_to_string(&pendings)
+                }
                 Err(_) => Err(EncodeError::error("failed get stream data")),
             });
             Ok(common::reply::json_stream(stream).into_response())

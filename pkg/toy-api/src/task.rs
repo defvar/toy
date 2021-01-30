@@ -7,6 +7,12 @@ pub struct PendingEntity {
     graph: Option<GraphEntity>,
 }
 
+#[derive(Debug, Clone, Pack, Unpack)]
+pub struct PendingsEntity {
+    pendings: Vec<PendingEntity>,
+    count: u32,
+}
+
 #[derive(Debug, Clone, Pack)]
 pub struct PendingResult {
     task_id: TaskId,
@@ -47,6 +53,13 @@ pub struct TasksInner {
 impl PendingEntity {
     pub fn new(graph: GraphEntity) -> Self {
         Self { graph: Some(graph) }
+    }
+}
+
+impl PendingsEntity {
+    pub fn new(pendings: Vec<PendingEntity>) -> Self {
+        let count = pendings.len() as u32;
+        Self { pendings, count }
     }
 }
 
@@ -99,5 +112,41 @@ impl TasksInner {
             ended_at: Some(ended_at.as_ref().to_owned()),
             ..self
         }
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct WatchOption {}
+
+impl WatchOption {
+    pub fn new() -> Self {
+        Self {}
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct ListOption {}
+
+impl ListOption {
+    pub fn new() -> Self {
+        Self {}
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct PostOption {}
+
+impl PostOption {
+    pub fn new() -> Self {
+        Self {}
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct LogOption {}
+
+impl LogOption {
+    pub fn new() -> Self {
+        Self {}
     }
 }

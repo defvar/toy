@@ -1,10 +1,33 @@
 use futures_util::stream::Stream;
-use toy_h::reqwest::header::{CACHE_CONTROL, TRANSFER_ENCODING};
+use toy_api::common::Format;
 use toy_pack::ser::Serializable;
 use toy_pack_json::EncodeError;
-use warp::http::header::{HeaderValue, CONTENT_TYPE};
+use warp::http::header::{HeaderValue, CACHE_CONTROL, CONTENT_TYPE, TRANSFER_ENCODING};
 use warp::http::StatusCode;
+use warp::reply::Reply;
 use warp::reply::Response;
+
+pub fn into_response<T>(v: &T, format: Option<Format>) -> Response
+where
+    T: Serializable,
+{
+    let format = format.unwrap_or(Format::default());
+    match format {
+        Format::Json => json(v).into_response(),
+        Format::Yaml => yaml(v).into_response(),
+        Format::MessagePack => mp(v).into_response(),
+    }
+}
+
+pub fn mp<T>(v: &T) -> Mp
+where
+    T: Serializable,
+{
+    Mp {
+        inner: toy_pack_mp::pack(v)
+            .map_err(|e| tracing::error!("reply::message pack error: {}", e)),
+    }
+}
 
 pub fn yaml<T>(v: &T) -> Yaml
 where
@@ -31,6 +54,26 @@ where
     St: Stream<Item = Result<String, EncodeError>> + Send + 'static,
 {
     JsonStream { inner: stream }
+}
+
+pub struct Mp {
+    inner: Result<Vec<u8>, ()>,
+}
+
+impl warp::Reply for Mp {
+    fn into_response(self) -> Response {
+        match self.inner {
+            Ok(body) => {
+                let mut res = Response::new(body.into());
+                res.headers_mut().insert(
+                    CONTENT_TYPE,
+                    HeaderValue::from_static("application/x-msgpack"),
+                );
+                res
+            }
+            Err(()) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
+        }
+    }
 }
 
 pub struct Yaml {

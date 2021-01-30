@@ -16,7 +16,6 @@ where
         .or(graphs_find(store.clone()))
         .or(graphs_put(store.clone()))
         .or(graphs_delete(store.clone()))
-    // .or(graphs_run(store.clone()))
 }
 
 pub fn graphs_list<T>(

@@ -21,6 +21,12 @@ pub enum ApiError {
     #[error("authentication failed. {:?}", inner)]
     AuthenticationFailed { inner: String },
 
+    #[error("error: {:?}", source)]
+    QueryParse {
+        #[from]
+        source: QueryParseError,
+    },
+
     #[error("error: {:?}", inner)]
     Error { inner: String },
 }
@@ -70,3 +76,37 @@ impl From<ConfigError> for ApiError {
 }
 
 impl warp::reject::Reject for ApiError {}
+
+#[derive(Debug, Error)]
+pub struct QueryParseError {
+    err: Box<str>,
+}
+
+impl QueryParseError {
+    pub fn map_type_only() -> Self {
+        QueryParseError {
+            err: "deserialize, struct or map type only."
+                .to_string()
+                .into_boxed_str(),
+        }
+    }
+}
+
+impl std::fmt::Display for QueryParseError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self.err)
+    }
+}
+
+impl toy_pack::deser::Error for QueryParseError {
+    fn custom<T>(msg: T) -> Self
+    where
+        T: std::fmt::Display,
+    {
+        QueryParseError {
+            err: msg.to_string().into_boxed_str(),
+        }
+    }
+}
+
+impl warp::reject::Reject for QueryParseError {}

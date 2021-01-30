@@ -46,19 +46,25 @@ where
         F: Filter + Clone + Send + Sync + 'static,
         F::Extract: Reply,
     {
-        let (addr, server) = warp::serve(routes).bind_with_graceful_shutdown(addr, async move {
-            while let Some(r) = rx.next().await {
-                match r {
-                    Ok(r) => match r {
-                        SystemMessage::Shutdown => {
-                            tracing::info!("shutdown api server because stoped supervisor.");
-                            break;
+        let (addr, server) = warp::serve(routes)
+            .tls()
+            .cert_path(self.config.cert_path())
+            .key_path(self.config.key_path())
+            .bind_with_graceful_shutdown(addr, async move {
+                while let Some(r) = rx.next().await {
+                    match r {
+                        Ok(r) => match r {
+                            SystemMessage::Shutdown => {
+                                tracing::info!("shutdown api server because stoped supervisor.");
+                                break;
+                            }
+                        },
+                        Err(e) => {
+                            tracing::error!("error receive system message. error:{:?}", e)
                         }
-                    },
-                    Err(e) => tracing::error!("error receive system message. error:{:?}", e),
+                    }
                 }
-            }
-        });
+            });
         tracing::info!("listening on http://{}", addr);
         server.await
     }

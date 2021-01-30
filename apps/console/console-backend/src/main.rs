@@ -33,6 +33,14 @@ impl ServerConfig<ReqwestClient> for ToyConfig {
     fn graph_store(&self) -> Self::GraphStore {
         EtcdStore::new()
     }
+
+    fn cert_path(&self) -> String {
+        std::env::var("TOY_API_CERT_PATH").expect("config not found.")
+    }
+
+    fn key_path(&self) -> String {
+        std::env::var("TOY_API_KEY_PATH").expect("config not found.")
+    }
 }
 
 fn main() {

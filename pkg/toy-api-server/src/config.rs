@@ -18,4 +18,8 @@ pub trait ServerConfig<Http> {
     fn task_log_store(&self) -> Self::TaskLogStore;
 
     fn graph_store(&self) -> Self::GraphStore;
+
+    fn cert_path(&self) -> String;
+
+    fn key_path(&self) -> String;
 }

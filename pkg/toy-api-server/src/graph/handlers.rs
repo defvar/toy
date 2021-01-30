@@ -106,37 +106,3 @@ where
         }
     }
 }
-
-// pub async fn run<T>(
-//     key: String,
-//     store: impl GraphStore<T>,
-// ) -> Result<impl warp::Reply, warp::Rejection>
-// where
-//     T: HttpClient,
-// {
-//     let key = common::constants::graph_key(key);
-//     match store
-//         .ops()
-//         .find(store.con().unwrap(), key, FindOption::new())
-//         .await
-//     {
-//         Ok(Some(v)) => {
-//             let pending = PendingEntity::new(v);
-//             let id = TaskId::new();
-//             let key = common::constants::pending_key(id);
-//             match store
-//                 .ops()
-//                 .pending(store.con().unwrap(), key, pending)
-//                 .await
-//             {
-//                 Ok(()) => Ok(common::reply::json(&(PendingResult::from_id(id))).into_response()),
-//                 Err(_) => Ok(StatusCode::INTERNAL_SERVER_ERROR.into_response()),
-//             }
-//         }
-//         Ok(None) => Ok(StatusCode::NOT_FOUND.into_response()),
-//         Err(e) => {
-//             tracing::error!("error:{:?}", e);
-//             Ok(StatusCode::INTERNAL_SERVER_ERROR.into_response())
-//         }
-//     }
-// }

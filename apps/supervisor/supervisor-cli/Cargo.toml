@@ -1,0 +1,20 @@
+[package]
+name = "supervisor-cli"
+version = "0.1.0"
+authors = ["defvar <def.daisuke@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+tracing = "0.1"
+tracing-subscriber = "0.2"
+dotenv = "0.15.0"
+clap = "3.0.0-beta.2"
+
+toy = { path = "../../../pkg/toy" }
+toy-rt = { path = "../../../pkg/toy-rt"}
+toy-supervisor = { path = "../../../pkg/toy-supervisor"}
+
+# plugins
+toy-plugin-commons = { path = "../../../plugins/toy-plugin-commons/toy-plugin-commons"}
