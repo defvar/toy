@@ -5,6 +5,21 @@ use super::{Deserializable, DeserializableCore, Deserializer, Error, Visitor};
 use crate::deser::discard::Discard;
 use crate::deser::{DeserializeMapOps, DeserializeSeqOps};
 use core::time::Duration;
+use std::borrow::Cow;
+
+impl<'toy, 'a, T: ?Sized> Deserializable<'toy> for Cow<'a, T>
+where
+    T: ToOwned,
+    T::Owned: Deserializable<'toy>,
+{
+    #[inline]
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'toy>,
+    {
+        T::Owned::deserialize(deserializer).map(Cow::Owned)
+    }
+}
 
 ///////////////////////////////////////////////////
 
