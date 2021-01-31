@@ -1,3 +1,5 @@
+//! common module for api.
+
 pub mod body;
 pub mod error;
 pub mod query;

@@ -2,6 +2,7 @@ use std::fmt::Display;
 use thiserror::Error;
 use toy::core::error::ConfigError;
 use toy_pack_json::{DecodeError, EncodeError};
+use toy_pack_urlencoded::QueryParseError;
 use toy_pack_yaml::error::YamlError;
 
 #[derive(Debug, Error)]
@@ -49,6 +50,14 @@ impl ApiError {
             inner: msg.to_string(),
         }
     }
+
+    pub fn query_parse(e: QueryParseError) -> ApiError {
+        ApiError::QueryParse { source: e }
+    }
+
+    pub fn into_rejection(self) -> warp::Rejection {
+        warp::reject::custom(self)
+    }
 }
 
 impl From<YamlError> for ApiError {
@@ -76,37 +85,3 @@ impl From<ConfigError> for ApiError {
 }
 
 impl warp::reject::Reject for ApiError {}
-
-#[derive(Debug, Error)]
-pub struct QueryParseError {
-    err: Box<str>,
-}
-
-impl QueryParseError {
-    pub fn map_type_only() -> Self {
-        QueryParseError {
-            err: "deserialize, struct or map type only."
-                .to_string()
-                .into_boxed_str(),
-        }
-    }
-}
-
-impl std::fmt::Display for QueryParseError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}", self.err)
-    }
-}
-
-impl toy_pack::deser::Error for QueryParseError {
-    fn custom<T>(msg: T) -> Self
-    where
-        T: std::fmt::Display,
-    {
-        QueryParseError {
-            err: msg.to_string().into_boxed_str(),
-        }
-    }
-}
-
-impl warp::reject::Reject for QueryParseError {}

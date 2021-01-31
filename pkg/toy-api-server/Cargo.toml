@@ -8,7 +8,6 @@ edition = "2018"
 log = "0.4"
 thiserror = "1.0"
 tracing = "0.1"
-form_urlencoded = "1.0.0"
 futures-util = { version = "0.3", default-features = false }
 warp = { version = "0.3", features = ["tls"] }
 
@@ -18,4 +17,5 @@ toy-pack = {path = "../../shared/toy-pack", features = ["derive"]}
 toy-pack-yaml = {path = "../../shared/toy-pack-yaml"}
 toy-pack-json = {path = "../../shared/toy-pack-json"}
 toy-pack-mp = {path = "../../shared/toy-pack-mp"}
+toy-pack-urlencoded = {path = "../../shared/toy-pack-urlencoded"}
 toy-h = {path = "../../shared/toy-h"}
