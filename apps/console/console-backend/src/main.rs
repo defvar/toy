@@ -17,6 +17,7 @@ impl ServerConfig<ReqwestClient> for ToyConfig {
     type TaskLogStore = BTreeLogStore<ReqwestClient>;
     type TaskStore = EtcdStore<ReqwestClient>;
     type GraphStore = EtcdStore<ReqwestClient>;
+    type SupervisorStore = EtcdStore<ReqwestClient>;
 
     fn auth(&self) -> Self::Auth {
         NoAuth::new()
@@ -31,6 +32,10 @@ impl ServerConfig<ReqwestClient> for ToyConfig {
     }
 
     fn graph_store(&self) -> Self::GraphStore {
+        EtcdStore::new()
+    }
+
+    fn supervisor_store(&self) -> Self::SupervisorStore {
         EtcdStore::new()
     }
 

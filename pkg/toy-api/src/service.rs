@@ -15,6 +15,12 @@ impl ServicesEntity {
     }
 }
 
+impl Default for ServicesEntity {
+    fn default() -> Self {
+        ServicesEntity::new(Vec::new())
+    }
+}
+
 #[derive(Clone, Debug, Pack, Unpack)]
 pub struct ListOption {
     format: Option<Format>,

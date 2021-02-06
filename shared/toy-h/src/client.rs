@@ -4,9 +4,10 @@
 use crate::request::NoopRequestBuilder;
 use crate::RequestBuilder;
 use http::{Method, Uri};
+use std::fmt::Debug;
 
 /// A Client to make outgoing HTTP requests.
-pub trait HttpClient: Clone + Send + Sync {
+pub trait HttpClient: Clone + Send + Sync + Debug {
     type Builder: RequestBuilder + Send;
 
     /// Start building a `GET` request to `Uri`.

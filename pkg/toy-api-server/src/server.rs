@@ -1,7 +1,8 @@
-use crate::api::{graphs, services, tasks};
+use crate::api::{graphs, services, supervisors, tasks};
 use crate::auth::auth_filter;
 use crate::config::ServerConfig;
 use crate::graph::store::GraphStore;
+use crate::supervisors::store::SupervisorStore;
 use crate::task::store::{TaskLogStore, TaskStore};
 use std::net::SocketAddr;
 use toy::core::error::ServiceError;
@@ -86,6 +87,7 @@ where
         let mut graph_store = self.config.graph_store();
         let mut log_store = self.config.task_log_store();
         let mut task_store = self.config.task_store();
+        let mut supervisor_store = self.config.supervisor_store();
         if let Err(e) = graph_store.establish(client.clone()) {
             tracing::error!("graph store connection failed. error:{:?}", e);
             return;
@@ -95,15 +97,20 @@ where
             return;
         };
         if let Err(e) = task_store.establish(client.clone()) {
-            tracing::error!("log store connection failed. error:{:?}", e);
+            tracing::error!("task store connection failed. error:{:?}", e);
+            return;
+        };
+        if let Err(e) = supervisor_store.establish(client.clone()) {
+            tracing::error!("supervisor store connection failed. error:{:?}", e);
             return;
         };
         let routes = auth_filter(self.config.auth(), client)
-            .and(graphs(graph_store).or(services(tx.clone())).or(tasks(
-                log_store,
-                task_store,
-                tx.clone(),
-            )))
+            .and(
+                graphs(graph_store)
+                    .or(services(tx.clone()))
+                    .or(tasks(log_store, task_store, tx.clone()))
+                    .or(supervisors(supervisor_store)),
+            )
             .map(|_, r| r)
             .with(
                 warp::cors()

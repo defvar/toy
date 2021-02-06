@@ -1,31 +1,37 @@
 use crate::common;
-use crate::graph::store::GraphStore;
 use crate::store::kv::{
     Delete, DeleteOption, DeleteResult, Find, FindOption, List, ListOption, Put, PutOption,
     PutResult,
 };
+use crate::supervisors::store::SupervisorStore;
 use std::convert::Infallible;
-use toy_api::graph::{GraphEntity, GraphsEntity};
+use toy_api::supervisors::{
+    FindOption as ApiFindOption, ListOption as ApiListOption, Supervisor, Supervisors,
+};
 use toy_h::HttpClient;
 use warp::http::StatusCode;
 use warp::reply::Reply;
 
-pub async fn list<T>(store: impl GraphStore<T>) -> Result<impl warp::Reply, warp::Rejection>
+pub async fn list<T>(
+    store: impl SupervisorStore<T>,
+    opt: Option<ApiListOption>,
+) -> Result<impl warp::Reply, warp::Rejection>
 where
     T: HttpClient,
 {
     match store
         .ops()
-        .list::<GraphEntity>(
+        .list::<Supervisor>(
             store.con().unwrap(),
-            common::constants::GRAPHS_KEY_PREFIX.to_string(),
+            common::constants::SUPERVISORS_KEY_PREFIX.to_string(),
             ListOption::new(),
         )
         .await
     {
         Ok(v) => {
-            let graphs = GraphsEntity::new(v);
-            Ok(common::reply::json(&graphs).into_response())
+            let format = opt.map(|x| x.format()).unwrap_or(None);
+            let supervisors = Supervisors::new(v);
+            Ok(common::reply::into_response(&supervisors, format))
         }
         Err(e) => {
             tracing::error!("error:{:?}", e);
@@ -36,19 +42,23 @@ where
 
 pub async fn find<T>(
     key: String,
-    store: impl GraphStore<T>,
+    store: impl SupervisorStore<T>,
+    opt: Option<ApiFindOption>,
 ) -> Result<impl warp::Reply, warp::Rejection>
 where
     T: HttpClient,
 {
-    let key = common::constants::graph_key(key);
+    let key = common::constants::supervisor_key(key);
     match store
         .ops()
-        .find::<GraphEntity>(store.con().unwrap(), key, FindOption::new())
+        .find::<Supervisor>(store.con().unwrap(), key, FindOption::new())
         .await
     {
         Ok(v) => match v {
-            Some(v) => Ok(common::reply::json(&v).into_response()),
+            Some(v) => {
+                let format = opt.map(|x| x.format()).unwrap_or(None);
+                Ok(common::reply::into_response(&v, format))
+            }
             None => Ok(StatusCode::NOT_FOUND.into_response()),
         },
         Err(e) => {
@@ -60,19 +70,19 @@ where
 
 pub async fn put<T>(
     key: String,
-    v: GraphEntity,
-    store: impl GraphStore<T>,
+    v: Supervisor,
+    store: impl SupervisorStore<T>,
 ) -> Result<impl warp::Reply, warp::Rejection>
 where
     T: HttpClient,
 {
-    let key = common::constants::graph_key(key);
+    let key = common::constants::supervisor_key(key);
     //
     // validation...?
     //
     match store
         .ops()
-        .put::<GraphEntity>(store.con().unwrap(), key, v, PutOption::new())
+        .put(store.con().unwrap(), key, v, PutOption::new())
         .await
     {
         Ok(r) => match r {
@@ -88,12 +98,12 @@ where
 
 pub async fn delete<T>(
     key: String,
-    store: impl GraphStore<T>,
+    store: impl SupervisorStore<T>,
 ) -> Result<impl warp::Reply, Infallible>
 where
     T: HttpClient,
 {
-    let key = common::constants::graph_key(key);
+    let key = common::constants::supervisor_key(key);
     match store
         .ops()
         .delete(store.con().unwrap(), key, DeleteOption::new())

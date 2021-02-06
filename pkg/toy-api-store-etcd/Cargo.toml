@@ -10,7 +10,8 @@ edition = "2018"
 base64 = "0.12"
 futures-util = { version = "0.3", default-features = false }
 thiserror = "1.0"
-tracing = { version = "0.1", features = ["log", "std"] }
+tracing = { version = "0.1", features = ["attributes"] }
+tracing-futures = "0.2.4"
 
 toy-pack = {path = "../../shared/toy-pack", features = ["derive"]}
 toy-pack-json = {path = "../../shared/toy-pack-json"}

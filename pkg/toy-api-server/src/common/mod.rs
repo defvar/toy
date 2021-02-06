@@ -8,7 +8,7 @@ pub mod reply;
 pub mod constants {
     use toy::core::task::TaskId;
 
-    pub static GRAPHS_KEY_PREFIX: &'static str = "/graphs";
+    pub static GRAPHS_KEY_PREFIX: &'static str = "/toy/graphs";
     pub static SUPERVISORS_KEY_PREFIX: &'static str = "/toy/supervisors";
     pub static PENDINGS_KEY_PREFIX: &'static str = "/toy/pendings";
 

@@ -8,6 +8,7 @@ use bytes::Bytes;
 use http::header::HeaderName;
 use http::{HeaderMap, HeaderValue, Method, StatusCode, Uri, Version};
 use std::convert::TryFrom;
+use std::fmt::{Debug, Formatter};
 
 #[derive(Clone)]
 pub struct ReqwestClient {
@@ -78,6 +79,12 @@ impl HttpClient for ReqwestClient {
         ReqwestBuilder {
             raw: self.client.request(method, &uri.into().to_string()),
         }
+    }
+}
+
+impl Debug for ReqwestClient {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "ReqwestClient")
     }
 }
 
