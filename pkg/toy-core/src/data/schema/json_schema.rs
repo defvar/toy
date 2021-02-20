@@ -1,9 +1,10 @@
 use crate::data::Map;
+use toy_pack::deser::{Deserializable, Deserializer, Error, Visitor};
 use toy_pack::ser::{Serializable, Serializer};
-use toy_pack::Pack;
+use toy_pack::{Pack, Unpack};
 
 /// JsonSchema Object Type.
-#[derive(Clone, Copy, Debug, PartialEq, Pack)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Pack, Unpack)]
 pub enum SchemaTypes {
     #[toy(rename = "array")]
     Array,
@@ -22,7 +23,7 @@ pub enum SchemaTypes {
 }
 
 /// JsonSchema Structure.
-#[derive(Clone, Debug, Pack)]
+#[derive(Clone, Debug, Pack, Unpack)]
 #[toy(ignore_pack_if_none)]
 pub struct JsonSchema {
     #[toy(rename = "$id")]
@@ -110,7 +111,7 @@ impl JsonSchema {
 }
 
 /// A range which can be used to 'minimum' or 'maximum'.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum RangeValue {
     U64(u64),
     I64(i64),
@@ -127,5 +128,89 @@ impl Serializable for RangeValue {
             RangeValue::I64(v) => serializer.serialize_i64(*v),
             RangeValue::F64(v) => serializer.serialize_f64(*v),
         }
+    }
+}
+
+struct RangeValueVisitor;
+
+impl<'a> Visitor<'a> for RangeValueVisitor {
+    type Value = RangeValue;
+    fn visit_u8<E>(self, v: u8) -> Result<Self::Value, E>
+    where
+        E: Error,
+    {
+        Ok(RangeValue::U64(v as u64))
+    }
+
+    fn visit_u16<E>(self, v: u16) -> Result<Self::Value, E>
+    where
+        E: Error,
+    {
+        Ok(RangeValue::U64(v as u64))
+    }
+
+    fn visit_u32<E>(self, v: u32) -> Result<Self::Value, E>
+    where
+        E: Error,
+    {
+        Ok(RangeValue::U64(v as u64))
+    }
+
+    fn visit_u64<E>(self, v: u64) -> Result<Self::Value, E>
+    where
+        E: Error,
+    {
+        Ok(RangeValue::U64(v as u64))
+    }
+
+    fn visit_i8<E>(self, v: i8) -> Result<Self::Value, E>
+    where
+        E: Error,
+    {
+        Ok(RangeValue::I64(v as i64))
+    }
+
+    fn visit_i16<E>(self, v: i16) -> Result<Self::Value, E>
+    where
+        E: Error,
+    {
+        Ok(RangeValue::I64(v as i64))
+    }
+
+    fn visit_i32<E>(self, v: i32) -> Result<Self::Value, E>
+    where
+        E: Error,
+    {
+        Ok(RangeValue::I64(v as i64))
+    }
+
+    fn visit_i64<E>(self, v: i64) -> Result<Self::Value, E>
+    where
+        E: Error,
+    {
+        Ok(RangeValue::I64(v as i64))
+    }
+
+    fn visit_f32<E>(self, v: f32) -> Result<Self::Value, E>
+    where
+        E: Error,
+    {
+        Ok(RangeValue::F64(v as f64))
+    }
+
+    fn visit_f64<E>(self, v: f64) -> Result<Self::Value, E>
+    where
+        E: Error,
+    {
+        Ok(RangeValue::F64(v as f64))
+    }
+}
+
+impl<'toy> Deserializable<'toy> for RangeValue {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'toy>,
+    {
+        deserializer.deserialize_any(RangeValueVisitor)
     }
 }

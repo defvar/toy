@@ -1,10 +1,11 @@
 use std::collections::HashMap;
 use toy_core::data::schema::visitors::*;
+use toy_core::data::schema::JsonSchema;
 use toy_pack::{schema::to_schema, Schema};
 use toy_pack_derive::*;
 
 #[test]
-fn schema_test() {
+fn schema_struct() {
     #[derive(Debug, Pack, Schema)]
     struct Dum {
         v_u8: u8,
@@ -25,7 +26,14 @@ fn schema_test() {
         _C,
     }
 
-    let r = to_schema::<Dum, JsonSchemaVisitor>("aiueo!", JsonSchemaVisitor).unwrap();
-    let json = toy_pack_json::pack_to_string(&r).unwrap();
+    let schema_from_struct =
+        to_schema::<Dum, JsonSchemaVisitor>("aiueo!", JsonSchemaVisitor).unwrap();
+    let json: String = toy_pack_json::pack_to_string(&schema_from_struct).unwrap();
     println!("{:?}", json);
+
+    let schema_from_json = toy_pack_json::unpack::<JsonSchema>(json.as_bytes()).unwrap();
+    let json2 = toy_pack_json::pack_to_string(&schema_from_json).unwrap();
+    println!("{:?}", json2);
+
+    assert_eq!(json, json2);
 }
