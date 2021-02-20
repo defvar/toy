@@ -9,6 +9,7 @@ thiserror = "1.0"
 toy-pack = {path = "../toy-pack"}
 itoa = "0.4"
 ryu = "1.0"
+lexical = "^5.1"
 
 [dev-dependencies]
 toy-pack-derive = {path = "../toy-pack-derive"}

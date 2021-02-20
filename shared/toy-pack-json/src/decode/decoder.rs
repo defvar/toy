@@ -1,10 +1,13 @@
 use super::reader::Reader;
 use super::{DecodeError, Reference, Result, Token};
 use crate::decode::{ParseNumber, Position};
+use lexical::FromLexical;
 
 pub struct Decoder<B> {
     reader: B,
     cache: Option<u8>,
+
+    parse_number_buffer: Vec<u8>,
 }
 
 impl<'toy, B> Decoder<B>
@@ -15,6 +18,7 @@ where
         Decoder {
             reader,
             cache: None,
+            parse_number_buffer: Vec::new(),
         }
     }
 
@@ -43,61 +47,49 @@ where
     pub fn decode_number(&mut self) -> Result<ParseNumber> {
         match self.peek_token()? {
             Some(Token::Number) => {
-                let mut negative = false;
-                let mut r = 0u64;
-                let mut r2 = 0u64;
+                self.parse_number_buffer.clear();
+                let mut is_negative = false;
+                let mut is_float = false;
 
                 if self.peek()? == Some(b'-') {
-                    negative = true;
-                    self.consume();
+                    is_negative = true;
+                    let b = self.next_or_eof()?;
+                    self.parse_number_buffer.push(b);
                 }
-
                 loop {
                     match self.peek_or_null()? {
                         b'0'..=b'9' => {
                             let b = self.next_or_eof()?;
-                            r = r * 10 + ((b - b'0') as u64);
+                            self.parse_number_buffer.push(b);
                         }
-                        b'.' => {
-                            let _ = self.next()?;
-                            loop {
-                                match self.peek_or_null()? {
-                                    b'0'..=b'9' => {
-                                        let b = self.next_or_eof()?;
-                                        r2 = r2 * 10 + ((b - b'0') as u64);
-                                    }
-                                    _ => break,
-                                }
-                            }
-                            break;
+                        b'.' | b'e' | b'E' | b'+' | b'-' => {
+                            is_float = true;
+                            let b = self.next_or_eof()?;
+                            self.parse_number_buffer.push(b);
                         }
                         _ => break,
                     }
                 }
-                if r2 == 0 {
-                    if negative {
-                        Ok(ParseNumber::I64(-(r as i64)))
-                    } else {
-                        Ok(ParseNumber::U64(r))
-                    }
+
+                if is_float {
+                    self.to_parse_number::<f64>(&self.parse_number_buffer)
+                        .map(ParseNumber::F64)
+                } else if is_negative {
+                    self.to_parse_number::<i64>(&self.parse_number_buffer)
+                        .map(ParseNumber::I64)
                 } else {
-                    match format!("{}.{}", r, r2).parse::<f64>() {
-                        Ok(v) => {
-                            if negative {
-                                Ok(ParseNumber::F64(-v))
-                            } else {
-                                Ok(ParseNumber::F64(v))
-                            }
-                        }
-                        Err(e) => {
-                            return Err(DecodeError::error(format!("parse float error: {:?}", e)))
-                        }
-                    }
+                    self.to_parse_number::<u64>(&self.parse_number_buffer)
+                        .map(ParseNumber::U64)
                 }
             }
             Some(other) => Err(DecodeError::invalid_token(other, "Number")),
             None => Err(DecodeError::eof_while_parsing_value()),
         }
+    }
+
+    fn to_parse_number<T: FromLexical>(&self, chars: &Vec<u8>) -> Result<T> {
+        lexical::parse::<T, _>(chars)
+            .map_err(|_| DecodeError::invalid_number(self.reader.position()))
     }
 
     fn decode_str_bytes<'a, F, T>(

@@ -29,8 +29,8 @@ pub enum DecodeError {
         backtrace: Backtrace,
     },
 
-    #[error("invalid number")]
-    InvalidNumber,
+    #[error("invalid number at line {} column {}", line, column)]
+    InvalidNumber { line: usize, column: usize },
 
     #[error("{:?}", inner)]
     Error { inner: String },
@@ -74,8 +74,11 @@ impl DecodeError {
         }
     }
 
-    pub fn invalid_number() -> DecodeError {
-        DecodeError::InvalidNumber
+    pub fn invalid_number(pos: Position) -> DecodeError {
+        DecodeError::InvalidNumber {
+            line: pos.line,
+            column: pos.column,
+        }
     }
 
     pub fn eof_while_parsing_value() -> DecodeError {
