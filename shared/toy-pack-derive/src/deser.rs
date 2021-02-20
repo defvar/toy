@@ -234,7 +234,6 @@ fn struct_visitor_impl(
     let block: DeserBlock = fields
         .iter()
         .enumerate()
-        .filter(|(_, x)| !x.attr.ignore)
         .map(|(i, field)| {
             (
                 initialize_field(i, field),
@@ -437,11 +436,15 @@ fn initialize_field(index: usize, field: &Field) -> TokenStream {
     let name = member_name(index);
     let ty = field.ty;
     quote! {
-      let mut #name : Option<#ty> = None;
+        let mut #name : Option<#ty> = None;
     }
 }
 
 fn deserialize_field(index: usize, field: &Field) -> TokenStream {
+    if field.attr.ignore {
+        return quote! {};
+    }
+
     let name = member_name(index);
     let ty = field.ty;
     let i = index;
@@ -456,6 +459,10 @@ fn deserialize_field(index: usize, field: &Field) -> TokenStream {
 }
 
 fn deserialize_field_for_map(index: usize, field: &Field) -> TokenStream {
+    if field.attr.ignore {
+        return quote! {};
+    }
+
     let name = member_name(index);
     let ty = field.ty;
     let original_name = field.pack_field_name();
