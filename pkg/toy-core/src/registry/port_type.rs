@@ -40,3 +40,9 @@ impl PortType {
         PortType::Sink(v)
     }
 }
+
+impl Default for PortType {
+    fn default() -> Self {
+        PortType::flow()
+    }
+}

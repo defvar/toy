@@ -3,7 +3,7 @@ use crate::error::ApiClientError;
 use async_trait::async_trait;
 use futures_core::Stream;
 use futures_util::StreamExt;
-use toy_api::graph::{GraphEntity, GraphsEntity};
+use toy_api::graph::GraphEntity;
 use toy_api::task::{
     ListOption, LogOption, PendingsEntity, PostOption, TaskLogEntity, TasksEntity, WatchOption,
 };

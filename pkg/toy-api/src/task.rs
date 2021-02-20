@@ -1,5 +1,5 @@
 use crate::graph::GraphEntity;
-use toy::core::prelude::TaskId;
+use toy_core::prelude::TaskId;
 use toy_pack::{Pack, Unpack};
 
 #[derive(Debug, Clone, Pack, Unpack)]

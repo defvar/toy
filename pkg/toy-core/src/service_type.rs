@@ -95,3 +95,9 @@ impl Debug for ServiceType {
         write!(f, "{}", self.full_name.to_string())
     }
 }
+
+impl Default for ServiceType {
+    fn default() -> Self {
+        ServiceType::new("builtin", "noop").unwrap()
+    }
+}

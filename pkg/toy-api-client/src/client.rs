@@ -2,6 +2,7 @@ use crate::error::ApiClientError;
 use async_trait::async_trait;
 use futures_core::Stream;
 use toy_api::graph::{self, GraphEntity, GraphsEntity};
+use toy_api::supervisors::{self, Supervisor, Supervisors};
 use toy_api::task::{self, PendingsEntity, TaskLogEntity, TasksEntity};
 
 #[async_trait]
@@ -36,4 +37,28 @@ pub trait TaskClient {
 
     async fn log(&self, key: String, opt: task::LogOption)
         -> Result<TaskLogEntity, ApiClientError>;
+}
+
+#[async_trait]
+pub trait SupervisorClient {
+    async fn list(&self, opt: supervisors::ListOption) -> Result<Supervisors, ApiClientError>;
+
+    async fn find(
+        &self,
+        key: String,
+        opt: supervisors::FindOption,
+    ) -> Result<Option<Supervisor>, ApiClientError>;
+
+    async fn put(
+        &self,
+        key: String,
+        v: Supervisor,
+        opt: supervisors::PutOption,
+    ) -> Result<(), ApiClientError>;
+
+    async fn delete(
+        &self,
+        key: String,
+        opt: supervisors::DeleteOption,
+    ) -> Result<(), ApiClientError>;
 }

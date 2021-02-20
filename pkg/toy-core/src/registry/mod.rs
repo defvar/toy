@@ -11,7 +11,7 @@ use crate::service::ServiceFactory;
 use crate::service_type::ServiceType;
 use crate::service_uri::Uri;
 use toy_pack::schema::{to_schema, Schema};
-use toy_pack::Pack;
+use toy_pack::{Pack, Unpack};
 
 mod app;
 mod layered;
@@ -72,7 +72,7 @@ pub trait Delegator {
 }
 
 /// ServiceSchema (json schema format) for front-end api.
-#[derive(Debug, Clone, Pack)]
+#[derive(Debug, Clone, Pack, Unpack)]
 pub struct ServiceSchema {
     service_type: ServiceType,
     port_type: PortType,

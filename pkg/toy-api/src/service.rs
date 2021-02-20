@@ -1,8 +1,8 @@
 use crate::common::Format;
-use toy::core::registry::ServiceSchema;
+use toy_core::registry::ServiceSchema;
 use toy_pack::{Pack, Unpack};
 
-#[derive(Clone, Debug, Pack)]
+#[derive(Clone, Debug, Pack, Unpack)]
 pub struct ServicesEntity {
     services: Vec<ServiceSchema>,
     count: u32,

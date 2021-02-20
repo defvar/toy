@@ -8,7 +8,7 @@ pub struct Supervisor {
     host_ip: String,
     start_time: String,
     labels: Vec<String>,
-    // services: ServicesEntity,
+    services: ServicesEntity,
 }
 
 #[derive(Clone, Debug, Pack, Unpack)]
@@ -43,5 +43,25 @@ pub struct ListOption {
 impl ListOption {
     pub fn format(&self) -> Option<Format> {
         self.format
+    }
+}
+
+#[derive(Clone, Debug, Pack, Unpack)]
+pub struct PutOption {
+    format: Option<Format>,
+}
+
+impl PutOption {
+    pub fn format(&self) -> Option<Format> {
+        self.format
+    }
+}
+
+#[derive(Clone, Debug, Pack, Unpack)]
+pub struct DeleteOption {}
+
+impl DeleteOption {
+    pub fn new() -> Self {
+        Self {}
     }
 }

@@ -11,3 +11,4 @@ tracing = "0.1"
 tokio = { version = "1", features = ["sync"] }
 toy-core = {path="../toy-core"}
 toy-rt = { path = "../toy-rt"}
+toy-api-client = { path = "../toy-api-client", features = ["http"] }

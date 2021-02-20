@@ -1,5 +1,5 @@
-use toy::core::prelude::Value;
-use toy::core::registry::PortType;
+use toy_core::prelude::Value;
+use toy_core::registry::PortType;
 use toy_pack::{Pack, Unpack};
 
 #[derive(Clone, Debug, Default, Pack, Unpack)]
