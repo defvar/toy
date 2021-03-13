@@ -14,7 +14,7 @@ tracing-appender = "0.1"
 toy-rt = { path = "../../../pkg/toy-rt"}
 
 # core module
-toy = {path = "../../../pkg/toy"}
+toy = {path = "../../../pkg/toy", features = ["plugin", "supervisor"]}
 toy-pack = {path = "../../../shared/toy-pack", features = ["derive"]}
 
 # config
