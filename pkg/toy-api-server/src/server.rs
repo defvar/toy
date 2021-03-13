@@ -1,13 +1,10 @@
-use crate::api::{graphs, services, supervisors, tasks};
+use crate::api::{graphs, supervisors, tasks};
 use crate::auth::auth_filter;
 use crate::config::ServerConfig;
 use crate::graph::store::GraphStore;
 use crate::supervisors::store::SupervisorStore;
 use crate::task::store::{TaskLogStore, TaskStore};
 use std::net::SocketAddr;
-use toy::core::error::ServiceError;
-use toy::core::mpsc::{Incoming, Outgoing};
-use toy::supervisor::{Request, SystemMessage};
 use toy_h::HttpClient;
 use warp::http::Method;
 use warp::{Filter, Reply};
@@ -38,12 +35,8 @@ where
     }
 
     /// Run this `Server` forever on the current thread, specified routes.
-    pub async fn run_with_routes<F>(
-        &self,
-        addr: impl Into<SocketAddr> + 'static,
-        mut rx: Incoming<SystemMessage, ServiceError>,
-        routes: F,
-    ) where
+    pub async fn run_with_routes<F>(&self, addr: impl Into<SocketAddr> + 'static, routes: F)
+    where
         F: Filter + Clone + Send + Sync + 'static,
         F::Extract: Reply,
     {
@@ -51,32 +44,13 @@ where
             .tls()
             .cert_path(self.config.cert_path())
             .key_path(self.config.key_path())
-            .bind_with_graceful_shutdown(addr, async move {
-                while let Some(r) = rx.next().await {
-                    match r {
-                        Ok(r) => match r {
-                            SystemMessage::Shutdown => {
-                                tracing::info!("shutdown api server because stoped supervisor.");
-                                break;
-                            }
-                        },
-                        Err(e) => {
-                            tracing::error!("error receive system message. error:{:?}", e)
-                        }
-                    }
-                }
-            });
+            .bind_ephemeral(addr);
         tracing::info!("listening on http://{}", addr);
         server.await
     }
 
     /// Run this `Server` forever on the current thread, default routes.
-    pub async fn run(
-        &self,
-        addr: impl Into<SocketAddr> + 'static,
-        tx: Outgoing<Request, ServiceError>,
-        rx: Incoming<SystemMessage, ServiceError>,
-    ) {
+    pub async fn run(&self, addr: impl Into<SocketAddr> + 'static) {
         let client = match self.client {
             Some(ref c) => c.clone(),
             None => {
@@ -107,8 +81,7 @@ where
         let routes = auth_filter(self.config.auth(), client)
             .and(
                 graphs(graph_store)
-                    .or(services(tx.clone()))
-                    .or(tasks(log_store, task_store, tx.clone()))
+                    .or(tasks(log_store, task_store))
                     .or(supervisors(supervisor_store)),
             )
             .map(|_, r| r)
@@ -126,6 +99,6 @@ where
             )
             .with(warp::trace::request());
 
-        self.run_with_routes(addr, rx, routes).await
+        self.run_with_routes(addr, routes).await
     }
 }

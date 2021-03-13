@@ -13,7 +13,6 @@ mod server;
 
 pub mod config;
 pub mod graph;
-pub mod service;
 pub mod store;
 pub mod supervisors;
 pub mod task;
@@ -28,7 +27,6 @@ pub mod api {
     //! The `toy-api-server` apis.
 
     pub use super::graph::graphs;
-    pub use super::service::services;
     pub use super::supervisors::supervisors;
     pub use super::task::tasks;
 }
@@ -36,7 +34,7 @@ pub mod api {
 #[doc(hidden)]
 pub use async_trait;
 #[doc(hidden)]
-pub use toy::core::task::TaskId;
+pub use toy_core::task::TaskId;
 #[doc(hidden)]
 pub use toy_h;
 #[doc(hidden)]

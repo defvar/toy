@@ -1,11 +1,8 @@
 #![feature(type_alias_impl_trait)]
 
-use toy::core::prelude::*;
-use toy::executor::ExecutorFactory;
-use toy::supervisor::Supervisor;
-use toy_api_server::auth::NoAuth;
-use toy_api_server::task::btree_log_store::BTreeLogStore;
-use toy_api_server::ServerConfig;
+use toy::api_server::auth::NoAuth;
+use toy::api_server::task::btree_log_store::BTreeLogStore;
+use toy::api_server::ServerConfig;
 use toy_api_store_etcd::EtcdStore;
 use toy_h::impl_reqwest::ReqwestClient;
 use tracing_subscriber::fmt::format::FmtSpan;
@@ -59,29 +56,16 @@ fn main() {
         .with_timer(time)
         .init();
 
-    let sv_rt = toy_rt::RuntimeBuilder::new()
-        .thread_name("supervisor")
-        .worker_threads(4)
-        .build()
-        .unwrap();
-
     let mut api_rt = toy_rt::RuntimeBuilder::new()
         .thread_name("api-server")
         .worker_threads(2)
         .build()
         .unwrap();
 
-    let app = app(toy_plugin_commons::load());
-
-    let (sv, tx, rx) = Supervisor::new(ExecutorFactory, app);
-
     let client = ReqwestClient::new().unwrap();
-    let server = toy_api_server::Server::new(ToyConfig).with_client(client);
+    let server = toy::api_server::Server::new(ToyConfig).with_client(client);
 
-    sv_rt.spawn(async {
-        let _ = sv.run().await;
-    });
     api_rt.block_on(async move {
-        let _ = server.run(([127, 0, 0, 1], 3030), tx, rx).await;
+        let _ = server.run(([127, 0, 0, 1], 3030)).await;
     });
 }

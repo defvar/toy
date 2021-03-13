@@ -136,7 +136,7 @@ where
         let host = std::env::var("TOY_STORE_ETCD_HOST").unwrap_or_else(|_| "localhost".to_string());
         let port = std::env::var("TOY_STORE_ETCD_PORT").unwrap_or_else(|_| "2379".to_string());
         let url = format!("http://{}:{}", host, port);
-        tracing::info!("toy task store=etcd. connecting:{}", &url);
+        tracing::info!("toy supervisor store=etcd. connecting:{}", &url);
         match Client::new(client, url) {
             Ok(c) => {
                 self.con = Some(EtcdStoreConnection { client: c });

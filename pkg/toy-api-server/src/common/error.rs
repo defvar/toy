@@ -1,6 +1,6 @@
 use std::fmt::Display;
 use thiserror::Error;
-use toy::core::error::ConfigError;
+use toy_core::error::ConfigError;
 use toy_pack_json::{DecodeError, EncodeError};
 use toy_pack_urlencoded::QueryParseError;
 use toy_pack_yaml::error::YamlError;

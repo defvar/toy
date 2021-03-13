@@ -1,17 +1,12 @@
 use crate::common;
-use crate::task::models::RunningTasksEntity;
 use crate::task::store::{
     Find, FindOption, List, ListOption, Pending, TaskLogStore, TaskStore, WatchPending,
 };
 use futures_util::StreamExt;
 use std::convert::Infallible;
-use toy::core::error::ServiceError;
-use toy::core::mpsc::Outgoing;
-use toy::core::oneshot;
-use toy::core::task::TaskId;
-use toy::supervisor::{Request, TaskResponse};
 use toy_api::graph::GraphEntity;
 use toy_api::task::{PendingEntity, PendingResult, PendingsEntity};
+use toy_core::task::TaskId;
 use toy_h::HttpClient;
 use toy_pack_json::EncodeError;
 use warp::http::StatusCode;
@@ -64,19 +59,6 @@ where
             Ok(common::reply::json_stream(stream).into_response())
         }
         Err(_) => Ok(StatusCode::INTERNAL_SERVER_ERROR.into_response()),
-    }
-}
-
-pub async fn running_tasks(
-    mut tx: Outgoing<Request, ServiceError>,
-) -> Result<impl warp::Reply, Infallible> {
-    let (tx_, rx_) = oneshot::channel::<Vec<TaskResponse>, ServiceError>();
-    let _ = tx.send_ok(Request::Tasks(tx_)).await;
-    if let Some(Ok(r)) = rx_.recv().await {
-        let vec = RunningTasksEntity::from(r);
-        Ok(common::reply::json(&vec).into_response())
-    } else {
-        Ok(StatusCode::INTERNAL_SERVER_ERROR.into_response())
     }
 }
 

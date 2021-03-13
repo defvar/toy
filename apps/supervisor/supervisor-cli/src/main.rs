@@ -1,7 +1,7 @@
 use clap::Clap;
 use toy::core::prelude::*;
 use toy::executor::ExecutorFactory;
-use toy_supervisor::Supervisor;
+use toy::supervisor::Supervisor;
 use tracing_subscriber::fmt::format::FmtSpan;
 
 #[derive(Clap, Debug)]
@@ -37,7 +37,7 @@ fn main() {
 
     let app = app(toy_plugin_commons::load());
 
-    let (sv, mut tx, mut rx) = Supervisor::new(ExecutorFactory, app);
+    let (sv, _, mut rx) = Supervisor::new(ExecutorFactory, app);
 
     rt.spawn(async {
         let _ = sv.run().await;

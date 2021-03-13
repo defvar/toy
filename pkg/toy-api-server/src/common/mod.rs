@@ -6,7 +6,7 @@ pub mod query;
 pub mod reply;
 
 pub mod constants {
-    use toy::core::task::TaskId;
+    use toy_core::task::TaskId;
 
     pub static GRAPHS_KEY_PREFIX: &'static str = "/toy/graphs";
     pub static SUPERVISORS_KEY_PREFIX: &'static str = "/toy/supervisors";
