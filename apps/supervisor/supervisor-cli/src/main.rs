@@ -1,4 +1,5 @@
 use clap::Clap;
+use toy::api_client_http::http::HttpApiClient;
 use toy::core::prelude::*;
 use toy::executor::ExecutorFactory;
 use toy::supervisor::Supervisor;
@@ -11,6 +12,8 @@ struct Opts {
     worker: usize,
     #[clap(default_value = "supervisor")]
     thread_name: String,
+    #[clap(default_value = "https://localhost:3030")]
+    api_root: String,
 }
 
 fn main() {
@@ -37,14 +40,10 @@ fn main() {
 
     let app = app(toy_plugin_commons::load());
 
-    let (sv, _, mut rx) = Supervisor::new(ExecutorFactory, app);
+    let client = HttpApiClient::new(&opts.api_root).unwrap();
+    let (sv, _tx, _rx) = Supervisor::new(ExecutorFactory, app, client);
 
-    rt.spawn(async {
+    rt.block_on(async {
         let _ = sv.run().await;
-    });
-
-    tracing::info!("waiting shutdown reply from supervisor");
-    let _ = rt.block_on(async {
-        rx.next().await;
     });
 }

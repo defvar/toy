@@ -6,9 +6,22 @@ use toy_api::supervisors::{
 };
 use toy_h::{HttpClient, RequestBuilder, Response, Uri};
 
+#[derive(Debug)]
 pub struct HttpSupervisorClient<T> {
     root: String,
     inner: T,
+}
+
+impl<T> HttpSupervisorClient<T>
+where
+    T: HttpClient,
+{
+    pub fn new<P: Into<String>>(root: P, inner: T) -> Self {
+        Self {
+            root: root.into(),
+            inner,
+        }
+    }
 }
 
 #[async_trait]

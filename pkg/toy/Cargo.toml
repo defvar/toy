@@ -27,12 +27,3 @@ toy-api-server = {path="../toy-api-server", optional = true}
 
 # api-client
 toy-api-client = {path = "../toy-api-client", optional = true}
-
-[dev-dependencies]
-tracing = "0.1"
-toy-pack = {path = "../../shared/toy-pack", features = ["derive"]}
-toy-pack-json = {path = "../../shared/toy-pack-json"}
-tracing-appender = "0.1"
-tracing-subscriber = "0.2"
-toy = { path ="./", features = ["supervisor"]}
-toy-rt = { path = "../toy-rt"}

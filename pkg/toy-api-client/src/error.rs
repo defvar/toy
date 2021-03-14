@@ -1,9 +1,12 @@
 use std::backtrace::Backtrace;
 use std::fmt::Display;
 use thiserror::Error;
-use toy_h::error::HError;
-use toy_h::InvalidUri;
 use toy_pack_json::{DecodeError, EncodeError};
+
+#[cfg(feature = "http")]
+use toy_h::error::HError;
+#[cfg(feature = "http")]
+use toy_h::InvalidUri;
 
 #[derive(Debug, Error)]
 pub enum ApiClientError {
@@ -21,6 +24,7 @@ pub enum ApiClientError {
         backtrace: Backtrace,
     },
 
+    #[cfg(feature = "http")]
     #[error("invalid uri: {:?}", source)]
     InvalidUri {
         #[from]
@@ -28,6 +32,7 @@ pub enum ApiClientError {
         backtrace: Backtrace,
     },
 
+    #[cfg(feature = "http")]
     #[error("failed http request: {:?}", source)]
     HError {
         #[from]

@@ -9,9 +9,22 @@ use toy_api::task::{
 };
 use toy_h::{header::HeaderValue, header::CONTENT_TYPE, HttpClient, RequestBuilder, Response, Uri};
 
+#[derive(Debug)]
 pub struct HttpTaskClient<T> {
     root: String,
     inner: T,
+}
+
+impl<T> HttpTaskClient<T>
+where
+    T: HttpClient,
+{
+    pub fn new<P: Into<String>>(root: P, inner: T) -> Self {
+        Self {
+            root: root.into(),
+            inner,
+        }
+    }
 }
 
 #[async_trait]

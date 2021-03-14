@@ -2,6 +2,10 @@
 
 pub mod client;
 pub mod error;
+pub mod noop;
+
+pub use client::ApiClient;
+pub use noop::NoopApiClient;
 
 #[cfg(feature = "http")]
 pub mod http;

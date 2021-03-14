@@ -4,9 +4,22 @@ use async_trait::async_trait;
 use toy_api::graph::{DeleteOption, FindOption, GraphEntity, GraphsEntity, ListOption, PutOption};
 use toy_h::{HttpClient, RequestBuilder, Response, Uri};
 
+#[derive(Debug)]
 pub struct HttpGraphClient<T> {
     root: String,
     inner: T,
+}
+
+impl<T> HttpGraphClient<T>
+where
+    T: HttpClient,
+{
+    pub fn new<P: Into<String>>(root: P, inner: T) -> Self {
+        Self {
+            root: root.into(),
+            inner,
+        }
+    }
 }
 
 #[async_trait]

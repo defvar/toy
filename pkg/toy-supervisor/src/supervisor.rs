@@ -6,6 +6,7 @@ use core::time::Duration;
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::Mutex;
+use toy_api_client::{ApiClient, NoopApiClient};
 use toy_core::data::Frame;
 use toy_core::error::ServiceError;
 use toy_core::executor::{TaskExecutor, TaskExecutorFactory};
@@ -59,11 +60,6 @@ impl TaskResponse {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub enum SystemMessage {
-    Shutdown,
-}
-
 impl OutgoingMessage for Request {
     fn set_port(&mut self, _port: u8) {}
 }
@@ -72,26 +68,14 @@ impl OutgoingMessage for Response {
     fn set_port(&mut self, _port: u8) {}
 }
 
-impl OutgoingMessage for SystemMessage {
-    fn set_port(&mut self, _port: u8) {}
-}
-
-#[derive(Debug)]
-pub struct Supervisor<TF, O, P> {
+pub fn single<TF, O, P>(
     factory: TF,
-
     app: App<O, P>,
-
-    /// send system message to api server.
-    tx: Outgoing<SystemMessage, ServiceError>,
-
-    /// receive any request from api server.
-    rx: Incoming<Request, ServiceError>,
-
-    tasks: Arc<Mutex<HashMap<TaskId, RunningTask>>>,
-}
-
-impl<TF, O, P> Supervisor<TF, O, P>
+) -> (
+    Supervisor<TF, O, P, NoopApiClient>,
+    Outgoing<Request, ServiceError>,
+    Incoming<(), ServiceError>,
+)
 where
     TF: TaskExecutorFactory + Send,
     O: Delegator<Request = Frame, Error = ServiceError, InitError = ServiceError>
@@ -105,22 +89,59 @@ where
         + Send
         + 'static,
 {
+    Supervisor::new(factory, app, NoopApiClient)
+}
+
+#[derive(Debug)]
+pub struct Supervisor<TF, O, P, C> {
+    factory: TF,
+
+    app: App<O, P>,
+
+    client: Option<C>,
+
+    /// receive any request.
+    rx: Incoming<Request, ServiceError>,
+
+    /// send shutdown.
+    tx: Outgoing<(), ServiceError>,
+
+    tasks: Arc<Mutex<HashMap<TaskId, RunningTask>>>,
+}
+
+impl<TF, O, P, C> Supervisor<TF, O, P, C>
+where
+    TF: TaskExecutorFactory + Send,
+    O: Delegator<Request = Frame, Error = ServiceError, InitError = ServiceError>
+        + Registry
+        + Clone
+        + Send
+        + 'static,
+    P: Delegator<Request = Frame, Error = ServiceError, InitError = ServiceError>
+        + Registry
+        + Clone
+        + Send
+        + 'static,
+    C: ApiClient,
+{
     pub fn new(
         factory: TF,
         app: App<O, P>,
+        client: C,
     ) -> (
-        Supervisor<TF, O, P>,
+        Supervisor<TF, O, P, C>,
         Outgoing<Request, ServiceError>,
-        Incoming<SystemMessage, ServiceError>,
+        Incoming<(), ServiceError>,
     ) {
         let (tx_req, rx_req) = mpsc::channel::<Request, ServiceError>(1024);
-        let (tx_sys, rx_sys) = mpsc::channel::<SystemMessage, ServiceError>(1024);
+        let (tx_sys, rx_sys) = mpsc::channel::<(), ServiceError>(16);
         (
             Supervisor {
                 factory,
                 app,
-                tx: tx_sys,
+                client: Some(client),
                 rx: rx_req,
+                tx: tx_sys,
                 tasks: Arc::new(Mutex::new(HashMap::new())),
             },
             tx_req,
@@ -203,7 +224,10 @@ where
             }
         }
         tracing::info!("shutdown supervisor");
-        let _ = self.tx.send_ok(SystemMessage::Shutdown).await;
+        if let Err(e) = self.tx.send_ok(()).await {
+            tracing::error!(err = ?e, "an error occured; supervisor when shutdown.")
+        }
+
         Ok(())
     }
 }

@@ -5,6 +5,18 @@ use toy_api::graph::{self, GraphEntity, GraphsEntity};
 use toy_api::supervisors::{self, Supervisor, Supervisors};
 use toy_api::task::{self, PendingsEntity, TaskLogEntity, TasksEntity};
 
+pub trait ApiClient {
+    type Graph: GraphClient;
+    type Task: TaskClient;
+    type Supervisor: SupervisorClient;
+
+    fn graph(&self) -> &Self::Graph;
+
+    fn task(&self) -> &Self::Task;
+
+    fn supervisor(&self) -> &Self::Supervisor;
+}
+
 #[async_trait]
 pub trait GraphClient {
     async fn list(&self, opt: graph::ListOption) -> Result<GraphsEntity, ApiClientError>;

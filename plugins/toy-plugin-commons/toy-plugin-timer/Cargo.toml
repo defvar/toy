@@ -9,5 +9,5 @@ edition = "2018"
 [dependencies]
 toy-core = { path = "../../../pkg/toy-core" }
 toy-pack = { path = "../../../shared/toy-pack", features = ["derive"] }
-tokio = { version = "0.3", features = ["time"] }
+tokio = { version = "1", features = ["time"] }
 tracing = "0.1"

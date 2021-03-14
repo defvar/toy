@@ -158,3 +158,7 @@ impl Iterator for OutgoingPortIter {
 pub trait OutgoingMessage {
     fn set_port(&mut self, port: u8);
 }
+
+impl OutgoingMessage for () {
+    fn set_port(&mut self, _port: u8) {}
+}

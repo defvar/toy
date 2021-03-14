@@ -1,8 +1,7 @@
 use std::io::Read;
-use std::time::Duration;
 use toy::core::prelude::*;
 use toy::executor::ExecutorFactory;
-use toy::supervisor::{Request, Supervisor};
+use toy::supervisor::Request;
 use tracing_subscriber::fmt::format::FmtSpan;
 
 static CONFIG: &'static str = "./examples/file.yml";
@@ -30,7 +29,7 @@ fn main() {
             .build()
             .unwrap();
 
-        let (sv, mut tx, mut rx) = Supervisor::new(ExecutorFactory, app);
+        let (sv, mut tx, mut rx) = toy::supervisor::single(ExecutorFactory, app);
 
         // supervisor start
         rt.spawn(async {
@@ -42,13 +41,6 @@ fn main() {
             let _ = tx.send_ok(Request::RunTask(g, tx2)).await;
             let uuid = rx2.recv().await;
             tracing::info!("task:{:?}", uuid);
-        });
-
-        std::thread::sleep(Duration::from_secs(5));
-
-        tracing::info!("send shutdown request to supervisor");
-        let _ = rt.block_on(async {
-            let _ = tx.send_ok(Request::Shutdown).await;
         });
 
         tracing::info!("waiting shutdown reply from supervisor");
