@@ -1,6 +1,8 @@
+mod msg;
 mod supervisor;
 mod task;
+mod watcher;
 
-pub use self::supervisor::{Request, Response, RunTaskResponse, Supervisor, TaskResponse};
-
-pub use self::supervisor::single;
+pub use self::msg::{Request, Response, RunTaskResponse, TaskResponse};
+pub use self::supervisor::Supervisor;
+pub use self::supervisor::{single, spawn};

@@ -54,12 +54,20 @@ impl PendingEntity {
     pub fn new(graph: GraphEntity) -> Self {
         Self { graph: Some(graph) }
     }
+
+    pub fn graph(&self) -> Option<&GraphEntity> {
+        self.graph.as_ref()
+    }
 }
 
 impl PendingsEntity {
     pub fn new(pendings: Vec<PendingEntity>) -> Self {
         let count = pendings.len() as u32;
         Self { pendings, count }
+    }
+
+    pub fn pendings(&self) -> &Vec<PendingEntity> {
+        &self.pendings
     }
 }
 

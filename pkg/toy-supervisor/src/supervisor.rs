@@ -1,72 +1,23 @@
+use crate::msg::Request;
 use crate::task::RunningTask;
+use crate::{Response, RunTaskResponse, TaskResponse};
+use chrono::{DateTime, Utc};
 use core::future::Future;
 use core::pin::Pin;
 use core::task::{Context, Poll};
-use core::time::Duration;
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::Mutex;
+use toy_api::service::ServicesEntity;
+use toy_api::supervisors::PutOption;
+use toy_api_client::client::SupervisorClient;
 use toy_api_client::{ApiClient, NoopApiClient};
 use toy_core::data::Frame;
 use toy_core::error::ServiceError;
 use toy_core::executor::{TaskExecutor, TaskExecutorFactory};
-use toy_core::graph::Graph;
-use toy_core::mpsc::{self, Incoming, Outgoing, OutgoingMessage};
-use toy_core::oneshot;
-use toy_core::registry::{App, Delegator, Registry, ServiceSchema};
+use toy_core::mpsc::{self, Incoming, Outgoing};
+use toy_core::registry::{App, Delegator, Registry};
 use toy_core::task::{TaskContext, TaskId};
-
-#[derive(Debug)]
-pub enum Request {
-    RunTask(Graph, oneshot::Outgoing<RunTaskResponse, ServiceError>),
-    Tasks(oneshot::Outgoing<Vec<TaskResponse>, ServiceError>),
-    Stop(TaskId),
-    Services(oneshot::Outgoing<Response, ServiceError>),
-    Shutdown,
-}
-
-#[derive(Debug)]
-pub enum Response {
-    Services(Vec<ServiceSchema>),
-}
-
-#[derive(Debug, Clone)]
-pub struct RunTaskResponse(TaskId);
-
-impl RunTaskResponse {
-    pub fn id(&self) -> TaskId {
-        self.0
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct TaskResponse {
-    id: TaskId,
-    started_at: Duration,
-    graph: Graph,
-}
-
-impl TaskResponse {
-    pub fn id(&self) -> TaskId {
-        self.id
-    }
-
-    pub fn started_at(&self) -> Duration {
-        self.started_at
-    }
-
-    pub fn graph(&self) -> &Graph {
-        &self.graph
-    }
-}
-
-impl OutgoingMessage for Request {
-    fn set_port(&mut self, _port: u8) {}
-}
-
-impl OutgoingMessage for Response {
-    fn set_port(&mut self, _port: u8) {}
-}
 
 pub fn single<TF, O, P>(
     factory: TF,
@@ -89,11 +40,41 @@ where
         + Send
         + 'static,
 {
-    Supervisor::new(factory, app, NoopApiClient)
+    Supervisor::new("single-supervisor", factory, app, None)
+}
+
+pub fn spawn<S, TF, O, P, C>(
+    name: S,
+    factory: TF,
+    app: App<O, P>,
+    client: C,
+) -> (
+    Supervisor<TF, O, P, C>,
+    Outgoing<Request, ServiceError>,
+    Incoming<(), ServiceError>,
+)
+where
+    S: Into<String>,
+    TF: TaskExecutorFactory + Send,
+    O: Delegator<Request = Frame, Error = ServiceError, InitError = ServiceError>
+        + Registry
+        + Clone
+        + Send
+        + 'static,
+    P: Delegator<Request = Frame, Error = ServiceError, InitError = ServiceError>
+        + Registry
+        + Clone
+        + Send
+        + 'static,
+    C: ApiClient + Clone + Send + Sync + 'static,
+{
+    Supervisor::new(name, factory, app, Some(client))
 }
 
 #[derive(Debug)]
 pub struct Supervisor<TF, O, P, C> {
+    name: String,
+
     factory: TF,
 
     app: App<O, P>,
@@ -106,7 +87,12 @@ pub struct Supervisor<TF, O, P, C> {
     /// send shutdown.
     tx: Outgoing<(), ServiceError>,
 
+    /// use watcher.
+    tx_watcher: Outgoing<Request, ServiceError>,
+
     tasks: Arc<Mutex<HashMap<TaskId, RunningTask>>>,
+
+    started_at: Option<DateTime<Utc>>,
 }
 
 impl<TF, O, P, C> Supervisor<TF, O, P, C>
@@ -122,12 +108,13 @@ where
         + Clone
         + Send
         + 'static,
-    C: ApiClient,
+    C: ApiClient + Clone + Send + Sync + 'static,
 {
-    pub fn new(
+    fn new<S: Into<String>>(
+        name: S,
         factory: TF,
         app: App<O, P>,
-        client: C,
+        client: Option<C>,
     ) -> (
         Supervisor<TF, O, P, C>,
         Outgoing<Request, ServiceError>,
@@ -137,12 +124,15 @@ where
         let (tx_sys, rx_sys) = mpsc::channel::<(), ServiceError>(16);
         (
             Supervisor {
+                name: name.into(),
                 factory,
                 app,
-                client: Some(client),
+                client,
                 rx: rx_req,
                 tx: tx_sys,
+                tx_watcher: tx_req.clone(),
                 tasks: Arc::new(Mutex::new(HashMap::new())),
+                started_at: None,
             },
             tx_req,
             rx_sys,
@@ -151,6 +141,13 @@ where
 
     pub async fn run(mut self) -> Result<(), ()> {
         tracing::info!("start supervisor");
+
+        self.started_at = Some(Utc::now());
+        if let Err(_) = self.register().await {
+            return Err(());
+        }
+
+        self.spawn_watcher();
 
         // main
         while let Some(r) = self.rx.next().await {
@@ -226,6 +223,50 @@ where
         tracing::info!("shutdown supervisor");
         if let Err(e) = self.tx.send_ok(()).await {
             tracing::error!(err = ?e, "an error occured; supervisor when shutdown.")
+        }
+
+        Ok(())
+    }
+
+    fn spawn_watcher(&self) {
+        if self.client.is_none() {
+            return;
+        }
+
+        let c = self.client.as_ref().map(|x| x.clone()).unwrap();
+        let tx = self.tx_watcher.clone();
+
+        toy_rt::spawn(async move {
+            tracing::info!("start watch task.");
+            if let Err(e) = super::watcher::watch(c, tx).await {
+                tracing::error!(err = ?e, "an error occured; supervisor when watch task.");
+            }
+            tracing::info!("shutdown watcher.");
+        });
+    }
+
+    async fn register(&self) -> Result<(), ()> {
+        if self.client.is_none() {
+            return Ok(());
+        }
+
+        let services = ServicesEntity::new(self.app.schemas());
+        let start_time = self.started_at.unwrap().to_rfc3339();
+        let sv = toy_api::supervisors::Supervisor::new(
+            self.name.clone(),
+            start_time,
+            Vec::new(),
+            services,
+        );
+
+        let c = self.client.as_ref().unwrap();
+        if let Err(e) = c
+            .supervisor()
+            .put(self.name.clone(), sv, PutOption::default())
+            .await
+        {
+            tracing::error!(err = ?e, "an error occured; supervisor when start up.");
+            return Err(());
         }
 
         Ok(())

@@ -3,13 +3,13 @@ use crate::kv::{encode, get_range_end, Kv, ResponseHeader, Versioning};
 use toy_pack::deser::DeserializableOwned;
 use toy_pack::{Pack, Unpack};
 
-#[derive(Debug, Pack, Unpack)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Pack, Unpack)]
 pub enum FilterType {
     NOPUT,
     NODELETE,
 }
 
-#[derive(Debug, Pack, Unpack)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Pack, Unpack)]
 pub enum EventType {
     PUT,
     DELETE,
@@ -110,14 +110,18 @@ impl WatchResponse {
     pub fn unpack<T, F>(&self, mut f: F) -> Result<Vec<T>, StoreEtcdError>
     where
         T: DeserializableOwned,
-        F: FnMut(Versioning) -> Result<T, StoreEtcdError>,
+        F: FnMut(Versioning, EventType) -> Option<Result<T, StoreEtcdError>>,
     {
         match self.result {
             Some(ref inner) => inner.events.iter().try_fold(Vec::new(), |mut vec, x| {
                 let v = x.kv.to_versioning()?;
-                let v = f(v)?;
-                vec.push(v);
-                Ok(vec)
+                match f(v, x.tp) {
+                    Some(v) => {
+                        vec.push(v?);
+                        Ok(vec)
+                    }
+                    None => Ok(vec),
+                }
             }),
             None => Ok(Vec::new()),
         }

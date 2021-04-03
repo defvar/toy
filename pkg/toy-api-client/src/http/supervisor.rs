@@ -6,7 +6,7 @@ use toy_api::supervisors::{
 };
 use toy_h::{HttpClient, RequestBuilder, Response, Uri};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct HttpSupervisorClient<T> {
     root: String,
     inner: T,

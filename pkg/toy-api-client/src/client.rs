@@ -5,10 +5,10 @@ use toy_api::graph::{self, GraphEntity, GraphsEntity};
 use toy_api::supervisors::{self, Supervisor, Supervisors};
 use toy_api::task::{self, PendingsEntity, TaskLogEntity, TasksEntity};
 
-pub trait ApiClient {
-    type Graph: GraphClient;
-    type Task: TaskClient;
-    type Supervisor: SupervisorClient;
+pub trait ApiClient: Send + Sync {
+    type Graph: GraphClient + 'static;
+    type Task: TaskClient + 'static;
+    type Supervisor: SupervisorClient + 'static;
 
     fn graph(&self) -> &Self::Graph;
 
@@ -18,7 +18,7 @@ pub trait ApiClient {
 }
 
 #[async_trait]
-pub trait GraphClient {
+pub trait GraphClient: Send + Sync {
     async fn list(&self, opt: graph::ListOption) -> Result<GraphsEntity, ApiClientError>;
 
     async fn find(
@@ -38,8 +38,8 @@ pub trait GraphClient {
 }
 
 #[async_trait]
-pub trait TaskClient {
-    type WatchStream: Stream<Item = Result<PendingsEntity, ApiClientError>>;
+pub trait TaskClient: Send + Sync {
+    type WatchStream: Stream<Item = Result<PendingsEntity, ApiClientError>> + Send;
 
     async fn watch(&self, opt: task::WatchOption) -> Result<Self::WatchStream, ApiClientError>;
 
@@ -52,7 +52,7 @@ pub trait TaskClient {
 }
 
 #[async_trait]
-pub trait SupervisorClient {
+pub trait SupervisorClient: Send + Sync {
     async fn list(&self, opt: supervisors::ListOption) -> Result<Supervisors, ApiClientError>;
 
     async fn find(

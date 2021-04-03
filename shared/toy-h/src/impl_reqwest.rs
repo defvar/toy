@@ -30,6 +30,7 @@ impl ReqwestClient {
 
     pub fn new() -> Result<ReqwestClient, HError> {
         let client = reqwest::Client::builder()
+            .danger_accept_invalid_certs(true)
             .build()
             .map_err(|e| HError::error(e))?;
         Ok(ReqwestClient { client })

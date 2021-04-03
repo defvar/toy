@@ -3,6 +3,7 @@ use crate::error::ApiClientError;
 use async_trait::async_trait;
 use futures_core::Stream;
 
+#[derive(Clone)]
 pub struct NoopApiClient;
 
 impl ApiClient for NoopApiClient {

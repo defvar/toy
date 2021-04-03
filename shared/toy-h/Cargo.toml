@@ -18,7 +18,7 @@ futures-util = { version = "0.3", default-features = false }
 pin-project-lite = "0.2"
 
 # impl
-reqwest = { version = "0.11", features = ["stream"],  optional = true }
+reqwest = { version = "0.11", default-features = false, features = ["stream", "rustls-tls"],  optional = true }
 
 [features]
 # Nothing by default

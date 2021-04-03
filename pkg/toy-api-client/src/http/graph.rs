@@ -4,7 +4,7 @@ use async_trait::async_trait;
 use toy_api::graph::{DeleteOption, FindOption, GraphEntity, GraphsEntity, ListOption, PutOption};
 use toy_h::{HttpClient, RequestBuilder, Response, Uri};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct HttpGraphClient<T> {
     root: String,
     inner: T,

@@ -1,6 +1,14 @@
-use toy_core::data::{self, Value};
+use toy_core::data::{self, Map, Value};
 use toy_core::{map_value, seq_value};
 use toy_pack_derive::*;
+
+#[test]
+fn ser_empty_map() {
+    let v = Map::<String, Value>::new();
+    let r = data::pack(v).unwrap();
+    let expected = Value::from(Map::new());
+    assert_eq!(r, expected);
+}
 
 #[test]
 fn ser_tuple_variant() {

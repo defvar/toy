@@ -9,7 +9,7 @@ use toy_api::task::{
 };
 use toy_h::{header::HeaderValue, header::CONTENT_TYPE, HttpClient, RequestBuilder, Response, Uri};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct HttpTaskClient<T> {
     root: String,
     inner: T,
@@ -38,7 +38,7 @@ where
         let uri = format!("{}/tasks/watch", self.root).parse::<Uri>()?;
         let stream = self
             .inner
-            .post(uri)
+            .get(uri)
             .header(CONTENT_TYPE, HeaderValue::from_static("application/json"))
             .send()
             .await?

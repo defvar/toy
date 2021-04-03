@@ -45,7 +45,7 @@ where
             .cert_path(self.config.cert_path())
             .key_path(self.config.key_path())
             .bind_ephemeral(addr);
-        tracing::info!("listening on http://{}", addr);
+        tracing::info!("listening on https://{}", addr);
         server.await
     }
 

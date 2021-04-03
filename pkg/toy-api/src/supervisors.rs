@@ -5,10 +5,25 @@ use toy_pack::{Pack, Unpack};
 #[derive(Clone, Debug, Pack, Unpack)]
 pub struct Supervisor {
     name: String,
-    host_ip: String,
     start_time: String,
     labels: Vec<String>,
     services: ServicesEntity,
+}
+
+impl Supervisor {
+    pub fn new(
+        name: String,
+        start_time: String,
+        labels: Vec<String>,
+        services: ServicesEntity,
+    ) -> Self {
+        Self {
+            name,
+            start_time,
+            labels,
+            services,
+        }
+    }
 }
 
 #[derive(Clone, Debug, Pack, Unpack)]
@@ -46,7 +61,7 @@ impl ListOption {
     }
 }
 
-#[derive(Clone, Debug, Pack, Unpack)]
+#[derive(Clone, Debug, Pack, Unpack, Default)]
 pub struct PutOption {
     format: Option<Format>,
 }
@@ -54,6 +69,12 @@ pub struct PutOption {
 impl PutOption {
     pub fn format(&self) -> Option<Format> {
         self.format
+    }
+
+    pub fn with_format(self, format: Format) -> PutOption {
+        PutOption {
+            format: Some(format),
+        }
     }
 }
 

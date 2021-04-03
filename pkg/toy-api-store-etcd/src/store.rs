@@ -1,5 +1,5 @@
 use crate::error::StoreEtcdError;
-use crate::watch::WatchResponse;
+use crate::watch::{EventType, WatchResponse};
 use crate::Client;
 use futures_util::StreamExt;
 use std::future::Future;
@@ -322,8 +322,12 @@ where
             let stream = con.client.watch(prefix).await?;
             Ok(
                 stream.map(|x: Result<WatchResponse, StoreEtcdError>| match x {
-                    Ok(res) => res.unpack(|x| {
-                        toy_pack_json::unpack::<PendingEntity>(&x.into_data()).map_err(|e| e.into())
+                    Ok(res) => res.unpack(|x, e| match e {
+                        EventType::PUT => Some(
+                            toy_pack_json::unpack::<PendingEntity>(&x.into_data())
+                                .map_err(|e| e.into()),
+                        ),
+                        _ => None,
                     }),
                     Err(e) => Err(e.into()),
                 }),

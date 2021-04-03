@@ -10,7 +10,7 @@ use crate::client::ApiClient;
 use crate::error::ApiClientError;
 use toy_h::impl_reqwest::ReqwestClient;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct HttpApiClient {
     g: HttpGraphClient<ReqwestClient>,
     t: HttpTaskClient<ReqwestClient>,

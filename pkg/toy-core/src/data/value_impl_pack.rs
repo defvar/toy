@@ -151,10 +151,12 @@ impl<'a> Serializer for &'a mut Value {
     }
 
     fn serialize_seq(self, len: Option<usize>) -> Result<Self::SeqAccessOps, Self::Error> {
+        *self = default_empty_seq(len);
         Ok(SerializeCompound::new(self, len))
     }
 
     fn serialize_map(self, len: Option<usize>) -> Result<Self::MapAccessOps, Self::Error> {
+        *self = default_empty_map(len);
         Ok(SerializeCompound::new(self, len))
     }
 
@@ -401,4 +403,16 @@ fn default_seq(v: Value, len: Option<usize>) -> Value {
     let mut vec = Vec::with_capacity(size);
     vec.push(v);
     Value::from(vec)
+}
+
+fn default_empty_seq(len: Option<usize>) -> Value {
+    let size = len.unwrap_or(0);
+    let vec = Vec::<Value>::with_capacity(size);
+    Value::from(vec)
+}
+
+fn default_empty_map(len: Option<usize>) -> Value {
+    let size = len.unwrap_or(0);
+    let map = Map::with_capacity(size);
+    Value::from(map)
 }
