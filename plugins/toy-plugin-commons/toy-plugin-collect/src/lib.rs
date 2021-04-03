@@ -1,4 +1,4 @@
-#![feature(type_alias_impl_trait)]
+#![feature(min_type_alias_impl_trait)]
 
 pub mod config;
 mod fn_service;

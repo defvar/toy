@@ -17,7 +17,7 @@ fn schema_struct() {
         vec: Vec<u32>,
         map: HashMap<String, String>,
         abc: ABC,
-    };
+    }
 
     #[derive(Debug, Pack, Schema)]
     enum ABC {

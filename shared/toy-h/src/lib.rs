@@ -1,7 +1,7 @@
 //! HTTP Client Traits.
 //!
 
-#![feature(type_alias_impl_trait)]
+#![feature(min_type_alias_impl_trait)]
 
 mod client;
 mod request;
