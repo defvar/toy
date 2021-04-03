@@ -25,11 +25,36 @@ impl ListOption {
 }
 
 #[derive(Clone, Debug)]
-pub struct PutOption {}
+pub struct PutOption {
+    version: u64,
+    update_only: bool,
+}
 
 impl PutOption {
     pub fn new() -> Self {
-        Self {}
+        Self {
+            version: 0,
+            update_only: false,
+        }
+    }
+
+    pub fn with_update_only(self) -> Self {
+        PutOption {
+            update_only: true,
+            ..self
+        }
+    }
+
+    pub fn with_version(self, version: u64) -> Self {
+        PutOption { version, ..self }
+    }
+
+    pub fn update_only(&self) -> bool {
+        self.update_only
+    }
+
+    pub fn version(&self) -> u64 {
+        self.version
     }
 }
 

@@ -1,4 +1,4 @@
-#![feature(type_alias_impl_trait)]
+#![feature(min_type_alias_impl_trait)]
 
 use toy::api_server::auth::NoAuth;
 use toy::api_server::task::btree_log_store::BTreeLogStore;

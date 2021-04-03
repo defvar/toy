@@ -82,10 +82,10 @@ macro_rules! task_span {
 }
 
 impl TaskContext {
-    pub fn new(graph: Graph) -> Self {
+    pub fn new(id: TaskId, graph: Graph) -> Self {
         Self {
             inner: Arc::new(Inner {
-                id: TaskId::new(),
+                id,
                 started_at: SystemTime::now()
                     .duration_since(UNIX_EPOCH)
                     .expect("Time went backwards"),

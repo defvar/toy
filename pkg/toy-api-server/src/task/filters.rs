@@ -1,7 +1,8 @@
-use crate::common::body;
+use crate::common::{self, body};
 use crate::task::handlers;
 use crate::task::store::{TaskLogStore, TaskStore};
 use toy_api::graph::GraphEntity;
+use toy_api::task::{AllocateOption, AllocateRequest};
 use toy_h::HttpClient;
 use warp::Filter;
 
@@ -17,6 +18,7 @@ where
         .or(tasks_list(log_store.clone()))
         .or(tasks_log(log_store))
         .or(tasks_watch(task_store.clone()))
+        .or(tasks_allocate(task_store.clone()))
 }
 
 pub fn tasks_create<T>(
@@ -42,6 +44,20 @@ where
         .and(warp::get())
         .and(with_task_store(task_store))
         .and_then(handlers::watch)
+}
+
+pub fn tasks_allocate<T>(
+    task_store: impl TaskStore<T>,
+) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone
+where
+    T: HttpClient,
+{
+    warp::path!("tasks" / String / "allocate")
+        .and(warp::post())
+        .and(common::query::query_opt::<AllocateOption>())
+        .and(body::json::<AllocateRequest>())
+        .and(with_task_store(task_store))
+        .and_then(|a, b, c, d| handlers::allocate(a, b, c, d))
 }
 
 pub fn tasks_list<T>(

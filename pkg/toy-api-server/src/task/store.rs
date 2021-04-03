@@ -1,6 +1,7 @@
 //! Trait for log store operations.
 
 use crate::store::error::StoreError;
+use crate::store::kv::{Delete, Find, Put};
 use crate::store::StoreConnection;
 use std::fmt;
 use std::future::Future;
@@ -38,14 +39,21 @@ pub trait TaskLogStore<T>: Clone + Send + Sync {
 }
 
 /// Trait Composit log store operations.
-pub trait TaskStoreOps<C>: Send + Sync + Pending<Con = C> + WatchPending<Con = C>
+pub trait TaskStoreOps<C>:
+    Send
+    + Sync
+    + Pending<Con = C>
+    + WatchPending<Con = C>
+    + Find<Con = C>
+    + Put<Con = C>
+    + Delete<Con = C>
 where
     C: StoreConnection,
 {
 }
 
 /// Trait Composit log store operations.
-pub trait TaskLogStoreOps<C>: Send + Sync + Find<Con = C> + List<Con = C>
+pub trait TaskLogStoreOps<C>: Send + Sync + FindLog<Con = C> + List<Con = C>
 where
     C: StoreConnection,
 {
@@ -73,7 +81,7 @@ pub trait WatchPending {
 }
 
 /// Find task log.
-pub trait Find {
+pub trait FindLog {
     type Con: StoreConnection;
     type T: Future<Output = Result<Option<TaskLogEntity>, Self::Err>> + Send;
     type Err: fmt::Debug + Send;
@@ -98,9 +106,6 @@ pub struct FindOption {}
 #[derive(Clone, Debug)]
 pub struct ListOption {}
 
-#[derive(Clone, Debug)]
-pub struct QueryOption {}
-
 impl FindOption {
     pub fn new() -> Self {
         Self {}
@@ -108,12 +113,6 @@ impl FindOption {
 }
 
 impl ListOption {
-    pub fn new() -> Self {
-        Self {}
-    }
-}
-
-impl QueryOption {
     pub fn new() -> Self {
         Self {}
     }

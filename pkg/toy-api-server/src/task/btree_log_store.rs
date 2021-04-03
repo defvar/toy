@@ -59,7 +59,7 @@ where
     }
 }
 
-impl Find for BTreeLogStoreOps {
+impl FindLog for BTreeLogStoreOps {
     type Con = BTreeLogStoreConnection;
     type T = impl Future<Output = Result<Option<TaskLogEntity>, Self::Err>> + Send;
     type Err = StoreError;

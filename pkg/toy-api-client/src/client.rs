@@ -3,7 +3,9 @@ use async_trait::async_trait;
 use futures_core::Stream;
 use toy_api::graph::{self, GraphEntity, GraphsEntity};
 use toy_api::supervisors::{self, Supervisor, Supervisors};
-use toy_api::task::{self, PendingsEntity, TaskLogEntity, TasksEntity};
+use toy_api::task::{
+    self, AllocateRequest, AllocateResponse, PendingsEntity, TaskLogEntity, TasksEntity,
+};
 
 pub trait ApiClient: Send + Sync {
     type Graph: GraphClient + 'static;
@@ -42,6 +44,13 @@ pub trait TaskClient: Send + Sync {
     type WatchStream: Stream<Item = Result<PendingsEntity, ApiClientError>> + Send;
 
     async fn watch(&self, opt: task::WatchOption) -> Result<Self::WatchStream, ApiClientError>;
+
+    async fn allocate(
+        &self,
+        key: String,
+        req: AllocateRequest,
+        opt: task::AllocateOption,
+    ) -> Result<AllocateResponse, ApiClientError>;
 
     async fn post(&self, v: GraphEntity, opt: task::PostOption) -> Result<(), ApiClientError>;
 

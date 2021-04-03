@@ -155,7 +155,7 @@ where
     type Con = EtcdStoreConnection<T>;
     type Err = StoreEtcdError;
 
-    #[instrument]
+    #[instrument(skip(self))]
     async fn find<V>(
         &self,
         con: Self::Con,
@@ -214,36 +214,45 @@ where
     type Con = EtcdStoreConnection<T>;
     type Err = StoreEtcdError;
 
-    #[instrument(skip(v))]
+    #[instrument(skip(self, v))]
     async fn put<V>(
         &self,
         con: Self::Con,
         key: String,
         v: V,
-        _opt: PutOption,
+        opt: PutOption,
     ) -> Result<PutResult, Self::Err>
     where
         V: Serializable + Send,
     {
         tracing::debug!("put key:{:?}", key);
         let s = toy_pack_json::pack_to_string(&v)?;
-        let create_res = con.client.create(&key, &s).await?;
-        if create_res.is_success() {
+
+        let create_res = if !opt.update_only() {
+            Some(con.client.create(&key, &s).await?)
+        } else {
+            None
+        };
+
+        if !opt.update_only() && create_res.is_some() && create_res.unwrap().is_success() {
             Ok(PutResult::Create)
         } else {
             // update
-            let res = con.client.get(&key).await?.value()?;
-            match res {
-                Some(v) => {
-                    let version = v.version();
-                    let upd_res = con.client.update(&key, &s, version).await?;
-                    if upd_res.is_success() {
-                        Ok(PutResult::Update)
-                    } else {
-                        Err(StoreEtcdError::failed_opration("update", &key))
-                    }
+            let version = if opt.version() != 0 {
+                opt.version()
+            } else {
+                let res = con.client.get(&key).await?.value()?;
+                match res {
+                    Some(v) => v.version(),
+                    None => return Err(StoreEtcdError::not_found(&key)),
                 }
-                None => Err(StoreEtcdError::not_found(&key)),
+            };
+
+            let upd_res = con.client.update(&key, &s, version).await?;
+            if upd_res.is_success() {
+                Ok(PutResult::Update)
+            } else {
+                Err(StoreEtcdError::failed_opration("update", &key))
             }
         }
     }

@@ -2,6 +2,7 @@ use crate::client::{ApiClient, GraphClient, SupervisorClient, TaskClient};
 use crate::error::ApiClientError;
 use async_trait::async_trait;
 use futures_core::Stream;
+use toy_api::task::{AllocateOption, AllocateRequest, AllocateResponse};
 
 #[derive(Clone)]
 pub struct NoopApiClient;
@@ -68,6 +69,15 @@ impl TaskClient for NoopApiClient {
         _opt: toy_api::task::WatchOption,
     ) -> Result<Self::WatchStream, ApiClientError> {
         Ok(futures_util::stream::empty())
+    }
+
+    async fn allocate(
+        &self,
+        _key: String,
+        _req: AllocateRequest,
+        _opt: AllocateOption,
+    ) -> Result<AllocateResponse, ApiClientError> {
+        unimplemented!()
     }
 
     async fn post(

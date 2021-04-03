@@ -5,7 +5,8 @@ use futures_core::Stream;
 use futures_util::StreamExt;
 use toy_api::graph::GraphEntity;
 use toy_api::task::{
-    ListOption, LogOption, PendingsEntity, PostOption, TaskLogEntity, TasksEntity, WatchOption,
+    AllocateOption, AllocateRequest, AllocateResponse, ListOption, LogOption, PendingsEntity,
+    PostOption, TaskLogEntity, TasksEntity, WatchOption,
 };
 use toy_h::{header::HeaderValue, header::CONTENT_TYPE, HttpClient, RequestBuilder, Response, Uri};
 
@@ -48,6 +49,27 @@ where
                 Err(e) => Err(e.into()),
             });
         Ok(stream)
+    }
+
+    async fn allocate(
+        &self,
+        key: String,
+        req: AllocateRequest,
+        _opt: AllocateOption,
+    ) -> Result<AllocateResponse, ApiClientError> {
+        let uri = format!("{}/tasks/{}/allocate", self.root, key).parse::<Uri>()?;
+        let body = toy_pack_json::pack(&req)?;
+        let bytes = self
+            .inner
+            .post(uri)
+            .header(CONTENT_TYPE, HeaderValue::from_static("application/json"))
+            .body(body)
+            .send()
+            .await?
+            .bytes()
+            .await?;
+        let r = toy_pack_json::unpack::<AllocateResponse>(&bytes)?;
+        Ok(r)
     }
 
     async fn post(&self, v: GraphEntity, _opt: PostOption) -> Result<(), ApiClientError> {

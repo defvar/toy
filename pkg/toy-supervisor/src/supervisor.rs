@@ -153,11 +153,10 @@ where
         while let Some(r) = self.rx.next().await {
             match r {
                 Ok(m) => match m {
-                    Request::RunTask(g, tx) => {
+                    Request::RunTask(id, g, tx) => {
                         let app = self.app.clone();
                         let tasks = Arc::clone(&self.tasks);
-                        let ctx = TaskContext::new(g);
-                        let uuid = ctx.id();
+                        let ctx = TaskContext::new(id, g);
                         let _ = toy_rt::spawn(async move {
                             let (e, tx_signal) = TF::new(ctx.clone());
                             let task = RunningTask::new(&ctx, tx_signal);
@@ -172,7 +171,7 @@ where
                             }
                             ()
                         });
-                        let _ = tx.send_ok(RunTaskResponse(uuid)).await;
+                        let _ = tx.send_ok(RunTaskResponse(id)).await;
                     }
                     Request::Tasks(tx) => {
                         let r = {
@@ -235,10 +234,11 @@ where
 
         let c = self.client.as_ref().map(|x| x.clone()).unwrap();
         let tx = self.tx_watcher.clone();
+        let name = self.name.clone();
 
         toy_rt::spawn(async move {
             tracing::info!("start watch task.");
-            if let Err(e) = super::watcher::watch(c, tx).await {
+            if let Err(e) = super::watcher::watch(name, c, tx).await {
                 tracing::error!(err = ?e, "an error occured; supervisor when watch task.");
             }
             tracing::info!("shutdown watcher.");

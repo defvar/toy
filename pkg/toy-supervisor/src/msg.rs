@@ -6,7 +6,11 @@ use toy_core::registry::ServiceSchema;
 
 #[derive(Debug)]
 pub enum Request {
-    RunTask(Graph, oneshot::Outgoing<RunTaskResponse, ServiceError>),
+    RunTask(
+        TaskId,
+        Graph,
+        oneshot::Outgoing<RunTaskResponse, ServiceError>,
+    ),
     Tasks(oneshot::Outgoing<Vec<TaskResponse>, ServiceError>),
     Stop(TaskId),
     Services(oneshot::Outgoing<Response, ServiceError>),

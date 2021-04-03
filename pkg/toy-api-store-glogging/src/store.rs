@@ -7,7 +7,7 @@ use toy_api::task::{TaskLogEntity, TaskLogInner, TasksEntity, TasksInner};
 use toy_api_server::store::error::StoreError;
 use toy_api_server::store::StoreConnection;
 use toy_api_server::task::store::{
-    Find, FindOption, List, ListOption, TaskLogStore, TaskLogStoreOps,
+    FindLog, FindOption, List, ListOption, TaskLogStore, TaskLogStoreOps,
 };
 use toy_api_server::TaskId;
 use toy_glogging::models::ListRequest;
@@ -77,7 +77,7 @@ impl<T> StoreConnection for GloggingStoreConnection<T> where T: HttpClient {}
 
 impl<T> TaskLogStoreOps<GloggingStoreConnection<T>> for GLoggingStoreOps<T> where T: HttpClient {}
 
-impl<T> Find for GLoggingStoreOps<T>
+impl<T> FindLog for GLoggingStoreOps<T>
 where
     T: HttpClient,
 {

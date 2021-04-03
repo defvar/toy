@@ -1,11 +1,13 @@
 use crate::common;
-use crate::task::store::{
-    Find, FindOption, List, ListOption, Pending, TaskLogStore, TaskStore, WatchPending,
-};
+use crate::store::kv::{Find, FindOption, Put, PutOption, PutResult};
+use crate::task::store::{List, ListOption, Pending, TaskLogStore, TaskStore, WatchPending};
 use futures_util::StreamExt;
 use std::convert::Infallible;
 use toy_api::graph::GraphEntity;
-use toy_api::task::{PendingEntity, PendingResult, PendingsEntity};
+use toy_api::task::{
+    AllocateOption, AllocateRequest, AllocateResponse, PendingEntity, PendingResult, PendingStatus,
+    PendingsEntity,
+};
 use toy_core::task::TaskId;
 use toy_h::HttpClient;
 use toy_pack_json::EncodeError;
@@ -23,8 +25,8 @@ where
      validate...
     */
 
-    let pending = PendingEntity::new(v);
     let id = TaskId::new();
+    let pending = PendingEntity::new(id, v);
     let key = common::constants::pending_key(id);
     match store
         .ops()
@@ -62,6 +64,69 @@ where
     }
 }
 
+pub async fn allocate<T>(
+    key: String,
+    opt: Option<AllocateOption>,
+    request: AllocateRequest,
+    store: impl TaskStore<T>,
+) -> Result<impl warp::Reply, warp::Rejection>
+where
+    T: HttpClient,
+{
+    let id = match TaskId::parse_str(&key) {
+        Ok(id) => id,
+        Err(_) => return Ok(StatusCode::INTERNAL_SERVER_ERROR.into_response()),
+    };
+
+    let format = opt.map(|x| x.format()).unwrap_or(None);
+
+    // get with version....
+    match store
+        .ops()
+        .find::<PendingEntity>(
+            store.con().unwrap(),
+            common::constants::pending_key(id),
+            FindOption::new(),
+        )
+        .await
+    {
+        Ok(Some(v)) => {
+            match v.status() {
+                PendingStatus::Allocated => {
+                    return Ok(common::reply::into_response(
+                        &AllocateResponse::not_found(id),
+                        format,
+                    ))
+                }
+                _ => (),
+            }
+            let a = v.allocate(request.name(), chrono::Utc::now().to_rfc3339());
+            match store
+                .ops()
+                .put(
+                    store.con().unwrap(),
+                    common::constants::pending_key(id),
+                    a,
+                    PutOption::new().with_update_only(), //set version....
+                )
+                .await
+            {
+                Ok(PutResult::Update) => Ok(common::reply::into_response(
+                    &AllocateResponse::ok(id),
+                    format,
+                )),
+                Ok(_) => unreachable!(),
+                Err(_) => Ok(StatusCode::INTERNAL_SERVER_ERROR.into_response()),
+            }
+        }
+        Ok(None) => Ok(common::reply::into_response(
+            &AllocateResponse::not_found(id),
+            format,
+        )),
+        Err(_) => Ok(StatusCode::INTERNAL_SERVER_ERROR.into_response()),
+    }
+}
+
 pub async fn tasks<T>(log_store: impl TaskLogStore<T>) -> Result<impl warp::Reply, Infallible>
 where
     T: HttpClient,
@@ -86,6 +151,7 @@ pub async fn log<T>(
 where
     T: HttpClient,
 {
+    use crate::task::store::{FindLog, FindOption};
     let id = match TaskId::parse_str(key) {
         Ok(id) => id,
         Err(_) => return Ok(StatusCode::INTERNAL_SERVER_ERROR.into_response()),
@@ -104,16 +170,3 @@ where
         }
     }
 }
-
-// fn test_stream() -> impl Stream<Item = Result<impl ServerSentEvent, Infallible>> {
-//     let mut counter: u64 = 0;
-//     let event_stream = tokio::time::interval(Duration::from_secs(1)).map(move |_| {
-//         counter += 1;
-//         sse_counter(counter)
-//     });
-//     event_stream
-// }
-//
-// fn sse_counter(counter: u64) -> Result<impl ServerSentEvent, Infallible> {
-//     Ok(warp::sse::data(counter))
-// }

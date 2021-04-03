@@ -33,7 +33,7 @@ fn main() {
     tracing::info!("start cli for config:{:?}", opts);
 
     let mut rt = toy_rt::RuntimeBuilder::new()
-        .thread_name(format!("{}{}", opts.thread_name_prefix, opts.name))
+        .thread_name(format!("{}-{}", opts.thread_name_prefix, opts.name))
         .worker_threads(opts.worker)
         .build()
         .unwrap();
