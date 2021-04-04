@@ -2,14 +2,12 @@ name: ci-app
 
 on:
   push:
-    branches:
-      - master
     paths:
-      - 'apps/**/*backend'
+      - 'apps/**'
 
 jobs:
   build:
-    name: build toy lib
+    name: build toy app
     runs-on: ubuntu-latest
     steps:
       - name: checkout
@@ -27,3 +25,9 @@ jobs:
         with:
           command: build
           args: --manifest-path ${{ github.workspace }}/apps/console/console-backend/Cargo.toml
+
+      - name: build-supervisor-cli
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --manifest-path ${{ github.workspace }}/apps/supervisor/supervisor-cli/Cargo.toml
