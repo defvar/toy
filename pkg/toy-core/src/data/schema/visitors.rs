@@ -3,8 +3,8 @@
 use crate::data::schema::builders::{ArrayBuilder, ObjectBuilder, OneOfBuilder, SchemaBuilders};
 use crate::data::schema::{JsonSchema, SchemaScanError, SchemaTypes};
 use toy_pack::schema::{
-    EnumVisitor, PrimitiveTypes, Schema, SchemaVisitor, StructVisitor, TupleVariantVisitor,
-    WrapTypes,
+    EnumVisitor, PrimitiveTypes, Schema, SchemaVisitor, StructVariantVisitor, StructVisitor,
+    TupleVariantVisitor, WrapTypes,
 };
 
 pub struct JsonSchemaVisitor;
@@ -19,6 +19,11 @@ pub struct JsonSchemaEnumVisitor {
 
 pub struct JsonSchemaTupleVariantVisitor {
     builder: ArrayBuilder,
+    variant: String,
+}
+
+pub struct JsonSchemaStructVariantVisitor {
+    builder: ObjectBuilder,
     variant: String,
 }
 
@@ -102,6 +107,7 @@ impl EnumVisitor for JsonSchemaEnumVisitor {
     type Value = JsonSchema;
     type Error = SchemaScanError;
     type TupleVariantVisitor = JsonSchemaTupleVariantVisitor;
+    type StructVariantVisitor = JsonSchemaStructVariantVisitor;
 
     fn unit_variant(&mut self, _name: &str, variant: &'static str) -> Result<(), Self::Error> {
         let s = SchemaBuilders::const_builder().value(variant).build();
@@ -116,6 +122,17 @@ impl EnumVisitor for JsonSchemaEnumVisitor {
     ) -> Result<Self::TupleVariantVisitor, Self::Error> {
         Ok(JsonSchemaTupleVariantVisitor {
             builder: SchemaBuilders::array_builder(),
+            variant: variant.to_string(),
+        })
+    }
+
+    fn struct_variant_visitor(
+        &mut self,
+        _name: &str,
+        variant: &'static str,
+    ) -> Result<Self::StructVariantVisitor, Self::Error> {
+        Ok(JsonSchemaStructVariantVisitor {
+            builder: SchemaBuilders::object_builder(),
             variant: variant.to_string(),
         })
     }
@@ -150,6 +167,33 @@ impl TupleVariantVisitor for JsonSchemaTupleVariantVisitor {
     {
         let s = T::scan(variant, JsonSchemaVisitor)?;
         self.builder.push(s);
+        Ok(())
+    }
+
+    fn end(self) -> Result<Self::Value, Self::Error> {
+        let r = SchemaBuilders::object_builder()
+            .property(self.variant.as_str(), self.builder.build())
+            .build();
+        Ok(r)
+    }
+}
+
+impl StructVariantVisitor for JsonSchemaStructVariantVisitor {
+    type Value = JsonSchema;
+    type Error = SchemaScanError;
+
+    fn field<T>(
+        &mut self,
+        _enum_name: &'static str,
+        _variant: &'static str,
+        _arg_idx: u32,
+        name: &str,
+    ) -> Result<(), Self::Error>
+    where
+        T: Schema,
+    {
+        let p = T::scan(name, JsonSchemaVisitor)?;
+        self.builder.property(name, p);
         Ok(())
     }
 

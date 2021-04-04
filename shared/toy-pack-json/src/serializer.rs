@@ -14,6 +14,7 @@ where
     type MapAccessOps = SerializeCompound<'a, W>;
     type StructAccessOps = SerializeCompound<'a, W>;
     type TupleVariantOps = SerializeTupleVariant<'a, W>;
+    type StructVariantOps = SerializeCompound<'a, W>;
 
     fn serialize_bool(self, v: bool) -> Result<Self::Ok, Self::Error> {
         self.write_bool(v)
@@ -82,7 +83,7 @@ where
         for byte in v {
             seq.next(byte)?;
         }
-        seq.end()
+        SerializeSeqOps::end(seq)
     }
 
     fn serialize_seq(self, _len: Option<usize>) -> Result<Self::SeqAccessOps, Self::Error> {
@@ -167,6 +168,30 @@ where
         // inner array begin
         self.write_begin_array()?;
         Ok(SerializeTupleVariant::new(self))
+    }
+
+    fn serialize_struct_variant(
+        self,
+        _name: &'static str,
+        _variant_index: u32,
+        variant: &'static str,
+        _len: usize,
+    ) -> Result<Self::StructVariantOps, Self::Error> {
+        // { varinat_name: { k: v, ... } }
+        self.write_begin_object()?;
+
+        // key (variant_name)
+        self.write_begin_object_key(true)?;
+        self.write_begin_string()?;
+        self.write_string(variant)?;
+        self.write_end_string()?;
+        self.write_end_object_key()?;
+
+        // value (variants)
+        self.write_begin_object_value()?;
+
+        self.write_begin_object()?;
+        Ok(SerializeCompound::new(self))
     }
 
     fn serialize_some<T: ?Sized>(self, v: &T) -> Result<Self::Ok, Self::Error>

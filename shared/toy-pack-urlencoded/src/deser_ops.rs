@@ -113,4 +113,11 @@ impl<'toy> DeserializeVariantOps<'toy> for DeserializeVariant<'toy> {
     {
         Err(Error::custom("expected unit variant"))
     }
+
+    fn struct_variant<V>(self, _visitor: V) -> Result<<V as Visitor<'toy>>::Value, Self::Error>
+    where
+        V: Visitor<'toy>,
+    {
+        Err(Error::custom("expected unit variant"))
+    }
 }

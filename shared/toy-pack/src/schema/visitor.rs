@@ -89,12 +89,46 @@ pub trait TupleVariantVisitor {
 }
 
 /// The trait to scan target schema
+/// for scanning struct varint enum fields.
+///
+/// ```
+/// enum E {
+///   A { id: u64, name: String }
+/// }
+/// ```
+///
+pub trait StructVariantVisitor {
+    type Value;
+    type Error: Error;
+
+    /// Add field.
+    /// ```
+    /// enum E {
+    ///   A { id: u64, name: String }
+    /// }
+    /// ```
+    fn field<T>(
+        &mut self,
+        enum_name: &'static str,
+        variant: &'static str,
+        arg_idx: u32,
+        name: &str,
+    ) -> Result<(), Self::Error>
+    where
+        T: Schema;
+
+    /// End visit and create Schema.
+    fn end(self) -> Result<Self::Value, Self::Error>;
+}
+
+/// The trait to scan target schema
 /// for scanning enum fields.
 ///
 pub trait EnumVisitor {
     type Value;
     type Error: Error;
     type TupleVariantVisitor: TupleVariantVisitor<Value = Self::Value, Error = Self::Error>;
+    type StructVariantVisitor: StructVariantVisitor<Value = Self::Value, Error = Self::Error>;
 
     /// Add unit variant.
     ///
@@ -113,6 +147,14 @@ pub trait EnumVisitor {
         name: &str,
         variant: &'static str,
     ) -> Result<Self::TupleVariantVisitor, Self::Error>;
+
+    /// Get new visitor for struct variant.
+    ///
+    fn struct_variant_visitor(
+        &mut self,
+        name: &str,
+        variant: &'static str,
+    ) -> Result<Self::StructVariantVisitor, Self::Error>;
 
     /// Add any variant.
     fn variant(

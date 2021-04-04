@@ -128,4 +128,11 @@ where
     {
         toy_pack::deser::Deserializer::deserialize_seq(self.de, visitor)
     }
+
+    fn struct_variant<V>(self, visitor: V) -> Result<<V as Visitor<'toy>>::Value, Self::Error>
+    where
+        V: Visitor<'toy>,
+    {
+        toy_pack::deser::Deserializer::deserialize_struct(self.de, visitor)
+    }
 }

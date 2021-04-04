@@ -1,5 +1,4 @@
 use toy_pack_derive::*;
-use toy_pack_mp::{pack, unpack};
 
 #[derive(Pack, Unpack, Schema, Debug, PartialEq)]
 struct Dum<'a> {
@@ -22,6 +21,12 @@ enum TestEnum {
 
     //tuple variant
     C(u32, u32),
+
+    //struct variant
+    D {
+        id: u64,
+        name: String,
+    },
 }
 
 impl Default for TestEnum {
@@ -31,29 +36,5 @@ impl Default for TestEnum {
 }
 
 fn main() {
-    let mut src: Vec<Dum> = Vec::new();
-    let dum1 = Dum {
-        v_u32: 1,
-        v_string: "a".to_owned(),
-        v_borrowed_str: "b",
-        v_option: None,
-        v_test_enum: TestEnum::B(1),
-    };
-
-    let dum2 = Dum {
-        v_u32: 2,
-        v_string: "a".to_owned(),
-        v_borrowed_str: "b",
-        v_option: None,
-        v_test_enum: TestEnum::B(1),
-    };
-
-    src.push(dum1);
-    src.push(dum2);
-
-    let vec = pack(&src).unwrap();
-    println!("{:?}", vec);
-
-    let r = unpack::<Vec<Dum>>(vec.as_slice()).unwrap();
-    println!("{:?}", r);
+    println!("hello");
 }

@@ -1,7 +1,8 @@
 use crate::error::YamlError;
 use crate::serializer::Ser;
 use toy_pack::ser::{
-    Serializable, SerializeMapOps, SerializeSeqOps, SerializeStructOps, SerializeTupleVariantOps,
+    Serializable, SerializeMapOps, SerializeSeqOps, SerializeStructOps, SerializeStructVariantOps,
+    SerializeTupleVariantOps,
 };
 use yaml_rust::{yaml, Yaml};
 
@@ -17,6 +18,11 @@ pub struct SerializeHash {
 pub struct SerializeTupleVariant {
     name: &'static str,
     array: yaml::Array,
+}
+
+pub struct SerializeStructVariant {
+    name: &'static str,
+    hash: yaml::Hash,
 }
 
 impl SerializeArray {
@@ -47,6 +53,15 @@ impl SerializeTupleVariant {
         SerializeTupleVariant {
             array: yaml::Array::with_capacity(len),
             name,
+        }
+    }
+}
+
+impl SerializeStructVariant {
+    pub fn new(name: &'static str, len: usize) -> SerializeStructVariant {
+        SerializeStructVariant {
+            name,
+            hash: yaml::Hash::with_capacity(len),
         }
     }
 }
@@ -128,6 +143,25 @@ impl SerializeTupleVariantOps for SerializeTupleVariant {
     fn end(self) -> Result<Self::Ok, Self::Error> {
         let mut hash = yaml::Hash::new();
         hash.insert(self.name.serialize(Ser)?, Yaml::Array(self.array));
+        Ok(Yaml::Hash(hash))
+    }
+}
+
+impl SerializeStructVariantOps for SerializeStructVariant {
+    type Ok = Yaml;
+    type Error = YamlError;
+
+    fn field<T: ?Sized>(&mut self, key: &'static str, value: &T) -> Result<(), Self::Error>
+    where
+        T: Serializable,
+    {
+        self.hash.insert(key.serialize(Ser)?, value.serialize(Ser)?);
+        Ok(())
+    }
+
+    fn end(self) -> Result<Self::Ok, Self::Error> {
+        let mut hash = yaml::Hash::new();
+        hash.insert(self.name.serialize(Ser)?, Yaml::Hash(self.hash));
         Ok(Yaml::Hash(hash))
     }
 }

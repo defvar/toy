@@ -1,5 +1,6 @@
 use toy_pack::ser::{
-    Serializable, SerializeMapOps, SerializeSeqOps, SerializeStructOps, SerializeTupleVariantOps,
+    Serializable, SerializeMapOps, SerializeSeqOps, SerializeStructOps, SerializeStructVariantOps,
+    SerializeTupleVariantOps,
 };
 
 use super::encode::{EncodeError, Encoder, Writer};
@@ -110,6 +111,26 @@ where
     where
         T: Serializable,
     {
+        value.serialize(&mut *self.ser)
+    }
+
+    fn end(self) -> Result<Self::Ok, Self::Error> {
+        Ok(())
+    }
+}
+
+impl<'a, W> SerializeStructVariantOps for SerializeCompound<'a, W>
+where
+    W: Writer,
+{
+    type Ok = ();
+    type Error = EncodeError;
+
+    fn field<T: ?Sized>(&mut self, key: &'static str, value: &T) -> Result<(), Self::Error>
+    where
+        T: Serializable,
+    {
+        key.serialize(&mut *self.ser)?;
         value.serialize(&mut *self.ser)
     }
 

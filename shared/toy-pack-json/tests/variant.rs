@@ -51,3 +51,22 @@ fn ser_de_new_type_variant() {
     let r = pack_to_string(&Test::B(5)).unwrap();
     assert_eq!(r, unindent(json));
 }
+
+#[test]
+fn ser_de_struct_variant() {
+    #[derive(Debug, PartialEq, Pack, Unpack)]
+    enum Test {
+        A { id: u32, name: String },
+    }
+    let json = r#"{ "A": { "id": 5, "name": "aiueo" } }"#;
+    let expected = Test::A {
+        id: 5,
+        name: "aiueo".to_string(),
+    };
+
+    let r = unpack::<Test>(json.as_bytes()).unwrap();
+    assert_eq!(r, expected);
+
+    let r = pack_to_string(&expected).unwrap();
+    assert_eq!(r, unindent(json));
+}

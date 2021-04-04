@@ -2,7 +2,8 @@
 
 pub use self::error::Error;
 pub use self::ser_ops::{
-    SerializeMapOps, SerializeSeqOps, SerializeStructOps, SerializeTupleVariantOps,
+    SerializeMapOps, SerializeSeqOps, SerializeStructOps, SerializeStructVariantOps,
+    SerializeTupleVariantOps,
 };
 pub use self::serializer::{Serializable, Serializer};
 

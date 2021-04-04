@@ -52,6 +52,28 @@ fn de_tuple_variant() {
 }
 
 #[test]
+fn de_struct_variant() {
+    #[derive(Pack, Unpack, PartialEq, Debug)]
+    enum Variant {
+        A { id: u64, name: String },
+    }
+    let v = map_value! {
+        "A" => map_value! {
+          "id" => 5u64,
+          "name" => "aiueo",
+        }
+    };
+    let r = data::unpack::<Variant>(v).unwrap();
+    assert_eq!(
+        r,
+        Variant::A {
+            id: 5,
+            name: "aiueo".to_string()
+        }
+    );
+}
+
+#[test]
 fn de_struct() {
     let expected = Dum {
         v_u8: 8,

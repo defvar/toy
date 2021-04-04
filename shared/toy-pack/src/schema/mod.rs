@@ -6,7 +6,9 @@ mod impl_primitive;
 mod visitor;
 
 pub use self::error::Error;
-pub use self::visitor::{EnumVisitor, SchemaVisitor, StructVisitor, TupleVariantVisitor};
+pub use self::visitor::{
+    EnumVisitor, SchemaVisitor, StructVariantVisitor, StructVisitor, TupleVariantVisitor,
+};
 
 /// The traits that the scannable data structure implements.
 /// Several primitive types "impl" are provided by default.

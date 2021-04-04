@@ -1,4 +1,5 @@
 use super::{Error, SerializeMapOps, SerializeSeqOps, SerializeStructOps};
+use crate::ser::ser_ops::SerializeStructVariantOps;
 use crate::ser::SerializeTupleVariantOps;
 
 /// The traits that the serializable data structure implements.
@@ -24,6 +25,7 @@ pub trait Serializer: Sized {
     type MapAccessOps: SerializeMapOps<Ok = Self::Ok, Error = Self::Error>;
     type StructAccessOps: SerializeStructOps<Ok = Self::Ok, Error = Self::Error>;
     type TupleVariantOps: SerializeTupleVariantOps<Ok = Self::Ok, Error = Self::Error>;
+    type StructVariantOps: SerializeStructVariantOps<Ok = Self::Ok, Error = Self::Error>;
 
     /// Serialize a `bool`.
     ///
@@ -149,6 +151,21 @@ pub trait Serializer: Sized {
         variant: &'static str,
         len: usize,
     ) -> Result<Self::TupleVariantOps, Self::Error>;
+
+    /// Serialize struct variant.
+    ///
+    /// ```
+    /// enum E {
+    ///   A { id: u64, name: String, }
+    /// }
+    /// ```
+    fn serialize_struct_variant(
+        self,
+        name: &'static str,
+        variant_index: u32,
+        variant: &'static str,
+        len: usize,
+    ) -> Result<Self::StructVariantOps, Self::Error>;
 
     /// Serialize a [`Some(T)`] value.
     ///

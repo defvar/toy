@@ -64,6 +64,18 @@ fn tuple_variant() {
     assert_eq!(v, dest);
 }
 
+#[test]
+fn struct_variant() {
+    let v = TestEnum::D {
+        id: 1,
+        name: "test".to_string(),
+    };
+    let vec = pack(&v).unwrap();
+    let dest = unpack::<TestEnum>(vec.as_slice()).unwrap();
+
+    assert_eq!(v, dest);
+}
+
 //enum pattern ///////////////////////////////////////////////
 #[derive(Debug, PartialEq, Eq, Pack, Unpack)]
 enum TestEnum {
@@ -73,6 +85,8 @@ enum TestEnum {
     B(u32),
     //tuple variant
     C(u32, u32),
+    //struct variant
+    D { id: u64, name: String },
 }
 
 impl Default for TestEnum {

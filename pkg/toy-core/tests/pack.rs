@@ -26,6 +26,26 @@ fn ser_tuple_variant() {
 }
 
 #[test]
+fn ser_struct_variant() {
+    #[derive(Pack, Unpack, PartialEq, Debug)]
+    enum Variant {
+        A { id: u64, name: String },
+    }
+    let v = Variant::A {
+        id: 5,
+        name: "aiueo".to_string(),
+    };
+    let r = data::pack(v).unwrap();
+    let expected = map_value! {
+        "A" => map_value! {
+          "id" => 5u64,
+          "name" => "aiueo",
+        }
+    };
+    assert_eq!(r, expected);
+}
+
+#[test]
 fn ser_struct() {
     let src = Dum {
         v_u8: 8,

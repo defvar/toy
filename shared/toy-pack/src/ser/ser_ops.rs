@@ -65,3 +65,17 @@ pub trait SerializeTupleVariantOps {
 
     fn end(self) -> Result<Self::Ok, Self::Error>;
 }
+
+/// Provides access to each field of a struct variant to output.
+///
+pub trait SerializeStructVariantOps {
+    type Ok;
+
+    type Error: Error;
+
+    fn field<T: ?Sized>(&mut self, key: &'static str, value: &T) -> Result<(), Self::Error>
+    where
+        T: Serializable;
+
+    fn end(self) -> Result<Self::Ok, Self::Error>;
+}
