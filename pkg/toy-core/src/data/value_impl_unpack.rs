@@ -519,4 +519,13 @@ where
         let value = value.expect("MapAccess::visit_value called before visit_key");
         toy_pack::deser::Deserializer::deserialize_seq(value, visitor)
     }
+
+    fn struct_variant<V>(mut self, visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: Visitor<'toy>,
+    {
+        let value = self.value.take();
+        let value = value.expect("MapAccess::visit_value called before visit_key");
+        toy_pack::deser::Deserializer::deserialize_struct(value, visitor)
+    }
 }

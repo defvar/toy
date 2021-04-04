@@ -143,6 +143,7 @@ where
     type MapAccessOps = NoSerialize<Self::Ok, Self::Error>;
     type StructAccessOps = NoSerialize<Self::Ok, Self::Error>;
     type TupleVariantOps = NoSerialize<Self::Ok, Self::Error>;
+    type StructVariantOps = NoSerialize<Self::Ok, Self::Error>;
 
     fn serialize_bool(self, v: bool) -> Result<Self::Ok, Self::Error> {
         self.inner.serialize_str(if v { "true" } else { "false" })
@@ -249,6 +250,16 @@ where
         _len: usize,
     ) -> Result<Self::TupleVariantOps, Self::Error> {
         Err(QueryParseError::unsupported("tuple variant"))
+    }
+
+    fn serialize_struct_variant(
+        self,
+        _name: &'static str,
+        _variant_index: u32,
+        _variant: &'static str,
+        _len: usize,
+    ) -> Result<Self::StructVariantOps, Self::Error> {
+        Err(QueryParseError::unsupported("struct variant"))
     }
 
     fn serialize_some<T: ?Sized>(self, _v: &T) -> Result<Self::Ok, Self::Error>

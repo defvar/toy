@@ -122,4 +122,11 @@ impl<'toy, 'a> DeserializeVariantOps<'toy> for DeserializeCompound<'a> {
     {
         toy_pack::deser::Deserializer::deserialize_seq(self.de, visitor)
     }
+
+    fn struct_variant<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: Visitor<'toy>,
+    {
+        toy_pack::deser::Deserializer::deserialize_map(self.de, visitor)
+    }
 }

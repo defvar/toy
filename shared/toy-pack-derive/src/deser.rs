@@ -178,7 +178,24 @@ fn enum_visitor_impl(target: &Model) -> Result<TokenStream, syn::Error> {
                         }
                     }
                 }
-                Style::Struct => unimplemented!(),
+                Style::Struct => {
+                    let visitor_name = visitor_name();
+                    let deserialize_fields = match struct_visitor_impl(target, name, Style::Struct, &variant.fields, Some(variant_name)) {
+                        Ok(v) => v,
+                        Err(e) => return Err(e),
+                    };
+                    quote! {
+                        (__Field::#member_name, a) => {
+
+                            #deserialize_fields
+
+                            a.struct_variant(#visitor_name{
+                                marker: toy_pack::export::PhantomData,
+                                lifetime: toy_pack::export::PhantomData
+                            })
+                        }
+                    }
+                }
             };
             Ok(q)
         })
@@ -277,8 +294,13 @@ fn struct_visitor_impl(
 
     let construct_result = match style {
         Style::Struct => {
+            let n = if let Some(v) = variant {
+                quote!(#struct_name::#v)
+            } else {
+                quote!(#struct_name)
+            };
             quote! {
-                let r = #struct_name {
+                let r = #n {
                      #(#construct_field)*
                  };
             }

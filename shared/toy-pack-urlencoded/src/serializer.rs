@@ -28,6 +28,7 @@ where
     type MapAccessOps = SerializeCompound<'out, 'i, Ta>;
     type StructAccessOps = SerializeCompound<'out, 'i, Ta>;
     type TupleVariantOps = NoSerialize<Self::Ok, Self::Error>;
+    type StructVariantOps = NoSerialize<Self::Ok, Self::Error>;
 
     fn serialize_bool(self, _v: bool) -> Result<Self::Ok, Self::Error> {
         Err(QueryParseError::map_type_only())
@@ -130,6 +131,16 @@ where
         _variant: &'static str,
         _len: usize,
     ) -> Result<Self::TupleVariantOps, Self::Error> {
+        Err(QueryParseError::map_type_only())
+    }
+
+    fn serialize_struct_variant(
+        self,
+        _name: &'static str,
+        _variant_index: u32,
+        _variant: &'static str,
+        _len: usize,
+    ) -> Result<Self::StructVariantOps, Self::Error> {
         Err(QueryParseError::map_type_only())
     }
 

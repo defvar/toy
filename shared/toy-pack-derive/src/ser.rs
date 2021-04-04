@@ -38,6 +38,7 @@ pub fn derive_pack_core(input: DeriveInput) -> Result<TokenStream, Vec<syn::Erro
             use toy_pack::ser::SerializeSeqOps as __SerializeSeqOps;
             use toy_pack::ser::SerializeStructOps as __SerializeStructOps;
             use toy_pack::ser::SerializeTupleVariantOps as __SerializeTupleVariantOps;
+            use toy_pack::ser::SerializeStructVariantOps as __SerializeStructVariantOps;
 
             #impl_block
         };
@@ -110,7 +111,26 @@ fn body_enum(target: &Model) -> Result<TokenStream, syn::Error> {
                         },
                     )
                 }
-                Style::Struct => unimplemented!(),
+                Style::Struct => {
+                    let len = serialize_length(&variant.fields);
+                    let construct_fields: Vec<TokenStream> = variant
+                        .fields.iter().enumerate()
+                        .map(|(_, f)| {
+                            let member = &f.member;
+                            quote! {
+                                ref #member,
+                            }
+                        })
+                        .collect();
+                    let serialize_fields: Vec<TokenStream> = serialize_struct_variant_field(&variant.fields, target.attr.ignore_pack_if_none);
+                    quote!(
+                        #name::#variant_name { #(#construct_fields)* } => {
+                            let mut ser = serializer.serialize_struct_variant(#name_str, #idx, #variant_name_str, #len)?;
+                            #(#serialize_fields)*
+                            ser.end()
+                        },
+                    )
+                },
             }
         })
         .collect();
@@ -182,4 +202,29 @@ fn serialize_length(fields: &Vec<Field>) -> TokenStream {
         .filter(|x| !x.attr.ignore)
         .map(|_f| quote!(1))
         .fold(quote!(0), |sum, expr| quote!(#sum + #expr))
+}
+
+fn serialize_struct_variant_field(
+    fields: &Vec<Field>,
+    ignore_pack_if_none: bool,
+) -> Vec<TokenStream> {
+    fields
+        .iter()
+        .filter(|x| !x.attr.ignore)
+        .map(|field| {
+            let name_str = field.pack_field_name();
+            let name = &field.member;
+            if ignore_pack_if_none && field.is_option_type() {
+                quote! {
+                    if toy_pack::export::Option::is_some(#name) {
+                        ser.field(#name_str, #name)?;
+                    }
+                }
+            } else {
+                quote! {
+                    ser.field(#name_str, #name)?;
+                }
+            }
+        })
+        .collect()
 }

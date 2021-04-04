@@ -1,7 +1,8 @@
 use super::encode::{EncodeError, Encoder};
 use std::io;
 use toy_pack::ser::{
-    Serializable, SerializeMapOps, SerializeSeqOps, SerializeStructOps, SerializeTupleVariantOps,
+    Serializable, SerializeMapOps, SerializeSeqOps, SerializeStructOps, SerializeStructVariantOps,
+    SerializeTupleVariantOps,
 };
 
 /// Any Serialize Ops implementation json.
@@ -137,6 +138,30 @@ where
     #[inline]
     fn end(self) -> Result<Self::Ok, Self::Error> {
         self.ser.write_end_array()?;
+        self.ser.write_end_object_value()?;
+        self.ser.write_end_object()?;
+        Ok(())
+    }
+}
+
+impl<'a, W> SerializeStructVariantOps for SerializeCompound<'a, W>
+where
+    W: io::Write,
+{
+    type Ok = ();
+    type Error = EncodeError;
+
+    fn field<T: ?Sized>(&mut self, key: &'static str, value: &T) -> Result<(), Self::Error>
+    where
+        T: Serializable,
+    {
+        SerializeMapOps::next_key(self, key)?;
+        SerializeMapOps::next_value(self, value)?;
+        Ok(())
+    }
+
+    fn end(self) -> Result<Self::Ok, Self::Error> {
+        self.ser.write_end_object()?;
         self.ser.write_end_object_value()?;
         self.ser.write_end_object()?;
         Ok(())

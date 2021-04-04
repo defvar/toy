@@ -16,6 +16,15 @@ fn de_map() {
 }
 
 #[test]
+fn de_map_empty() {
+    let expected = HashMap::new();
+    let json = "{ }";
+    let r = unpack::<HashMap<String, u32>>(json.as_bytes()).unwrap();
+
+    assert_eq!(r, expected);
+}
+
+#[test]
 fn ser_map() {
     let d = {
         let mut m = HashMap::new();
@@ -23,6 +32,15 @@ fn ser_map() {
         m
     };
     let expected = "{\"a\":1}";
+    let r = pack_to_string(&d).unwrap();
+
+    assert_eq!(r, expected);
+}
+
+#[test]
+fn ser_map_empty() {
+    let d = HashMap::<String, String>::new();
+    let expected = "{}";
     let r = pack_to_string(&d).unwrap();
 
     assert_eq!(r, expected);

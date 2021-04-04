@@ -132,4 +132,10 @@ pub trait DeserializeVariantOps<'toy>: Sized {
     fn tuple_variant<V>(self, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: Visitor<'toy>;
+
+    /// Called when deserializing struct variant.
+    ///
+    fn struct_variant<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: Visitor<'toy>;
 }

@@ -13,6 +13,7 @@ where
     type MapAccessOps = SerializeCompound<'a, W>;
     type StructAccessOps = SerializeCompound<'a, W>;
     type TupleVariantOps = SerializeTupleVariant<'a, W>;
+    type StructVariantOps = SerializeCompound<'a, W>;
 
     #[inline]
     fn serialize_bool(self, v: bool) -> Result<Self::Ok, Self::Error> {
@@ -161,6 +162,20 @@ where
         self.encode_u32(idx)?;
         self.encode_array_len(len as u32)?;
         Ok(SerializeTupleVariant::new(self))
+    }
+
+    fn serialize_struct_variant(
+        self,
+        _name: &'static str,
+        variant_index: u32,
+        _variant: &'static str,
+        len: usize,
+    ) -> Result<Self::StructVariantOps, Self::Error> {
+        // map { key: variant_idx, value: map { key: variant_field_name, value: variant_field_value } }
+        self.encode_map_len(1)?;
+        self.encode_u32(variant_index)?;
+        self.encode_map_len(len as u32)?;
+        Ok(SerializeCompound::new(self))
     }
 
     #[inline]

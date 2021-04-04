@@ -38,6 +38,7 @@ pub fn derive_schema_core(input: DeriveInput) -> Result<TokenStream, Vec<syn::Er
             use toy_pack::schema::StructVisitor as __StructVisitor;
             use toy_pack::schema::EnumVisitor as __EnumVisitor;
             use toy_pack::schema::TupleVariantVisitor as __TupleVariantVisitor;
+            use toy_pack::schema::StructVariantVisitor as __StructVariantVisitor;
             #impl_block
         };
     };
@@ -108,7 +109,29 @@ fn body_enum(target: &Model) -> Result<TokenStream, syn::Error> {
                         enum_visitor.variant(#name_str, #variant_name_str, #member_name)?;
                     }
                 }
-                Style::Struct => unimplemented!(),
+                Style::Struct => {
+                    let schema_fields: Vec<TokenStream> = variant
+                        .fields.iter().enumerate()
+                        .filter(|(_, field)| !field.attr.ignore)
+                        .map(|(i, f)| {
+                            let idx = i as u32;
+                            let tp = f.ty;
+                            let member_name_str = &f.pack_field_name();
+                            quote! {
+                                struct_visitor.field::<#tp>(#name_str, #variant_name_str, #idx, #member_name_str)?;
+                            }
+                        })
+                        .collect();
+                    let member_name = member_name(i);
+                    quote! {
+                        let #member_name = {
+                            let mut struct_visitor = enum_visitor.struct_variant_visitor(#name_str, #variant_name_str)?;
+                            #(#schema_fields)*
+                            struct_visitor.end()?
+                        };
+                        enum_visitor.variant(#name_str, #variant_name_str, #member_name)?;
+                    }
+                },
             }
         })
         .collect();

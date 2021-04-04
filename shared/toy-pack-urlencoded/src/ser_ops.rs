@@ -4,7 +4,8 @@ use core::marker::PhantomData;
 use form_urlencoded::Target;
 use std::borrow::Cow;
 use toy_pack::ser::{
-    Serializable, SerializeMapOps, SerializeSeqOps, SerializeStructOps, SerializeTupleVariantOps,
+    Serializable, SerializeMapOps, SerializeSeqOps, SerializeStructOps, SerializeStructVariantOps,
+    SerializeTupleVariantOps,
 };
 
 pub struct SerializeCompound<'o, 'i, Ta: Target> {
@@ -146,6 +147,25 @@ where
 }
 
 impl<Ok, E> SerializeStructOps for NoSerialize<Ok, E>
+where
+    E: toy_pack::ser::Error,
+{
+    type Ok = Ok;
+    type Error = E;
+
+    fn field<T: ?Sized>(&mut self, _key: &'static str, _value: &T) -> Result<(), Self::Error>
+    where
+        T: Serializable,
+    {
+        Err(toy_pack::ser::Error::custom("not support"))
+    }
+
+    fn end(self) -> Result<Self::Ok, Self::Error> {
+        Err(toy_pack::ser::Error::custom("not support"))
+    }
+}
+
+impl<Ok, E> SerializeStructVariantOps for NoSerialize<Ok, E>
 where
     E: toy_pack::ser::Error,
 {

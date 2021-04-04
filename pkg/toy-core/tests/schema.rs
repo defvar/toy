@@ -23,7 +23,7 @@ fn schema_struct() {
     enum ABC {
         _A,
         _B(u32, u32),
-        _C,
+        _C { id: u32, name: String },
     }
 
     let schema_from_struct =
