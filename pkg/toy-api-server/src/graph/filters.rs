@@ -1,7 +1,7 @@
-use crate::common::body;
+use crate::common;
 use crate::graph::handlers;
 use crate::graph::store::GraphStore;
-use toy_api::graph::GraphEntity;
+use toy_api::graph::{FindOption, ListOption, PutOption};
 use toy_h::HttpClient;
 use warp::Filter;
 
@@ -26,6 +26,7 @@ where
 {
     warp::path!("graphs")
         .and(warp::get())
+        .and(common::query::query_opt::<ListOption>())
         .and(with_store(store))
         .and_then(handlers::list)
 }
@@ -38,8 +39,9 @@ where
 {
     warp::path!("graphs" / String)
         .and(warp::get())
+        .and(common::query::query_opt::<FindOption>())
         .and(with_store(store))
-        .and_then(|a, b| handlers::find(a, b))
+        .and_then(handlers::find)
 }
 
 pub fn graphs_put<T>(
@@ -50,9 +52,10 @@ where
 {
     warp::path!("graphs" / String)
         .and(warp::put())
-        .and(body::json::<GraphEntity>())
+        .and(common::query::query_opt::<PutOption>())
+        .and(common::body::bytes())
         .and(with_store(store))
-        .and_then(|a, b, c| handlers::put(a, b, c))
+        .and_then(handlers::put)
 }
 
 pub fn graphs_delete<T>(

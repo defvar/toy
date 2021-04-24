@@ -79,10 +79,17 @@ impl PutOption {
 }
 
 #[derive(Clone, Debug, Pack, Unpack)]
-pub struct DeleteOption {}
+pub struct DeleteOption {
+    format: Option<Format>,
+}
 
 impl DeleteOption {
     pub fn new() -> Self {
-        Self {}
+        Self {
+            format: Some(Format::default()),
+        }
+    }
+    pub fn format(&self) -> Option<Format> {
+        self.format
     }
 }

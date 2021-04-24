@@ -1,4 +1,3 @@
-use crate::common::Format;
 use toy_core::registry::ServiceSchema;
 use toy_pack::{Pack, Unpack};
 
@@ -18,16 +17,5 @@ impl ServicesEntity {
 impl Default for ServicesEntity {
     fn default() -> Self {
         ServicesEntity::new(Vec::new())
-    }
-}
-
-#[derive(Clone, Debug, Pack, Unpack)]
-pub struct ListOption {
-    format: Option<Format>,
-}
-
-impl ListOption {
-    pub fn format(&self) -> Option<Format> {
-        self.format
     }
 }

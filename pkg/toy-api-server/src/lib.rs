@@ -9,6 +9,7 @@
 //!
 
 mod common;
+mod reject_handler;
 mod server;
 
 pub mod config;

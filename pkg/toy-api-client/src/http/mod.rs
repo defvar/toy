@@ -8,6 +8,7 @@ pub use task::HttpTaskClient;
 
 use crate::client::ApiClient;
 use crate::error::ApiClientError;
+use toy_api::common::Format;
 use toy_h::impl_reqwest::ReqwestClient;
 
 #[derive(Debug, Clone)]
@@ -52,4 +53,19 @@ impl ApiClient for HttpApiClient {
     fn supervisor(&self) -> &Self::Supervisor {
         &self.s
     }
+}
+
+pub(crate) fn common_headers(format: Option<Format>) -> toy_h::HeaderMap {
+    use toy_h::{header::HeaderValue, header::CONTENT_TYPE, HeaderMap};
+
+    let mut headers = HeaderMap::new();
+    if let Some(format) = format {
+        let v = match format {
+            Format::Json => HeaderValue::from_static("application/json"),
+            Format::MessagePack => HeaderValue::from_static("application/x-msgpack"),
+            Format::Yaml => HeaderValue::from_static("application/yaml"),
+        };
+        headers.insert(CONTENT_TYPE, v);
+    }
+    headers
 }

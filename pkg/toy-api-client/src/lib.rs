@@ -1,6 +1,7 @@
 #![feature(backtrace, min_type_alias_impl_trait)]
 
 pub mod client;
+mod common;
 pub mod error;
 pub mod noop;
 

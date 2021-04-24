@@ -1,4 +1,6 @@
+use super::common_headers;
 use crate::client::GraphClient;
+use crate::common;
 use crate::error::ApiClientError;
 use async_trait::async_trait;
 use toy_api::graph::{DeleteOption, FindOption, GraphEntity, GraphsEntity, ListOption, PutOption};
@@ -27,39 +29,57 @@ impl<T> GraphClient for HttpGraphClient<T>
 where
     T: HttpClient,
 {
-    async fn list(&self, _opt: ListOption) -> Result<GraphsEntity, ApiClientError> {
-        let uri = format!("{}/graphs", self.root).parse::<Uri>()?;
-        let bytes = self.inner.get(uri).send().await?.bytes().await?;
-        let r = toy_pack_json::unpack::<GraphsEntity>(&bytes)?;
+    async fn list(&self, opt: ListOption) -> Result<GraphsEntity, ApiClientError> {
+        let query = toy_pack_urlencoded::pack_to_string(&opt)?;
+        let uri = format!("{}/graphs?{}", self.root, query).parse::<Uri>()?;
+        let h = common_headers(opt.format());
+        let bytes = self.inner.get(uri).headers(h).send().await?.bytes().await?;
+        let r = common::decode::<GraphsEntity>(&bytes, opt.format())?;
         Ok(r)
     }
 
     async fn find(
         &self,
         key: String,
-        _opt: FindOption,
+        opt: FindOption,
     ) -> Result<Option<GraphEntity>, ApiClientError> {
-        let uri = format!("{}/graphs/{}", self.root, key).parse::<Uri>()?;
-        let bytes = self.inner.get(uri).send().await?.bytes().await?;
-        let r = toy_pack_json::unpack::<Option<GraphEntity>>(&bytes)?;
+        let query = toy_pack_urlencoded::pack_to_string(&opt)?;
+        let uri = format!("{}/graphs/{}?{}", self.root, key, query).parse::<Uri>()?;
+        let h = common_headers(opt.format());
+        let bytes = self.inner.get(uri).headers(h).send().await?.bytes().await?;
+        let r = common::decode::<Option<GraphEntity>>(&bytes, opt.format())?;
         Ok(r)
     }
 
-    async fn put(
-        &self,
-        key: String,
-        v: GraphEntity,
-        _opt: PutOption,
-    ) -> Result<(), ApiClientError> {
-        let uri = format!("{}/graphs/{}", self.root, key).parse::<Uri>()?;
-        let body = toy_pack_json::pack(&v)?;
-        let _ = self.inner.put(uri).body(body).send().await?.bytes().await?;
+    async fn put(&self, key: String, v: GraphEntity, opt: PutOption) -> Result<(), ApiClientError> {
+        let query = toy_pack_urlencoded::pack_to_string(&opt)?;
+        let uri = format!("{}/graphs/{}?{}", self.root, key, query).parse::<Uri>()?;
+        let h = common_headers(opt.format());
+        let body = common::encode(&v, opt.format())?;
+        let _ = self
+            .inner
+            .put(uri)
+            .headers(h)
+            .body(body)
+            .send()
+            .await?
+            .bytes()
+            .await?;
         Ok(())
     }
 
-    async fn delete(&self, key: String, _opt: DeleteOption) -> Result<(), ApiClientError> {
-        let uri = format!("{}/graphs/{}", self.root, key).parse::<Uri>()?;
-        let _ = self.inner.delete(uri).send().await?.bytes().await?;
+    async fn delete(&self, key: String, opt: DeleteOption) -> Result<(), ApiClientError> {
+        let query = toy_pack_urlencoded::pack_to_string(&opt)?;
+        let uri = format!("{}/graphs/{}?{}", self.root, key, query).parse::<Uri>()?;
+        let h = common_headers(opt.format());
+        let _ = self
+            .inner
+            .delete(uri)
+            .headers(h)
+            .send()
+            .await?
+            .bytes()
+            .await?;
         Ok(())
     }
 }

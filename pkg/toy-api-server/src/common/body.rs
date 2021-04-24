@@ -1,34 +1,41 @@
 use crate::common::error::ApiError;
-use toy_core::prelude::Value;
+use toy_api::common::Format;
+use toy_h::Bytes;
 use toy_pack::deser::DeserializableOwned;
 use warp::{Buf, Filter};
 
-pub fn yaml() -> impl Filter<Extract = (Value,), Error = warp::Rejection> + Clone {
-    // warp::body::content_length_limit(1024 * 16).and(warp::body::json())
-    warp::body::aggregate().and_then(|buf| async move {
-        let s = buf_to_string(buf);
-        match s {
-            Ok(x) => toy_pack_yaml::unpack::<Value>(x.as_str())
-                .map_err(|e| warp::reject::custom(ApiError::from(e))),
-            Err(e) => Err(warp::reject::custom(e)),
-        }
-    })
+pub fn bytes() -> impl Filter<Extract = (Bytes,), Error = warp::Rejection> + Copy {
+    warp::body::bytes()
 }
 
-pub fn json<T>() -> impl Filter<Extract = (T,), Error = warp::Rejection> + Clone
-where
-    T: DeserializableOwned,
-{
-    // warp::body::content_length_limit(1024 * 16).and(warp::body::json())
-    warp::body::bytes().and_then(|buf| async move {
-        decode_json(buf).map_err(|e| warp::reject::custom(ApiError::from(e)))
-    })
+pub fn decode<B: Buf, T: DeserializableOwned>(
+    buf: B,
+    format: Option<Format>,
+) -> Result<T, ApiError> {
+    let format = format.unwrap_or_default();
+    match format {
+        Format::Json => decode_json(buf).map_err(|e| ApiError::from(e)),
+        Format::MessagePack => decode_mp(buf).map_err(|e| ApiError::from(e)),
+        Format::Yaml => decode_yaml(buf),
+    }
 }
 
 fn decode_json<B: Buf, T: DeserializableOwned>(
     mut buf: B,
 ) -> Result<T, toy_pack_json::DecodeError> {
     toy_pack_json::unpack::<T>(&buf.copy_to_bytes(buf.remaining()))
+}
+
+fn decode_mp<B: Buf, T: DeserializableOwned>(mut buf: B) -> Result<T, toy_pack_mp::DecodeError> {
+    toy_pack_mp::unpack::<T>(&buf.copy_to_bytes(buf.remaining()))
+}
+
+fn decode_yaml<B: Buf, T: DeserializableOwned>(buf: B) -> Result<T, ApiError> {
+    let s = buf_to_string(buf);
+    match s {
+        Ok(x) => toy_pack_yaml::unpack::<T>(x.as_str()).map_err(|x| ApiError::error(x)),
+        Err(e) => Err(ApiError::error(e)),
+    }
 }
 
 fn buf_to_string<T: warp::Buf>(mut buf: T) -> Result<String, ApiError> {

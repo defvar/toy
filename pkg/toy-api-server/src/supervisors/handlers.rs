@@ -6,9 +6,10 @@ use crate::store::kv::{
 use crate::supervisors::store::SupervisorStore;
 use std::convert::Infallible;
 use toy_api::supervisors::{
-    FindOption as ApiFindOption, ListOption as ApiListOption, Supervisor, Supervisors,
+    FindOption as ApiFindOption, ListOption as ApiListOption, PutOption as ApiPutOption,
+    Supervisor, Supervisors,
 };
-use toy_h::HttpClient;
+use toy_h::{Bytes, HttpClient};
 use warp::http::StatusCode;
 use warp::reply::Reply;
 
@@ -70,16 +71,19 @@ where
 
 pub async fn put<T>(
     key: String,
-    v: Supervisor,
+    opt: Option<ApiPutOption>,
+    request: Bytes,
     store: impl SupervisorStore<T>,
 ) -> Result<impl warp::Reply, warp::Rejection>
 where
     T: HttpClient,
 {
-    let key = common::constants::supervisor_key(key);
+    let format = opt.map(|x| x.format()).unwrap_or(None);
+    let v = common::body::decode::<_, Supervisor>(request, format)?;
     //
     // validation...?
     //
+    let key = common::constants::supervisor_key(key);
     match store
         .ops()
         .put(store.con().unwrap(), key, v, PutOption::new())

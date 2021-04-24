@@ -2,6 +2,7 @@ use crate::api::{graphs, supervisors, tasks};
 use crate::auth::auth_filter;
 use crate::config::ServerConfig;
 use crate::graph::store::GraphStore;
+use crate::reject_handler::handle_rejection;
 use crate::supervisors::store::SupervisorStore;
 use crate::task::store::{TaskLogStore, TaskStore};
 use std::net::SocketAddr;
@@ -97,7 +98,8 @@ where
                         Method::PUT,
                     ]),
             )
-            .with(warp::trace::request());
+            .with(warp::trace::request())
+            .recover(handle_rejection);
 
         self.run_with_routes(addr, routes).await
     }
