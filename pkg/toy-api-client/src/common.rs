@@ -8,8 +8,7 @@ pub fn encode<T>(v: &T, format: Option<Format>) -> Result<Vec<u8>, ApiClientErro
 where
     T: Serializable,
 {
-    let format = format.unwrap_or_default();
-    match format {
+    match format.unwrap_or(Format::MessagePack) {
         Format::Json => encode_json(v),
         Format::Yaml => unimplemented!("not support"),
         Format::MessagePack => encode_mp(v),
@@ -21,8 +20,7 @@ pub fn decode<T>(bytes: &[u8], format: Option<Format>) -> Result<T, ApiClientErr
 where
     T: DeserializableOwned,
 {
-    let format = format.unwrap_or_default();
-    match format {
+    match format.unwrap_or(Format::MessagePack) {
         Format::Json => decode_json(bytes),
         Format::Yaml => unimplemented!("not support"),
         Format::MessagePack => decode_mp(bytes),

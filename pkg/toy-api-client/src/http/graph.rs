@@ -1,4 +1,4 @@
-use super::common_headers;
+use super::{common_headers, prepare_query};
 use crate::client::GraphClient;
 use crate::common;
 use crate::error::ApiClientError;
@@ -30,7 +30,7 @@ where
     T: HttpClient,
 {
     async fn list(&self, opt: ListOption) -> Result<GraphsEntity, ApiClientError> {
-        let query = toy_pack_urlencoded::pack_to_string(&opt)?;
+        let query = prepare_query(&opt)?;
         let uri = format!("{}/graphs?{}", self.root, query).parse::<Uri>()?;
         let h = common_headers(opt.format());
         let bytes = self.inner.get(uri).headers(h).send().await?.bytes().await?;
@@ -43,7 +43,7 @@ where
         key: String,
         opt: FindOption,
     ) -> Result<Option<GraphEntity>, ApiClientError> {
-        let query = toy_pack_urlencoded::pack_to_string(&opt)?;
+        let query = prepare_query(&opt)?;
         let uri = format!("{}/graphs/{}?{}", self.root, key, query).parse::<Uri>()?;
         let h = common_headers(opt.format());
         let bytes = self.inner.get(uri).headers(h).send().await?.bytes().await?;
@@ -52,7 +52,7 @@ where
     }
 
     async fn put(&self, key: String, v: GraphEntity, opt: PutOption) -> Result<(), ApiClientError> {
-        let query = toy_pack_urlencoded::pack_to_string(&opt)?;
+        let query = prepare_query(&opt)?;
         let uri = format!("{}/graphs/{}?{}", self.root, key, query).parse::<Uri>()?;
         let h = common_headers(opt.format());
         let body = common::encode(&v, opt.format())?;
@@ -69,7 +69,7 @@ where
     }
 
     async fn delete(&self, key: String, opt: DeleteOption) -> Result<(), ApiClientError> {
-        let query = toy_pack_urlencoded::pack_to_string(&opt)?;
+        let query = prepare_query(&opt)?;
         let uri = format!("{}/graphs/{}?{}", self.root, key, query).parse::<Uri>()?;
         let h = common_headers(opt.format());
         let _ = self

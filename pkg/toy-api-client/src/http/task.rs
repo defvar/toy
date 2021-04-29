@@ -1,4 +1,4 @@
-use super::common_headers;
+use super::{common_headers, prepare_query};
 use crate::client::TaskClient;
 use crate::common;
 use crate::error::ApiClientError;
@@ -38,7 +38,7 @@ where
     type WatchStream = impl Stream<Item = Result<PendingsEntity, ApiClientError>>;
 
     async fn watch(&self, opt: WatchOption) -> Result<Self::WatchStream, ApiClientError> {
-        let query = toy_pack_urlencoded::pack_to_string(&opt)?;
+        let query = prepare_query(&opt)?;
         let uri = format!("{}/tasks/watch?{}", self.root, query).parse::<Uri>()?;
         let h = common_headers(opt.format());
         let stream = self
@@ -61,7 +61,7 @@ where
         req: AllocateRequest,
         opt: AllocateOption,
     ) -> Result<AllocateResponse, ApiClientError> {
-        let query = toy_pack_urlencoded::pack_to_string(&opt)?;
+        let query = prepare_query(&opt)?;
         let uri = format!("{}/tasks/{}/allocate?{}", self.root, key, query).parse::<Uri>()?;
         let h = common_headers(opt.format());
         let body = common::encode(&req, opt.format())?;
@@ -79,7 +79,7 @@ where
     }
 
     async fn post(&self, v: GraphEntity, opt: PostOption) -> Result<(), ApiClientError> {
-        let query = toy_pack_urlencoded::pack_to_string(&opt)?;
+        let query = prepare_query(&opt)?;
         let uri = format!("{}/tasks?{}", self.root, query).parse::<Uri>()?;
         let h = common_headers(opt.format());
         let body = common::encode(&v, opt.format())?;
@@ -96,7 +96,7 @@ where
     }
 
     async fn list(&self, opt: ListOption) -> Result<TasksEntity, ApiClientError> {
-        let query = toy_pack_urlencoded::pack_to_string(&opt)?;
+        let query = prepare_query(&opt)?;
         let uri = format!("{}/tasks?{}", self.root, query).parse::<Uri>()?;
         let h = common_headers(opt.format());
         let bytes = self.inner.get(uri).headers(h).send().await?.bytes().await?;
@@ -105,7 +105,7 @@ where
     }
 
     async fn log(&self, key: String, opt: LogOption) -> Result<TaskLogEntity, ApiClientError> {
-        let query = toy_pack_urlencoded::pack_to_string(&opt)?;
+        let query = prepare_query(&opt)?;
         let uri = format!("{}/tasks/{}/log?{}", self.root, key, query).parse::<Uri>()?;
         let h = common_headers(opt.format());
         let bytes = self.inner.get(uri).headers(h).send().await?.bytes().await?;

@@ -10,6 +10,9 @@ use crate::client::ApiClient;
 use crate::error::ApiClientError;
 use toy_api::common::Format;
 use toy_h::impl_reqwest::ReqwestClient;
+use toy_pack::ser::Serializable;
+use toy_pack::Pack;
+use toy_pack_urlencoded::QueryParseError;
 
 #[derive(Debug, Clone)]
 pub struct HttpApiClient {
@@ -59,13 +62,35 @@ pub(crate) fn common_headers(format: Option<Format>) -> toy_h::HeaderMap {
     use toy_h::{header::HeaderValue, header::CONTENT_TYPE, HeaderMap};
 
     let mut headers = HeaderMap::new();
-    if let Some(format) = format {
-        let v = match format {
-            Format::Json => HeaderValue::from_static("application/json"),
-            Format::MessagePack => HeaderValue::from_static("application/x-msgpack"),
-            Format::Yaml => HeaderValue::from_static("application/yaml"),
-        };
-        headers.insert(CONTENT_TYPE, v);
-    }
+
+    let v = match format.unwrap_or(Format::MessagePack) {
+        Format::Json => HeaderValue::from_static("application/json"),
+        Format::MessagePack => HeaderValue::from_static("application/x-msgpack"),
+        Format::Yaml => HeaderValue::from_static("application/yaml"),
+    };
+    headers.insert(CONTENT_TYPE, v);
+
     headers
+}
+
+pub(crate) fn prepare_query<T>(p: &T) -> Result<String, QueryParseError>
+where
+    T: Serializable,
+{
+    #[derive(Pack)]
+    struct DefaultFormat {
+        format: Format,
+    }
+
+    let mut q: String = toy_pack_urlencoded::pack_to_string(p)?;
+    if !q.contains("format") {
+        if q.contains("=") {
+            q.push('&');
+        }
+        let q2 = toy_pack_urlencoded::pack_to_string(&DefaultFormat {
+            format: Format::MessagePack,
+        })?;
+        q.push_str(&q2);
+    }
+    Ok(q)
 }

@@ -183,7 +183,7 @@ pub trait DecoderOps<'toy> {
             (Marker::I16, _) => T::from_i16(self.decode_i16()?),
             (Marker::I32, _) => T::from_i32(self.decode_i32()?),
             (Marker::I64, _) => T::from_i64(self.decode_i64()?),
-            (other, _) => return Err(DecodeError::from(other)),
+            (other, _) => return Err(DecodeError::invalid_type(other, "integer")),
         };
         r.ok_or_else(|| DecodeError::OutOfRange)
     }
@@ -193,7 +193,7 @@ pub trait DecoderOps<'toy> {
             (Marker::FixArray, fb) => Ok(fb as u32),
             (Marker::Array16, _) => Ok(self.get_u16()? as u32),
             (Marker::Array32, _) => Ok(self.get_u32()? as u32),
-            (other, _) => Err(DecodeError::from(other)),
+            (other, _) => Err(DecodeError::invalid_type(other, "array length")),
         }
     }
 
@@ -202,7 +202,7 @@ pub trait DecoderOps<'toy> {
             (Marker::FixMap, fb) => Ok(fb as u32),
             (Marker::Map16, _) => Ok(self.get_u16()? as u32),
             (Marker::Map32, _) => Ok(self.get_u32()? as u32),
-            (other, _) => Err(DecodeError::from(other)),
+            (other, _) => Err(DecodeError::invalid_type(other, "map length")),
         }
     }
 
@@ -221,7 +221,7 @@ pub trait DecoderOps<'toy> {
             (Marker::Str8, _) => Ok(self.get_byte()? as u32),
             (Marker::Str16, _) => Ok(self.get_u16()? as u32),
             (Marker::Str32, _) => Ok(self.get_u32()? as u32),
-            (other, _) => Err(DecodeError::from(other)),
+            (other, _) => Err(DecodeError::invalid_type(other, "str length")),
         }
     }
 

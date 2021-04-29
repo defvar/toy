@@ -5,15 +5,15 @@ fn uint_values() {
     let data: &[(u64, usize)] = &[
         (0, 1),
         (1, 1),
-        (i8::max_value() as u64, 1),
+        (i8::MAX as u64, 1),
         (128, 2),
         (255, 2),
         (256, 3),
-        (i16::max_value() as u64, 3),
-        (u16::max_value() as u64, 3),
+        (i16::MAX as u64, 3),
+        (u16::MAX as u64, 3),
         (65536, 5),
-        (i32::max_value() as u64, 5),
-        (u32::max_value() as u64, 5),
+        (i32::MAX as u64, 5),
+        (u32::MAX as u64, 5),
         (4294967296, 9),
     ];
 

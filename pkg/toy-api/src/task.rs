@@ -226,10 +226,9 @@ pub struct WatchOption {
 
 impl WatchOption {
     pub fn new() -> Self {
-        Self {
-            format: Some(Format::default()),
-        }
+        Self { format: None }
     }
+
     pub fn format(&self) -> Option<Format> {
         self.format
     }
@@ -243,10 +242,9 @@ pub struct ListOption {
 
 impl ListOption {
     pub fn new() -> Self {
-        Self {
-            format: Some(Format::default()),
-        }
+        Self { format: None }
     }
+
     pub fn format(&self) -> Option<Format> {
         self.format
     }
@@ -260,10 +258,9 @@ pub struct PostOption {
 
 impl PostOption {
     pub fn new() -> Self {
-        Self {
-            format: Some(Format::default()),
-        }
+        Self { format: None }
     }
+
     pub fn format(&self) -> Option<Format> {
         self.format
     }
@@ -277,10 +274,9 @@ pub struct AllocateOption {
 
 impl AllocateOption {
     pub fn new() -> Self {
-        Self {
-            format: Some(Format::default()),
-        }
+        Self { format: None }
     }
+
     pub fn format(&self) -> Option<Format> {
         self.format
     }
@@ -294,9 +290,7 @@ pub struct LogOption {
 
 impl LogOption {
     pub fn new() -> Self {
-        Self {
-            format: Some(Format::default()),
-        }
+        Self { format: None }
     }
 
     pub fn format(&self) -> Option<Format> {

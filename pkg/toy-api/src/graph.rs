@@ -47,10 +47,9 @@ pub struct FindOption {
 
 impl FindOption {
     pub fn new() -> Self {
-        Self {
-            format: Some(Format::default()),
-        }
+        Self { format: None }
     }
+
     pub fn format(&self) -> Option<Format> {
         self.format
     }
@@ -63,10 +62,9 @@ pub struct ListOption {
 
 impl ListOption {
     pub fn new() -> Self {
-        Self {
-            format: Some(Format::default()),
-        }
+        Self { format: None }
     }
+
     pub fn format(&self) -> Option<Format> {
         self.format
     }
@@ -79,10 +77,9 @@ pub struct PutOption {
 
 impl PutOption {
     pub fn new() -> Self {
-        Self {
-            format: Some(Format::default()),
-        }
+        Self { format: None }
     }
+
     pub fn format(&self) -> Option<Format> {
         self.format
     }
@@ -95,10 +92,9 @@ pub struct DeleteOption {
 
 impl DeleteOption {
     pub fn new() -> Self {
-        Self {
-            format: Some(Format::default()),
-        }
+        Self { format: None }
     }
+
     pub fn format(&self) -> Option<Format> {
         self.format
     }

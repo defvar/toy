@@ -87,10 +87,11 @@ where
     type Error = EncodeError;
 
     #[inline]
-    fn field<T: ?Sized>(&mut self, _key: &'static str, value: &T) -> Result<(), Self::Error>
+    fn field<T: ?Sized>(&mut self, key: &'static str, value: &T) -> Result<(), Self::Error>
     where
         T: Serializable,
     {
+        key.serialize(&mut *self.ser)?;
         value.serialize(&mut *self.ser)
     }
 
