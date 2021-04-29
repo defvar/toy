@@ -1,4 +1,6 @@
+use super::{common_headers, prepare_query};
 use crate::client::SupervisorClient;
+use crate::common;
 use crate::error::ApiClientError;
 use async_trait::async_trait;
 use toy_api::supervisors::{
@@ -29,34 +31,57 @@ impl<T> SupervisorClient for HttpSupervisorClient<T>
 where
     T: HttpClient,
 {
-    async fn list(&self, _opt: ListOption) -> Result<Supervisors, ApiClientError> {
-        let uri = format!("{}/supervisors", self.root).parse::<Uri>()?;
-        let bytes = self.inner.get(uri).send().await?.bytes().await?;
-        let r = toy_pack_json::unpack::<Supervisors>(&bytes)?;
+    async fn list(&self, opt: ListOption) -> Result<Supervisors, ApiClientError> {
+        let query = prepare_query(&opt)?;
+        let uri = format!("{}/supervisors?{}", self.root, query).parse::<Uri>()?;
+        let h = common_headers(opt.format());
+        let bytes = self.inner.get(uri).headers(h).send().await?.bytes().await?;
+        let r = common::decode::<Supervisors>(&bytes, opt.format())?;
         Ok(r)
     }
 
     async fn find(
         &self,
         key: String,
-        _opt: FindOption,
+        opt: FindOption,
     ) -> Result<Option<Supervisor>, ApiClientError> {
-        let uri = format!("{}/supervisors/{}", self.root, key).parse::<Uri>()?;
-        let bytes = self.inner.get(uri).send().await?.bytes().await?;
-        let r = toy_pack_json::unpack::<Option<Supervisor>>(&bytes)?;
+        let query = prepare_query(&opt)?;
+        let uri = format!("{}/supervisors/{}?{}", self.root, key, query).parse::<Uri>()?;
+        let h = common_headers(opt.format());
+        let bytes = self.inner.get(uri).headers(h).send().await?.bytes().await?;
+        let r = common::decode::<Option<Supervisor>>(&bytes, opt.format())?;
         Ok(r)
     }
 
-    async fn put(&self, key: String, v: Supervisor, _opt: PutOption) -> Result<(), ApiClientError> {
-        let uri = format!("{}/supervisors/{}", self.root, key).parse::<Uri>()?;
-        let body = toy_pack_json::pack(&v)?;
-        let _ = self.inner.put(uri).body(body).send().await?.bytes().await?;
+    async fn put(&self, key: String, v: Supervisor, opt: PutOption) -> Result<(), ApiClientError> {
+        let query = prepare_query(&opt)?;
+        let uri = format!("{}/supervisors/{}?{}", self.root, key, query).parse::<Uri>()?;
+        let h = common_headers(opt.format());
+        let body = common::encode(&v, opt.format())?;
+        let _ = self
+            .inner
+            .put(uri)
+            .headers(h)
+            .body(body)
+            .send()
+            .await?
+            .bytes()
+            .await?;
         Ok(())
     }
 
-    async fn delete(&self, key: String, _opt: DeleteOption) -> Result<(), ApiClientError> {
-        let uri = format!("{}/supervisors/{}", self.root, key).parse::<Uri>()?;
-        let _ = self.inner.delete(uri).send().await?.bytes().await?;
+    async fn delete(&self, key: String, opt: DeleteOption) -> Result<(), ApiClientError> {
+        let query = prepare_query(&opt)?;
+        let uri = format!("{}/supervisors/{}?{}", self.root, key, query).parse::<Uri>()?;
+        let h = common_headers(opt.format());
+        let _ = self
+            .inner
+            .delete(uri)
+            .headers(h)
+            .send()
+            .await?
+            .bytes()
+            .await?;
         Ok(())
     }
 }

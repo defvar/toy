@@ -1,8 +1,7 @@
 use crate::common::{self, body};
 use crate::task::handlers;
 use crate::task::store::{TaskLogStore, TaskStore};
-use toy_api::graph::GraphEntity;
-use toy_api::task::{AllocateOption, AllocateRequest};
+use toy_api::task::{AllocateOption, ListOption, LogOption, PostOption, WatchOption};
 use toy_h::HttpClient;
 use warp::Filter;
 
@@ -29,9 +28,10 @@ where
 {
     warp::path!("tasks")
         .and(warp::post())
-        .and(body::json::<GraphEntity>())
+        .and(common::query::query_opt::<PostOption>())
+        .and(body::bytes())
         .and(with_task_store(task_store))
-        .and_then(|a, b| handlers::post(a, b))
+        .and_then(handlers::post)
 }
 
 pub fn tasks_watch<T>(
@@ -42,6 +42,7 @@ where
 {
     warp::path!("tasks" / "watch")
         .and(warp::get())
+        .and(common::query::query_opt::<WatchOption>())
         .and(with_task_store(task_store))
         .and_then(handlers::watch)
 }
@@ -55,7 +56,7 @@ where
     warp::path!("tasks" / String / "allocate")
         .and(warp::post())
         .and(common::query::query_opt::<AllocateOption>())
-        .and(body::json::<AllocateRequest>())
+        .and(body::bytes())
         .and(with_task_store(task_store))
         .and_then(|a, b, c, d| handlers::allocate(a, b, c, d))
 }
@@ -68,6 +69,7 @@ where
 {
     warp::path!("tasks")
         .and(warp::get())
+        .and(common::query::query_opt::<ListOption>())
         .and(with_log_store(log_store))
         .and_then(handlers::tasks)
 }
@@ -80,8 +82,9 @@ where
 {
     warp::path!("tasks" / String / "log")
         .and(warp::get())
+        .and(common::query::query_opt::<LogOption>())
         .and(with_log_store(log_store))
-        .and_then(|a, b| handlers::log(a, b))
+        .and_then(handlers::log)
 }
 
 fn with_log_store<T>(

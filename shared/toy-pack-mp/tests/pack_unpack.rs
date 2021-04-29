@@ -10,7 +10,6 @@ fn same_struct_type() {
         name: "aiueo".to_owned(),
         borrowed_name: "kakikukeko",
     };
-
     let vec = pack(&dum).unwrap();
     let dest = unpack::<Dum>(vec.as_slice()).unwrap();
 
@@ -72,6 +71,40 @@ fn struct_variant() {
     };
     let vec = pack(&v).unwrap();
     let dest = unpack::<TestEnum>(vec.as_slice()).unwrap();
+
+    assert_eq!(v, dest);
+}
+
+#[test]
+fn ignore_if_none() {
+    #[derive(Debug, PartialEq, Eq, Pack, Unpack)]
+    #[toy(ignore_pack_if_none)]
+    struct Test {
+        a: Option<String>,
+        b: bool,
+    }
+
+    let v = Test { a: None, b: true };
+
+    let vec = pack(&v).unwrap();
+    let dest = unpack::<Test>(vec.as_slice()).unwrap();
+
+    assert_eq!(v, dest);
+}
+
+#[test]
+fn ignore_if_none_all() {
+    #[derive(Debug, Clone, PartialEq, Eq, Pack, Unpack)]
+    #[toy(ignore_pack_if_none)]
+    struct Test {
+        a: Option<String>,
+        b: Option<String>,
+    }
+
+    let v = Test { a: None, b: None };
+
+    let vec = pack(&v).unwrap();
+    let dest = unpack::<Test>(vec.as_slice()).unwrap();
 
     assert_eq!(v, dest);
 }

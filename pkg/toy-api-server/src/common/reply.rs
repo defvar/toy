@@ -1,9 +1,11 @@
+use crate::ApiError;
 use futures_util::stream::Stream;
+use std::marker::PhantomData;
 use toy_api::common::Format;
 use toy_pack::ser::Serializable;
-use toy_pack_json::EncodeError;
 use warp::http::header::{HeaderValue, CACHE_CONTROL, CONTENT_TYPE, TRANSFER_ENCODING};
 use warp::http::StatusCode;
+use warp::hyper::body::Bytes;
 use warp::reply::Reply;
 use warp::reply::Response;
 
@@ -19,7 +21,38 @@ where
     }
 }
 
-pub fn mp<T>(v: &T) -> Mp
+pub fn into_response_stream<St, B>(stream: St, format: Option<Format>) -> ReplyStream<St, B>
+where
+    St: Stream<Item = Result<B, ApiError>> + Send + 'static,
+    B: Into<Bytes> + Send + 'static,
+{
+    let format = format.unwrap_or(Format::default());
+    ReplyStream {
+        inner: stream,
+        content_type: ResponseContentType::from_format(format),
+        t: PhantomData,
+    }
+}
+
+pub fn encode<T>(v: &T, format: Option<Format>) -> Result<Bytes, ApiError>
+where
+    T: Serializable,
+{
+    let format = format.unwrap_or_default();
+    match format {
+        Format::Json => toy_pack_json::pack(v)
+            .map(Bytes::from)
+            .map_err(|e| ApiError::error(e)),
+        Format::Yaml => toy_pack_yaml::pack_to_string(v)
+            .map(Bytes::from)
+            .map_err(|e| ApiError::error(e)),
+        Format::MessagePack => toy_pack_mp::pack(v)
+            .map(Bytes::from)
+            .map_err(|e| ApiError::error(e)),
+    }
+}
+
+fn mp<T>(v: &T) -> Mp
 where
     T: Serializable,
 {
@@ -29,7 +62,7 @@ where
     }
 }
 
-pub fn yaml<T>(v: &T) -> Yaml
+fn yaml<T>(v: &T) -> Yaml
 where
     T: Serializable,
 {
@@ -49,14 +82,31 @@ where
     }
 }
 
-pub fn json_stream<St>(stream: St) -> JsonStream<St>
-where
-    St: Stream<Item = Result<String, EncodeError>> + Send + 'static,
-{
-    JsonStream { inner: stream }
+pub enum ResponseContentType {
+    Json,
+    MessagePack,
+    Yaml,
 }
 
-pub struct Mp {
+impl ResponseContentType {
+    pub fn to_header_value(&self) -> HeaderValue {
+        match self {
+            ResponseContentType::Json => HeaderValue::from_static("application/json"),
+            ResponseContentType::MessagePack => HeaderValue::from_static("application/x-msgpack"),
+            ResponseContentType::Yaml => HeaderValue::from_static("application/yaml"),
+        }
+    }
+
+    pub fn from_format(v: Format) -> ResponseContentType {
+        match v {
+            Format::Json => ResponseContentType::Json,
+            Format::MessagePack => ResponseContentType::MessagePack,
+            Format::Yaml => ResponseContentType::Yaml,
+        }
+    }
+}
+
+struct Mp {
     inner: Result<Vec<u8>, ()>,
 }
 
@@ -67,7 +117,7 @@ impl warp::Reply for Mp {
                 let mut res = Response::new(body.into());
                 res.headers_mut().insert(
                     CONTENT_TYPE,
-                    HeaderValue::from_static("application/x-msgpack"),
+                    ResponseContentType::MessagePack.to_header_value(),
                 );
                 res
             }
@@ -76,7 +126,7 @@ impl warp::Reply for Mp {
     }
 }
 
-pub struct Yaml {
+struct Yaml {
     inner: Result<String, ()>,
 }
 
@@ -87,7 +137,7 @@ impl warp::Reply for Yaml {
             Ok(body) => {
                 let mut res = Response::new(body.into());
                 res.headers_mut()
-                    .insert(CONTENT_TYPE, HeaderValue::from_static("application/yaml"));
+                    .insert(CONTENT_TYPE, ResponseContentType::Yaml.to_header_value());
                 res
             }
             Err(()) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
@@ -106,7 +156,7 @@ impl warp::Reply for Json {
             Ok(body) => {
                 let mut res = Response::new(body.into());
                 res.headers_mut()
-                    .insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
+                    .insert(CONTENT_TYPE, ResponseContentType::Json.to_header_value());
                 res
             }
             Err(()) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
@@ -114,19 +164,22 @@ impl warp::Reply for Json {
     }
 }
 
-pub struct JsonStream<St> {
+pub struct ReplyStream<St, B> {
     inner: St,
+    content_type: ResponseContentType,
+    t: PhantomData<B>,
 }
 
-impl<St> warp::Reply for JsonStream<St>
+impl<St, B> warp::Reply for ReplyStream<St, B>
 where
-    St: Stream<Item = Result<String, EncodeError>> + Send + 'static,
+    St: Stream<Item = Result<B, ApiError>> + Send + 'static,
+    B: Into<Bytes> + Send + 'static,
 {
     #[inline]
     fn into_response(self) -> Response {
         let mut res = Response::new(warp::hyper::Body::wrap_stream(self.inner));
         res.headers_mut()
-            .insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
+            .insert(CONTENT_TYPE, self.content_type.to_header_value());
         res.headers_mut()
             .insert(CACHE_CONTROL, HeaderValue::from_static("no-cache"));
         res.headers_mut()

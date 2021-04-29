@@ -1,9 +1,10 @@
-use std::fmt::Display;
+use std::fmt::{Debug, Display};
 use thiserror::Error;
 use toy_core::error::ConfigError;
 use toy_pack_json::{DecodeError, EncodeError};
 use toy_pack_urlencoded::QueryParseError;
 use toy_pack_yaml::error::YamlError;
+use warp::http::StatusCode;
 
 #[derive(Debug, Error)]
 pub enum ApiError {
@@ -17,6 +18,12 @@ pub enum ApiError {
     SerializeJsonValue { inner: EncodeError },
 
     #[error("error: {:?}", inner)]
+    DeserializeMessagePackValue { inner: toy_pack_mp::DecodeError },
+
+    #[error("error: {:?}", inner)]
+    SerializeMessagePackValue { inner: toy_pack_mp::EncodeError },
+
+    #[error("error: {:?}", inner)]
     DeserializeConfig { inner: ConfigError },
 
     #[error("authentication failed. {:?}", inner)]
@@ -27,6 +34,12 @@ pub enum ApiError {
         #[from]
         source: QueryParseError,
     },
+
+    #[error("store operation failed: {:?}", inner)]
+    StoreOperationFailed { inner: String },
+
+    #[error("task id invalid format: {:?}", id)]
+    TaskIdInvalidFormat { id: String },
 
     #[error("error: {:?}", inner)]
     Error { inner: String },
@@ -40,6 +53,18 @@ impl ApiError {
         ApiError::Error {
             inner: msg.to_string(),
         }
+    }
+
+    pub fn status_code(&self) -> StatusCode {
+        match self {
+            //TODO: error code....
+            ApiError::QueryParse { .. } => StatusCode::BAD_REQUEST,
+            _ => StatusCode::INTERNAL_SERVER_ERROR,
+        }
+    }
+
+    pub fn error_message(&self) -> String {
+        self.to_string()
     }
 
     pub fn authentication_failed<T>(msg: T) -> ApiError
@@ -58,6 +83,19 @@ impl ApiError {
     pub fn into_rejection(self) -> warp::Rejection {
         warp::reject::custom(self)
     }
+
+    pub fn store_operation_failed<T>(msg: T) -> ApiError
+    where
+        T: Debug,
+    {
+        ApiError::StoreOperationFailed {
+            inner: format!("{:?}", msg).to_string(),
+        }
+    }
+
+    pub fn task_id_invalid_format(id: String) -> ApiError {
+        ApiError::TaskIdInvalidFormat { id }
+    }
 }
 
 impl From<YamlError> for ApiError {
@@ -75,6 +113,18 @@ impl From<DecodeError> for ApiError {
 impl From<EncodeError> for ApiError {
     fn from(e: EncodeError) -> ApiError {
         ApiError::SerializeJsonValue { inner: e }
+    }
+}
+
+impl From<toy_pack_mp::DecodeError> for ApiError {
+    fn from(e: toy_pack_mp::DecodeError) -> ApiError {
+        ApiError::DeserializeMessagePackValue { inner: e }
+    }
+}
+
+impl From<toy_pack_mp::EncodeError> for ApiError {
+    fn from(e: toy_pack_mp::EncodeError) -> ApiError {
+        ApiError::SerializeMessagePackValue { inner: e }
     }
 }
 

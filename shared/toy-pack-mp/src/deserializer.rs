@@ -141,9 +141,7 @@ where
         } else if m.is_map_type() {
             self.deserialize_map(visitor)
         } else {
-            Err(Error::custom(
-                "deserialize struct, must be a map type or array type.",
-            ))
+            Err(DecodeError::invalid_struct_type(m))
         }
     }
 
@@ -181,7 +179,6 @@ where
         V: Visitor<'toy>,
     {
         let marker = self.peek_marker()?;
-
         if marker.is_array_type() {
             self.deserialize_seq(visitor)
         } else if marker.is_map_type() {

@@ -12,8 +12,18 @@ use crate::marker::Marker;
 ///
 #[derive(Debug, ThisError)]
 pub enum DecodeError {
-    #[error("invalid type. decoded marker:{:?}", inner)]
-    InvalidType { inner: Marker },
+    #[error("invalid type. decoded marker:{:?}, expected:{:?}", inner, expected)]
+    InvalidType {
+        inner: Marker,
+        expected: String,
+        backtrace: Backtrace,
+    },
+
+    #[error(
+        "deserialize struct, must be a map type or array type. decoded marker: {:?}",
+        inner
+    )]
+    InvalidStructType { inner: Marker, backtrace: Backtrace },
 
     #[error("num value out of range.")]
     OutOfRange,
@@ -45,11 +55,33 @@ impl DecodeError {
             inner: msg.to_string(),
         }
     }
+
+    pub fn invalid_type<T>(marker: Marker, expected: T) -> DecodeError
+    where
+        T: Display,
+    {
+        DecodeError::InvalidType {
+            inner: marker,
+            expected: expected.to_string(),
+            backtrace: Backtrace::capture(),
+        }
+    }
+
+    pub fn invalid_struct_type(marker: Marker) -> DecodeError {
+        DecodeError::InvalidStructType {
+            inner: marker,
+            backtrace: Backtrace::capture(),
+        }
+    }
 }
 
 impl From<Marker> for DecodeError {
     fn from(marker: Marker) -> DecodeError {
-        DecodeError::InvalidType { inner: marker }
+        DecodeError::InvalidType {
+            inner: marker,
+            expected: "".to_string(),
+            backtrace: Backtrace::capture(),
+        }
     }
 }
 

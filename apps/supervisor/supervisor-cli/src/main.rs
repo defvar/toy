@@ -1,5 +1,5 @@
 use clap::Clap;
-use toy::api_client_http::http::HttpApiClient;
+use toy::api_client::HttpApiClient;
 use toy::core::prelude::*;
 use toy::executor::ExecutorFactory;
 use tracing_subscriber::fmt::format::FmtSpan;

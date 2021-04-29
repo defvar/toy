@@ -1,3 +1,4 @@
+use crate::common::Format;
 use toy_core::prelude::Value;
 use toy_core::registry::PortType;
 use toy_pack::{Pack, Unpack};
@@ -39,38 +40,62 @@ impl GraphsEntity {
     }
 }
 
-#[derive(Clone, Debug)]
-pub struct FindOption {}
+#[derive(Clone, Debug, Pack, Unpack)]
+pub struct FindOption {
+    format: Option<Format>,
+}
 
 impl FindOption {
     pub fn new() -> Self {
-        Self {}
+        Self { format: None }
+    }
+
+    pub fn format(&self) -> Option<Format> {
+        self.format
     }
 }
 
-#[derive(Clone, Debug)]
-pub struct ListOption {}
+#[derive(Clone, Debug, Pack, Unpack)]
+pub struct ListOption {
+    format: Option<Format>,
+}
 
 impl ListOption {
     pub fn new() -> Self {
-        Self {}
+        Self { format: None }
+    }
+
+    pub fn format(&self) -> Option<Format> {
+        self.format
     }
 }
 
-#[derive(Clone, Debug)]
-pub struct PutOption {}
+#[derive(Clone, Debug, Pack, Unpack)]
+pub struct PutOption {
+    format: Option<Format>,
+}
 
 impl PutOption {
     pub fn new() -> Self {
-        Self {}
+        Self { format: None }
+    }
+
+    pub fn format(&self) -> Option<Format> {
+        self.format
     }
 }
 
-#[derive(Clone, Debug)]
-pub struct DeleteOption {}
+#[derive(Clone, Debug, Pack, Unpack)]
+pub struct DeleteOption {
+    format: Option<Format>,
+}
 
 impl DeleteOption {
     pub fn new() -> Self {
-        Self {}
+        Self { format: None }
+    }
+
+    pub fn format(&self) -> Option<Format> {
+        self.format
     }
 }

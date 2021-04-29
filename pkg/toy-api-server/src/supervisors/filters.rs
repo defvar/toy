@@ -2,7 +2,7 @@ use crate::common;
 use crate::common::body;
 use crate::supervisors::handlers;
 use crate::supervisors::store::SupervisorStore;
-use toy_api::supervisors::{FindOption, ListOption, Supervisor};
+use toy_api::supervisors::{FindOption, ListOption, PutOption};
 use toy_h::HttpClient;
 use warp::Filter;
 
@@ -53,9 +53,10 @@ where
 {
     warp::path!("supervisors" / String)
         .and(warp::put())
-        .and(body::json::<Supervisor>())
+        .and(common::query::query_opt::<PutOption>())
+        .and(body::bytes())
         .and(with_store(store))
-        .and_then(|a, b, c| handlers::put(a, b, c))
+        .and_then(handlers::put)
 }
 
 fn delete<T>(

@@ -11,7 +11,7 @@ default = []
 core = ["toy-core"]
 supervisor = ["toy-supervisor", "toy-executor", "core"]
 api-server = ["toy-api-server"]
-api-client-http = ["toy-api-client/http"]
+api-client = ["toy-api-client/http"]
 plugin = ["core"]
 
 [dependencies]

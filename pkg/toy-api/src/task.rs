@@ -218,33 +218,55 @@ impl TasksInner {
     }
 }
 
-#[derive(Clone, Debug)]
-pub struct WatchOption {}
+/// Watch api option.
+#[derive(Clone, Debug, Pack, Unpack)]
+pub struct WatchOption {
+    format: Option<Format>,
+}
 
 impl WatchOption {
     pub fn new() -> Self {
-        Self {}
+        Self { format: None }
+    }
+
+    pub fn format(&self) -> Option<Format> {
+        self.format
     }
 }
 
-#[derive(Clone, Debug)]
-pub struct ListOption {}
+/// List api option.
+#[derive(Clone, Debug, Pack, Unpack)]
+pub struct ListOption {
+    format: Option<Format>,
+}
 
 impl ListOption {
     pub fn new() -> Self {
-        Self {}
+        Self { format: None }
+    }
+
+    pub fn format(&self) -> Option<Format> {
+        self.format
     }
 }
 
-#[derive(Clone, Debug)]
-pub struct PostOption {}
+/// Post api option.
+#[derive(Clone, Debug, Pack, Unpack)]
+pub struct PostOption {
+    format: Option<Format>,
+}
 
 impl PostOption {
     pub fn new() -> Self {
-        Self {}
+        Self { format: None }
+    }
+
+    pub fn format(&self) -> Option<Format> {
+        self.format
     }
 }
 
+/// Allocate api option.
 #[derive(Clone, Debug, Pack, Unpack)]
 pub struct AllocateOption {
     format: Option<Format>,
@@ -252,20 +274,26 @@ pub struct AllocateOption {
 
 impl AllocateOption {
     pub fn new() -> Self {
-        Self {
-            format: Some(Format::default()),
-        }
+        Self { format: None }
     }
+
     pub fn format(&self) -> Option<Format> {
         self.format
     }
 }
 
-#[derive(Clone, Debug)]
-pub struct LogOption {}
+/// Log api option.
+#[derive(Clone, Debug, Pack, Unpack)]
+pub struct LogOption {
+    format: Option<Format>,
+}
 
 impl LogOption {
     pub fn new() -> Self {
-        Self {}
+        Self { format: None }
+    }
+
+    pub fn format(&self) -> Option<Format> {
+        self.format
     }
 }

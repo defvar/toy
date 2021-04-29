@@ -118,9 +118,9 @@ where
 
     fn serialize_some<T: ?Sized + Serializable>(
         self,
-        _value: &T,
+        value: &T,
     ) -> Result<Self::Ok, QueryParseError> {
-        Err(QueryParseError::unsupported_value("Some(T)"))
+        value.serialize(Part::new(self))
     }
 }
 
@@ -262,14 +262,14 @@ where
         Err(QueryParseError::unsupported("struct variant"))
     }
 
-    fn serialize_some<T: ?Sized>(self, _v: &T) -> Result<Self::Ok, Self::Error>
+    fn serialize_some<T: ?Sized>(self, v: &T) -> Result<Self::Ok, Self::Error>
     where
         T: Serializable,
     {
-        Err(QueryParseError::unsupported("Some(T)"))
+        self.inner.serialize_some(v)
     }
 
     fn serialize_none(self) -> Result<Self::Ok, Self::Error> {
-        Err(QueryParseError::unsupported("None"))
+        self.inner.serialize_none()
     }
 }

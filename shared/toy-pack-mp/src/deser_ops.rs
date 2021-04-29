@@ -5,6 +5,7 @@ use toy_pack::deser::{
 use crate::decode::Reference;
 
 use super::decode::{DecodeError, Decoder, DecoderOps, Reader};
+use crate::marker::Marker;
 
 /// Any Deserialize Ops implementation for MessagePack.
 ///
@@ -36,7 +37,15 @@ where
     {
         if self.remaining > 0 {
             self.remaining -= 1;
-            core.deserialize(&mut *self.de).map(Some)
+            if self.de.remaining() > 0 {
+                if Marker::Nil == self.de.peek_marker()? {
+                    return Ok(None);
+                }
+
+                core.deserialize(&mut *self.de).map(Some)
+            } else {
+                Ok(None)
+            }
         } else {
             Ok(None)
         }
@@ -59,12 +68,19 @@ where
     {
         if self.remaining > 0 {
             self.remaining -= 1;
+            if self.de.remaining() > 0 {
+                if Marker::Nil == self.de.peek_marker()? {
+                    return Ok(None);
+                }
 
-            match self.de.decode_str()? {
-                Reference::Borrowed(b) => visitor.visit_borrowed_str::<DecodeError>(b),
-                Reference::Copied(b) => visitor.visit_str::<DecodeError>(b),
+                match self.de.decode_str()? {
+                    Reference::Borrowed(b) => visitor.visit_borrowed_str::<DecodeError>(b),
+                    Reference::Copied(b) => visitor.visit_str::<DecodeError>(b),
+                }
+                .map(Some)
+            } else {
+                Ok(None)
             }
-            .map(Some)
         } else {
             Ok(None)
         }
@@ -76,7 +92,15 @@ where
     {
         if self.remaining > 0 {
             self.remaining -= 1;
-            core.deserialize(&mut *self.de).map(Some)
+            if self.de.remaining() > 0 {
+                if Marker::Nil == self.de.peek_marker()? {
+                    return Ok(None);
+                }
+
+                core.deserialize(&mut *self.de).map(Some)
+            } else {
+                Ok(None)
+            }
         } else {
             Ok(None)
         }

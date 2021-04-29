@@ -116,7 +116,7 @@ where
         _name: &'static str,
         len: usize,
     ) -> Result<Self::StructAccessOps, Self::Error> {
-        self.encode_array_len(len as u32)?;
+        self.encode_map_len(len as u32)?;
         Ok(SerializeCompound::new(self))
     }
 

@@ -12,3 +12,12 @@ fn vec_values() {
 
     assert_eq!(r, src);
 }
+
+#[test]
+fn vec_empty_values() {
+    let src: Vec<u32> = Vec::with_capacity(16);
+    let dest = pack(&src).unwrap();
+    let r = unpack::<Vec<u32>>(&dest).unwrap();
+
+    assert_eq!(r, src);
+}

@@ -45,6 +45,10 @@ pub struct FindOption {
 }
 
 impl FindOption {
+    pub fn new() -> Self {
+        Self { format: None }
+    }
+
     pub fn format(&self) -> Option<Format> {
         self.format
     }
@@ -56,6 +60,10 @@ pub struct ListOption {
 }
 
 impl ListOption {
+    pub fn new() -> Self {
+        Self { format: None }
+    }
+
     pub fn format(&self) -> Option<Format> {
         self.format
     }
@@ -67,22 +75,26 @@ pub struct PutOption {
 }
 
 impl PutOption {
-    pub fn format(&self) -> Option<Format> {
-        self.format
+    pub fn new() -> Self {
+        Self { format: None }
     }
 
-    pub fn with_format(self, format: Format) -> PutOption {
-        PutOption {
-            format: Some(format),
-        }
+    pub fn format(&self) -> Option<Format> {
+        self.format
     }
 }
 
 #[derive(Clone, Debug, Pack, Unpack)]
-pub struct DeleteOption {}
+pub struct DeleteOption {
+    format: Option<Format>,
+}
 
 impl DeleteOption {
     pub fn new() -> Self {
-        Self {}
+        Self { format: None }
+    }
+
+    pub fn format(&self) -> Option<Format> {
+        self.format
     }
 }
