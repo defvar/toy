@@ -186,8 +186,6 @@ pub trait EncoderOps {
     }
 
     fn encode_map_len(&mut self, len: u32) -> Result<Marker> {
-        assert!(len > 0);
-
         if len < 16 {
             self.put_marker_with_len(Marker::FixMap, len as u8)
                 .and(Ok(Marker::FixMap))

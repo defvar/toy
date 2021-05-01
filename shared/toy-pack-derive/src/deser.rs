@@ -151,7 +151,10 @@ fn enum_visitor_impl(target: &Model) -> Result<TokenStream, syn::Error> {
             let q = match variant.style {
                 Style::Unit => {
                     quote! {
-                        (__Field::#member_name, _) => toy_pack::export::Ok(#name::#variant_name),
+                        (__Field::#member_name, a) => {
+                            a.unit_variant()?;
+                            toy_pack::export::Ok(#name::#variant_name)
+                        },
                     }
                 }
                 Style::Newtype => {

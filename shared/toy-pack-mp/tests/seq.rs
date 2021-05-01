@@ -21,3 +21,12 @@ fn vec_empty_values() {
 
     assert_eq!(r, src);
 }
+
+#[test]
+fn vec_opt() {
+    let src = vec![Some(1), None, Some(2)];
+    let dest = pack(&src).unwrap();
+    let r = unpack::<Vec<Option<u32>>>(&dest).unwrap();
+
+    assert_eq!(r, src);
+}

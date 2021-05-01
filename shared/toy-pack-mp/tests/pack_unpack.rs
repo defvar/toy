@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use toy_pack_derive::*;
 use toy_pack_mp::{pack, unpack};
 
@@ -107,6 +108,29 @@ fn ignore_if_none_all() {
     let dest = unpack::<Test>(vec.as_slice()).unwrap();
 
     assert_eq!(v, dest);
+}
+
+#[test]
+fn skip_none_struct() {
+    #[derive(Debug, Clone, PartialEq, Pack, Unpack)]
+    #[toy(ignore_pack_if_none)]
+    struct Test {
+        b: Option<HashMap<String, u32>>,
+    }
+    let b = {
+        let mut src = HashMap::new();
+        src.insert("a".to_string(), 10);
+        Some(src)
+    };
+    let empty = Test { b: None };
+    let some = Test { b };
+
+    let src = vec![some.clone(), empty, some.clone()];
+    let dest = pack(&src).unwrap();
+    println!("{:?}", dest);
+    let r = unpack::<Vec<Test>>(&dest).unwrap();
+
+    assert_eq!(r, src);
 }
 
 //enum pattern ///////////////////////////////////////////////

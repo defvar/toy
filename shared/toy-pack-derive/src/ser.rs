@@ -83,7 +83,7 @@ fn body_enum(target: &Model) -> Result<TokenStream, syn::Error> {
                     )
                 }
                 Style::Tuple => {
-                    let len = serialize_length(&variant.fields);
+                    let len = serialize_length(&variant.fields, target.attr.ignore_pack_if_none);
                     let construct_fields: Vec<TokenStream> = variant
                         .fields.iter().enumerate()
                         .map(|(i, _)| {
@@ -112,7 +112,7 @@ fn body_enum(target: &Model) -> Result<TokenStream, syn::Error> {
                     )
                 }
                 Style::Struct => {
-                    let len = serialize_length(&variant.fields);
+                    let len = serialize_length(&variant.fields, target.attr.ignore_pack_if_none);
                     let construct_fields: Vec<TokenStream> = variant
                         .fields.iter().enumerate()
                         .map(|(_, f)| {
@@ -152,7 +152,7 @@ fn body_struct(target: &Model) -> Result<TokenStream, syn::Error> {
     let ignore_ser_if_none = target.attr.ignore_pack_if_none;
     match *style {
         Style::Struct => {
-            let len = serialize_length(&fields);
+            let len = serialize_length(&fields, ignore_ser_if_none);
             let serialize_fields: Vec<TokenStream> = fields
                 .iter()
                 .filter(|x| !x.attr.ignore)
@@ -196,11 +196,20 @@ fn member_name(i: usize) -> Ident {
     Ident::new(&format!("__field__{}", i), Span::call_site())
 }
 
-fn serialize_length(fields: &Vec<Field>) -> TokenStream {
+fn serialize_length(fields: &Vec<Field>, ignore_pack_if_none: bool) -> TokenStream {
     fields
         .iter()
         .filter(|x| !x.attr.ignore)
-        .map(|_f| quote!(1))
+        .map(|field| {
+            if ignore_pack_if_none && field.is_option_type() {
+                let name = &field.member;
+                quote! {
+                    if toy_pack::export::Option::is_some(&self.#name) { 1 } else { 0 }
+                }
+            } else {
+                quote!(1)
+            }
+        })
         .fold(quote!(0), |sum, expr| quote!(#sum + #expr))
 }
 
