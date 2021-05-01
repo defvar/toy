@@ -105,7 +105,7 @@ impl<'toy, 'a> DeserializeVariantOps<'toy> for DeserializeCompound<'a> {
     }
 
     fn unit_variant(self) -> Result<(), Self::Error> {
-        self.de.decode_null()?;
+        //self.de.decode_null()?;
         Ok(())
     }
 
