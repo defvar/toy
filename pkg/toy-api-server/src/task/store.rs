@@ -3,6 +3,7 @@
 use crate::store::error::StoreError;
 use crate::store::kv::{Delete, Find, Put};
 use crate::store::StoreConnection;
+use async_trait::async_trait;
 use std::fmt;
 use std::future::Future;
 use toy_api::task::{PendingEntity, TaskLogEntity, TasksEntity};
@@ -39,6 +40,7 @@ pub trait TaskLogStore<T>: Clone + Send + Sync {
 }
 
 /// Trait Composit log store operations.
+#[async_trait]
 pub trait TaskStoreOps<C>:
     Send
     + Sync
@@ -60,13 +62,14 @@ where
 }
 
 /// Create Pending task entity.
+#[async_trait]
 pub trait Pending {
     type Con: StoreConnection;
-    type T: Future<Output = Result<(), Self::Err>> + Send;
     type Err: fmt::Debug + Send;
 
     /// Create Pending task entity.
-    fn pending(&self, con: Self::Con, key: String, v: PendingEntity) -> Self::T;
+    async fn pending(&self, con: Self::Con, key: String, v: PendingEntity)
+        -> Result<(), Self::Err>;
 }
 
 /// Watch Pending task entity.

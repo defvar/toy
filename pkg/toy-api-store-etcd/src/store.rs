@@ -155,7 +155,7 @@ where
     type Con = EtcdStoreConnection<T>;
     type Err = StoreEtcdError;
 
-    #[instrument(skip(self))]
+    #[instrument(skip(self, con))]
     async fn find<V>(
         &self,
         con: Self::Con,
@@ -188,7 +188,7 @@ where
     type Con = EtcdStoreConnection<T>;
     type Err = StoreEtcdError;
 
-    #[instrument]
+    #[instrument(skip(self, con))]
     async fn list<V>(
         &self,
         con: Self::Con,
@@ -214,7 +214,7 @@ where
     type Con = EtcdStoreConnection<T>;
     type Err = StoreEtcdError;
 
-    #[instrument(skip(self, v))]
+    #[instrument(skip(self, con, v))]
     async fn put<V>(
         &self,
         con: Self::Con,
@@ -266,7 +266,7 @@ where
     type Con = EtcdStoreConnection<T>;
     type Err = StoreEtcdError;
 
-    #[instrument]
+    #[instrument(skip(self, con))]
     async fn delete(
         &self,
         con: Self::Con,
@@ -289,29 +289,31 @@ where
     }
 }
 
+#[toy_api_server::async_trait::async_trait]
 impl<T> Pending for EtcdStoreOps<T>
 where
     T: HttpClient,
 {
     type Con = EtcdStoreConnection<T>;
-    type T = impl Future<Output = Result<(), Self::Err>> + Send;
     type Err = StoreEtcdError;
 
-    fn pending(&self, con: Self::Con, key: String, v: PendingEntity) -> Self::T {
-        let span = span!(Level::DEBUG, "put", key = ?key);
-        async move {
-            let s = toy_pack_json::pack_to_string(&v)?;
-            let create_res = con.client.create(&key, &s).await?;
-            if create_res.is_success() {
-                Ok(())
-            } else {
-                Err(StoreEtcdError::error(format!(
-                    "failed create pending entity by dupplicate key. key:{}.",
-                    key
-                )))
-            }
+    #[instrument(skip(self, con))]
+    async fn pending(
+        &self,
+        con: Self::Con,
+        key: String,
+        v: PendingEntity,
+    ) -> Result<(), Self::Err> {
+        let s = toy_pack_json::pack_to_string(&v)?;
+        let create_res = con.client.create(&key, &s).await?;
+        if create_res.is_success() {
+            Ok(())
+        } else {
+            Err(StoreEtcdError::error(format!(
+                "failed create pending entity by dupplicate key. key:{}.",
+                key
+            )))
         }
-        .instrument(span)
     }
 }
 
