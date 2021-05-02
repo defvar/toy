@@ -1,13 +1,16 @@
 mod graph;
+mod service;
 mod supervisor;
 mod task;
 
 pub use graph::HttpGraphClient;
+pub use service::HttpServiceClient;
 pub use supervisor::HttpSupervisorClient;
 pub use task::HttpTaskClient;
 
 use crate::client::ApiClient;
 use crate::error::ApiClientError;
+
 use toy_api::common::Format;
 use toy_h::impl_reqwest::ReqwestClient;
 use toy_pack::ser::Serializable;
@@ -16,26 +19,29 @@ use toy_pack_urlencoded::QueryParseError;
 
 #[derive(Debug, Clone)]
 pub struct HttpApiClient {
-    g: HttpGraphClient<ReqwestClient>,
-    t: HttpTaskClient<ReqwestClient>,
-    s: HttpSupervisorClient<ReqwestClient>,
+    graph: HttpGraphClient<ReqwestClient>,
+    task: HttpTaskClient<ReqwestClient>,
+    sv: HttpSupervisorClient<ReqwestClient>,
+    service: HttpServiceClient<ReqwestClient>,
 }
 
 impl HttpApiClient {
     pub fn new<P: AsRef<str>>(root: P) -> Result<Self, ApiClientError> {
         let client = ReqwestClient::new()?;
         Ok(Self {
-            g: HttpGraphClient::new(root.as_ref(), client.clone()),
-            t: HttpTaskClient::new(root.as_ref(), client.clone()),
-            s: HttpSupervisorClient::new(root.as_ref(), client.clone()),
+            graph: HttpGraphClient::new(root.as_ref(), client.clone()),
+            task: HttpTaskClient::new(root.as_ref(), client.clone()),
+            sv: HttpSupervisorClient::new(root.as_ref(), client.clone()),
+            service: HttpServiceClient::new(root.as_ref(), client.clone()),
         })
     }
 
     pub fn from<P: AsRef<str>>(root: P, inner: ReqwestClient) -> Result<Self, ApiClientError> {
         Ok(Self {
-            g: HttpGraphClient::new(root.as_ref(), inner.clone()),
-            t: HttpTaskClient::new(root.as_ref(), inner.clone()),
-            s: HttpSupervisorClient::new(root.as_ref(), inner.clone()),
+            graph: HttpGraphClient::new(root.as_ref(), inner.clone()),
+            task: HttpTaskClient::new(root.as_ref(), inner.clone()),
+            sv: HttpSupervisorClient::new(root.as_ref(), inner.clone()),
+            service: HttpServiceClient::new(root.as_ref(), inner.clone()),
         })
     }
 }
@@ -44,17 +50,22 @@ impl ApiClient for HttpApiClient {
     type Graph = HttpGraphClient<ReqwestClient>;
     type Task = HttpTaskClient<ReqwestClient>;
     type Supervisor = HttpSupervisorClient<ReqwestClient>;
+    type Service = HttpServiceClient<ReqwestClient>;
 
     fn graph(&self) -> &Self::Graph {
-        &self.g
+        &self.graph
     }
 
     fn task(&self) -> &Self::Task {
-        &self.t
+        &self.task
     }
 
     fn supervisor(&self) -> &Self::Supervisor {
-        &self.s
+        &self.sv
+    }
+
+    fn service(&self) -> &Self::Service {
+        &self.service
     }
 }
 

@@ -34,6 +34,10 @@ async fn main() -> Result<(), StoreEtcdError> {
     let put_res = c.create(key, data_json.clone()).await?;
     tracing::info!("create {:?}", put_res);
 
+    // duplicate key..
+    let put_res = c.create(key, data_json.clone()).await?;
+    tracing::info!("create(2) {:?}", put_res);
+
     // update
     let range_res = c.get(key).await?.value()?.unwrap();
     let upd_res = c

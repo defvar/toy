@@ -2,6 +2,7 @@ use std::backtrace::Backtrace;
 use std::fmt::Display;
 use std::num::ParseIntError;
 use thiserror::Error;
+use toy_api_server::store::error::StoreErrorCustom;
 use toy_h::error::HError;
 use toy_h::http::uri::InvalidUri;
 use toy_pack_json::{DecodeError, EncodeError};
@@ -58,9 +59,6 @@ pub enum StoreEtcdError {
     #[error("expected one result, but multiple. key:{:?}", key)]
     MultipleResult { key: String },
 
-    #[error("entity not found. key:{:?}", key)]
-    NotFound { key: String },
-
     #[error("failed operation. operation: {:?} key:{:?}", ops, key)]
     FailedOperation { ops: String, key: String },
 
@@ -93,15 +91,6 @@ impl StoreEtcdError {
         }
     }
 
-    pub fn not_found<T>(key: T) -> StoreEtcdError
-    where
-        T: Display,
-    {
-        StoreEtcdError::NotFound {
-            key: key.to_string(),
-        }
-    }
-
     pub fn failed_opration<O, T>(ops: O, key: T) -> StoreEtcdError
     where
         O: Display,
@@ -113,3 +102,5 @@ impl StoreEtcdError {
         }
     }
 }
+
+impl StoreErrorCustom for StoreEtcdError {}

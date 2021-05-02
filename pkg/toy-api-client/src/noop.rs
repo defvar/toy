@@ -1,7 +1,10 @@
-use crate::client::{ApiClient, GraphClient, SupervisorClient, TaskClient};
+use crate::client::{ApiClient, GraphClient, ServiceClient, SupervisorClient, TaskClient};
 use crate::error::ApiClientError;
 use async_trait::async_trait;
 use futures_core::Stream;
+use toy_api::services::{
+    DeleteOption, FindOption, ListOption, PutOption, ServiceSpec, ServiceSpecList,
+};
 use toy_api::task::{AllocateOption, AllocateRequest, AllocateResponse};
 
 #[derive(Clone)]
@@ -11,6 +14,7 @@ impl ApiClient for NoopApiClient {
     type Graph = NoopApiClient;
     type Task = NoopApiClient;
     type Supervisor = NoopApiClient;
+    type Service = NoopApiClient;
 
     fn graph(&self) -> &Self::Graph {
         unimplemented!()
@@ -21,6 +25,10 @@ impl ApiClient for NoopApiClient {
     }
 
     fn supervisor(&self) -> &Self::Supervisor {
+        unimplemented!()
+    }
+
+    fn service(&self) -> &Self::Service {
         unimplemented!()
     }
 }
@@ -135,6 +143,34 @@ impl SupervisorClient for NoopApiClient {
         _key: String,
         _opt: toy_api::supervisors::DeleteOption,
     ) -> Result<(), ApiClientError> {
+        unimplemented!()
+    }
+}
+
+#[async_trait]
+impl ServiceClient for NoopApiClient {
+    async fn list(&self, _opt: ListOption) -> Result<ServiceSpecList, ApiClientError> {
+        unimplemented!()
+    }
+
+    async fn find(
+        &self,
+        _key: String,
+        _opt: FindOption,
+    ) -> Result<Option<ServiceSpec>, ApiClientError> {
+        unimplemented!()
+    }
+
+    async fn put(
+        &self,
+        _key: String,
+        _v: ServiceSpec,
+        _opt: PutOption,
+    ) -> Result<(), ApiClientError> {
+        unimplemented!()
+    }
+
+    async fn delete(&self, _key: String, _opt: DeleteOption) -> Result<(), ApiClientError> {
         unimplemented!()
     }
 }

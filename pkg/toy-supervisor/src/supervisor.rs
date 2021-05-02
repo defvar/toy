@@ -8,9 +8,9 @@ use core::task::{Context, Poll};
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::Mutex;
-use toy_api::service::ServicesEntity;
+use toy_api::services::ServiceSpec;
 use toy_api::supervisors::PutOption;
-use toy_api_client::client::SupervisorClient;
+use toy_api_client::client::{ServiceClient, SupervisorClient};
 use toy_api_client::{ApiClient, NoopApiClient};
 use toy_core::data::Frame;
 use toy_core::error::ServiceError;
@@ -250,14 +250,8 @@ where
             return Ok(());
         }
 
-        let services = ServicesEntity::new(self.app.schemas());
         let start_time = self.started_at.unwrap().to_rfc3339();
-        let sv = toy_api::supervisors::Supervisor::new(
-            self.name.clone(),
-            start_time,
-            Vec::new(),
-            services,
-        );
+        let sv = toy_api::supervisors::Supervisor::new(self.name.clone(), start_time, Vec::new());
 
         let c = self.client.as_ref().unwrap();
         if let Err(e) = c
@@ -267,6 +261,35 @@ where
         {
             tracing::error!(err = ?e, "an error occured; supervisor when start up.");
             return Err(());
+        }
+
+        let specs = self
+            .app
+            .schemas()
+            .iter()
+            .map(|x| {
+                ServiceSpec::new(
+                    x.service_type().clone(),
+                    x.port_type().clone(),
+                    x.schema().cloned(),
+                )
+            })
+            .collect::<Vec<_>>();
+
+        for spec in specs {
+            let key = spec.service_type().clone();
+            if let Err(e) = c
+                .service()
+                .put(
+                    spec.service_type().full_name().to_owned(),
+                    spec,
+                    toy_api::services::PutOption::new(),
+                )
+                .await
+            {
+                tracing::error!(err = ?e, spec = ?key, "an error occured; supervisor when register service.");
+                return Err(());
+            }
         }
 
         Ok(())

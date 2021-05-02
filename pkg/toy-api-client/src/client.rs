@@ -2,6 +2,7 @@ use crate::error::ApiClientError;
 use async_trait::async_trait;
 use futures_core::Stream;
 use toy_api::graph::{self, GraphEntity, GraphsEntity};
+use toy_api::services::{self, ServiceSpec, ServiceSpecList};
 use toy_api::supervisors::{self, Supervisor, Supervisors};
 use toy_api::task::{
     self, AllocateRequest, AllocateResponse, PendingsEntity, TaskLogEntity, TasksEntity,
@@ -11,12 +12,15 @@ pub trait ApiClient: Send + Sync {
     type Graph: GraphClient + 'static;
     type Task: TaskClient + 'static;
     type Supervisor: SupervisorClient + 'static;
+    type Service: ServiceClient + 'static;
 
     fn graph(&self) -> &Self::Graph;
 
     fn task(&self) -> &Self::Task;
 
     fn supervisor(&self) -> &Self::Supervisor;
+
+    fn service(&self) -> &Self::Service;
 }
 
 #[async_trait]
@@ -82,4 +86,24 @@ pub trait SupervisorClient: Send + Sync {
         key: String,
         opt: supervisors::DeleteOption,
     ) -> Result<(), ApiClientError>;
+}
+
+#[async_trait]
+pub trait ServiceClient: Send + Sync {
+    async fn list(&self, opt: services::ListOption) -> Result<ServiceSpecList, ApiClientError>;
+
+    async fn find(
+        &self,
+        key: String,
+        opt: services::FindOption,
+    ) -> Result<Option<ServiceSpec>, ApiClientError>;
+
+    async fn put(
+        &self,
+        key: String,
+        v: ServiceSpec,
+        opt: services::PutOption,
+    ) -> Result<(), ApiClientError>;
+
+    async fn delete(&self, key: String, opt: services::DeleteOption) -> Result<(), ApiClientError>;
 }

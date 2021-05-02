@@ -94,6 +94,18 @@ impl ServiceSchema {
             schema,
         }
     }
+
+    pub fn service_type(&self) -> &ServiceType {
+        &self.service_type
+    }
+
+    pub fn port_type(&self) -> &PortType {
+        &self.port_type
+    }
+
+    pub fn schema(&self) -> Option<&JsonSchema> {
+        self.schema.as_ref()
+    }
 }
 
 #[derive(Debug, Clone)]
