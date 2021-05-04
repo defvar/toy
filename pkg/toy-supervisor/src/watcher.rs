@@ -14,7 +14,7 @@ const RETRY_WAIT_SECS: u32 = 3;
 pub async fn watch<C>(
     name: String,
     c: C,
-    tx: Outgoing<Request, ServiceError>,
+    mut tx: Outgoing<Request, ServiceError>,
 ) -> Result<(), ServiceError>
 where
     C: ApiClient + Clone,
@@ -41,6 +41,8 @@ where
             }
             Err(e) => {
                 if retry_count >= RETRY_MAX {
+                    tracing::error!("Retry limit is exceeded. Send shutdown request.");
+                    let _ = tx.send_ok(Request::Shutdown).await;
                     return Err(ServiceError::error(e));
                 }
                 tracing::error!(err = ?e, "an error occured; supervisor when watch task. rerun watcher.");
