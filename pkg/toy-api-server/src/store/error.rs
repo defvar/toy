@@ -3,6 +3,8 @@
 use std::backtrace::Backtrace;
 use std::fmt::{Debug, Display};
 use thiserror::Error;
+use toy_h::error::HError;
+use toy_h::http::uri::InvalidUri;
 use toy_pack_json::{DecodeError, EncodeError};
 
 /// A marker trait to ensure proper types are used for custom error.
@@ -32,6 +34,9 @@ pub enum StoreError {
         source: EncodeError,
     },
 
+    #[error("expected one result, but multiple. key:{:?}", key)]
+    MultipleResult { key: String },
+
     #[error("key allready exists. key:{:?}", key)]
     AllreadyExists { key: String },
 
@@ -50,6 +55,19 @@ pub enum StoreError {
         msg: String,
     },
 
+    #[error("invalid uri: {:?}", source)]
+    InvalidUri {
+        #[from]
+        source: InvalidUri,
+        backtrace: Backtrace,
+    },
+
+    #[error("failed http request: {:?}", source)]
+    HError {
+        #[from]
+        source: HError,
+    },
+
     #[error("error: {:?}", inner)]
     Error { inner: String },
 }
@@ -61,6 +79,15 @@ impl StoreError {
     {
         StoreError::Error {
             inner: msg.to_string(),
+        }
+    }
+
+    pub fn multiple_result<T>(key: T) -> StoreError
+    where
+        T: Display,
+    {
+        StoreError::MultipleResult {
+            key: key.to_string(),
         }
     }
 

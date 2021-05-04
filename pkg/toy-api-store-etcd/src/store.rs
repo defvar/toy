@@ -1,4 +1,3 @@
-use crate::error::StoreEtcdError;
 use crate::watch::{EventType, WatchResponse};
 use crate::Client;
 use futures_util::StreamExt;
@@ -156,7 +155,6 @@ where
     T: HttpClient,
 {
     type Con = EtcdStoreConnection<T>;
-    type Err = StoreEtcdError;
 
     #[instrument(skip(self, con))]
     async fn find<V>(
@@ -164,7 +162,7 @@ where
         con: Self::Con,
         key: String,
         opt: FindOption,
-    ) -> Result<Option<V>, Self::Err>
+    ) -> Result<Option<V>, StoreError>
     where
         V: DeserializableOwned,
     {
@@ -189,7 +187,6 @@ where
     T: HttpClient,
 {
     type Con = EtcdStoreConnection<T>;
-    type Err = StoreEtcdError;
 
     #[instrument(skip(self, con))]
     async fn list<V>(
@@ -197,7 +194,7 @@ where
         con: Self::Con,
         prefix: String,
         _opt: ListOption,
-    ) -> Result<Vec<V>, Self::Err>
+    ) -> Result<Vec<V>, StoreError>
     where
         V: DeserializableOwned,
     {
@@ -295,7 +292,6 @@ where
     T: HttpClient,
 {
     type Con = EtcdStoreConnection<T>;
-    type Err = StoreEtcdError;
 
     #[instrument(skip(self, con))]
     async fn delete(
@@ -303,14 +299,14 @@ where
         con: Self::Con,
         key: String,
         _opt: DeleteOption,
-    ) -> Result<DeleteResult, Self::Err> {
+    ) -> Result<DeleteResult, StoreError> {
         tracing::debug!("delete key:{:?}", key);
         let single_res = con.client.get(&key).await?.value()?;
         match single_res {
             Some(v) => {
                 let rm_res = con.client.remove(&key, v.version()).await?;
                 if !rm_res.is_success() {
-                    Err(StoreEtcdError::failed_opration("delete", &key))
+                    Err(StoreError::failed_opration("delete", &key, ""))
                 } else {
                     Ok(DeleteResult::Deleted)
                 }
@@ -326,7 +322,6 @@ where
     T: HttpClient,
 {
     type Con = EtcdStoreConnection<T>;
-    type Err = StoreEtcdError;
 
     #[instrument(skip(self, con))]
     async fn pending(
@@ -334,16 +329,13 @@ where
         con: Self::Con,
         key: String,
         v: PendingEntity,
-    ) -> Result<(), Self::Err> {
+    ) -> Result<(), StoreError> {
         let s = toy_pack_json::pack_to_string(&v)?;
         let create_res = con.client.create(&key, &s).await?;
         if create_res.is_success() {
             Ok(())
         } else {
-            Err(StoreEtcdError::error(format!(
-                "failed create pending entity by dupplicate key. key:{}.",
-                key
-            )))
+            Err(StoreError::allready_exists(key))
         }
     }
 }
@@ -353,27 +345,25 @@ where
     T: HttpClient + 'static,
 {
     type Con = EtcdStoreConnection<T>;
-    type Stream = impl toy_h::Stream<Item = Result<Vec<PendingEntity>, Self::Err>> + Send + 'static;
-    type T = impl Future<Output = Result<Self::Stream, Self::Err>> + Send + 'static;
-    type Err = StoreEtcdError;
+    type Stream =
+        impl toy_h::Stream<Item = Result<Vec<PendingEntity>, StoreError>> + Send + 'static;
+    type T = impl Future<Output = Result<Self::Stream, StoreError>> + Send + 'static;
 
     fn watch_pending(&self, con: Self::Con, prefix: String) -> Self::T {
         let span = span!(Level::DEBUG, "watch", prefix = ?prefix);
         let prefix = prefix.clone();
         async move {
             let stream = con.client.watch(prefix).await?;
-            Ok(
-                stream.map(|x: Result<WatchResponse, StoreEtcdError>| match x {
-                    Ok(res) => res.unpack(|x, e| match e {
-                        EventType::PUT => Some(
-                            toy_pack_json::unpack::<PendingEntity>(&x.into_data())
-                                .map_err(|e| e.into()),
-                        ),
-                        _ => None,
-                    }),
-                    Err(e) => Err(e.into()),
+            Ok(stream.map(|x: Result<WatchResponse, StoreError>| match x {
+                Ok(res) => res.unpack(|x, e| match e {
+                    EventType::PUT => Some(
+                        toy_pack_json::unpack::<PendingEntity>(&x.into_data())
+                            .map_err(|e| e.into()),
+                    ),
+                    _ => None,
                 }),
-            )
+                Err(e) => Err(e),
+            }))
         }
         .instrument(span)
     }

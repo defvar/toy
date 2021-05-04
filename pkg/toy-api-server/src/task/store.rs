@@ -65,19 +65,21 @@ where
 #[async_trait]
 pub trait Pending {
     type Con: StoreConnection;
-    type Err: fmt::Debug + Send;
 
     /// Create Pending task entity.
-    async fn pending(&self, con: Self::Con, key: String, v: PendingEntity)
-        -> Result<(), Self::Err>;
+    async fn pending(
+        &self,
+        con: Self::Con,
+        key: String,
+        v: PendingEntity,
+    ) -> Result<(), StoreError>;
 }
 
 /// Watch Pending task entity.
 pub trait WatchPending {
     type Con: StoreConnection;
-    type Stream: toy_h::Stream<Item = Result<Vec<PendingEntity>, Self::Err>> + Send + 'static;
-    type T: Future<Output = Result<Self::Stream, Self::Err>> + Send + 'static;
-    type Err: fmt::Debug + Send;
+    type Stream: toy_h::Stream<Item = Result<Vec<PendingEntity>, StoreError>> + Send + 'static;
+    type T: Future<Output = Result<Self::Stream, StoreError>> + Send + 'static;
 
     /// Watch Pending task entity.
     fn watch_pending(&self, con: Self::Con, prefix: String) -> Self::T;

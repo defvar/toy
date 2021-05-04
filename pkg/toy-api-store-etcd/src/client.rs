@@ -1,9 +1,9 @@
-use crate::error::StoreEtcdError;
 use crate::kv::*;
 use crate::txn::{Compare, CompareResult, CompareTarget, RequestOp, TxnRequest, TxnResponse};
 use crate::watch::{WatchCreateRequest, WatchResponse};
 use futures_util::StreamExt;
 use std::convert::TryFrom;
+use toy_api_server::store::error::StoreError;
 use toy_h::error::HError;
 use toy_h::{
     header::HeaderValue, header::CONTENT_TYPE, ByteStream, HttpClient, InvalidUri, RequestBuilder,
@@ -23,7 +23,7 @@ where
 {
     /// Create new client.
     /// Url is ectd api endpoint address.
-    pub fn new<U>(client: T, uri: U) -> Result<Client<T>, StoreEtcdError>
+    pub fn new<U>(client: T, uri: U) -> Result<Client<T>, StoreError>
     where
         Uri: TryFrom<U, Error = InvalidUri>,
     {
@@ -34,7 +34,7 @@ where
         })
     }
 
-    pub async fn get<K>(&self, key: K) -> Result<SingleResponse, StoreEtcdError>
+    pub async fn get<K>(&self, key: K) -> Result<SingleResponse, StoreError>
     where
         K: AsRef<str>,
     {
@@ -45,7 +45,7 @@ where
         res.into_single()
     }
 
-    pub async fn list<K>(&self, prefix: K) -> Result<RangeResponse, StoreEtcdError>
+    pub async fn list<K>(&self, prefix: K) -> Result<RangeResponse, StoreError>
     where
         K: AsRef<str>,
     {
@@ -59,7 +59,7 @@ where
     pub async fn watch<K>(
         &self,
         prefix: K,
-    ) -> Result<impl toy_h::Stream<Item = Result<WatchResponse, StoreEtcdError>>, StoreEtcdError>
+    ) -> Result<impl toy_h::Stream<Item = Result<WatchResponse, StoreError>>, StoreError>
     where
         K: AsRef<str>,
     {
@@ -73,7 +73,7 @@ where
         })
     }
 
-    pub async fn create<K, V>(&self, key: K, value: V) -> Result<TxnResponse, StoreEtcdError>
+    pub async fn create<K, V>(&self, key: K, value: V) -> Result<TxnResponse, StoreError>
     where
         K: AsRef<str>,
         V: AsRef<str>,
@@ -94,7 +94,7 @@ where
         key: K,
         value: V,
         version: u64,
-    ) -> Result<TxnResponse, StoreEtcdError>
+    ) -> Result<TxnResponse, StoreError>
     where
         K: AsRef<str>,
         V: AsRef<str>,
@@ -115,7 +115,7 @@ where
         Ok(res)
     }
 
-    pub async fn remove<K>(&self, key: K, version: u64) -> Result<TxnResponse, StoreEtcdError>
+    pub async fn remove<K>(&self, key: K, version: u64) -> Result<TxnResponse, StoreError>
     where
         K: AsRef<str>,
     {
@@ -159,7 +159,7 @@ where
             .await
     }
 
-    async fn watch0(&self, body: Vec<u8>) -> Result<ByteStream, StoreEtcdError> {
+    async fn watch0(&self, body: Vec<u8>) -> Result<ByteStream, StoreError> {
         let uri = format!("{}v3/watch", self.root).parse::<Uri>()?;
         Ok(self
             .inner

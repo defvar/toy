@@ -111,7 +111,6 @@ pub enum DeleteResult {
 #[async_trait]
 pub trait Find {
     type Con: StoreConnection;
-    type Err: Debug + Send;
 
     /// Find one entity by specified key.
     async fn find<V>(
@@ -119,7 +118,7 @@ pub trait Find {
         con: Self::Con,
         key: String,
         opt: FindOption,
-    ) -> Result<Option<V>, Self::Err>
+    ) -> Result<Option<V>, StoreError>
     where
         V: DeserializableOwned;
 }
@@ -128,7 +127,6 @@ pub trait Find {
 #[async_trait]
 pub trait List {
     type Con: StoreConnection;
-    type Err: Debug + Send;
 
     /// List all or part entities by specified prefix of key.
     async fn list<V>(
@@ -136,7 +134,7 @@ pub trait List {
         con: Self::Con,
         prefix: String,
         opt: ListOption,
-    ) -> Result<Vec<V>, Self::Err>
+    ) -> Result<Vec<V>, StoreError>
     where
         V: DeserializableOwned;
 }
@@ -162,7 +160,6 @@ pub trait Put {
 #[async_trait]
 pub trait Delete {
     type Con: StoreConnection;
-    type Err: Debug + Send;
 
     /// Delete one entity by specified key.
     async fn delete(
@@ -170,5 +167,5 @@ pub trait Delete {
         con: Self::Con,
         key: String,
         opt: DeleteOption,
-    ) -> Result<DeleteResult, Self::Err>;
+    ) -> Result<DeleteResult, StoreError>;
 }
