@@ -1,5 +1,6 @@
 //! Traits for Basic Key Value Store.
 
+use crate::store::error::StoreError;
 use crate::store::StoreConnection;
 use async_trait::async_trait;
 use std::fmt::Debug;
@@ -24,23 +25,50 @@ impl ListOption {
     }
 }
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum PutOperation {
+    Fill,
+    CreateOnly,
+    UpdatedOnly,
+}
+
+impl Default for PutOperation {
+    fn default() -> Self {
+        PutOperation::Fill
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct PutOption {
     version: u64,
-    update_only: bool,
+    ops: PutOperation,
 }
 
 impl PutOption {
     pub fn new() -> Self {
         Self {
             version: 0,
-            update_only: false,
+            ops: PutOperation::Fill,
+        }
+    }
+
+    pub fn with_create_only(self) -> Self {
+        PutOption {
+            ops: PutOperation::CreateOnly,
+            ..self
         }
     }
 
     pub fn with_update_only(self) -> Self {
         PutOption {
-            update_only: true,
+            ops: PutOperation::UpdatedOnly,
+            ..self
+        }
+    }
+
+    pub fn with_fill(self) -> Self {
+        PutOption {
+            ops: PutOperation::Fill,
             ..self
         }
     }
@@ -49,8 +77,8 @@ impl PutOption {
         PutOption { version, ..self }
     }
 
-    pub fn update_only(&self) -> bool {
-        self.update_only
+    pub fn operation(&self) -> PutOperation {
+        self.ops
     }
 
     pub fn version(&self) -> u64 {
@@ -67,7 +95,7 @@ impl DeleteOption {
     }
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum PutResult {
     Create,
     Update,
@@ -83,7 +111,6 @@ pub enum DeleteResult {
 #[async_trait]
 pub trait Find {
     type Con: StoreConnection;
-    type Err: Debug + Send;
 
     /// Find one entity by specified key.
     async fn find<V>(
@@ -91,7 +118,7 @@ pub trait Find {
         con: Self::Con,
         key: String,
         opt: FindOption,
-    ) -> Result<Option<V>, Self::Err>
+    ) -> Result<Option<V>, StoreError>
     where
         V: DeserializableOwned;
 }
@@ -100,7 +127,6 @@ pub trait Find {
 #[async_trait]
 pub trait List {
     type Con: StoreConnection;
-    type Err: Debug + Send;
 
     /// List all or part entities by specified prefix of key.
     async fn list<V>(
@@ -108,7 +134,7 @@ pub trait List {
         con: Self::Con,
         prefix: String,
         opt: ListOption,
-    ) -> Result<Vec<V>, Self::Err>
+    ) -> Result<Vec<V>, StoreError>
     where
         V: DeserializableOwned;
 }
@@ -117,7 +143,6 @@ pub trait List {
 #[async_trait]
 pub trait Put {
     type Con: StoreConnection;
-    type Err: Debug + Send;
 
     /// Put one entity by specified key.
     async fn put<V>(
@@ -126,7 +151,7 @@ pub trait Put {
         key: String,
         v: V,
         opt: PutOption,
-    ) -> Result<PutResult, Self::Err>
+    ) -> Result<PutResult, StoreError>
     where
         V: Serializable + Send;
 }
@@ -135,7 +160,6 @@ pub trait Put {
 #[async_trait]
 pub trait Delete {
     type Con: StoreConnection;
-    type Err: Debug + Send;
 
     /// Delete one entity by specified key.
     async fn delete(
@@ -143,5 +167,5 @@ pub trait Delete {
         con: Self::Con,
         key: String,
         opt: DeleteOption,
-    ) -> Result<DeleteResult, Self::Err>;
+    ) -> Result<DeleteResult, StoreError>;
 }

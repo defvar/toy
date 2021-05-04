@@ -1,14 +1,13 @@
-use crate::common;
-use crate::common::body;
-use crate::supervisors::handlers;
-use crate::supervisors::store::SupervisorStore;
-use toy_api::supervisors::{FindOption, ListOption, PutOption};
+use crate::common::{self, body};
+use crate::services::handlers;
+use crate::services::store::ServiceStore;
+use toy_api::services::{FindOption, ListOption, PutOption};
 use toy_h::HttpClient;
 use warp::Filter;
 
-/// warp filter for supervisors api.
-pub fn supervisors<T>(
-    store: impl SupervisorStore<T>,
+/// warp filter for services api.
+pub fn services<T>(
+    store: impl ServiceStore<T>,
 ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone
 where
     T: HttpClient,
@@ -20,12 +19,12 @@ where
 }
 
 fn list<T>(
-    store: impl SupervisorStore<T>,
+    store: impl ServiceStore<T>,
 ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone
 where
     T: HttpClient,
 {
-    warp::path!("supervisors")
+    warp::path!("services")
         .and(warp::get())
         .and(with_store(store))
         .and(common::query::query_opt::<ListOption>())
@@ -33,12 +32,12 @@ where
 }
 
 fn find<T>(
-    store: impl SupervisorStore<T>,
+    store: impl ServiceStore<T>,
 ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone
 where
     T: HttpClient,
 {
-    warp::path!("supervisors" / String)
+    warp::path!("services" / String)
         .and(warp::get())
         .and(with_store(store))
         .and(common::query::query_opt::<FindOption>())
@@ -46,12 +45,12 @@ where
 }
 
 fn put<T>(
-    store: impl SupervisorStore<T>,
+    store: impl ServiceStore<T>,
 ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone
 where
     T: HttpClient,
 {
-    warp::path!("supervisors" / String)
+    warp::path!("services" / String)
         .and(warp::put())
         .and(common::query::query_opt::<PutOption>())
         .and(body::bytes())
@@ -60,20 +59,20 @@ where
 }
 
 fn delete<T>(
-    store: impl SupervisorStore<T>,
+    store: impl ServiceStore<T>,
 ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone
 where
     T: HttpClient,
 {
-    warp::path!("supervisors" / String)
+    warp::path!("services" / String)
         .and(warp::delete())
         .and(with_store(store))
         .and_then(|a, b| handlers::delete(a, b))
 }
 
 fn with_store<T>(
-    store: impl SupervisorStore<T>,
-) -> impl Filter<Extract = (impl SupervisorStore<T>,), Error = std::convert::Infallible> + Clone
+    store: impl ServiceStore<T>,
+) -> impl Filter<Extract = (impl ServiceStore<T>,), Error = std::convert::Infallible> + Clone
 where
     T: HttpClient,
 {

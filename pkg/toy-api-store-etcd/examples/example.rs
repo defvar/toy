@@ -1,5 +1,5 @@
 use futures_util::StreamExt;
-use toy_api_store_etcd::error::StoreEtcdError;
+use toy_api_server::store::error::StoreError;
 use toy_h::impl_reqwest::ReqwestClient;
 use toy_pack::{Pack, Unpack};
 use tracing_subscriber::fmt::format::FmtSpan;
@@ -11,7 +11,7 @@ struct Test {
 }
 
 #[tokio::main]
-async fn main() -> Result<(), StoreEtcdError> {
+async fn main() -> Result<(), StoreError> {
     tracing_subscriber::fmt()
         .with_max_level(tracing::Level::DEBUG)
         .with_span_events(FmtSpan::CLOSE)
@@ -33,6 +33,10 @@ async fn main() -> Result<(), StoreEtcdError> {
     // create new kv
     let put_res = c.create(key, data_json.clone()).await?;
     tracing::info!("create {:?}", put_res);
+
+    // duplicate key..
+    let put_res = c.create(key, data_json.clone()).await?;
+    tracing::info!("create(2) {:?}", put_res);
 
     // update
     let range_res = c.get(key).await?.value()?.unwrap();

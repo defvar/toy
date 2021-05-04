@@ -1,4 +1,3 @@
-use crate::error::StoreEtcdError;
 use crate::watch::{EventType, WatchResponse};
 use crate::Client;
 use futures_util::StreamExt;
@@ -6,9 +5,10 @@ use std::future::Future;
 use std::marker::PhantomData;
 use toy_api::task::PendingEntity;
 use toy_api_server::graph::store::{GraphStore, GraphStoreOps};
+use toy_api_server::services::store::{ServiceStore, ServiceStoreOps};
 use toy_api_server::store::kv::{
-    Delete, DeleteOption, DeleteResult, Find, FindOption, List, ListOption, Put, PutOption,
-    PutResult,
+    Delete, DeleteOption, DeleteResult, Find, FindOption, List, ListOption, Put, PutOperation,
+    PutOption, PutResult,
 };
 use toy_api_server::store::{error::StoreError, StoreConnection};
 use toy_api_server::supervisors::store::{SupervisorStore, SupervisorStoreOps};
@@ -39,11 +39,35 @@ impl<T> EtcdStore<T> {
     }
 }
 
+impl<T> EtcdStore<T>
+where
+    T: HttpClient,
+{
+    fn establish_etcd(&mut self, client: T, store_name: &'static str) -> Result<(), StoreError> {
+        if self.con.is_some() {
+            return Ok(());
+        }
+
+        let host = std::env::var("TOY_STORE_ETCD_HOST").unwrap_or_else(|_| "localhost".to_string());
+        let port = std::env::var("TOY_STORE_ETCD_PORT").unwrap_or_else(|_| "2379".to_string());
+        let url = format!("http://{}:{}", host, port);
+        tracing::info!("toy {} store=etcd. connecting:{}", store_name, &url);
+        match Client::new(client, url) {
+            Ok(c) => {
+                self.con = Some(EtcdStoreConnection { client: c });
+            }
+            Err(e) => return Err(StoreError::error(e)),
+        };
+        Ok(())
+    }
+}
+
 impl<T> StoreConnection for EtcdStoreConnection<T> where T: HttpClient {}
 
 impl<T> GraphStoreOps<EtcdStoreConnection<T>> for EtcdStoreOps<T> where T: HttpClient {}
 impl<T> TaskStoreOps<EtcdStoreConnection<T>> for EtcdStoreOps<T> where T: HttpClient + 'static {}
 impl<T> SupervisorStoreOps<EtcdStoreConnection<T>> for EtcdStoreOps<T> where T: HttpClient + 'static {}
+impl<T> ServiceStoreOps<EtcdStoreConnection<T>> for EtcdStoreOps<T> where T: HttpClient + 'static {}
 
 impl<T> GraphStore<T> for EtcdStore<T>
 where
@@ -61,21 +85,7 @@ where
     }
 
     fn establish(&mut self, client: T) -> Result<(), StoreError> {
-        if self.con.is_some() {
-            return Ok(());
-        }
-
-        let host = std::env::var("TOY_STORE_ETCD_HOST").unwrap_or_else(|_| "localhost".to_string());
-        let port = std::env::var("TOY_STORE_ETCD_PORT").unwrap_or_else(|_| "2379".to_string());
-        let url = format!("http://{}:{}", host, port);
-        tracing::info!("toy graph store=etcd. connecting:{}", &url);
-        match Client::new(client, url) {
-            Ok(c) => {
-                self.con = Some(EtcdStoreConnection { client: c });
-            }
-            Err(e) => return Err(StoreError::error(e)),
-        };
-        Ok(())
+        self.establish_etcd(client, "graph")
     }
 }
 
@@ -95,21 +105,7 @@ where
     }
 
     fn establish(&mut self, client: T) -> Result<(), StoreError> {
-        if self.con.is_some() {
-            return Ok(());
-        }
-
-        let host = std::env::var("TOY_STORE_ETCD_HOST").unwrap_or_else(|_| "localhost".to_string());
-        let port = std::env::var("TOY_STORE_ETCD_PORT").unwrap_or_else(|_| "2379".to_string());
-        let url = format!("http://{}:{}", host, port);
-        tracing::info!("toy task store=etcd. connecting:{}", &url);
-        match Client::new(client, url) {
-            Ok(c) => {
-                self.con = Some(EtcdStoreConnection { client: c });
-            }
-            Err(e) => return Err(StoreError::error(e)),
-        };
-        Ok(())
+        self.establish_etcd(client, "task")
     }
 }
 
@@ -129,21 +125,27 @@ where
     }
 
     fn establish(&mut self, client: T) -> Result<(), StoreError> {
-        if self.con.is_some() {
-            return Ok(());
-        }
+        self.establish_etcd(client, "supervisor")
+    }
+}
 
-        let host = std::env::var("TOY_STORE_ETCD_HOST").unwrap_or_else(|_| "localhost".to_string());
-        let port = std::env::var("TOY_STORE_ETCD_PORT").unwrap_or_else(|_| "2379".to_string());
-        let url = format!("http://{}:{}", host, port);
-        tracing::info!("toy supervisor store=etcd. connecting:{}", &url);
-        match Client::new(client, url) {
-            Ok(c) => {
-                self.con = Some(EtcdStoreConnection { client: c });
-            }
-            Err(e) => return Err(StoreError::error(e)),
-        };
-        Ok(())
+impl<T> ServiceStore<T> for EtcdStore<T>
+where
+    T: HttpClient + 'static,
+{
+    type Con = EtcdStoreConnection<T>;
+    type Ops = EtcdStoreOps<T>;
+
+    fn con(&self) -> Option<Self::Con> {
+        self.con.clone()
+    }
+
+    fn ops(&self) -> Self::Ops {
+        EtcdStoreOps { _t: PhantomData }
+    }
+
+    fn establish(&mut self, client: T) -> Result<(), StoreError> {
+        self.establish_etcd(client, "service")
     }
 }
 
@@ -153,7 +155,6 @@ where
     T: HttpClient,
 {
     type Con = EtcdStoreConnection<T>;
-    type Err = StoreEtcdError;
 
     #[instrument(skip(self, con))]
     async fn find<V>(
@@ -161,7 +162,7 @@ where
         con: Self::Con,
         key: String,
         opt: FindOption,
-    ) -> Result<Option<V>, Self::Err>
+    ) -> Result<Option<V>, StoreError>
     where
         V: DeserializableOwned,
     {
@@ -186,7 +187,6 @@ where
     T: HttpClient,
 {
     type Con = EtcdStoreConnection<T>;
-    type Err = StoreEtcdError;
 
     #[instrument(skip(self, con))]
     async fn list<V>(
@@ -194,7 +194,7 @@ where
         con: Self::Con,
         prefix: String,
         _opt: ListOption,
-    ) -> Result<Vec<V>, Self::Err>
+    ) -> Result<Vec<V>, StoreError>
     where
         V: DeserializableOwned,
     {
@@ -212,7 +212,6 @@ where
     T: HttpClient,
 {
     type Con = EtcdStoreConnection<T>;
-    type Err = StoreEtcdError;
 
     #[instrument(skip(self, con, v))]
     async fn put<V>(
@@ -221,39 +220,68 @@ where
         key: String,
         v: V,
         opt: PutOption,
-    ) -> Result<PutResult, Self::Err>
+    ) -> Result<PutResult, StoreError>
     where
         V: Serializable + Send,
     {
-        tracing::debug!("put key:{:?}", key);
-        let s = toy_pack_json::pack_to_string(&v)?;
+        async fn insert<C>(
+            con: &EtcdStoreConnection<C>,
+            key: &String,
+            s: &String,
+            _opt: &PutOption,
+        ) -> Result<PutResult, StoreError>
+        where
+            C: HttpClient,
+        {
+            let r = con.client.create(key, s).await;
+            match r {
+                Ok(tx) if tx.is_success() => Ok(PutResult::Create),
+                Ok(tx) if !tx.is_success() => Err(StoreError::allready_exists(key)),
+                Err(e) => Err(StoreError::error(e)),
+                _ => unreachable!(),
+            }
+        }
 
-        let create_res = if !opt.update_only() {
-            Some(con.client.create(&key, &s).await?)
-        } else {
-            None
-        };
-
-        if !opt.update_only() && create_res.is_some() && create_res.unwrap().is_success() {
-            Ok(PutResult::Create)
-        } else {
-            // update
+        async fn update<C>(
+            con: &EtcdStoreConnection<C>,
+            key: &String,
+            s: &String,
+            opt: &PutOption,
+        ) -> Result<PutResult, StoreError>
+        where
+            C: HttpClient,
+        {
             let version = if opt.version() != 0 {
                 opt.version()
             } else {
-                let res = con.client.get(&key).await?.value()?;
+                let res = con.client.get(key).await?.value()?;
                 match res {
                     Some(v) => v.version(),
-                    None => return Err(StoreEtcdError::not_found(&key)),
+                    None => return Err(StoreError::not_found_update_target(key)),
                 }
             };
 
-            let upd_res = con.client.update(&key, &s, version).await?;
+            let upd_res = con.client.update(key, s, version).await?;
             if upd_res.is_success() {
                 Ok(PutResult::Update)
             } else {
-                Err(StoreEtcdError::failed_opration("update", &key))
+                Err(StoreError::failed_opration("update", key, ""))
             }
+        }
+
+        tracing::debug!("put key:{:?}", key);
+        let s = toy_pack_json::pack_to_string(&v)?;
+
+        match opt.operation() {
+            PutOperation::Fill => match insert(&con, &key, &s, &opt).await {
+                Ok(r) => Ok(r),
+                Err(e) => match e {
+                    StoreError::AllreadyExists { .. } => update(&con, &key, &s, &opt).await,
+                    _ => Err(e),
+                },
+            },
+            PutOperation::CreateOnly => insert(&con, &key, &s, &opt).await,
+            PutOperation::UpdatedOnly => update(&con, &key, &s, &opt).await,
         }
     }
 }
@@ -264,7 +292,6 @@ where
     T: HttpClient,
 {
     type Con = EtcdStoreConnection<T>;
-    type Err = StoreEtcdError;
 
     #[instrument(skip(self, con))]
     async fn delete(
@@ -272,14 +299,14 @@ where
         con: Self::Con,
         key: String,
         _opt: DeleteOption,
-    ) -> Result<DeleteResult, Self::Err> {
+    ) -> Result<DeleteResult, StoreError> {
         tracing::debug!("delete key:{:?}", key);
         let single_res = con.client.get(&key).await?.value()?;
         match single_res {
             Some(v) => {
                 let rm_res = con.client.remove(&key, v.version()).await?;
                 if !rm_res.is_success() {
-                    Err(StoreEtcdError::failed_opration("delete", &key))
+                    Err(StoreError::failed_opration("delete", &key, ""))
                 } else {
                     Ok(DeleteResult::Deleted)
                 }
@@ -295,7 +322,6 @@ where
     T: HttpClient,
 {
     type Con = EtcdStoreConnection<T>;
-    type Err = StoreEtcdError;
 
     #[instrument(skip(self, con))]
     async fn pending(
@@ -303,16 +329,13 @@ where
         con: Self::Con,
         key: String,
         v: PendingEntity,
-    ) -> Result<(), Self::Err> {
+    ) -> Result<(), StoreError> {
         let s = toy_pack_json::pack_to_string(&v)?;
         let create_res = con.client.create(&key, &s).await?;
         if create_res.is_success() {
             Ok(())
         } else {
-            Err(StoreEtcdError::error(format!(
-                "failed create pending entity by dupplicate key. key:{}.",
-                key
-            )))
+            Err(StoreError::allready_exists(key))
         }
     }
 }
@@ -322,27 +345,25 @@ where
     T: HttpClient + 'static,
 {
     type Con = EtcdStoreConnection<T>;
-    type Stream = impl toy_h::Stream<Item = Result<Vec<PendingEntity>, Self::Err>> + Send + 'static;
-    type T = impl Future<Output = Result<Self::Stream, Self::Err>> + Send + 'static;
-    type Err = StoreEtcdError;
+    type Stream =
+        impl toy_h::Stream<Item = Result<Vec<PendingEntity>, StoreError>> + Send + 'static;
+    type T = impl Future<Output = Result<Self::Stream, StoreError>> + Send + 'static;
 
     fn watch_pending(&self, con: Self::Con, prefix: String) -> Self::T {
         let span = span!(Level::DEBUG, "watch", prefix = ?prefix);
         let prefix = prefix.clone();
         async move {
             let stream = con.client.watch(prefix).await?;
-            Ok(
-                stream.map(|x: Result<WatchResponse, StoreEtcdError>| match x {
-                    Ok(res) => res.unpack(|x, e| match e {
-                        EventType::PUT => Some(
-                            toy_pack_json::unpack::<PendingEntity>(&x.into_data())
-                                .map_err(|e| e.into()),
-                        ),
-                        _ => None,
-                    }),
-                    Err(e) => Err(e.into()),
+            Ok(stream.map(|x: Result<WatchResponse, StoreError>| match x {
+                Ok(res) => res.unpack(|x, e| match e {
+                    EventType::PUT => Some(
+                        toy_pack_json::unpack::<PendingEntity>(&x.into_data())
+                            .map_err(|e| e.into()),
+                    ),
+                    _ => None,
                 }),
-            )
+                Err(e) => Err(e),
+            }))
         }
         .instrument(span)
     }

@@ -1,5 +1,5 @@
-use crate::error::StoreEtcdError;
 use crate::kv::{encode, get_range_end, Kv, ResponseHeader, Versioning};
+use toy_api_server::store::error::StoreError;
 use toy_pack::deser::DeserializableOwned;
 use toy_pack::{Pack, Unpack};
 
@@ -107,14 +107,14 @@ impl WatchCreateRequest {
 }
 
 impl WatchResponse {
-    pub fn unpack<T, F>(&self, mut f: F) -> Result<Vec<T>, StoreEtcdError>
+    pub fn unpack<T, F>(&self, mut f: F) -> Result<Vec<T>, StoreError>
     where
         T: DeserializableOwned,
-        F: FnMut(Versioning, EventType) -> Option<Result<T, StoreEtcdError>>,
+        F: FnMut(Versioning, EventType) -> Option<Result<T, StoreError>>,
     {
         match self.result {
             Some(ref inner) => inner.events.iter().try_fold(Vec::new(), |mut vec, x| {
-                let v = x.kv.to_versioning()?;
+                let v = x.kv.to_versioning().map_err(|e| StoreError::error(e))?;
                 match f(v, x.tp) {
                     Some(v) => {
                         vec.push(v?);

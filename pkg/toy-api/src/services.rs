@@ -1,33 +1,45 @@
 use crate::common::Format;
+use toy_core::data::schema::JsonSchema;
+use toy_core::prelude::{PortType, ServiceType};
 use toy_pack::{Pack, Unpack};
 
 #[derive(Clone, Debug, Pack, Unpack)]
-pub struct Supervisor {
-    name: String,
-    start_time: String,
-    labels: Vec<String>,
-}
-
-impl Supervisor {
-    pub fn new(name: String, start_time: String, labels: Vec<String>) -> Self {
-        Self {
-            name,
-            start_time,
-            labels,
-        }
-    }
-}
-
-#[derive(Clone, Debug, Pack, Unpack)]
-pub struct Supervisors {
-    supervisors: Vec<Supervisor>,
+pub struct ServiceSpecList {
+    services: Vec<ServiceSpec>,
     count: u32,
 }
 
-impl Supervisors {
-    pub fn new(supervisors: Vec<Supervisor>) -> Self {
-        let count = supervisors.len() as u32;
-        Self { supervisors, count }
+#[derive(Debug, Clone, Pack, Unpack)]
+pub struct ServiceSpec {
+    service_type: ServiceType,
+    port_type: PortType,
+    schema: Option<JsonSchema>,
+}
+
+impl ServiceSpec {
+    pub fn new(service_type: ServiceType, port_type: PortType, schema: Option<JsonSchema>) -> Self {
+        Self {
+            service_type,
+            port_type,
+            schema,
+        }
+    }
+
+    pub fn service_type(&self) -> &ServiceType {
+        &self.service_type
+    }
+}
+
+impl ServiceSpecList {
+    pub fn new(services: Vec<ServiceSpec>) -> Self {
+        let count = services.len() as u32;
+        Self { services, count }
+    }
+}
+
+impl Default for ServiceSpecList {
+    fn default() -> Self {
+        ServiceSpecList::new(Vec::new())
     }
 }
 
@@ -61,7 +73,7 @@ impl ListOption {
     }
 }
 
-#[derive(Clone, Debug, Pack, Unpack, Default)]
+#[derive(Clone, Debug, Pack, Unpack)]
 pub struct PutOption {
     format: Option<Format>,
 }

@@ -1,4 +1,5 @@
-use crate::error::StoreEtcdError;
+use crate::error::EtcdError;
+use toy_api_server::store::error::StoreError;
 use toy_pack::deser::DeserializableOwned;
 use toy_pack::{Pack, Unpack};
 
@@ -105,10 +106,10 @@ impl Versioning {
         self.data
     }
 
-    pub fn unpack<T, F>(self, f: F) -> Result<T, StoreEtcdError>
+    pub fn unpack<T, F>(self, f: F) -> Result<T, StoreError>
     where
         T: DeserializableOwned,
-        F: FnOnce(Self) -> Result<T, StoreEtcdError>,
+        F: FnOnce(Self) -> Result<T, StoreError>,
     {
         f(self)
     }
@@ -131,7 +132,7 @@ impl Kv {
         &self.mod_revision
     }
 
-    pub fn to_versioning(&self) -> Result<Versioning, StoreEtcdError> {
+    pub fn to_versioning(&self) -> Result<Versioning, EtcdError> {
         match (decode(&self.key), decode(&self.value)) {
             (Ok(k), Ok(v)) => {
                 let version = self.mod_revision.parse::<u64>()?;
@@ -173,7 +174,7 @@ impl RangeRequest {
 }
 
 impl RangeResponse {
-    pub fn values(&self) -> Result<Vec<Versioning>, StoreEtcdError> {
+    pub fn values(&self) -> Result<Vec<Versioning>, StoreError> {
         self.kvs.iter().try_fold(Vec::new(), |mut vec, x| {
             let v = x.to_versioning()?;
             vec.push(v);
@@ -181,10 +182,10 @@ impl RangeResponse {
         })
     }
 
-    pub fn unpack<T, F>(&self, mut f: F) -> Result<Vec<T>, StoreEtcdError>
+    pub fn unpack<T, F>(&self, mut f: F) -> Result<Vec<T>, StoreError>
     where
         T: DeserializableOwned,
-        F: FnMut(Versioning) -> Result<T, StoreEtcdError>,
+        F: FnMut(Versioning) -> Result<T, StoreError>,
     {
         self.kvs.iter().try_fold(Vec::new(), |mut vec, x| {
             let v = x.to_versioning()?;
@@ -194,7 +195,7 @@ impl RangeResponse {
         })
     }
 
-    pub fn into_single(mut self) -> Result<SingleResponse, StoreEtcdError> {
+    pub fn into_single(mut self) -> Result<SingleResponse, StoreError> {
         if self.kvs.len() == 0 {
             Ok(SingleResponse {
                 header: self.header,
@@ -209,13 +210,13 @@ impl RangeResponse {
             })
         } else {
             let one = self.kvs.pop().unwrap();
-            Err(StoreEtcdError::multiple_result(&one.key))
+            Err(StoreError::multiple_result(&one.key))
         }
     }
 }
 
 impl SingleResponse {
-    pub fn value(&self) -> Result<Option<Versioning>, StoreEtcdError> {
+    pub fn value(&self) -> Result<Option<Versioning>, EtcdError> {
         match &self.kv {
             Some(kv) => kv.to_versioning().map(Some),
             None => Ok(None),
