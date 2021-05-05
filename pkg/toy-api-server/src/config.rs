@@ -3,6 +3,7 @@
 use crate::auth::Auth;
 use crate::graph::store::GraphStore;
 use crate::services::store::ServiceStore;
+use crate::store::kv::KvStore;
 use crate::supervisors::store::SupervisorStore;
 use crate::task::store::{TaskLogStore, TaskStore};
 
@@ -14,6 +15,7 @@ pub trait ServerConfig<Http> {
     type GraphStore: GraphStore<Http> + 'static;
     type SupervisorStore: SupervisorStore<Http> + 'static;
     type ServiceStore: ServiceStore<Http> + 'static;
+    type KvStore: KvStore<Http> + 'static;
 
     fn auth(&self) -> Self::Auth;
 
@@ -26,6 +28,8 @@ pub trait ServerConfig<Http> {
     fn supervisor_store(&self) -> Self::SupervisorStore;
 
     fn service_store(&self) -> Self::ServiceStore;
+
+    fn kv_store(&self) -> Self::KvStore;
 
     fn cert_path(&self) -> String;
 

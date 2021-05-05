@@ -5,6 +5,8 @@ pub mod error;
 pub mod query;
 pub mod reply;
 
+pub mod handler;
+
 pub mod constants {
     use toy_core::task::TaskId;
 
@@ -12,6 +14,8 @@ pub mod constants {
     pub static SUPERVISORS_KEY_PREFIX: &'static str = "/toy/supervisors";
     pub static PENDINGS_KEY_PREFIX: &'static str = "/toy/pendings";
     pub static SERVICES_KEY_PREFIX: &'static str = "/toy/services";
+    pub static ROLE_KEY_PREFIX: &'static str = "/toy/roles";
+    pub static ROLE_BINDING_KEY_PREFIX: &'static str = "/toy/roleBindings";
 
     pub fn graph_key(part: String) -> String {
         format!("{}/{}", GRAPHS_KEY_PREFIX, part)
@@ -27,5 +31,9 @@ pub mod constants {
 
     pub fn service_key(name: String) -> String {
         format!("{}/{}", SERVICES_KEY_PREFIX, name)
+    }
+
+    pub(crate) fn generate_key<P: Into<String>>(prefix: P, key: String) -> String {
+        format!("{}/{}", prefix.into(), key)
     }
 }

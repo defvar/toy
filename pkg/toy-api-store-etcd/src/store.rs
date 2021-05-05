@@ -7,8 +7,8 @@ use toy_api::task::PendingEntity;
 use toy_api_server::graph::store::{GraphStore, GraphStoreOps};
 use toy_api_server::services::store::{ServiceStore, ServiceStoreOps};
 use toy_api_server::store::kv::{
-    Delete, DeleteOption, DeleteResult, Find, FindOption, List, ListOption, Put, PutOperation,
-    PutOption, PutResult,
+    Delete, DeleteOption, DeleteResult, Find, FindOption, KvStore, KvStoreOps, List, ListOption,
+    Put, PutOperation, PutOption, PutResult,
 };
 use toy_api_server::store::{error::StoreError, StoreConnection};
 use toy_api_server::supervisors::store::{SupervisorStore, SupervisorStoreOps};
@@ -68,6 +68,7 @@ impl<T> GraphStoreOps<EtcdStoreConnection<T>> for EtcdStoreOps<T> where T: HttpC
 impl<T> TaskStoreOps<EtcdStoreConnection<T>> for EtcdStoreOps<T> where T: HttpClient + 'static {}
 impl<T> SupervisorStoreOps<EtcdStoreConnection<T>> for EtcdStoreOps<T> where T: HttpClient + 'static {}
 impl<T> ServiceStoreOps<EtcdStoreConnection<T>> for EtcdStoreOps<T> where T: HttpClient + 'static {}
+impl<T> KvStoreOps<EtcdStoreConnection<T>> for EtcdStoreOps<T> where T: HttpClient + 'static {}
 
 impl<T> GraphStore<T> for EtcdStore<T>
 where
@@ -146,6 +147,26 @@ where
 
     fn establish(&mut self, client: T) -> Result<(), StoreError> {
         self.establish_etcd(client, "service")
+    }
+}
+
+impl<T> KvStore<T> for EtcdStore<T>
+where
+    T: HttpClient + 'static,
+{
+    type Con = EtcdStoreConnection<T>;
+    type Ops = EtcdStoreOps<T>;
+
+    fn con(&self) -> Option<Self::Con> {
+        self.con.clone()
+    }
+
+    fn ops(&self) -> Self::Ops {
+        EtcdStoreOps { _t: PhantomData }
+    }
+
+    fn establish(&mut self, client: T) -> Result<(), StoreError> {
+        self.establish_etcd(client, "common key value")
     }
 }
 

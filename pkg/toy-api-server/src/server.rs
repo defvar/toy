@@ -1,9 +1,10 @@
-use crate::api::{graphs, services, supervisors, tasks};
+use crate::api::{graphs, rbac, services, supervisors, tasks};
 use crate::auth::auth_filter;
 use crate::config::ServerConfig;
 use crate::graph::store::GraphStore;
 use crate::reject_handler::handle_rejection;
 use crate::services::store::ServiceStore;
+use crate::store::kv::KvStore;
 use crate::supervisors::store::SupervisorStore;
 use crate::task::store::{TaskLogStore, TaskStore};
 use std::net::SocketAddr;
@@ -65,6 +66,7 @@ where
         let mut task_store = self.config.task_store();
         let mut supervisor_store = self.config.supervisor_store();
         let mut service_store = self.config.service_store();
+        let mut kv_store = self.config.kv_store();
         if let Err(e) = graph_store.establish(client.clone()) {
             tracing::error!("graph store connection failed. error:{:?}", e);
             return;
@@ -85,9 +87,14 @@ where
             tracing::error!("service store connection failed. error:{:?}", e);
             return;
         };
+        if let Err(e) = kv_store.establish(client.clone()) {
+            tracing::error!("service store connection failed. error:{:?}", e);
+            return;
+        };
         let routes = auth_filter(self.config.auth(), client)
             .and(
-                graphs(graph_store)
+                rbac(kv_store)
+                    .or(graphs(graph_store))
                     .or(tasks(log_store, task_store))
                     .or(supervisors(supervisor_store))
                     .or(services(service_store)),
