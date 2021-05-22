@@ -1,5 +1,5 @@
 use crate::common::Format;
-use crate::graph::GraphEntity;
+use crate::graph::Graph;
 use toy_core::prelude::TaskId;
 use toy_pack::{Pack, Unpack};
 
@@ -16,7 +16,7 @@ pub struct PendingEntity {
     status: PendingStatus,
     allocated_supervisor: Option<String>,
     allocated_at: Option<String>,
-    graph: Option<GraphEntity>,
+    graph: Option<Graph>,
 }
 
 #[derive(Debug, Clone, Pack, Unpack)]
@@ -86,7 +86,7 @@ impl Default for PendingStatus {
 }
 
 impl PendingEntity {
-    pub fn new(task_id: TaskId, graph: GraphEntity) -> Self {
+    pub fn new(task_id: TaskId, graph: Graph) -> Self {
         Self {
             task_id,
             status: PendingStatus::Created,
@@ -104,7 +104,7 @@ impl PendingEntity {
         &self.status
     }
 
-    pub fn graph(&self) -> Option<&GraphEntity> {
+    pub fn graph(&self) -> Option<&Graph> {
         self.graph.as_ref()
     }
 

@@ -7,7 +7,7 @@ use std::fmt::Debug;
 use toy_pack::deser::DeserializableOwned;
 use toy_pack::ser::Serializable;
 
-/// Trait Composit service store operations.
+/// Trait Composit store operations.
 #[async_trait]
 pub trait KvStoreOps<C>:
     Clone + Send + Sync + Find<Con = C> + List<Con = C> + Put<Con = C> + Delete<Con = C>
@@ -16,7 +16,7 @@ where
 {
 }
 
-/// This trait represents the concept of a Service Store.
+/// This trait represents the concept of a Kv Store.
 ///
 ///  - Create or get establish connection.
 ///  - Get composit operation trait.

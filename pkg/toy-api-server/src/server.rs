@@ -1,11 +1,7 @@
 use crate::api::{graphs, rbac, services, supervisors, tasks};
-use crate::auth::auth_filter;
 use crate::config::ServerConfig;
-use crate::graph::store::GraphStore;
 use crate::reject_handler::handle_rejection;
-use crate::services::store::ServiceStore;
 use crate::store::kv::KvStore;
-use crate::supervisors::store::SupervisorStore;
 use crate::task::store::{TaskLogStore, TaskStore};
 use std::net::SocketAddr;
 use toy_h::HttpClient;
@@ -61,16 +57,9 @@ where
                 return;
             }
         };
-        let mut graph_store = self.config.graph_store();
         let mut log_store = self.config.task_log_store();
         let mut task_store = self.config.task_store();
-        let mut supervisor_store = self.config.supervisor_store();
-        let mut service_store = self.config.service_store();
         let mut kv_store = self.config.kv_store();
-        if let Err(e) = graph_store.establish(client.clone()) {
-            tracing::error!("graph store connection failed. error:{:?}", e);
-            return;
-        };
         if let Err(e) = log_store.establish(client.clone()) {
             tracing::error!("log store connection failed. error:{:?}", e);
             return;
@@ -79,27 +68,32 @@ where
             tracing::error!("task store connection failed. error:{:?}", e);
             return;
         };
-        if let Err(e) = supervisor_store.establish(client.clone()) {
-            tracing::error!("supervisor store connection failed. error:{:?}", e);
-            return;
-        };
-        if let Err(e) = service_store.establish(client.clone()) {
-            tracing::error!("service store connection failed. error:{:?}", e);
-            return;
-        };
         if let Err(e) = kv_store.establish(client.clone()) {
             tracing::error!("service store connection failed. error:{:?}", e);
             return;
         };
-        let routes = auth_filter(self.config.auth(), client)
-            .and(
-                rbac(kv_store)
-                    .or(graphs(graph_store))
-                    .or(tasks(log_store, task_store))
-                    .or(supervisors(supervisor_store))
-                    .or(services(service_store)),
-            )
-            .map(|_, r| r)
+        let routes = rbac(self.config.auth().clone(), client.clone(), kv_store.clone())
+            .or(graphs(
+                self.config.auth().clone(),
+                client.clone(),
+                kv_store.clone(),
+            ))
+            .or(tasks(
+                self.config.auth().clone(),
+                client.clone(),
+                log_store,
+                task_store,
+            ))
+            .or(supervisors(
+                self.config.auth().clone(),
+                client.clone(),
+                kv_store.clone(),
+            ))
+            .or(services(
+                self.config.auth().clone(),
+                client.clone(),
+                kv_store,
+            ))
             .with(
                 warp::cors()
                     .allow_any_origin()

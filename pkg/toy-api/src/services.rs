@@ -1,11 +1,10 @@
-use crate::common::Format;
 use toy_core::data::schema::JsonSchema;
 use toy_core::prelude::{PortType, ServiceType};
 use toy_pack::{Pack, Unpack};
 
 #[derive(Clone, Debug, Pack, Unpack)]
 pub struct ServiceSpecList {
-    services: Vec<ServiceSpec>,
+    items: Vec<ServiceSpec>,
     count: u32,
 }
 
@@ -31,74 +30,14 @@ impl ServiceSpec {
 }
 
 impl ServiceSpecList {
-    pub fn new(services: Vec<ServiceSpec>) -> Self {
-        let count = services.len() as u32;
-        Self { services, count }
+    pub fn new(items: Vec<ServiceSpec>) -> Self {
+        let count = items.len() as u32;
+        Self { items, count }
     }
 }
 
 impl Default for ServiceSpecList {
     fn default() -> Self {
         ServiceSpecList::new(Vec::new())
-    }
-}
-
-#[derive(Clone, Debug, Pack, Unpack)]
-pub struct FindOption {
-    format: Option<Format>,
-}
-
-impl FindOption {
-    pub fn new() -> Self {
-        Self { format: None }
-    }
-
-    pub fn format(&self) -> Option<Format> {
-        self.format
-    }
-}
-
-#[derive(Clone, Debug, Pack, Unpack)]
-pub struct ListOption {
-    format: Option<Format>,
-}
-
-impl ListOption {
-    pub fn new() -> Self {
-        Self { format: None }
-    }
-
-    pub fn format(&self) -> Option<Format> {
-        self.format
-    }
-}
-
-#[derive(Clone, Debug, Pack, Unpack)]
-pub struct PutOption {
-    format: Option<Format>,
-}
-
-impl PutOption {
-    pub fn new() -> Self {
-        Self { format: None }
-    }
-
-    pub fn format(&self) -> Option<Format> {
-        self.format
-    }
-}
-
-#[derive(Clone, Debug, Pack, Unpack)]
-pub struct DeleteOption {
-    format: Option<Format>,
-}
-
-impl DeleteOption {
-    pub fn new() -> Self {
-        Self { format: None }
-    }
-
-    pub fn format(&self) -> Option<Format> {
-        self.format
     }
 }

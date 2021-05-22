@@ -3,9 +3,8 @@ use crate::client::ServiceClient;
 use crate::common;
 use crate::error::ApiClientError;
 use async_trait::async_trait;
-use toy_api::services::{
-    DeleteOption, FindOption, ListOption, PutOption, ServiceSpec, ServiceSpecList,
-};
+use toy_api::common::{DeleteOption, FindOption, ListOption, PutOption};
+use toy_api::services::{ServiceSpec, ServiceSpecList};
 use toy_h::{HttpClient, RequestBuilder, Response, Uri};
 
 #[derive(Debug, Clone)]

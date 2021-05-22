@@ -5,7 +5,7 @@ use crate::error::ApiClientError;
 use async_trait::async_trait;
 use futures_core::Stream;
 use futures_util::StreamExt;
-use toy_api::graph::GraphEntity;
+use toy_api::graph::Graph;
 use toy_api::task::{
     AllocateOption, AllocateRequest, AllocateResponse, ListOption, LogOption, PendingsEntity,
     PostOption, TaskLogEntity, TasksEntity, WatchOption,
@@ -78,7 +78,7 @@ where
         Ok(r)
     }
 
-    async fn post(&self, v: GraphEntity, opt: PostOption) -> Result<(), ApiClientError> {
+    async fn post(&self, v: Graph, opt: PostOption) -> Result<(), ApiClientError> {
         let query = prepare_query(&opt)?;
         let uri = format!("{}/tasks?{}", self.root, query).parse::<Uri>()?;
         let h = common_headers(opt.format());

@@ -1,10 +1,10 @@
-//! Authorization.
-//!
+//! Authentication.
 
-mod filters;
+mod authenticator;
 
 use crate::ApiError;
-pub use filters::auth_filter;
+pub use authenticator::authenticate;
+use std::fmt;
 use std::marker::PhantomData;
 use toy_h::HttpClient;
 
@@ -18,11 +18,21 @@ impl AuthUser {
     pub fn new<T: Into<String>>(uid: T) -> AuthUser {
         Self { uid: uid.into() }
     }
+
+    pub fn user_id(&self) -> &str {
+        &self.uid
+    }
 }
 
 impl warp::Reply for AuthUser {
     fn into_response(self) -> warp::reply::Response {
         warp::reply::Response::new(format!("{}", self.uid).into())
+    }
+}
+
+impl fmt::Debug for AuthUser {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("AuthUser").field("uid", &self.uid).finish()
     }
 }
 

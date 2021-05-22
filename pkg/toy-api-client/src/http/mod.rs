@@ -1,4 +1,8 @@
+//! # toy-api-client Implementation for http
+
 mod graph;
+mod role;
+mod role_binding;
 mod service;
 mod supervisor;
 mod task;
@@ -8,9 +12,11 @@ pub use service::HttpServiceClient;
 pub use supervisor::HttpSupervisorClient;
 pub use task::HttpTaskClient;
 
-use crate::client::ApiClient;
+use crate::client::{ApiClient, Rbaclient};
 use crate::error::ApiClientError;
 
+use crate::http::role::HttpRoleClient;
+use crate::http::role_binding::HttpRoleBindingClient;
 use toy_api::common::Format;
 use toy_h::impl_reqwest::ReqwestClient;
 use toy_pack::ser::Serializable;
@@ -23,25 +29,45 @@ pub struct HttpApiClient {
     task: HttpTaskClient<ReqwestClient>,
     sv: HttpSupervisorClient<ReqwestClient>,
     service: HttpServiceClient<ReqwestClient>,
+    rbac: HttpRbacClient,
+}
+
+#[derive(Debug, Clone)]
+pub struct HttpRbacClient {
+    role: HttpRoleClient<ReqwestClient>,
+    role_binding: HttpRoleBindingClient<ReqwestClient>,
 }
 
 impl HttpApiClient {
     pub fn new<P: AsRef<str>>(root: P) -> Result<Self, ApiClientError> {
         let client = ReqwestClient::new()?;
+        let rbac = HttpRbacClient::from(root.as_ref(), client.clone())?;
         Ok(Self {
             graph: HttpGraphClient::new(root.as_ref(), client.clone()),
             task: HttpTaskClient::new(root.as_ref(), client.clone()),
             sv: HttpSupervisorClient::new(root.as_ref(), client.clone()),
             service: HttpServiceClient::new(root.as_ref(), client.clone()),
+            rbac,
         })
     }
 
     pub fn from<P: AsRef<str>>(root: P, inner: ReqwestClient) -> Result<Self, ApiClientError> {
+        let rbac = HttpRbacClient::from(root.as_ref(), inner.clone())?;
         Ok(Self {
             graph: HttpGraphClient::new(root.as_ref(), inner.clone()),
             task: HttpTaskClient::new(root.as_ref(), inner.clone()),
             sv: HttpSupervisorClient::new(root.as_ref(), inner.clone()),
             service: HttpServiceClient::new(root.as_ref(), inner.clone()),
+            rbac,
+        })
+    }
+}
+
+impl HttpRbacClient {
+    pub fn from<P: AsRef<str>>(root: P, inner: ReqwestClient) -> Result<Self, ApiClientError> {
+        Ok(Self {
+            role: HttpRoleClient::new(root.as_ref(), inner.clone()),
+            role_binding: HttpRoleBindingClient::new(root.as_ref(), inner.clone()),
         })
     }
 }
@@ -51,6 +77,7 @@ impl ApiClient for HttpApiClient {
     type Task = HttpTaskClient<ReqwestClient>;
     type Supervisor = HttpSupervisorClient<ReqwestClient>;
     type Service = HttpServiceClient<ReqwestClient>;
+    type Rbac = HttpRbacClient;
 
     fn graph(&self) -> &Self::Graph {
         &self.graph
@@ -66,6 +93,23 @@ impl ApiClient for HttpApiClient {
 
     fn service(&self) -> &Self::Service {
         &self.service
+    }
+
+    fn rbac(&self) -> &Self::Rbac {
+        &self.rbac
+    }
+}
+
+impl Rbaclient for HttpRbacClient {
+    type Role = HttpRoleClient<ReqwestClient>;
+    type RoleBinding = HttpRoleBindingClient<ReqwestClient>;
+
+    fn role(&self) -> &Self::Role {
+        &self.role
+    }
+
+    fn role_binding(&self) -> &Self::RoleBinding {
+        &self.role_binding
     }
 }
 

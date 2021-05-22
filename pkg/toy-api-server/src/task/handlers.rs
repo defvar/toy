@@ -1,9 +1,10 @@
+use crate::context::Context;
 use crate::store::kv::{Find, FindOption, Put, PutOption, PutResult};
 use crate::task::store::{List, ListOption, Pending, TaskLogStore, TaskStore, WatchPending};
 use crate::{common, ApiError};
 use futures_util::StreamExt;
 use std::convert::Infallible;
-use toy_api::graph::GraphEntity;
+use toy_api::graph::Graph;
 use toy_api::task::{
     AllocateOption, AllocateRequest, AllocateResponse, ListOption as ApiListOption, LogOption,
     PendingEntity, PendingResult, PendingStatus, PendingsEntity, PostOption, WatchOption,
@@ -15,6 +16,7 @@ use warp::hyper::body::Bytes;
 use warp::reply::Reply;
 
 pub async fn post<T>(
+    ctx: Context,
     opt: Option<PostOption>,
     request: Bytes,
     store: impl TaskStore<T>,
@@ -22,8 +24,10 @@ pub async fn post<T>(
 where
     T: HttpClient,
 {
+    tracing::trace!("handle: {:?}", ctx);
+
     let format = opt.map(|x| x.format()).unwrap_or(None);
-    let v = common::body::decode::<_, GraphEntity>(request, format)?;
+    let v = common::body::decode::<_, Graph>(request, format)?;
 
     /*
      validate...
@@ -45,12 +49,15 @@ where
 }
 
 pub async fn watch<T>(
+    ctx: Context,
     opt: Option<WatchOption>,
     store: impl TaskStore<T>,
 ) -> Result<impl warp::Reply, warp::Rejection>
 where
     T: HttpClient,
 {
+    tracing::trace!("handle: {:?}", ctx);
+
     let format = opt.map(|x| x.format()).unwrap_or(None);
 
     match store
@@ -77,6 +84,7 @@ where
 
 pub async fn allocate<T>(
     key: String,
+    ctx: Context,
     opt: Option<AllocateOption>,
     request: Bytes,
     store: impl TaskStore<T>,
@@ -84,6 +92,8 @@ pub async fn allocate<T>(
 where
     T: HttpClient,
 {
+    tracing::trace!("handle: {:?}", ctx);
+
     let id = match TaskId::parse_str(&key) {
         Ok(id) => id,
         Err(_) => return Err(ApiError::task_id_invalid_format(key.to_string()).into_rejection()),
@@ -140,12 +150,15 @@ where
 }
 
 pub async fn tasks<T>(
+    ctx: Context,
     opt: Option<ApiListOption>,
     log_store: impl TaskLogStore<T>,
 ) -> Result<impl warp::Reply, Infallible>
 where
     T: HttpClient,
 {
+    tracing::trace!("handle: {:?}", ctx);
+
     let format = opt.map(|x| x.format()).unwrap_or(None);
     match log_store
         .ops()
@@ -162,12 +175,15 @@ where
 
 pub async fn log<T>(
     key: String,
+    ctx: Context,
     opt: Option<LogOption>,
     log_store: impl TaskLogStore<T>,
 ) -> Result<impl warp::Reply, warp::Rejection>
 where
     T: HttpClient,
 {
+    tracing::trace!("handle: {:?}", ctx);
+
     use crate::task::store::{FindLog, FindOption};
     let id = match TaskId::parse_str(&key) {
         Ok(id) => id,

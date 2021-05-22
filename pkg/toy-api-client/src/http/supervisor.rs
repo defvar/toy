@@ -3,9 +3,8 @@ use crate::client::SupervisorClient;
 use crate::common;
 use crate::error::ApiClientError;
 use async_trait::async_trait;
-use toy_api::supervisors::{
-    DeleteOption, FindOption, ListOption, PutOption, Supervisor, Supervisors,
-};
+use toy_api::common::{DeleteOption, FindOption, ListOption, PutOption};
+use toy_api::supervisors::{Supervisor, SupervisorList};
 use toy_h::{HttpClient, RequestBuilder, Response, Uri};
 
 #[derive(Debug, Clone)]
@@ -31,12 +30,12 @@ impl<T> SupervisorClient for HttpSupervisorClient<T>
 where
     T: HttpClient,
 {
-    async fn list(&self, opt: ListOption) -> Result<Supervisors, ApiClientError> {
+    async fn list(&self, opt: ListOption) -> Result<SupervisorList, ApiClientError> {
         let query = prepare_query(&opt)?;
         let uri = format!("{}/supervisors?{}", self.root, query).parse::<Uri>()?;
         let h = common_headers(opt.format());
         let bytes = self.inner.get(uri).headers(h).send().await?.bytes().await?;
-        let r = common::decode::<Supervisors>(&bytes, opt.format())?;
+        let r = common::decode::<SupervisorList>(&bytes, opt.format())?;
         Ok(r)
     }
 

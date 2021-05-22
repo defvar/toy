@@ -8,40 +8,52 @@ use warp::http::StatusCode;
 
 #[derive(Debug, Error)]
 pub enum ApiError {
-    #[error("error: {:?}", inner)]
+    #[error("{:?}", inner)]
     DeserializeValue { inner: YamlError },
 
-    #[error("error: {:?}", inner)]
+    #[error("{:?}", inner)]
     DeserializeJsonValue { inner: DecodeError },
 
-    #[error("error: {:?}", inner)]
+    #[error("{:?}", inner)]
     SerializeJsonValue { inner: EncodeError },
 
-    #[error("error: {:?}", inner)]
+    #[error("{:?}", inner)]
     DeserializeMessagePackValue { inner: toy_pack_mp::DecodeError },
 
-    #[error("error: {:?}", inner)]
+    #[error("{:?}", inner)]
     SerializeMessagePackValue { inner: toy_pack_mp::EncodeError },
 
-    #[error("error: {:?}", inner)]
+    #[error("{:?}", inner)]
     DeserializeConfig { inner: ConfigError },
 
     #[error("authentication failed. {:?}", inner)]
     AuthenticationFailed { inner: String },
 
-    #[error("error: {:?}", source)]
+    #[error(
+        "authorization failed. user: {:?} cannot: {:?} resource: {:?}",
+        user,
+        verb,
+        resource
+    )]
+    AuthorizationFailed {
+        user: String,
+        resource: String,
+        verb: String,
+    },
+
+    #[error("{:?}", source)]
     QueryParse {
         #[from]
         source: QueryParseError,
     },
 
-    #[error("store operation failed: {:?}", inner)]
+    #[error("store operation failed. {:?}", inner)]
     StoreOperationFailed { inner: String },
 
-    #[error("task id invalid format: {:?}", id)]
+    #[error("task id invalid format. id:{:?}", id)]
     TaskIdInvalidFormat { id: String },
 
-    #[error("error: {:?}", inner)]
+    #[error("{:?}", inner)]
     Error { inner: String },
 }
 
@@ -59,6 +71,7 @@ impl ApiError {
         match self {
             //TODO: error code....
             ApiError::QueryParse { .. } => StatusCode::BAD_REQUEST,
+            ApiError::AuthorizationFailed { .. } => StatusCode::FORBIDDEN,
             _ => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
@@ -73,6 +86,14 @@ impl ApiError {
     {
         ApiError::AuthenticationFailed {
             inner: msg.to_string(),
+        }
+    }
+
+    pub fn authorization_failed<T: Into<String>>(user: T, resource: T, verb: T) -> ApiError {
+        ApiError::AuthorizationFailed {
+            user: user.into(),
+            resource: resource.into(),
+            verb: verb.into(),
         }
     }
 

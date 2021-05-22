@@ -3,12 +3,14 @@
 //! # toy-api-server
 //!
 //! Execution toy-api.
-//! - CRUD for graphs.
+//! - CRUD for resources.
 //! - Execute task, and get Log.
 //! - list executable service.
+//! ...etc
 //!
 
 mod common;
+mod context;
 mod reject_handler;
 mod server;
 
@@ -19,7 +21,8 @@ pub mod store;
 pub mod supervisors;
 pub mod task;
 
-pub mod auth;
+pub mod authentication;
+pub mod authorization;
 pub mod rbac;
 
 pub use common::error::ApiError;

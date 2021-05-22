@@ -4,7 +4,7 @@
 
 use std::future::Future;
 use std::marker::PhantomData;
-use toy_api_server::auth::{Auth, AuthUser};
+use toy_api_server::authentication::{Auth, AuthUser};
 use toy_api_server::toy_h::HttpClient;
 use toy_api_server::ApiError;
 

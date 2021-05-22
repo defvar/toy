@@ -4,14 +4,11 @@ use futures_util::StreamExt;
 use std::future::Future;
 use std::marker::PhantomData;
 use toy_api::task::PendingEntity;
-use toy_api_server::graph::store::{GraphStore, GraphStoreOps};
-use toy_api_server::services::store::{ServiceStore, ServiceStoreOps};
 use toy_api_server::store::kv::{
     Delete, DeleteOption, DeleteResult, Find, FindOption, KvStore, KvStoreOps, List, ListOption,
     Put, PutOperation, PutOption, PutResult,
 };
 use toy_api_server::store::{error::StoreError, StoreConnection};
-use toy_api_server::supervisors::store::{SupervisorStore, SupervisorStoreOps};
 use toy_api_server::task::store::{Pending, TaskStore, TaskStoreOps, WatchPending};
 use toy_h::HttpClient;
 use toy_pack::deser::DeserializableOwned;
@@ -64,31 +61,8 @@ where
 
 impl<T> StoreConnection for EtcdStoreConnection<T> where T: HttpClient {}
 
-impl<T> GraphStoreOps<EtcdStoreConnection<T>> for EtcdStoreOps<T> where T: HttpClient {}
 impl<T> TaskStoreOps<EtcdStoreConnection<T>> for EtcdStoreOps<T> where T: HttpClient + 'static {}
-impl<T> SupervisorStoreOps<EtcdStoreConnection<T>> for EtcdStoreOps<T> where T: HttpClient + 'static {}
-impl<T> ServiceStoreOps<EtcdStoreConnection<T>> for EtcdStoreOps<T> where T: HttpClient + 'static {}
 impl<T> KvStoreOps<EtcdStoreConnection<T>> for EtcdStoreOps<T> where T: HttpClient + 'static {}
-
-impl<T> GraphStore<T> for EtcdStore<T>
-where
-    T: HttpClient,
-{
-    type Con = EtcdStoreConnection<T>;
-    type Ops = EtcdStoreOps<T>;
-
-    fn con(&self) -> Option<Self::Con> {
-        self.con.clone()
-    }
-
-    fn ops(&self) -> Self::Ops {
-        EtcdStoreOps { _t: PhantomData }
-    }
-
-    fn establish(&mut self, client: T) -> Result<(), StoreError> {
-        self.establish_etcd(client, "graph")
-    }
-}
 
 impl<T> TaskStore<T> for EtcdStore<T>
 where
@@ -107,46 +81,6 @@ where
 
     fn establish(&mut self, client: T) -> Result<(), StoreError> {
         self.establish_etcd(client, "task")
-    }
-}
-
-impl<T> SupervisorStore<T> for EtcdStore<T>
-where
-    T: HttpClient + 'static,
-{
-    type Con = EtcdStoreConnection<T>;
-    type Ops = EtcdStoreOps<T>;
-
-    fn con(&self) -> Option<Self::Con> {
-        self.con.clone()
-    }
-
-    fn ops(&self) -> Self::Ops {
-        EtcdStoreOps { _t: PhantomData }
-    }
-
-    fn establish(&mut self, client: T) -> Result<(), StoreError> {
-        self.establish_etcd(client, "supervisor")
-    }
-}
-
-impl<T> ServiceStore<T> for EtcdStore<T>
-where
-    T: HttpClient + 'static,
-{
-    type Con = EtcdStoreConnection<T>;
-    type Ops = EtcdStoreOps<T>;
-
-    fn con(&self) -> Option<Self::Con> {
-        self.con.clone()
-    }
-
-    fn ops(&self) -> Self::Ops {
-        EtcdStoreOps { _t: PhantomData }
-    }
-
-    fn establish(&mut self, client: T) -> Result<(), StoreError> {
-        self.establish_etcd(client, "service")
     }
 }
 

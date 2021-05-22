@@ -1,3 +1,4 @@
+use crate::context::Context;
 use crate::store::error::StoreError;
 use crate::store::kv;
 use crate::store::kv::{Delete, DeleteResult, Find, KvStore, List, Put};
@@ -11,6 +12,7 @@ use warp::http::StatusCode;
 use warp::reply::Reply;
 
 pub async fn find<H, Store, V, R, F>(
+    ctx: Context,
     store: Store,
     key: String,
     api_opt: Option<FindOption>,
@@ -24,6 +26,7 @@ where
     V: DeserializableOwned,
     R: Serializable,
 {
+    tracing::trace!("handle: {:?}", ctx);
     match store
         .ops()
         .find::<V>(store.con().unwrap(), key, store_opt)
@@ -45,6 +48,7 @@ where
 }
 
 pub async fn list<H, Store, V, R, F>(
+    ctx: Context,
     store: Store,
     prefix: &str,
     api_opt: Option<ListOption>,
@@ -58,6 +62,7 @@ where
     V: DeserializableOwned,
     R: Serializable,
 {
+    tracing::trace!("handle: {:?}", ctx);
     match store
         .ops()
         .list::<V>(store.con().unwrap(), prefix.to_owned(), store_opt)
@@ -76,6 +81,7 @@ where
 }
 
 pub async fn put<H, Store, Req, V, F>(
+    ctx: Context,
     store: Store,
     key: String,
     opt: Option<PutOption>,
@@ -90,6 +96,7 @@ where
     V: Serializable + Send,
     F: FnOnce(Req) -> Result<V, ApiError>,
 {
+    tracing::trace!("handle: {:?}", ctx);
     let format = opt.map(|x| x.format()).unwrap_or(None);
     let v = common::body::decode::<_, Req>(request, format)?;
     let v = f(v)?;
@@ -110,6 +117,7 @@ where
 }
 
 pub async fn delete<H, Store>(
+    ctx: Context,
     store: Store,
     key: String,
     _api_opt: Option<DeleteOption>,
@@ -119,6 +127,7 @@ where
     Store: KvStore<H>,
     H: HttpClient,
 {
+    tracing::trace!("handle: {:?}", ctx);
     match store
         .ops()
         .delete(store.con().unwrap(), key, store_opt)
