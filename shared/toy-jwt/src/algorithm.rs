@@ -10,3 +10,9 @@ impl Algorithm {
         }
     }
 }
+
+impl From<jsonwebtoken::Algorithm> for Algorithm {
+    fn from(v: jsonwebtoken::Algorithm) -> Self {
+        todo!()
+    }
+}

@@ -1,5 +1,7 @@
 use crate::error::JWTError;
+use crate::header::Header;
 use crate::validation::Validation;
+use crate::Algorithm;
 use jsonwebtoken::DecodingKey;
 use std::collections::HashMap;
 use toy_pack::deser::DeserializableOwned;
@@ -23,6 +25,14 @@ pub fn from_rsa_components<T: DeserializableOwned>(
     let _ = header(token, &v)?;
     let key = DecodingKey::from_rsa_components(modulus, exponent);
     claims(token, &key, v)
+}
+
+pub fn decode_header(token: &str) -> Result<Header, JWTError> {
+    let h = jsonwebtoken::decode_header(token).map_err(|e| JWTError::error(e))?;
+    Ok(Header {
+        alg: h.alg.into(),
+        kid: h.kid,
+    })
 }
 
 fn header(token: &str, v: &Validation) -> Result<jsonwebtoken::Header, JWTError> {

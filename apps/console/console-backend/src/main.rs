@@ -32,11 +32,11 @@ impl ServerConfig<ReqwestClient> for ToyConfig {
     }
 
     fn cert_path(&self) -> String {
-        std::env::var("TOY_API_CERT_PATH").expect("config not found.")
+        std::env::var("TOY_API_TLS_CERT_PATH").expect("config not found.")
     }
 
     fn key_path(&self) -> String {
-        std::env::var("TOY_API_KEY_PATH").expect("config not found.")
+        std::env::var("TOY_API_TLS_KEY_PATH").expect("config not found.")
     }
 }
 

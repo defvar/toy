@@ -1,10 +1,11 @@
 use super::{common_headers, prepare_query};
 use crate::client::TaskClient;
-use crate::common;
 use crate::error::ApiClientError;
+use crate::{common, Auth};
 use async_trait::async_trait;
 use futures_core::Stream;
 use futures_util::StreamExt;
+use std::sync::Arc;
 use toy_api::graph::Graph;
 use toy_api::task::{
     AllocateOption, AllocateRequest, AllocateResponse, ListOption, LogOption, PendingsEntity,
@@ -15,6 +16,7 @@ use toy_h::{HttpClient, RequestBuilder, Response, Uri};
 #[derive(Debug, Clone)]
 pub struct HttpTaskClient<T> {
     root: String,
+    auth: Arc<Auth>,
     inner: T,
 }
 
@@ -22,9 +24,10 @@ impl<T> HttpTaskClient<T>
 where
     T: HttpClient,
 {
-    pub fn new<P: Into<String>>(root: P, inner: T) -> Self {
+    pub fn new<P: Into<String>>(root: P, auth: Arc<Auth>, inner: T) -> Self {
         Self {
             root: root.into(),
+            auth,
             inner,
         }
     }
@@ -40,7 +43,7 @@ where
     async fn watch(&self, opt: WatchOption) -> Result<Self::WatchStream, ApiClientError> {
         let query = prepare_query(&opt)?;
         let uri = format!("{}/tasks/watch?{}", self.root, query).parse::<Uri>()?;
-        let h = common_headers(opt.format());
+        let h = common_headers(opt.format(), &self.auth);
         let stream = self
             .inner
             .get(uri)
@@ -63,7 +66,7 @@ where
     ) -> Result<AllocateResponse, ApiClientError> {
         let query = prepare_query(&opt)?;
         let uri = format!("{}/tasks/{}/allocate?{}", self.root, key, query).parse::<Uri>()?;
-        let h = common_headers(opt.format());
+        let h = common_headers(opt.format(), &self.auth);
         let body = common::encode(&req, opt.format())?;
         let bytes = self
             .inner
@@ -81,7 +84,7 @@ where
     async fn post(&self, v: Graph, opt: PostOption) -> Result<(), ApiClientError> {
         let query = prepare_query(&opt)?;
         let uri = format!("{}/tasks?{}", self.root, query).parse::<Uri>()?;
-        let h = common_headers(opt.format());
+        let h = common_headers(opt.format(), &self.auth);
         let body = common::encode(&v, opt.format())?;
         let _ = self
             .inner
@@ -98,7 +101,7 @@ where
     async fn list(&self, opt: ListOption) -> Result<TasksEntity, ApiClientError> {
         let query = prepare_query(&opt)?;
         let uri = format!("{}/tasks?{}", self.root, query).parse::<Uri>()?;
-        let h = common_headers(opt.format());
+        let h = common_headers(opt.format(), &self.auth);
         let bytes = self.inner.get(uri).headers(h).send().await?.bytes().await?;
         let r = common::decode::<TasksEntity>(&bytes, opt.format())?;
         Ok(r)
@@ -107,7 +110,7 @@ where
     async fn log(&self, key: String, opt: LogOption) -> Result<TaskLogEntity, ApiClientError> {
         let query = prepare_query(&opt)?;
         let uri = format!("{}/tasks/{}/log?{}", self.root, key, query).parse::<Uri>()?;
-        let h = common_headers(opt.format());
+        let h = common_headers(opt.format(), &self.auth);
         let bytes = self.inner.get(uri).headers(h).send().await?.bytes().await?;
         let r = common::decode::<TaskLogEntity>(&bytes, opt.format())?;
         Ok(r)

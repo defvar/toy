@@ -1,10 +1,12 @@
 #![feature(backtrace, min_type_alias_impl_trait)]
 
+mod auth;
 pub mod client;
 mod common;
 pub mod error;
 pub mod noop;
 
+pub use auth::Auth;
 pub use client::ApiClient;
 pub use noop::NoopApiClient;
 

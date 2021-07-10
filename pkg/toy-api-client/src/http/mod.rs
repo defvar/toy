@@ -15,10 +15,13 @@ pub use task::HttpTaskClient;
 use crate::client::{ApiClient, Rbaclient};
 use crate::error::ApiClientError;
 
+use crate::auth::Auth;
 use crate::http::role::HttpRoleClient;
 use crate::http::role_binding::HttpRoleBindingClient;
+use std::sync::Arc;
 use toy_api::common::Format;
 use toy_h::impl_reqwest::ReqwestClient;
+use toy_h::HeaderMap;
 use toy_pack::ser::Serializable;
 use toy_pack::Pack;
 use toy_pack_urlencoded::QueryParseError;
@@ -30,44 +33,56 @@ pub struct HttpApiClient {
     sv: HttpSupervisorClient<ReqwestClient>,
     service: HttpServiceClient<ReqwestClient>,
     rbac: HttpRbacClient,
+
+    auth: Arc<Auth>,
 }
 
 #[derive(Debug, Clone)]
 pub struct HttpRbacClient {
     role: HttpRoleClient<ReqwestClient>,
     role_binding: HttpRoleBindingClient<ReqwestClient>,
+
+    auth: Arc<Auth>,
 }
 
 impl HttpApiClient {
-    pub fn new<P: AsRef<str>>(root: P) -> Result<Self, ApiClientError> {
+    pub fn new<P: AsRef<str>>(root: P, auth: Auth) -> Result<Self, ApiClientError> {
         let client = ReqwestClient::new()?;
-        let rbac = HttpRbacClient::from(root.as_ref(), client.clone())?;
-        Ok(Self {
-            graph: HttpGraphClient::new(root.as_ref(), client.clone()),
-            task: HttpTaskClient::new(root.as_ref(), client.clone()),
-            sv: HttpSupervisorClient::new(root.as_ref(), client.clone()),
-            service: HttpServiceClient::new(root.as_ref(), client.clone()),
-            rbac,
-        })
+        HttpApiClient::from(root, auth, client)
     }
 
-    pub fn from<P: AsRef<str>>(root: P, inner: ReqwestClient) -> Result<Self, ApiClientError> {
-        let rbac = HttpRbacClient::from(root.as_ref(), inner.clone())?;
+    pub fn from<P: AsRef<str>>(
+        root: P,
+        auth: Auth,
+        inner: ReqwestClient,
+    ) -> Result<Self, ApiClientError> {
+        let auth = Arc::new(auth);
+        let rbac = HttpRbacClient::from(root.as_ref(), Arc::clone(&auth), inner.clone())?;
         Ok(Self {
-            graph: HttpGraphClient::new(root.as_ref(), inner.clone()),
-            task: HttpTaskClient::new(root.as_ref(), inner.clone()),
-            sv: HttpSupervisorClient::new(root.as_ref(), inner.clone()),
-            service: HttpServiceClient::new(root.as_ref(), inner.clone()),
+            graph: HttpGraphClient::new(root.as_ref(), Arc::clone(&auth), inner.clone()),
+            task: HttpTaskClient::new(root.as_ref(), Arc::clone(&auth), inner.clone()),
+            sv: HttpSupervisorClient::new(root.as_ref(), Arc::clone(&auth), inner.clone()),
+            service: HttpServiceClient::new(root.as_ref(), Arc::clone(&auth), inner.clone()),
             rbac,
+            auth,
         })
     }
 }
 
 impl HttpRbacClient {
-    pub fn from<P: AsRef<str>>(root: P, inner: ReqwestClient) -> Result<Self, ApiClientError> {
+    pub fn from<P: AsRef<str>>(
+        root: P,
+        auth: Arc<Auth>,
+        inner: ReqwestClient,
+    ) -> Result<Self, ApiClientError> {
         Ok(Self {
-            role: HttpRoleClient::new(root.as_ref(), inner.clone()),
-            role_binding: HttpRoleBindingClient::new(root.as_ref(), inner.clone()),
+            role: HttpRoleClient::new(root.as_ref(), Arc::clone(&auth), inner.clone()),
+            role_binding: HttpRoleBindingClient::new(
+                root.as_ref(),
+                Arc::clone(&auth),
+                inner.clone(),
+            ),
+            auth,
         })
     }
 }
@@ -113,10 +128,12 @@ impl Rbaclient for HttpRbacClient {
     }
 }
 
-pub(crate) fn common_headers(format: Option<Format>) -> toy_h::HeaderMap {
-    use toy_h::{header::HeaderValue, header::CONTENT_TYPE, HeaderMap};
+pub(crate) fn common_headers(format: Option<Format>, auth: &Auth) -> toy_h::HeaderMap {
+    use toy_h::{header::HeaderValue, header::AUTHORIZATION, header::CONTENT_TYPE};
 
     let mut headers = HeaderMap::new();
+
+    headers.insert("X-Toy-Api-Client", "toy-rs");
 
     let v = match format.unwrap_or(Format::MessagePack) {
         Format::Json => HeaderValue::from_static("application/json"),
@@ -124,6 +141,15 @@ pub(crate) fn common_headers(format: Option<Format>) -> toy_h::HeaderMap {
         Format::Yaml => HeaderValue::from_static("application/yaml"),
     };
     headers.insert(CONTENT_TYPE, v);
+
+    if auth.bearer_token().is_some() {
+        match HeaderValue::from_str(&format!("Bearer {}", auth.bearer_token().unwrap())) {
+            Ok(h) => {
+                headers.insert(AUTHORIZATION, h);
+            }
+            Err(_) => {}
+        }
+    }
 
     headers
 }

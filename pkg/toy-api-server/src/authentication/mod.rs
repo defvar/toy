@@ -5,6 +5,7 @@ mod authenticator;
 use crate::ApiError;
 pub use authenticator::authenticate;
 use std::fmt;
+use std::future::Future;
 use std::marker::PhantomData;
 use toy_h::HttpClient;
 
@@ -36,13 +37,50 @@ impl fmt::Debug for AuthUser {
     }
 }
 
-/// Authorization Operation.
+/// Authentication Operation.
 pub trait Auth<T>: Clone + Send + Sync {
     type F: std::future::Future<Output = Result<AuthUser, ApiError>> + Send;
 
     /// verify string token.
     /// token is 'Authorization: Bearer {token}' of Http Header.
     fn verify(&self, client: T, token: String) -> Self::F;
+}
+
+/// Implementation Auth Operations for User or ServiceAccount.
+#[derive(Clone)]
+pub struct CommonAuths<T, U> {
+    user: T,
+    service_account: U,
+}
+
+impl<T, U> CommonAuths<T, U> {
+    pub fn new(user: T, service_account: U) -> Self {
+        Self {
+            user,
+            service_account,
+        }
+    }
+}
+
+impl<T, U, H> Auth<H> for CommonAuths<T, U>
+where
+    T: Auth<H>,
+    U: Auth<H>,
+    H: HttpClient,
+{
+    type F = impl Future<Output = Result<AuthUser, crate::ApiError>> + Send;
+
+    fn verify(&self, client: H, token: String) -> Self::F {
+        let u = self.user.clone();
+        let s = self.service_account.clone();
+        async move {
+            let r = u.verify(client.clone(), token.clone()).await;
+            match r {
+                Ok(u) => Ok(u),
+                Err(_) => s.verify(client.clone(), token.clone()).await,
+            }
+        }
+    }
 }
 
 /// Implementation No Auth.

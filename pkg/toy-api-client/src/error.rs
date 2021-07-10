@@ -11,6 +11,9 @@ use toy_pack_urlencoded::QueryParseError;
 
 #[derive(Debug, Error)]
 pub enum ApiClientError {
+    #[error("authentication failed. {:?}", inner)]
+    AuthenticationFailed { inner: String },
+
     #[error("error: {:?}", source)]
     DeserializeJsonValue {
         #[from]
