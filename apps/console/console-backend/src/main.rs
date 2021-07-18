@@ -1,8 +1,10 @@
 #![feature(min_type_alias_impl_trait)]
 
-use toy::api_server::auth::NoAuth;
+use toy::api_server::authentication::CommonAuths;
 use toy::api_server::task::btree_log_store::BTreeLogStore;
 use toy::api_server::ServerConfig;
+use toy_api_auth_firebase::FireAuth;
+use toy_api_auth_jwt::ServiceAccountAuth;
 use toy_api_store_etcd::EtcdStore;
 use toy_h::impl_reqwest::ReqwestClient;
 use tracing_subscriber::fmt::format::FmtSpan;
@@ -10,15 +12,13 @@ use tracing_subscriber::fmt::format::FmtSpan;
 struct ToyConfig;
 
 impl ServerConfig<ReqwestClient> for ToyConfig {
-    type Auth = NoAuth<ReqwestClient>;
+    type Auth = CommonAuths<FireAuth, ServiceAccountAuth>;
     type TaskLogStore = BTreeLogStore<ReqwestClient>;
     type TaskStore = EtcdStore<ReqwestClient>;
-    type GraphStore = EtcdStore<ReqwestClient>;
-    type SupervisorStore = EtcdStore<ReqwestClient>;
-    type ServiceStore = EtcdStore<ReqwestClient>;
+    type KvStore = EtcdStore<ReqwestClient>;
 
     fn auth(&self) -> Self::Auth {
-        NoAuth::new()
+        CommonAuths::new(FireAuth::new(), ServiceAccountAuth::new())
     }
 
     fn task_store(&self) -> Self::TaskStore {
@@ -29,24 +29,20 @@ impl ServerConfig<ReqwestClient> for ToyConfig {
         BTreeLogStore::new()
     }
 
-    fn graph_store(&self) -> Self::GraphStore {
-        EtcdStore::new()
-    }
-
-    fn supervisor_store(&self) -> Self::SupervisorStore {
-        EtcdStore::new()
-    }
-
-    fn service_store(&self) -> Self::ServiceStore {
+    fn kv_store(&self) -> Self::KvStore {
         EtcdStore::new()
     }
 
     fn cert_path(&self) -> String {
-        std::env::var("TOY_API_CERT_PATH").expect("config not found.")
+        std::env::var("TOY_API_TLS_CERT_PATH").expect("config not found.")
     }
 
     fn key_path(&self) -> String {
-        std::env::var("TOY_API_KEY_PATH").expect("config not found.")
+        std::env::var("TOY_API_TLS_KEY_PATH").expect("config not found.")
+    }
+
+    fn pub_path(&self) -> String {
+        std::env::var("TOY_API_TLS_PUB_PATH").expect("config not found.")
     }
 }
 

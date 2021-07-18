@@ -26,3 +26,4 @@ toy-api-store-glogging = { path = "../../../pkg/toy-api-store-glogging"}
 
 # auth
 toy-api-auth-firebase = { path = "../../../pkg/toy-api-auth-firebase"}
+toy-api-auth-jwt = { path = "../../../pkg/toy-api-auth-jwt" }

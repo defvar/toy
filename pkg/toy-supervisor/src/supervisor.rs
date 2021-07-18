@@ -8,8 +8,8 @@ use core::task::{Context, Poll};
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::Mutex;
+use toy_api::common::PutOption;
 use toy_api::services::ServiceSpec;
-use toy_api::supervisors::PutOption;
 use toy_api_client::client::{ServiceClient, SupervisorClient};
 use toy_api_client::{ApiClient, NoopApiClient};
 use toy_core::data::Frame;
@@ -256,7 +256,7 @@ where
         let c = self.client.as_ref().unwrap();
         if let Err(e) = c
             .supervisor()
-            .put(self.name.clone(), sv, PutOption::default())
+            .put(self.name.clone(), sv, PutOption::new())
             .await
         {
             tracing::error!(err = ?e, "an error occured; supervisor when start up.");
@@ -283,7 +283,7 @@ where
                 .put(
                     spec.service_type().full_name().to_owned(),
                     spec,
-                    toy_api::services::PutOption::new(),
+                    PutOption::new(),
                 )
                 .await
             {

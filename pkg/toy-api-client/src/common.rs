@@ -1,7 +1,41 @@
 use crate::error::ApiClientError;
 use toy_api::common::Format;
+#[cfg(feature = "http")]
+use toy_h::Response;
 use toy_pack::deser::DeserializableOwned;
 use toy_pack::ser::Serializable;
+
+#[cfg(feature = "http")]
+pub async fn response<T, V>(res: T, format: Option<Format>) -> Result<V, ApiClientError>
+where
+    T: Response,
+    V: DeserializableOwned,
+{
+    if res.status().is_success() {
+        let bytes = res.bytes().await?;
+        let v = decode::<V>(&bytes, format)?;
+        Ok(v)
+    } else {
+        let bytes = res.bytes().await?;
+        let r = decode::<ErrorMessage>(&bytes, Some(Format::Json))?;
+        Err(r.into())
+    }
+}
+
+#[cfg(feature = "http")]
+pub async fn no_response<T>(res: T, _format: Option<Format>) -> Result<(), ApiClientError>
+where
+    T: Response,
+{
+    if res.status().is_success() {
+        let _ = res.bytes().await?;
+        Ok(())
+    } else {
+        let bytes = res.bytes().await?;
+        let r = decode::<ErrorMessage>(&bytes, Some(Format::Json))?;
+        Err(r.into())
+    }
+}
 
 #[allow(dead_code)]
 pub fn encode<T>(v: &T, format: Option<Format>) -> Result<Vec<u8>, ApiClientError>

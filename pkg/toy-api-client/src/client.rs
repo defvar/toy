@@ -1,18 +1,25 @@
+//! # Traits for Toy Api Client
+
 use crate::error::ApiClientError;
 use async_trait::async_trait;
 use futures_core::Stream;
-use toy_api::graph::{self, GraphEntity, GraphsEntity};
-use toy_api::services::{self, ServiceSpec, ServiceSpecList};
-use toy_api::supervisors::{self, Supervisor, Supervisors};
+use toy_api::common;
+use toy_api::graph::{Graph, GraphList};
+use toy_api::role::{Role, RoleList};
+use toy_api::role_binding::{RoleBinding, RoleBindingList};
+use toy_api::services::{ServiceSpec, ServiceSpecList};
+use toy_api::supervisors::{Supervisor, SupervisorList};
 use toy_api::task::{
     self, AllocateRequest, AllocateResponse, PendingsEntity, TaskLogEntity, TasksEntity,
 };
 
+/// Composit All Api Client
 pub trait ApiClient: Send + Sync {
     type Graph: GraphClient + 'static;
     type Task: TaskClient + 'static;
     type Supervisor: SupervisorClient + 'static;
     type Service: ServiceClient + 'static;
+    type Rbac: Rbaclient + 'static;
 
     fn graph(&self) -> &Self::Graph;
 
@@ -21,26 +28,38 @@ pub trait ApiClient: Send + Sync {
     fn supervisor(&self) -> &Self::Supervisor;
 
     fn service(&self) -> &Self::Service;
+
+    fn rbac(&self) -> &Self::Rbac;
+}
+
+/// Composit Rbac Api Client
+pub trait Rbaclient: Send + Sync {
+    type Role: RoleClient + 'static;
+    type RoleBinding: RoleBindingClient + 'static;
+
+    fn role(&self) -> &Self::Role;
+
+    fn role_binding(&self) -> &Self::RoleBinding;
 }
 
 #[async_trait]
 pub trait GraphClient: Send + Sync {
-    async fn list(&self, opt: graph::ListOption) -> Result<GraphsEntity, ApiClientError>;
+    async fn list(&self, opt: common::ListOption) -> Result<GraphList, ApiClientError>;
 
     async fn find(
         &self,
         key: String,
-        opt: graph::FindOption,
-    ) -> Result<Option<GraphEntity>, ApiClientError>;
+        opt: common::FindOption,
+    ) -> Result<Option<Graph>, ApiClientError>;
 
     async fn put(
         &self,
         key: String,
-        v: GraphEntity,
-        opt: graph::PutOption,
+        v: Graph,
+        opt: common::PutOption,
     ) -> Result<(), ApiClientError>;
 
-    async fn delete(&self, key: String, opt: graph::DeleteOption) -> Result<(), ApiClientError>;
+    async fn delete(&self, key: String, opt: common::DeleteOption) -> Result<(), ApiClientError>;
 }
 
 #[async_trait]
@@ -56,7 +75,7 @@ pub trait TaskClient: Send + Sync {
         opt: task::AllocateOption,
     ) -> Result<AllocateResponse, ApiClientError>;
 
-    async fn post(&self, v: GraphEntity, opt: task::PostOption) -> Result<(), ApiClientError>;
+    async fn post(&self, v: Graph, opt: task::PostOption) -> Result<(), ApiClientError>;
 
     async fn list(&self, opt: task::ListOption) -> Result<TasksEntity, ApiClientError>;
 
@@ -66,44 +85,76 @@ pub trait TaskClient: Send + Sync {
 
 #[async_trait]
 pub trait SupervisorClient: Send + Sync {
-    async fn list(&self, opt: supervisors::ListOption) -> Result<Supervisors, ApiClientError>;
+    async fn list(&self, opt: common::ListOption) -> Result<SupervisorList, ApiClientError>;
 
     async fn find(
         &self,
         key: String,
-        opt: supervisors::FindOption,
+        opt: common::FindOption,
     ) -> Result<Option<Supervisor>, ApiClientError>;
 
     async fn put(
         &self,
         key: String,
         v: Supervisor,
-        opt: supervisors::PutOption,
+        opt: common::PutOption,
     ) -> Result<(), ApiClientError>;
 
-    async fn delete(
-        &self,
-        key: String,
-        opt: supervisors::DeleteOption,
-    ) -> Result<(), ApiClientError>;
+    async fn delete(&self, key: String, opt: common::DeleteOption) -> Result<(), ApiClientError>;
 }
 
 #[async_trait]
 pub trait ServiceClient: Send + Sync {
-    async fn list(&self, opt: services::ListOption) -> Result<ServiceSpecList, ApiClientError>;
+    async fn list(&self, opt: common::ListOption) -> Result<ServiceSpecList, ApiClientError>;
 
     async fn find(
         &self,
         key: String,
-        opt: services::FindOption,
+        opt: common::FindOption,
     ) -> Result<Option<ServiceSpec>, ApiClientError>;
 
     async fn put(
         &self,
         key: String,
         v: ServiceSpec,
-        opt: services::PutOption,
+        opt: common::PutOption,
     ) -> Result<(), ApiClientError>;
 
-    async fn delete(&self, key: String, opt: services::DeleteOption) -> Result<(), ApiClientError>;
+    async fn delete(&self, key: String, opt: common::DeleteOption) -> Result<(), ApiClientError>;
+}
+
+#[async_trait]
+pub trait RoleClient: Send + Sync {
+    async fn list(&self, opt: common::ListOption) -> Result<RoleList, ApiClientError>;
+
+    async fn find(
+        &self,
+        key: String,
+        opt: common::FindOption,
+    ) -> Result<Option<Role>, ApiClientError>;
+
+    async fn put(&self, key: String, v: Role, opt: common::PutOption)
+        -> Result<(), ApiClientError>;
+
+    async fn delete(&self, key: String, opt: common::DeleteOption) -> Result<(), ApiClientError>;
+}
+
+#[async_trait]
+pub trait RoleBindingClient: Send + Sync {
+    async fn list(&self, opt: common::ListOption) -> Result<RoleBindingList, ApiClientError>;
+
+    async fn find(
+        &self,
+        key: String,
+        opt: common::FindOption,
+    ) -> Result<Option<RoleBinding>, ApiClientError>;
+
+    async fn put(
+        &self,
+        key: String,
+        v: RoleBinding,
+        opt: common::PutOption,
+    ) -> Result<(), ApiClientError>;
+
+    async fn delete(&self, key: String, opt: common::DeleteOption) -> Result<(), ApiClientError>;
 }

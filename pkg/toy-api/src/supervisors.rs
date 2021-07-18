@@ -1,4 +1,3 @@
-use crate::common::Format;
 use toy_pack::{Pack, Unpack};
 
 #[derive(Clone, Debug, Pack, Unpack)]
@@ -19,74 +18,14 @@ impl Supervisor {
 }
 
 #[derive(Clone, Debug, Pack, Unpack)]
-pub struct Supervisors {
-    supervisors: Vec<Supervisor>,
+pub struct SupervisorList {
+    items: Vec<Supervisor>,
     count: u32,
 }
 
-impl Supervisors {
-    pub fn new(supervisors: Vec<Supervisor>) -> Self {
-        let count = supervisors.len() as u32;
-        Self { supervisors, count }
-    }
-}
-
-#[derive(Clone, Debug, Pack, Unpack)]
-pub struct FindOption {
-    format: Option<Format>,
-}
-
-impl FindOption {
-    pub fn new() -> Self {
-        Self { format: None }
-    }
-
-    pub fn format(&self) -> Option<Format> {
-        self.format
-    }
-}
-
-#[derive(Clone, Debug, Pack, Unpack)]
-pub struct ListOption {
-    format: Option<Format>,
-}
-
-impl ListOption {
-    pub fn new() -> Self {
-        Self { format: None }
-    }
-
-    pub fn format(&self) -> Option<Format> {
-        self.format
-    }
-}
-
-#[derive(Clone, Debug, Pack, Unpack, Default)]
-pub struct PutOption {
-    format: Option<Format>,
-}
-
-impl PutOption {
-    pub fn new() -> Self {
-        Self { format: None }
-    }
-
-    pub fn format(&self) -> Option<Format> {
-        self.format
-    }
-}
-
-#[derive(Clone, Debug, Pack, Unpack)]
-pub struct DeleteOption {
-    format: Option<Format>,
-}
-
-impl DeleteOption {
-    pub fn new() -> Self {
-        Self { format: None }
-    }
-
-    pub fn format(&self) -> Option<Format> {
-        self.format
+impl SupervisorList {
+    pub fn new(items: Vec<Supervisor>) -> Self {
+        let count = items.len() as u32;
+        Self { items, count }
     }
 }

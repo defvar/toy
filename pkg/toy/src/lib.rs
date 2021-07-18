@@ -18,5 +18,5 @@ pub use toy_api_server as api_server;
 
 #[cfg(feature = "api-client")]
 pub mod api_client {
-    pub use toy_api_client::http::*;
+    pub use toy_api_client::*;
 }

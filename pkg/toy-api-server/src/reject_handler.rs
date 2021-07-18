@@ -2,15 +2,9 @@ use crate::common;
 use common::error::ApiError;
 use std::convert::Infallible;
 use toy_api::common::Format;
-use toy_pack::{Pack, Unpack};
+use toy_api::error::ErrorMessage;
 use warp::http::StatusCode;
 use warp::{Rejection, Reply};
-
-#[derive(Pack, Unpack)]
-struct ErrorMessage {
-    code: u16,
-    message: String,
-}
 
 pub async fn handle_rejection(err: Rejection) -> Result<impl Reply, Infallible> {
     let code;
@@ -32,10 +26,7 @@ pub async fn handle_rejection(err: Rejection) -> Result<impl Reply, Infallible> 
     }
 
     let r = common::reply::into_response(
-        &ErrorMessage {
-            code: code.as_u16(),
-            message: message.into(),
-        },
+        &ErrorMessage::new(code.as_u16(), message),
         Some(Format::Json),
     );
     Ok(warp::reply::with_status(r, code))

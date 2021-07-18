@@ -1,4 +1,4 @@
-//! api for task.
+//! Api for task.
 
 mod filters;
 mod handlers;

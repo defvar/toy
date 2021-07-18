@@ -2,6 +2,7 @@ use std::backtrace::Backtrace;
 use std::fmt::Display;
 use thiserror::Error;
 
+use toy_api::error::ErrorMessage;
 #[cfg(feature = "http")]
 use toy_h::error::HError;
 #[cfg(feature = "http")]
@@ -11,6 +12,9 @@ use toy_pack_urlencoded::QueryParseError;
 
 #[derive(Debug, Error)]
 pub enum ApiClientError {
+    #[error("authentication failed. {:?}", inner)]
+    AuthenticationFailed { inner: String },
+
     #[error("error: {:?}", source)]
     DeserializeJsonValue {
         #[from]
@@ -78,5 +82,11 @@ impl ApiClientError {
     #[cfg(feature = "http")]
     pub fn query_parse(e: QueryParseError) -> ApiClientError {
         ApiClientError::QueryParse { source: e }
+    }
+}
+
+impl From<ErrorMessage> for ApiClientError {
+    fn from(e: ErrorMessage) -> Self {
+        ApiClientError::error(format!("code:{}, message:{}", e.code(), e.message()))
     }
 }
