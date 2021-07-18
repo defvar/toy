@@ -1,5 +1,7 @@
 use crate::authentication::AuthUser;
 
+pub mod server;
+
 #[derive(Debug, Clone)]
 pub struct Context {
     user: AuthUser,

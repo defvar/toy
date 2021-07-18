@@ -14,7 +14,9 @@ clap = "3.0.0-beta.2"
 thiserror = "1.0"
 
 toy = { path = "../../../pkg/toy", features = ["supervisor", "api-client"] }
-toy-rt = { path = "../../../pkg/toy-rt"}
+toy-rt = { path = "../../../pkg/toy-rt" }
+toy-jwt = { path = "../../../shared/toy-jwt" }
+toy-api = { path = "../../../pkg/toy-api" }
 
 # plugins
 toy-plugin-commons = { path = "../../../plugins/toy-plugin-commons/toy-plugin-commons"}

@@ -10,7 +10,7 @@
 //!
 
 mod common;
-mod context;
+pub mod context;
 mod reject_handler;
 mod server;
 
@@ -23,6 +23,7 @@ pub mod task;
 
 pub mod authentication;
 pub mod authorization;
+pub mod initializer;
 pub mod rbac;
 
 pub use common::error::ApiError;

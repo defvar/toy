@@ -92,7 +92,7 @@ where
             .or(services(
                 self.config.auth().clone(),
                 client.clone(),
-                kv_store,
+                kv_store.clone(),
             ))
             .with(
                 warp::cors()
@@ -108,6 +108,11 @@ where
             )
             .with(warp::trace::request())
             .recover(handle_rejection);
+
+        if let Err(e) = crate::initializer::initialize(&self.config, kv_store).await {
+            tracing::error!("{:?}", e);
+            return;
+        }
 
         self.run_with_routes(addr, routes).await
     }

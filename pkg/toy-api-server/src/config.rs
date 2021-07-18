@@ -22,4 +22,6 @@ pub trait ServerConfig<Http> {
     fn cert_path(&self) -> String;
 
     fn key_path(&self) -> String;
+
+    fn pub_path(&self) -> String;
 }

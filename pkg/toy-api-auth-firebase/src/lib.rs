@@ -3,23 +3,20 @@
 //! # Auth Implementation for Firebase.
 
 use std::future::Future;
-use std::marker::PhantomData;
 use toy_api_server::authentication::{Auth, AuthUser};
 use toy_api_server::toy_h::HttpClient;
 use toy_api_server::ApiError;
 
 #[derive(Debug, Clone)]
-pub struct FireAuth<T> {
-    _t: PhantomData<T>,
-}
+pub struct FireAuth;
 
-impl<T> FireAuth<T> {
-    pub fn new() -> Result<Self, ApiError> {
-        Ok(FireAuth { _t: PhantomData })
+impl FireAuth {
+    pub fn new() -> Self {
+        FireAuth
     }
 }
 
-impl<T> Auth<T> for FireAuth<T>
+impl<T> Auth<T> for FireAuth
 where
     T: HttpClient,
 {

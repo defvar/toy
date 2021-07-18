@@ -53,6 +53,9 @@ pub enum ApiError {
     #[error("task id invalid format. id:{:?}", id)]
     TaskIdInvalidFormat { id: String },
 
+    #[error("server initialize failed. {:?}", inner)]
+    ServerInitializeFailed { inner: String },
+
     #[error("{:?}", inner)]
     Error { inner: String },
 }
@@ -116,6 +119,15 @@ impl ApiError {
 
     pub fn task_id_invalid_format(id: String) -> ApiError {
         ApiError::TaskIdInvalidFormat { id }
+    }
+
+    pub fn server_initialize_failed<T>(msg: T) -> ApiError
+    where
+        T: Display,
+    {
+        ApiError::ServerInitializeFailed {
+            inner: msg.to_string(),
+        }
     }
 }
 

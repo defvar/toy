@@ -37,8 +37,20 @@ impl Rule {
 }
 
 impl Role {
-    pub fn new(name: String, note: Option<String>, rules: Vec<Rule>) -> Self {
-        Self { name, note, rules }
+    pub fn new<P: Into<String>>(name: P, note: Option<P>, rules: Vec<Rule>) -> Self {
+        Self {
+            name: name.into(),
+            note: note.map(|x| x.into()),
+            rules,
+        }
+    }
+
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
+    pub fn rules(&self) -> &Vec<Rule> {
+        &self.rules
     }
 }
 

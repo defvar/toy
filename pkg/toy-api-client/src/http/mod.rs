@@ -133,7 +133,7 @@ pub(crate) fn common_headers(format: Option<Format>, auth: &Auth) -> toy_h::Head
 
     let mut headers = HeaderMap::new();
 
-    headers.insert("X-Toy-Api-Client", "toy-rs");
+    headers.insert("X-Toy-Api-Client", HeaderValue::from_static("toy-rs"));
 
     let v = match format.unwrap_or(Format::MessagePack) {
         Format::Json => HeaderValue::from_static("application/json"),

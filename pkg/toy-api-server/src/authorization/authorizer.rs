@@ -2,7 +2,7 @@ use crate::context::Context;
 use crate::ApiError;
 use toy_api::role::{Rule, RESOURCE_ALL, VERB_ALL};
 
-pub fn authorize(ctx: &Context, rules: Vec<Rule>) -> Result<(), ApiError> {
+pub fn authorize(ctx: &Context, rules: Option<Vec<Rule>>) -> Result<(), ApiError> {
     tracing::trace!("authorize. ctx:{:?}, rules:{:?}", ctx, rules);
 
     if let Ok(v) = std::env::var("TOY_AUTHORIZATION") {
@@ -12,9 +12,11 @@ pub fn authorize(ctx: &Context, rules: Vec<Rule>) -> Result<(), ApiError> {
         }
     }
 
-    for r in rules {
-        if match_resource(&ctx, r.resources()) && match_verb(&ctx, r.verbs()) {
-            return Ok(());
+    if let Some(rules) = rules {
+        for r in rules {
+            if match_resource(&ctx, r.resources()) && match_verb(&ctx, r.verbs()) {
+                return Ok(());
+            }
         }
     }
     Err(ApiError::authorization_failed(

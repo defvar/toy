@@ -17,6 +17,7 @@ pub mod constants {
     pub static SERVICES_KEY_PREFIX: &'static str = "/toy/services";
     pub static ROLE_KEY_PREFIX: &'static str = "/toy/roles";
     pub static ROLE_BINDING_KEY_PREFIX: &'static str = "/toy/roleBindings";
+    pub static SECRET_KEY_PREFIX: &'static str = "/toy/secrets";
 
     pub fn pending_key(id: TaskId) -> String {
         format!("{}/{}", PENDINGS_KEY_PREFIX, id)

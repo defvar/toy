@@ -6,7 +6,6 @@ use crate::ApiError;
 pub use authenticator::authenticate;
 use std::fmt;
 use std::future::Future;
-use std::marker::PhantomData;
 use toy_h::HttpClient;
 
 /// Authenticated User Infomation.
@@ -85,17 +84,15 @@ where
 
 /// Implementation No Auth.
 #[derive(Clone)]
-pub struct NoAuth<T> {
-    _t: PhantomData<T>,
-}
+pub struct NoAuth;
 
-impl<T> NoAuth<T> {
+impl NoAuth {
     pub fn new() -> Self {
-        Self { _t: PhantomData }
+        Self
     }
 }
 
-impl<T> Auth<T> for NoAuth<T>
+impl<T> Auth<T> for NoAuth
 where
     T: HttpClient,
 {

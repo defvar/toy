@@ -1,10 +1,17 @@
 use std::fmt::Display;
 use thiserror::Error;
+use toy_jwt::error::JWTError;
 
 #[derive(Debug, Error)]
 pub enum Error {
     #[error("can not read credential file. {:?}", inner)]
     ReadCredentialError { inner: String },
+
+    #[error("generate token failed. {:?}", source)]
+    GenerateTokenFailed {
+        #[from]
+        source: JWTError,
+    },
 
     #[error("not found env. {:?}", inner)]
     NotFoundEnv { inner: String },

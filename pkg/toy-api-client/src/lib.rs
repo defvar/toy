@@ -1,6 +1,6 @@
 #![feature(backtrace, min_type_alias_impl_trait)]
 
-mod auth;
+pub mod auth;
 pub mod client;
 mod common;
 pub mod error;

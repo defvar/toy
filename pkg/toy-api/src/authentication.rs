@@ -6,7 +6,60 @@ pub struct Claims {
 }
 
 impl Claims {
+    pub fn new<P: Into<String>>(sub: P) -> Self {
+        Self { sub: sub.into() }
+    }
+
     pub fn sub(&self) -> &str {
         &self.sub
+    }
+}
+
+#[derive(Debug, Eq, PartialEq, Clone, Pack, Unpack)]
+pub enum Secret {
+    KeyPair(KeyPair),
+}
+
+pub const TLS_SECRET_KID: &'static str = "__TLS_SECRET_KID__";
+
+#[derive(Debug, Eq, PartialEq, Clone, Pack, Unpack)]
+pub struct KeyPair {
+    kid: String,
+    private_key: String,
+    public_key: String,
+}
+
+impl KeyPair {
+    pub fn new(kid: String, private_key: String, public_key: String) -> Self {
+        KeyPair {
+            kid,
+            private_key,
+            public_key,
+        }
+    }
+
+    pub fn kid(&self) -> &str {
+        &self.kid
+    }
+
+    pub fn private_key(&self) -> &str {
+        &self.private_key
+    }
+
+    pub fn public_key(&self) -> &str {
+        &self.public_key
+    }
+}
+
+#[derive(Clone, Debug, Pack, Unpack)]
+pub struct SecretList {
+    items: Vec<Secret>,
+    count: u32,
+}
+
+impl SecretList {
+    pub fn new(items: Vec<Secret>) -> Self {
+        let count = items.len() as u32;
+        Self { items, count }
     }
 }
