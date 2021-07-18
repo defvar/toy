@@ -1,10 +1,11 @@
 use crate::error::ApiClientError;
 use toy_api::common::Format;
-use toy_api::error::ErrorMessage;
+#[cfg(feature = "http")]
 use toy_h::Response;
 use toy_pack::deser::DeserializableOwned;
 use toy_pack::ser::Serializable;
 
+#[cfg(feature = "http")]
 pub async fn response<T, V>(res: T, format: Option<Format>) -> Result<V, ApiClientError>
 where
     T: Response,
@@ -21,6 +22,7 @@ where
     }
 }
 
+#[cfg(feature = "http")]
 pub async fn no_response<T>(res: T, _format: Option<Format>) -> Result<(), ApiClientError>
 where
     T: Response,
