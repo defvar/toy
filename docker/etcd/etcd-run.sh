@@ -1,14 +1,20 @@
 #!/usr/bin/env bash
 
-mkdir -p /tmp/etcd-data.tmp
-sudo docker container rm -f  etcd-gcr-v3.4.9
+if [ "$(uname)" == 'Darwin' ]; then
+    tag="-arm64"
+else
+    tag=""
+fi
+
+mkdir -p /var/etcd-data
+sudo docker container rm -f etcd-server
 sudo docker run -d \
 --network toy \
 -p 2379:2379 \
 -p 2380:2380 \
---mount type=bind,source=/tmp/etcd-data.tmp,destination=/etcd-data \
---name etcd-gcr-v3.4.9 \
-gcr.io/etcd-development/etcd:v3.4.9 \
+--mount type=bind,source=/var/etcd-data,destination=/etcd-data \
+--name etcd-server \
+gcr.io/etcd-development/etcd:v3.5.0${tag} \
 /usr/local/bin/etcd \
 --name s1 \
 --data-dir /etcd-data \
