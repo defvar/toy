@@ -11,28 +11,30 @@ use toy_h::HttpClient;
 /// Authenticated User Infomation.
 #[derive(Clone)]
 pub struct AuthUser {
-    uid: String,
+    name: String,
 }
 
 impl AuthUser {
-    pub fn new<T: Into<String>>(uid: T) -> AuthUser {
-        Self { uid: uid.into() }
+    pub fn new<T: Into<String>>(name: T) -> AuthUser {
+        Self { name: name.into() }
     }
 
-    pub fn user_id(&self) -> &str {
-        &self.uid
+    pub fn name(&self) -> &str {
+        &self.name
     }
 }
 
 impl warp::Reply for AuthUser {
     fn into_response(self) -> warp::reply::Response {
-        warp::reply::Response::new(format!("{}", self.uid).into())
+        warp::reply::Response::new(format!("{}", self.name).into())
     }
 }
 
 impl fmt::Debug for AuthUser {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("AuthUser").field("uid", &self.uid).finish()
+        f.debug_struct("AuthUser")
+            .field("name", &self.name)
+            .finish()
     }
 }
 
@@ -73,10 +75,14 @@ where
         let u = self.user.clone();
         let s = self.service_account.clone();
         async move {
+            tracing::debug!("first authentication, user.");
             let r = u.verify(client.clone(), token.clone()).await;
             match r {
                 Ok(u) => Ok(u),
-                Err(_) => s.verify(client.clone(), token.clone()).await,
+                Err(_) => {
+                    tracing::debug!("next authentication, service account.");
+                    s.verify(client.clone(), token.clone()).await
+                }
             }
         }
     }

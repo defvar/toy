@@ -20,7 +20,7 @@ pub fn authorize(ctx: &Context, rules: Option<Vec<Rule>>) -> Result<(), ApiError
         }
     }
     Err(ApiError::authorization_failed(
-        ctx.user().user_id(),
+        ctx.user().name(),
         ctx.resource(),
         ctx.verb(),
     ))

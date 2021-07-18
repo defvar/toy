@@ -21,10 +21,12 @@ struct Opts {
     thread_name_prefix: String,
     #[clap(short, long, default_value = "https://localhost:3030")]
     api_root: String,
-    #[clap(short, long)]
-    user: Option<String>,
-    #[clap(short, long)]
-    credential: Option<String>,
+    #[clap(short, long, env = "TOY_API_CLIENT_USER")]
+    user: String,
+    #[clap(short, long, env = "TOY_API_CLIENT_CREDENTIAL")]
+    credential: String,
+    #[clap(short, long, env = "TOY_API_CLIENT_KID")]
+    kid: String,
 }
 
 fn main() {
@@ -47,13 +49,8 @@ fn go() -> Result<(), Error> {
         .with_timer(time)
         .init();
 
-    let user = match opts.user {
-        Some(ref p) => p.to_owned(),
-        None => std::env::var("TOY_API_CLIENT_USER")?,
-    };
-
-    let token = get_credential(&user, opts.credential.as_ref())?;
-    let auth = toy::api_client::auth::Auth::with_bearer_token(user, token);
+    let token = get_credential(&opts.user, &opts.kid, &opts.credential)?;
+    let auth = toy::api_client::auth::Auth::with_bearer_token(&opts.user, &token);
 
     tracing::info!("start supervisor for config:{:?}", opts);
 
@@ -74,24 +71,15 @@ fn go() -> Result<(), Error> {
     Ok(())
 }
 
-fn get_credential(user: &str, path_string: Option<&String>) -> Result<String, Error> {
-    let p = match path_string {
-        Some(p) => p.to_owned(),
-        None => std::env::var("TOY_API_CLIENT_CREDENTIAL")?,
-    };
-
-    let mut f = File::open(p)?;
-    let mut buffer = String::new();
-    f.read_to_string(&mut buffer)?;
+fn get_credential(user: &str, kid: &str, path_string: &str) -> Result<String, Error> {
+    let mut f = File::open(path_string)?;
+    let mut buffer = Vec::new();
+    f.read_to_end(&mut buffer)?;
 
     let claims = Claims::new(user);
 
-    let token = toy_jwt::encode::from_rsa_pem(
-        &claims,
-        Algorithm::RS256,
-        Some("__TLS_SECRET_KID__".to_owned()),
-        buffer.as_bytes(),
-    )?;
+    let token =
+        toy_jwt::encode::from_rsa_pem(&claims, Algorithm::RS256, Some(kid.to_owned()), &buffer)?;
 
     Ok(token)
 }
