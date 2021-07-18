@@ -6,7 +6,7 @@ use async_trait::async_trait;
 use std::sync::Arc;
 use toy_api::common::{DeleteOption, FindOption, ListOption, PutOption};
 use toy_api::services::{ServiceSpec, ServiceSpecList};
-use toy_h::{HttpClient, RequestBuilder, Response, Uri};
+use toy_h::{HttpClient, RequestBuilder, Uri};
 
 #[derive(Debug, Clone)]
 pub struct HttpServiceClient<T> {
@@ -37,9 +37,8 @@ where
         let query = prepare_query(&opt)?;
         let uri = format!("{}/services?{}", self.root, query).parse::<Uri>()?;
         let h = common_headers(opt.format(), &self.auth);
-        let bytes = self.inner.get(uri).headers(h).send().await?.bytes().await?;
-        let r = common::decode::<ServiceSpecList>(&bytes, opt.format())?;
-        Ok(r)
+        let r = self.inner.get(uri).headers(h).send().await?;
+        common::response(r, opt.format()).await
     }
 
     async fn find(
@@ -50,9 +49,8 @@ where
         let query = prepare_query(&opt)?;
         let uri = format!("{}/services/{}?{}", self.root, key, query).parse::<Uri>()?;
         let h = common_headers(opt.format(), &self.auth);
-        let bytes = self.inner.get(uri).headers(h).send().await?.bytes().await?;
-        let r = common::decode::<Option<ServiceSpec>>(&bytes, opt.format())?;
-        Ok(r)
+        let r = self.inner.get(uri).headers(h).send().await?;
+        common::response(r, opt.format()).await
     }
 
     async fn put(&self, key: String, v: ServiceSpec, opt: PutOption) -> Result<(), ApiClientError> {
@@ -60,30 +58,15 @@ where
         let uri = format!("{}/services/{}?{}", self.root, key, query).parse::<Uri>()?;
         let h = common_headers(opt.format(), &self.auth);
         let body = common::encode(&v, opt.format())?;
-        let _ = self
-            .inner
-            .put(uri)
-            .headers(h)
-            .body(body)
-            .send()
-            .await?
-            .bytes()
-            .await?;
-        Ok(())
+        let r = self.inner.put(uri).headers(h).body(body).send().await?;
+        common::no_response(r, opt.format()).await
     }
 
     async fn delete(&self, key: String, opt: DeleteOption) -> Result<(), ApiClientError> {
         let query = prepare_query(&opt)?;
         let uri = format!("{}/services/{}?{}", self.root, key, query).parse::<Uri>()?;
         let h = common_headers(opt.format(), &self.auth);
-        let _ = self
-            .inner
-            .delete(uri)
-            .headers(h)
-            .send()
-            .await?
-            .bytes()
-            .await?;
-        Ok(())
+        let r = self.inner.delete(uri).headers(h).send().await?;
+        common::no_response(r, opt.format()).await
     }
 }
