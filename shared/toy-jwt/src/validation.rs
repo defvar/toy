@@ -6,8 +6,9 @@ pub struct Validation {
     pub aud: Option<HashSet<String>>,
     pub iss: Option<String>,
     pub sub: Option<String>,
-    pub algorithms: Vec<Algorithm>,
+    algorithms: Vec<Algorithm>,
     pub kid: Option<String>,
+    exp: bool,
 }
 
 impl Validation {
@@ -18,7 +19,12 @@ impl Validation {
             sub: None,
             algorithms: vec![alg],
             kid: None,
+            exp: true,
         }
+    }
+
+    pub fn exp(self, v: bool) -> Self {
+        Self { exp: v, ..self }
     }
 
     pub(crate) fn convert(self) -> jsonwebtoken::Validation {
@@ -26,6 +32,7 @@ impl Validation {
         r.aud = self.aud;
         r.iss = self.iss;
         r.sub = self.sub;
+        r.validate_exp = self.exp;
         r.algorithms = self.algorithms.iter().map(|x| x.convert()).collect();
         r
     }

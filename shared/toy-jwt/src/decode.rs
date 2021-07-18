@@ -1,7 +1,6 @@
 use crate::error::JWTError;
 use crate::header::Header;
 use crate::validation::Validation;
-use crate::Algorithm;
 use jsonwebtoken::DecodingKey;
 use std::collections::HashMap;
 use toy_pack::deser::DeserializableOwned;

@@ -27,7 +27,7 @@ fn safe_from_rsa_pem() {
         company: "company".to_string(),
         exp: exp(),
     };
-    let token = toy_jwt::encode::from_rsa_pem(&c, Algorithm::RS256, key_pem).unwrap();
+    let token = toy_jwt::encode::from_rsa_pem(&c, Algorithm::RS256, None, key_pem).unwrap();
     let r =
         toy_jwt::decode::from_rsa_pem::<Calims>(&token, Validation::new(Algorithm::RS256), pub_pem)
             .unwrap();
