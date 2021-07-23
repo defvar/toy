@@ -34,15 +34,16 @@ where
     {
         Ok(v) => match v {
             Some(v) => {
-                let format = api_opt.map(|x| x.format()).unwrap_or(None);
+                let format = api_opt.as_ref().map(|x| x.format()).unwrap_or(None);
+                let pretty = api_opt.as_ref().map(|x| x.pretty()).unwrap_or(None);
                 let r = f(v);
-                Ok(common::reply::into_response(&r, format))
+                Ok(common::reply::into_response(&r, format, pretty))
             }
-            None => Ok(StatusCode::NOT_FOUND.into_response()),
+            None => Err(warp::reject::not_found()),
         },
         Err(e) => {
             tracing::error!("error:{:?}", e);
-            Ok(StatusCode::INTERNAL_SERVER_ERROR.into_response())
+            Err(warp::reject::custom(e))
         }
     }
 }
@@ -69,9 +70,10 @@ where
         .await
     {
         Ok(v) => {
-            let format = api_opt.map(|x| x.format()).unwrap_or(None);
+            let format = api_opt.as_ref().map(|x| x.format()).unwrap_or(None);
+            let pretty = api_opt.as_ref().map(|x| x.pretty()).unwrap_or(None);
             let r = f(v);
-            Ok(common::reply::into_response(&r, format))
+            Ok(common::reply::into_response(&r, format, pretty))
         }
         Err(e) => {
             tracing::error!("error:{:?}", e);

@@ -30,6 +30,7 @@ macro_rules! find {
 macro_rules! list {
     ($path: expr, $auth: expr, $client: expr, $key_prefix: expr, $store: expr, $f: expr) => {
         $path
+            .and(warp::path::end())
             .and(warp::get())
             .and($crate::authentication::authenticate($auth, $client))
             .and($crate::common::filter::with_store($store))

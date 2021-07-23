@@ -9,13 +9,13 @@ use warp::hyper::body::Bytes;
 use warp::reply::Reply;
 use warp::reply::Response;
 
-pub fn into_response<T>(v: &T, format: Option<Format>) -> Response
+pub fn into_response<T>(v: &T, format: Option<Format>, pretty: Option<bool>) -> Response
 where
     T: Serializable,
 {
     let format = format.unwrap_or(Format::default());
     match format {
-        Format::Json => json(v).into_response(),
+        Format::Json => json(v, pretty).into_response(),
         Format::Yaml => yaml(v).into_response(),
         Format::MessagePack => mp(v).into_response(),
     }
@@ -34,12 +34,15 @@ where
     }
 }
 
-pub fn encode<T>(v: &T, format: Option<Format>) -> Result<Bytes, ApiError>
+pub fn encode<T>(v: &T, format: Option<Format>, pretty: Option<bool>) -> Result<Bytes, ApiError>
 where
     T: Serializable,
 {
     let format = format.unwrap_or_default();
     match format {
+        Format::Json if pretty.is_some() && pretty.unwrap() => toy_pack_json::pack_pretty(v)
+            .map(Bytes::from)
+            .map_err(|e| ApiError::error(e)),
         Format::Json => toy_pack_json::pack(v)
             .map(Bytes::from)
             .map_err(|e| ApiError::error(e)),
@@ -72,13 +75,20 @@ where
     }
 }
 
-pub fn json<T>(v: &T) -> Json
+fn json<T>(v: &T, pretty: Option<bool>) -> Json
 where
     T: Serializable,
 {
-    Json {
-        inner: toy_pack_json::pack_to_string(v)
-            .map_err(|e| tracing::error!("reply::json error: {}", e)),
+    if pretty.is_some() && pretty.unwrap() {
+        Json {
+            inner: toy_pack_json::pack_to_string_pretty(v)
+                .map_err(|e| tracing::error!("reply::json error: {}", e)),
+        }
+    } else {
+        Json {
+            inner: toy_pack_json::pack_to_string(v)
+                .map_err(|e| tracing::error!("reply::json error: {}", e)),
+        }
     }
 }
 

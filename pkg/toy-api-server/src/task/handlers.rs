@@ -41,9 +41,10 @@ where
         .pending(store.con().unwrap(), key, pending)
         .await
     {
-        Ok(()) => {
-            Ok(common::reply::into_response(&(PendingResult::from_id(id)), format).into_response())
-        }
+        Ok(()) => Ok(
+            common::reply::into_response(&(PendingResult::from_id(id)), format, None)
+                .into_response(),
+        ),
         Err(e) => Err(ApiError::store_operation_failed(e).into_rejection()),
     }
 }
@@ -72,7 +73,7 @@ where
             let stream = stream.map(move |x| match x {
                 Ok(v) => {
                     let pendings = PendingsEntity::new(v);
-                    common::reply::encode(&pendings, format)
+                    common::reply::encode(&pendings, format, None)
                 }
                 Err(_) => Err(ApiError::error("failed get stream data")),
             });
@@ -118,6 +119,7 @@ where
                     return Ok(common::reply::into_response(
                         &AllocateResponse::not_found(id),
                         format,
+                        None,
                     ))
                 }
                 _ => (),
@@ -136,6 +138,7 @@ where
                 Ok(PutResult::Update) => Ok(common::reply::into_response(
                     &AllocateResponse::ok(id),
                     format,
+                    None,
                 )),
                 Ok(_) => unreachable!(),
                 Err(_) => Ok(StatusCode::INTERNAL_SERVER_ERROR.into_response()),
@@ -144,6 +147,7 @@ where
         Ok(None) => Ok(common::reply::into_response(
             &AllocateResponse::not_found(id),
             format,
+            None,
         )),
         Err(_) => Ok(StatusCode::INTERNAL_SERVER_ERROR.into_response()),
     }
@@ -165,7 +169,7 @@ where
         .list(log_store.con().unwrap(), ListOption::new())
         .await
     {
-        Ok(v) => Ok(common::reply::into_response(&v, format)),
+        Ok(v) => Ok(common::reply::into_response(&v, format, None)),
         Err(e) => {
             tracing::error!("error:{:?}", e);
             Ok(StatusCode::INTERNAL_SERVER_ERROR.into_response())
@@ -196,7 +200,7 @@ where
         .find(log_store.con().unwrap(), id, FindOption::new())
         .await
     {
-        Ok(Some(v)) => Ok(common::reply::into_response(&v, format)),
+        Ok(Some(v)) => Ok(common::reply::into_response(&v, format, None)),
         Ok(None) => Ok(StatusCode::NOT_FOUND.into_response()),
         Err(e) => {
             tracing::error!("error:{:?}", e);
