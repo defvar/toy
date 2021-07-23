@@ -4,11 +4,30 @@ use std::io;
 
 pub struct Encoder<W> {
     pub writer: W,
+    pretty: bool,
+    current_indent: usize,
+    has_value: bool,
 }
+
+static INDENT: &'static [u8] = b"  ";
 
 impl<W> Encoder<W> {
     pub fn new(writer: W) -> Encoder<W> {
-        Encoder { writer }
+        Encoder {
+            writer,
+            pretty: false,
+            current_indent: 0,
+            has_value: false,
+        }
+    }
+
+    pub fn pretty(writer: W) -> Encoder<W> {
+        Encoder {
+            writer,
+            pretty: true,
+            current_indent: 0,
+            has_value: false,
+        }
     }
 }
 
@@ -170,45 +189,80 @@ where
 
     #[inline]
     pub fn write_begin_array(&mut self) -> Result<()> {
+        if self.pretty {
+            self.current_indent += 1;
+            self.has_value = false;
+        }
         self.writer.write_all(b"[").map_err(Into::into)
     }
 
     #[inline]
     pub fn write_end_array(&mut self) -> Result<()> {
+        if self.pretty {
+            self.current_indent -= 1;
+            if self.has_value {
+                self.writer.write_all(b"\n")?;
+                indent(&mut self.writer, self.current_indent, INDENT)?;
+            }
+        }
         self.writer.write_all(b"]").map_err(Into::into)
     }
 
     #[inline]
     pub fn write_begin_array_element(&mut self, first: bool) -> Result<()> {
-        if first {
+        let r = if first {
             Ok(())
         } else {
             self.writer.write_all(b",").map_err(Into::into)
+        };
+        if self.pretty {
+            self.writer.write_all(b"\n")?;
+            indent(&mut self.writer, self.current_indent, INDENT)?;
         }
+        r
     }
 
     #[inline]
     pub fn write_end_array_element(&mut self) -> Result<()> {
+        if self.pretty {
+            self.has_value = true;
+        }
         Ok(())
     }
 
     #[inline]
     pub fn write_begin_object(&mut self) -> Result<()> {
+        if self.pretty {
+            self.current_indent += 1;
+            self.has_value = false;
+        }
         self.writer.write_all(b"{").map_err(Into::into)
     }
 
     #[inline]
     pub fn write_end_object(&mut self) -> Result<()> {
+        if self.pretty {
+            self.current_indent -= 1;
+            if self.has_value {
+                self.writer.write_all(b"\n")?;
+                indent(&mut self.writer, self.current_indent, INDENT)?;
+            }
+        }
         self.writer.write_all(b"}").map_err(Into::into)
     }
 
     #[inline]
     pub fn write_begin_object_key(&mut self, first: bool) -> Result<()> {
-        if first {
+        let r = if first {
             Ok(())
         } else {
             self.writer.write_all(b",").map_err(Into::into)
+        };
+        if self.pretty {
+            self.writer.write_all(b"\n")?;
+            indent(&mut self.writer, self.current_indent, INDENT)?;
         }
+        r
     }
 
     #[inline]
@@ -223,8 +277,22 @@ where
 
     #[inline]
     pub fn write_end_object_value(&mut self) -> Result<()> {
+        if self.pretty {
+            self.has_value = true;
+        }
         Ok(())
     }
+}
+
+fn indent<W>(wr: &mut W, n: usize, s: &[u8]) -> io::Result<()>
+where
+    W: ?Sized + io::Write,
+{
+    for _ in 0..n {
+        wr.write_all(s)?;
+    }
+
+    Ok(())
 }
 
 const BB: u8 = b'b'; // \x08

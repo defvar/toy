@@ -1,5 +1,5 @@
 use toy_pack_derive::*;
-use toy_pack_json::{pack_to_string, unpack, DecodeError};
+use toy_pack_json::{pack_to_string, pack_to_string_pretty, unpack, DecodeError};
 use toy_test_utils::unindent;
 
 #[test]
@@ -126,4 +126,36 @@ fn de_struct_err_trailing_comma() {
         },
         other => panic!("unexpected result: {:?}", other),
     };
+}
+
+#[test]
+fn pretty() {
+    #[derive(Debug, Pack, Unpack, PartialEq, Default)]
+    #[toy(ignore_pack_if_none)]
+    struct Outer {
+        id: u32,
+        numbers: Vec<i64>,
+        columns: Vec<Inner>,
+    }
+
+    #[derive(Debug, Pack, Unpack, Default, PartialEq)]
+    struct Inner {
+        name: String,
+    }
+
+    let d = Outer {
+        id: 999,
+        numbers: vec![11, 22, 33],
+        columns: vec![
+            Inner {
+                name: "a".to_string(),
+            },
+            Inner {
+                name: "b".to_string(),
+            },
+        ],
+    };
+
+    let json = pack_to_string_pretty(&d).unwrap();
+    println!("{}", json);
 }

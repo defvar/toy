@@ -6,8 +6,10 @@ pub use self::de::{unpack, unpack_from_reader};
 pub use self::decode::{
     decoder_from_reader, decoder_from_slice, DecodeError, Decoder, ParseNumber,
 };
-pub use self::encode::{encoder_from_writer, EncodeError, Encoder};
-pub use self::ser::{pack, pack_to_string, pack_to_writer};
+pub use self::encode::{encoder_from_writer, encoder_from_writer_pretty, EncodeError, Encoder};
+pub use self::ser::{
+    pack, pack_pretty, pack_to_string, pack_to_string_pretty, pack_to_writer, pack_to_writer_pretty,
+};
 
 mod de;
 mod decode;

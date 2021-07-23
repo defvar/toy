@@ -13,3 +13,7 @@ pub type Result<T> = result::Result<T, EncodeError>;
 pub fn encoder_from_writer<W: io::Write>(writer: W) -> Encoder<W> {
     Encoder::new(writer)
 }
+
+pub fn encoder_from_writer_pretty<W: io::Write>(writer: W) -> Encoder<W> {
+    Encoder::pretty(writer)
+}
