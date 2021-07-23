@@ -1,6 +1,6 @@
-use super::{common_headers, prepare_query};
 use crate::client::TaskClient;
 use crate::error::ApiClientError;
+use crate::http::common::{common_headers, prepare_query};
 use crate::{common, Auth};
 use async_trait::async_trait;
 use futures_core::Stream;

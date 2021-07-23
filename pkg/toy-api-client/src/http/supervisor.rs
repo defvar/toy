@@ -1,12 +1,13 @@
-use super::{common_headers, prepare_query};
 use crate::client::SupervisorClient;
 use crate::error::ApiClientError;
-use crate::{common, Auth};
+use crate::Auth;
 use async_trait::async_trait;
 use std::sync::Arc;
 use toy_api::common::{DeleteOption, FindOption, ListOption, PutOption};
 use toy_api::supervisors::{Supervisor, SupervisorList};
-use toy_h::{HttpClient, RequestBuilder, Uri};
+use toy_h::HttpClient;
+
+static PATH: &'static str = "supervisors";
 
 #[derive(Debug, Clone)]
 pub struct HttpSupervisorClient<T> {
@@ -34,11 +35,7 @@ where
     T: HttpClient,
 {
     async fn list(&self, opt: ListOption) -> Result<SupervisorList, ApiClientError> {
-        let query = prepare_query(&opt)?;
-        let uri = format!("{}/supervisors?{}", self.root, query).parse::<Uri>()?;
-        let h = common_headers(opt.format(), &self.auth);
-        let r = self.inner.get(uri).headers(h).send().await?;
-        common::response(r, opt.format()).await
+        crate::http::list(&self.inner, &self.auth, &self.root, PATH, opt).await
     }
 
     async fn find(
@@ -46,27 +43,14 @@ where
         key: String,
         opt: FindOption,
     ) -> Result<Option<Supervisor>, ApiClientError> {
-        let query = prepare_query(&opt)?;
-        let uri = format!("{}/supervisors/{}?{}", self.root, key, query).parse::<Uri>()?;
-        let h = common_headers(opt.format(), &self.auth);
-        let r = self.inner.get(uri).headers(h).send().await?;
-        common::response(r, opt.format()).await
+        crate::http::find(&self.inner, &self.auth, &self.root, PATH, &key, opt).await
     }
 
     async fn put(&self, key: String, v: Supervisor, opt: PutOption) -> Result<(), ApiClientError> {
-        let query = prepare_query(&opt)?;
-        let uri = format!("{}/supervisors/{}?{}", self.root, key, query).parse::<Uri>()?;
-        let h = common_headers(opt.format(), &self.auth);
-        let body = common::encode(&v, opt.format())?;
-        let r = self.inner.put(uri).headers(h).body(body).send().await?;
-        common::no_response(r, opt.format()).await
+        crate::http::put(&self.inner, &self.auth, &self.root, PATH, &key, &v, opt).await
     }
 
     async fn delete(&self, key: String, opt: DeleteOption) -> Result<(), ApiClientError> {
-        let query = prepare_query(&opt)?;
-        let uri = format!("{}/supervisors/{}?{}", self.root, key, query).parse::<Uri>()?;
-        let h = common_headers(opt.format(), &self.auth);
-        let r = self.inner.delete(uri).headers(h).send().await?;
-        common::no_response(r, opt.format()).await
+        crate::http::delete(&self.inner, &self.auth, &self.root, PATH, &key, opt).await
     }
 }

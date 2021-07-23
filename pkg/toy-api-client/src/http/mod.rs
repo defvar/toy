@@ -1,5 +1,6 @@
 //! # toy-api-client Implementation for http
 
+mod common;
 mod graph;
 mod role;
 mod role_binding;
@@ -12,6 +13,8 @@ pub use service::HttpServiceClient;
 pub use supervisor::HttpSupervisorClient;
 pub use task::HttpTaskClient;
 
+pub(crate) use common::{delete, find, list, put};
+
 use crate::client::{ApiClient, Rbaclient};
 use crate::error::ApiClientError;
 
@@ -19,12 +22,7 @@ use crate::auth::Auth;
 use crate::http::role::HttpRoleClient;
 use crate::http::role_binding::HttpRoleBindingClient;
 use std::sync::Arc;
-use toy_api::common::Format;
 use toy_h::impl_reqwest::ReqwestClient;
-use toy_h::HeaderMap;
-use toy_pack::ser::Serializable;
-use toy_pack::Pack;
-use toy_pack_urlencoded::QueryParseError;
 
 #[derive(Debug, Clone)]
 pub struct HttpApiClient {
@@ -34,7 +32,9 @@ pub struct HttpApiClient {
     service: HttpServiceClient<ReqwestClient>,
     rbac: HttpRbacClient,
 
+    root: String,
     auth: Arc<Auth>,
+    inner: ReqwestClient,
 }
 
 #[derive(Debug, Clone)]
@@ -64,7 +64,9 @@ impl HttpApiClient {
             sv: HttpSupervisorClient::new(root.as_ref(), Arc::clone(&auth), inner.clone()),
             service: HttpServiceClient::new(root.as_ref(), Arc::clone(&auth), inner.clone()),
             rbac,
+            root: root.as_ref().to_string(),
             auth,
+            inner: inner.clone(),
         })
     }
 }
@@ -126,52 +128,4 @@ impl Rbaclient for HttpRbacClient {
     fn role_binding(&self) -> &Self::RoleBinding {
         &self.role_binding
     }
-}
-
-pub(crate) fn common_headers(format: Option<Format>, auth: &Auth) -> toy_h::HeaderMap {
-    use toy_h::{header::HeaderValue, header::AUTHORIZATION, header::CONTENT_TYPE};
-
-    let mut headers = HeaderMap::new();
-
-    headers.insert("X-Toy-Api-Client", HeaderValue::from_static("toy-rs"));
-
-    let v = match format.unwrap_or(Format::MessagePack) {
-        Format::Json => HeaderValue::from_static("application/json"),
-        Format::MessagePack => HeaderValue::from_static("application/x-msgpack"),
-        Format::Yaml => HeaderValue::from_static("application/yaml"),
-    };
-    headers.insert(CONTENT_TYPE, v);
-
-    if auth.bearer_token().is_some() {
-        match HeaderValue::from_str(&format!("Bearer {}", auth.bearer_token().unwrap())) {
-            Ok(h) => {
-                headers.insert(AUTHORIZATION, h);
-            }
-            Err(_) => {}
-        }
-    }
-
-    headers
-}
-
-pub(crate) fn prepare_query<T>(p: &T) -> Result<String, QueryParseError>
-where
-    T: Serializable,
-{
-    #[derive(Pack)]
-    struct DefaultFormat {
-        format: Format,
-    }
-
-    let mut q: String = toy_pack_urlencoded::pack_to_string(p)?;
-    if !q.contains("format") {
-        if q.contains("=") {
-            q.push('&');
-        }
-        let q2 = toy_pack_urlencoded::pack_to_string(&DefaultFormat {
-            format: Format::MessagePack,
-        })?;
-        q.push_str(&q2);
-    }
-    Ok(q)
 }

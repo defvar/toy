@@ -6,6 +6,7 @@ use toy_api::error::ErrorMessage;
 use toy_h::Response;
 use toy_pack::deser::DeserializableOwned;
 use toy_pack::ser::Serializable;
+
 #[cfg(feature = "http")]
 pub async fn response<T, V>(res: T, format: Option<Format>) -> Result<V, ApiClientError>
 where
