@@ -3,7 +3,7 @@ use crate::Client;
 use futures_util::StreamExt;
 use std::future::Future;
 use std::marker::PhantomData;
-use toy_api::task::PendingEntity;
+use toy_api::task::PendingTask;
 use toy_api_server::store::kv::{
     Delete, DeleteOption, DeleteResult, Find, FindOption, KvStore, KvStoreOps, List, ListOption,
     Put, PutOperation, PutOption, PutResult,
@@ -279,12 +279,7 @@ where
     type Con = EtcdStoreConnection<T>;
 
     #[instrument(skip(self, con))]
-    async fn pending(
-        &self,
-        con: Self::Con,
-        key: String,
-        v: PendingEntity,
-    ) -> Result<(), StoreError> {
+    async fn pending(&self, con: Self::Con, key: String, v: PendingTask) -> Result<(), StoreError> {
         let s = toy_pack_json::pack_to_string(&v)?;
         let create_res = con.client.create(&key, &s).await?;
         if create_res.is_success() {
@@ -300,8 +295,7 @@ where
     T: HttpClient + 'static,
 {
     type Con = EtcdStoreConnection<T>;
-    type Stream =
-        impl toy_h::Stream<Item = Result<Vec<PendingEntity>, StoreError>> + Send + 'static;
+    type Stream = impl toy_h::Stream<Item = Result<Vec<PendingTask>, StoreError>> + Send + 'static;
     type T = impl Future<Output = Result<Self::Stream, StoreError>> + Send + 'static;
 
     fn watch_pending(&self, con: Self::Con, prefix: String) -> Self::T {
@@ -312,8 +306,7 @@ where
             Ok(stream.map(|x: Result<WatchResponse, StoreError>| match x {
                 Ok(res) => res.unpack(|x, e| match e {
                     EventType::PUT => Some(
-                        toy_pack_json::unpack::<PendingEntity>(&x.into_data())
-                            .map_err(|e| e.into()),
+                        toy_pack_json::unpack::<PendingTask>(&x.into_data()).map_err(|e| e.into()),
                     ),
                     _ => None,
                 }),

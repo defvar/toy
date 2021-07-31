@@ -3,7 +3,7 @@ use crate::error::StoreGLoggingError;
 use std::collections::HashMap;
 use std::future::Future;
 use std::marker::PhantomData;
-use toy_api::task::{TaskLogEntity, TaskLogInner, TasksEntity, TasksInner};
+use toy_api::task::{TaskLog, TaskLogInner, Tasks, TasksInner};
 use toy_api_server::store::error::StoreError;
 use toy_api_server::store::StoreConnection;
 use toy_api_server::task::store::{
@@ -82,7 +82,7 @@ where
     T: HttpClient,
 {
     type Con = GloggingStoreConnection<T>;
-    type T = impl Future<Output = Result<Option<TaskLogEntity>, Self::Err>> + Send;
+    type T = impl Future<Output = Result<Option<TaskLog>, Self::Err>> + Send;
     type Err = StoreGLoggingError;
 
     fn find(&self, con: Self::Con, task_id: TaskId, _opt: FindOption) -> Self::T {
@@ -118,7 +118,7 @@ where
                             None => Ok(vec),
                         }
                     })
-                    .map(|v| Some(TaskLogEntity::new(task_id, v)))
+                    .map(|v| Some(TaskLog::new(task_id, v)))
             }
         }
         .instrument(span)
@@ -130,7 +130,7 @@ where
     T: HttpClient,
 {
     type Con = GloggingStoreConnection<T>;
-    type T = impl Future<Output = Result<TasksEntity, Self::Err>> + Send;
+    type T = impl Future<Output = Result<Tasks, Self::Err>> + Send;
     type Err = StoreGLoggingError;
 
     fn list(&self, con: Self::Con, _opt: ListOption) -> Self::T {
@@ -169,9 +169,7 @@ where
                     _ => map,
                 }
             });
-            Ok(TasksEntity::new(
-                tasks.into_iter().map(|(_, v)| v).collect(),
-            ))
+            Ok(Tasks::new(tasks.into_iter().map(|(_, v)| v).collect()))
         }
         .instrument(span)
     }

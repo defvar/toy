@@ -1,10 +1,10 @@
 use crate::authentication::Auth;
 use crate::common;
+use crate::common::validator::{OkValidator, Validator};
 use crate::store::kv::KvStore;
 use toy_api::supervisors::{Supervisor, SupervisorList};
 use toy_h::HttpClient;
 use warp::Filter;
-
 /// warp filter for supervisors api.
 pub fn supervisors<T>(
     auth: impl Auth<T> + Clone,
@@ -36,7 +36,7 @@ where
         client.clone(),
         common::constants::SUPERVISORS_KEY_PREFIX,
         store.clone(),
-        |v: Supervisor| Ok(v)
+        OkValidator::<Supervisor>::validate
     ))
     .or(crate::delete!(
         warp::path("supervisors"),

@@ -30,19 +30,4 @@ where
         store.clone(),
         |v: Vec<ServiceSpec>| ServiceSpecList::new(v)
     ))
-    .or(crate::put!(
-        warp::path("services"),
-        auth.clone(),
-        client.clone(),
-        common::constants::SERVICES_KEY_PREFIX,
-        store.clone(),
-        |v: ServiceSpec| Ok(v)
-    ))
-    .or(crate::delete!(
-        warp::path("services"),
-        auth.clone(),
-        client.clone(),
-        common::constants::SERVICES_KEY_PREFIX,
-        store.clone()
-    ))
 }

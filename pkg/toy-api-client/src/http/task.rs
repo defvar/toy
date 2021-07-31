@@ -10,8 +10,8 @@ use toy_api::common::Format;
 use toy_api::error::ErrorMessage;
 use toy_api::graph::Graph;
 use toy_api::task::{
-    AllocateOption, AllocateRequest, AllocateResponse, ListOption, LogOption, PendingsEntity,
-    PostOption, TaskLogEntity, TasksEntity, WatchOption,
+    AllocateOption, AllocateRequest, AllocateResponse, ListOption, LogOption, PendingTaskList,
+    PostOption, TaskLog, Tasks, WatchOption,
 };
 use toy_h::{HttpClient, RequestBuilder, Response, Uri};
 
@@ -40,7 +40,7 @@ impl<T> TaskClient for HttpTaskClient<T>
 where
     T: HttpClient,
 {
-    type WatchStream = impl Stream<Item = Result<PendingsEntity, ApiClientError>>;
+    type WatchStream = impl Stream<Item = Result<PendingTaskList, ApiClientError>>;
 
     async fn watch(&self, opt: WatchOption) -> Result<Self::WatchStream, ApiClientError> {
         let query = prepare_query(&opt)?;
@@ -50,7 +50,7 @@ where
 
         if response.status().is_success() {
             let stream = response.stream().map(move |bytes| match bytes {
-                Ok(v) => common::decode::<PendingsEntity>(&v, opt.format()).map_err(|e| e.into()),
+                Ok(v) => common::decode::<PendingTaskList>(&v, opt.format()).map_err(|e| e.into()),
                 Err(e) => Err(e.into()),
             });
             Ok(stream)
@@ -84,7 +84,7 @@ where
         common::no_response(r, opt.format()).await
     }
 
-    async fn list(&self, opt: ListOption) -> Result<TasksEntity, ApiClientError> {
+    async fn list(&self, opt: ListOption) -> Result<Tasks, ApiClientError> {
         let query = prepare_query(&opt)?;
         let uri = format!("{}/tasks?{}", self.root, query).parse::<Uri>()?;
         let h = common_headers(opt.format(), &self.auth);
@@ -92,7 +92,7 @@ where
         common::response(r, opt.format()).await
     }
 
-    async fn log(&self, key: String, opt: LogOption) -> Result<TaskLogEntity, ApiClientError> {
+    async fn log(&self, key: String, opt: LogOption) -> Result<TaskLog, ApiClientError> {
         let query = prepare_query(&opt)?;
         let uri = format!("{}/tasks/{}/log?{}", self.root, key, query).parse::<Uri>()?;
         let h = common_headers(opt.format(), &self.auth);

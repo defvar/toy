@@ -6,7 +6,7 @@ use crate::store::StoreConnection;
 use async_trait::async_trait;
 use std::fmt;
 use std::future::Future;
-use toy_api::task::{PendingEntity, TaskLogEntity, TasksEntity};
+use toy_api::task::{PendingTask, TaskLog, Tasks};
 use toy_core::task::TaskId;
 
 /// This trait represents the concept of a Task Store.
@@ -67,18 +67,13 @@ pub trait Pending {
     type Con: StoreConnection;
 
     /// Create Pending task entity.
-    async fn pending(
-        &self,
-        con: Self::Con,
-        key: String,
-        v: PendingEntity,
-    ) -> Result<(), StoreError>;
+    async fn pending(&self, con: Self::Con, key: String, v: PendingTask) -> Result<(), StoreError>;
 }
 
 /// Watch Pending task entity.
 pub trait WatchPending {
     type Con: StoreConnection;
-    type Stream: toy_h::Stream<Item = Result<Vec<PendingEntity>, StoreError>> + Send + 'static;
+    type Stream: toy_h::Stream<Item = Result<Vec<PendingTask>, StoreError>> + Send + 'static;
     type T: Future<Output = Result<Self::Stream, StoreError>> + Send + 'static;
 
     /// Watch Pending task entity.
@@ -88,7 +83,7 @@ pub trait WatchPending {
 /// Find task log.
 pub trait FindLog {
     type Con: StoreConnection;
-    type T: Future<Output = Result<Option<TaskLogEntity>, Self::Err>> + Send;
+    type T: Future<Output = Result<Option<TaskLog>, Self::Err>> + Send;
     type Err: fmt::Debug + Send;
 
     /// Find task log by specified task id.
@@ -98,7 +93,7 @@ pub trait FindLog {
 /// List task info.
 pub trait List {
     type Con: StoreConnection;
-    type T: Future<Output = Result<TasksEntity, Self::Err>> + Send;
+    type T: Future<Output = Result<Tasks, Self::Err>> + Send;
     type Err: fmt::Debug + Send;
 
     /// List task info by time span.

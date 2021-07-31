@@ -11,7 +11,7 @@ pub enum PendingStatus {
 
 #[derive(Debug, Clone, Pack, Unpack)]
 #[toy(ignore_pack_if_none)]
-pub struct PendingEntity {
+pub struct PendingTask {
     task_id: TaskId,
     status: PendingStatus,
     allocated_supervisor: Option<String>,
@@ -20,8 +20,8 @@ pub struct PendingEntity {
 }
 
 #[derive(Debug, Clone, Pack, Unpack)]
-pub struct PendingsEntity {
-    pendings: Vec<PendingEntity>,
+pub struct PendingTaskList {
+    items: Vec<PendingTask>,
     count: u32,
 }
 
@@ -32,7 +32,7 @@ pub struct PendingResult {
 
 #[derive(Debug, Clone, Pack, Unpack)]
 pub struct AllocateRequest {
-    name: String,
+    supervisor: String,
 }
 
 #[derive(Debug, Clone, Pack, Unpack)]
@@ -48,7 +48,7 @@ pub enum AllocateStatus {
 }
 
 #[derive(Debug, Pack, Unpack)]
-pub struct TaskLogEntity {
+pub struct TaskLog {
     task_id: TaskId,
     payload: Vec<TaskLogInner>,
     count: u32,
@@ -66,7 +66,7 @@ pub struct TaskLogInner {
 }
 
 #[derive(Debug, Pack, Unpack)]
-pub struct TasksEntity {
+pub struct Tasks {
     tasks: Vec<TasksInner>,
     count: u32,
 }
@@ -85,7 +85,7 @@ impl Default for PendingStatus {
     }
 }
 
-impl PendingEntity {
+impl PendingTask {
     pub fn new(task_id: TaskId, graph: Graph) -> Self {
         Self {
             task_id,
@@ -119,14 +119,17 @@ impl PendingEntity {
     }
 }
 
-impl PendingsEntity {
-    pub fn new(pendings: Vec<PendingEntity>) -> Self {
+impl PendingTaskList {
+    pub fn new(pendings: Vec<PendingTask>) -> Self {
         let count = pendings.len() as u32;
-        Self { pendings, count }
+        Self {
+            items: pendings,
+            count,
+        }
     }
 
-    pub fn pendings(&self) -> &Vec<PendingEntity> {
-        &self.pendings
+    pub fn pendings(&self) -> &Vec<PendingTask> {
+        &self.items
     }
 }
 
@@ -137,12 +140,14 @@ impl PendingResult {
 }
 
 impl AllocateRequest {
-    pub fn new<P: Into<String>>(name: P) -> Self {
-        Self { name: name.into() }
+    pub fn new(supervisor: impl Into<String>) -> Self {
+        Self {
+            supervisor: supervisor.into(),
+        }
     }
 
-    pub fn name(&self) -> &str {
-        &self.name
+    pub fn supervisor(&self) -> &str {
+        &self.supervisor
     }
 }
 
@@ -172,7 +177,7 @@ impl Default for AllocateStatus {
     }
 }
 
-impl TaskLogEntity {
+impl TaskLog {
     pub fn new(task_id: TaskId, payload: Vec<TaskLogInner>) -> Self {
         let count = payload.len() as u32;
         Self {
@@ -183,7 +188,7 @@ impl TaskLogEntity {
     }
 }
 
-impl TasksEntity {
+impl Tasks {
     pub fn new(tasks: Vec<TasksInner>) -> Self {
         let count = tasks.len() as u32;
         Self { tasks, count }

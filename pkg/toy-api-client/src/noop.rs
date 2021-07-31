@@ -95,7 +95,7 @@ impl GraphClient for NoopApiClient {
 
 #[async_trait]
 impl TaskClient for NoopApiClient {
-    type WatchStream = impl Stream<Item = Result<toy_api::task::PendingsEntity, ApiClientError>>;
+    type WatchStream = impl Stream<Item = Result<toy_api::task::PendingTaskList, ApiClientError>>;
 
     async fn watch(
         &self,
@@ -124,7 +124,7 @@ impl TaskClient for NoopApiClient {
     async fn list(
         &self,
         _opt: toy_api::task::ListOption,
-    ) -> Result<toy_api::task::TasksEntity, ApiClientError> {
+    ) -> Result<toy_api::task::Tasks, ApiClientError> {
         unimplemented!()
     }
 
@@ -132,7 +132,7 @@ impl TaskClient for NoopApiClient {
         &self,
         _key: String,
         _opt: toy_api::task::LogOption,
-    ) -> Result<toy_api::task::TaskLogEntity, ApiClientError> {
+    ) -> Result<toy_api::task::TaskLog, ApiClientError> {
         unimplemented!()
     }
 }

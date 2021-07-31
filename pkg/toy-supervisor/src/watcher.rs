@@ -1,7 +1,7 @@
 use crate::{Request, RunTaskResponse};
 use futures_util::stream::{self, TryStreamExt};
 use std::time::Duration;
-use toy_api::task::{AllocateOption, AllocateRequest, PendingEntity, WatchOption};
+use toy_api::task::{AllocateOption, AllocateRequest, PendingTask, WatchOption};
 use toy_api_client::client::TaskClient;
 use toy_api_client::ApiClient;
 use toy_core::error::ServiceError;
@@ -56,7 +56,7 @@ where
 async fn request<C>(
     name: String,
     c: C,
-    pending: &PendingEntity,
+    pending: &PendingTask,
     mut tx: Outgoing<Request, ServiceError>,
 ) -> Result<(), ServiceError>
 where

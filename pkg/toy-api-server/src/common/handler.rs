@@ -96,12 +96,12 @@ where
     H: HttpClient,
     Req: DeserializableOwned + Send,
     V: Serializable + Send,
-    F: FnOnce(Req) -> Result<V, ApiError>,
+    F: FnOnce(&Context, &Store, Req) -> Result<V, ApiError>,
 {
     tracing::trace!("handle: {:?}", ctx);
     let format = opt.map(|x| x.format()).unwrap_or(None);
     let v = common::body::decode::<_, Req>(request, format)?;
-    let v = f(v)?;
+    let v = f(&ctx, &store, v)?;
     match store
         .ops()
         .put(store.con().unwrap(), key, v, store_opt)

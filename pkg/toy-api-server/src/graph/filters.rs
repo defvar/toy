@@ -1,5 +1,6 @@
 use crate::authentication::Auth;
 use crate::common;
+use crate::common::validator::{OkValidator, Validator};
 use crate::store::kv::KvStore;
 use toy_api::graph::{Graph, GraphList};
 use toy_h::HttpClient;
@@ -36,7 +37,7 @@ where
         client.clone(),
         common::constants::GRAPHS_KEY_PREFIX,
         store.clone(),
-        |v: Graph| Ok(v)
+        OkValidator::<Graph>::validate
     ))
     .or(crate::delete!(
         warp::path("graphs"),

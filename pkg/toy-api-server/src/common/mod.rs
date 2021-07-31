@@ -7,6 +7,7 @@ pub mod filter;
 pub mod handler;
 pub mod query;
 pub mod reply;
+pub mod validator;
 
 pub mod constants {
     use toy_core::task::TaskId;

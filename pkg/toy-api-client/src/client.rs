@@ -9,9 +9,7 @@ use toy_api::role::{Role, RoleList};
 use toy_api::role_binding::{RoleBinding, RoleBindingList};
 use toy_api::services::{ServiceSpec, ServiceSpecList};
 use toy_api::supervisors::{Supervisor, SupervisorList};
-use toy_api::task::{
-    self, AllocateRequest, AllocateResponse, PendingsEntity, TaskLogEntity, TasksEntity,
-};
+use toy_api::task::{self, AllocateRequest, AllocateResponse, PendingTaskList, TaskLog, Tasks};
 
 /// Composit All Api Client
 pub trait ApiClient: Send + Sync {
@@ -64,7 +62,7 @@ pub trait GraphClient: Send + Sync {
 
 #[async_trait]
 pub trait TaskClient: Send + Sync {
-    type WatchStream: Stream<Item = Result<PendingsEntity, ApiClientError>> + Send;
+    type WatchStream: Stream<Item = Result<PendingTaskList, ApiClientError>> + Send;
 
     async fn watch(&self, opt: task::WatchOption) -> Result<Self::WatchStream, ApiClientError>;
 
@@ -77,10 +75,9 @@ pub trait TaskClient: Send + Sync {
 
     async fn post(&self, v: Graph, opt: task::PostOption) -> Result<(), ApiClientError>;
 
-    async fn list(&self, opt: task::ListOption) -> Result<TasksEntity, ApiClientError>;
+    async fn list(&self, opt: task::ListOption) -> Result<Tasks, ApiClientError>;
 
-    async fn log(&self, key: String, opt: task::LogOption)
-        -> Result<TaskLogEntity, ApiClientError>;
+    async fn log(&self, key: String, opt: task::LogOption) -> Result<TaskLog, ApiClientError>;
 }
 
 #[async_trait]

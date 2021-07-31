@@ -5,7 +5,7 @@ use std::collections::BTreeMap;
 use std::future::Future;
 use std::marker::PhantomData;
 use std::sync::{Arc, Mutex};
-use toy_api::task::{TaskLogEntity, TasksEntity};
+use toy_api::task::{TaskLog, Tasks};
 use toy_core::task::TaskId;
 use toy_h::HttpClient;
 
@@ -17,7 +17,7 @@ pub struct BTreeLogStore<T> {
 
 #[derive(Clone, Debug)]
 pub struct BTreeLogStoreConnection {
-    map: Arc<Mutex<BTreeMap<String, TaskLogEntity>>>,
+    map: Arc<Mutex<BTreeMap<String, TaskLog>>>,
 }
 
 #[derive(Clone, Debug)]
@@ -61,7 +61,7 @@ where
 
 impl FindLog for BTreeLogStoreOps {
     type Con = BTreeLogStoreConnection;
-    type T = impl Future<Output = Result<Option<TaskLogEntity>, Self::Err>> + Send;
+    type T = impl Future<Output = Result<Option<TaskLog>, Self::Err>> + Send;
     type Err = StoreError;
 
     fn find(&self, _con: Self::Con, _task_id: TaskId, _opt: FindOption) -> Self::T {
@@ -71,10 +71,10 @@ impl FindLog for BTreeLogStoreOps {
 
 impl List for BTreeLogStoreOps {
     type Con = BTreeLogStoreConnection;
-    type T = impl Future<Output = Result<TasksEntity, Self::Err>> + Send;
+    type T = impl Future<Output = Result<Tasks, Self::Err>> + Send;
     type Err = StoreError;
 
     fn list(&self, _con: Self::Con, _opt: ListOption) -> Self::T {
-        async move { Ok(TasksEntity::new(Vec::new())) }
+        async move { Ok(Tasks::new(Vec::new())) }
     }
 }

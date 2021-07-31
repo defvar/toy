@@ -7,7 +7,7 @@ use std::convert::Infallible;
 use toy_api::graph::Graph;
 use toy_api::task::{
     AllocateOption, AllocateRequest, AllocateResponse, ListOption as ApiListOption, LogOption,
-    PendingEntity, PendingResult, PendingStatus, PendingsEntity, PostOption, WatchOption,
+    PendingResult, PendingStatus, PendingTask, PendingTaskList, PostOption, WatchOption,
 };
 use toy_core::task::TaskId;
 use toy_h::HttpClient;
@@ -34,7 +34,7 @@ where
     */
 
     let id = TaskId::new();
-    let pending = PendingEntity::new(id, v);
+    let pending = PendingTask::new(id, v);
     let key = common::constants::pending_key(id);
     match store
         .ops()
@@ -72,7 +72,7 @@ where
         Ok(stream) => {
             let stream = stream.map(move |x| match x {
                 Ok(v) => {
-                    let pendings = PendingsEntity::new(v);
+                    let pendings = PendingTaskList::new(v);
                     common::reply::encode(&pendings, format, None)
                 }
                 Err(_) => Err(ApiError::error("failed get stream data")),
@@ -106,7 +106,7 @@ where
     // get with version....
     match store
         .ops()
-        .find::<PendingEntity>(
+        .find::<PendingTask>(
             store.con().unwrap(),
             common::constants::pending_key(id),
             FindOption::new(),
@@ -124,7 +124,7 @@ where
                 }
                 _ => (),
             }
-            let allocated = v.allocate(request.name(), chrono::Utc::now().to_rfc3339());
+            let allocated = v.allocate(request.supervisor(), chrono::Utc::now().to_rfc3339());
             match store
                 .ops()
                 .put(
