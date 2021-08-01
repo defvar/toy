@@ -1,5 +1,3 @@
-#![feature(min_type_alias_impl_trait)]
-
 use toy::api_server::authentication::CommonAuths;
 use toy::api_server::task::btree_log_store::BTreeLogStore;
 use toy::api_server::ServerConfig;

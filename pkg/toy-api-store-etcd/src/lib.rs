@@ -1,4 +1,4 @@
-#![feature(backtrace, min_type_alias_impl_trait)]
+#![feature(backtrace, type_alias_impl_trait)]
 
 //! # Backend Store Implementation for Etcd.
 
