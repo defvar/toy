@@ -2,7 +2,7 @@ use crate::error::Error;
 use crate::opts::ListCommand;
 use crate::output::Output;
 use std::io::Write;
-use toy::api_client::client::{Rbaclient, RoleClient, ServiceClient};
+use toy::api_client::client::{Rbaclient, RoleBindingClient, RoleClient, ServiceClient};
 use toy::api_client::http::HttpApiClient;
 use toy::api_client::toy_api::common::ListOption;
 use toy::api_client::ApiClient;
@@ -13,7 +13,7 @@ where
 {
     let ListCommand {
         resource,
-        name,
+        name: _,
         pretty,
     } = c;
 
@@ -23,6 +23,12 @@ where
     match resource.as_str() {
         "services" => client.service().list(opt).await?.write(writer, pretty),
         "roles" => client.rbac().role().list(opt).await?.write(writer, pretty),
+        "roleBindings" => client
+            .rbac()
+            .role_binding()
+            .list(opt)
+            .await?
+            .write(writer, pretty),
         _ => return Err(Error::unknwon_resource(resource)),
     }
 }

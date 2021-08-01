@@ -4,7 +4,7 @@ use std::fs::File;
 use std::io::Read;
 use std::io::Write;
 use std::path::PathBuf;
-use toy::api_client::client::ServiceClient;
+use toy::api_client::client::{Rbaclient, RoleBindingClient, RoleClient};
 use toy::api_client::http::HttpApiClient;
 use toy::api_client::toy_api::common::PutOption;
 use toy::api_client::ApiClient;
@@ -21,9 +21,17 @@ where
     } = c;
 
     match resource.as_str() {
-        "services" => {
+        "roles" => {
             client
-                .service()
+                .rbac()
+                .role()
+                .put(name, from_file(file)?, PutOption::new())
+                .await?
+        }
+        "roleBindings" => {
+            client
+                .rbac()
+                .role_binding()
                 .put(name, from_file(file)?, PutOption::new())
                 .await?
         }
