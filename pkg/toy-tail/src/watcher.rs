@@ -13,7 +13,7 @@ pub async fn watch<P: AsRef<Path>>(
 
     let (tx, rx) = std::sync::mpsc::channel();
 
-    let mut watcher: RecommendedWatcher = Watcher::new_immediate(move |res| tx.send(res).unwrap())?;
+    let mut watcher = RecommendedWatcher::new(move |res| tx.send(res).unwrap())?;
     let path_prefix = path.as_ref().join(prefix);
     let path_prefix_str = path_prefix.to_str().unwrap();
     watcher.watch(path.as_ref(), RecursiveMode::Recursive)?;
