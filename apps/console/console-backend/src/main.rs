@@ -8,6 +8,7 @@ use toy_api_auth_jwt::ServiceAccountAuth;
 use toy_api_store_etcd::EtcdStore;
 use toy_h::impl_reqwest::ReqwestClient;
 use tracing_subscriber::fmt::format::FmtSpan;
+use tracing_subscriber::EnvFilter;
 
 struct ToyConfig;
 
@@ -50,11 +51,11 @@ fn main() {
     dotenv::dotenv().ok();
     let time = tracing_subscriber::fmt::time::ChronoUtc::rfc3339();
     tracing_subscriber::fmt()
-        .with_max_level(tracing::Level::DEBUG)
         .with_span_events(FmtSpan::CLOSE)
         .with_thread_ids(true)
         .with_thread_names(true)
         .with_timer(time)
+        .with_env_filter(EnvFilter::from_default_env())
         .init();
 
     let mut api_rt = toy_rt::RuntimeBuilder::new()
