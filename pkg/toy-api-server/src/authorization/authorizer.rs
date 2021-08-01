@@ -1,9 +1,9 @@
 use crate::context::Context;
 use crate::ApiError;
-use toy_api::role::{Rule, RESOURCE_ALL, VERB_ALL};
+use toy_api::role::{Role, RESOURCE_ALL, VERB_ALL};
 
-pub fn authorize(ctx: &Context, rules: Option<Vec<Rule>>) -> Result<(), ApiError> {
-    tracing::trace!("authorize. ctx:{:?}, rules:{:?}", ctx, rules);
+pub fn authorize(ctx: &Context, roles: Option<Vec<Role>>) -> Result<(), ApiError> {
+    tracing::trace!("authorize. ctx:{:?}, rules:{:?}", ctx, roles);
 
     if let Ok(v) = std::env::var("TOY_AUTHORIZATION") {
         if v == "none" {
@@ -12,10 +12,12 @@ pub fn authorize(ctx: &Context, rules: Option<Vec<Rule>>) -> Result<(), ApiError
         }
     }
 
-    if let Some(rules) = rules {
-        for r in rules {
-            if match_resource(&ctx, r.resources()) && match_verb(&ctx, r.verbs()) {
-                return Ok(());
+    if let Some(roles) = roles {
+        for r in roles {
+            for r in r.rules() {
+                if match_resource(&ctx, r.resources()) && match_verb(&ctx, r.verbs()) {
+                    return Ok(());
+                }
             }
         }
     }

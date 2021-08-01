@@ -1,6 +1,5 @@
 use crate::kv::{encode, get_range_end, Kv, ResponseHeader, Versioning};
 use toy_api_server::store::error::StoreError;
-use toy_pack::deser::DeserializableOwned;
 use toy_pack::{Pack, Unpack};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Pack, Unpack)]
@@ -109,7 +108,6 @@ impl WatchCreateRequest {
 impl WatchResponse {
     pub fn unpack<T, F>(&self, mut f: F) -> Result<Vec<T>, StoreError>
     where
-        T: DeserializableOwned,
         F: FnMut(Versioning, EventType) -> Option<Result<T, StoreError>>,
     {
         match self.result {

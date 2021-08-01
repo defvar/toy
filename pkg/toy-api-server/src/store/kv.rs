@@ -3,6 +3,7 @@
 use crate::store::error::StoreError;
 use crate::store::StoreConnection;
 use async_trait::async_trait;
+use futures_util::stream::BoxStream;
 use std::fmt::Debug;
 use toy_pack::deser::DeserializableOwned;
 use toy_pack::ser::Serializable;
@@ -10,7 +11,14 @@ use toy_pack::ser::Serializable;
 /// Trait Composit store operations.
 #[async_trait]
 pub trait KvStoreOps<C>:
-    Clone + Send + Sync + Find<Con = C> + List<Con = C> + Put<Con = C> + Delete<Con = C>
+    Clone
+    + Send
+    + Sync
+    + Find<Con = C>
+    + List<Con = C>
+    + Put<Con = C>
+    + Delete<Con = C>
+    + Watch<Con = C>
 where
     C: StoreConnection,
 {
@@ -119,6 +127,15 @@ impl DeleteOption {
     }
 }
 
+#[derive(Clone, Debug)]
+pub struct WatchOption {}
+
+impl WatchOption {
+    pub fn new() -> Self {
+        Self {}
+    }
+}
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum PutResult {
     Create,
@@ -129,6 +146,89 @@ pub enum PutResult {
 pub enum DeleteResult {
     Deleted,
     NotFound,
+}
+
+#[derive(Clone, Debug)]
+pub struct KvMeta {
+    version: u64,
+}
+
+impl KvMeta {
+    pub fn new(version: u64) -> Self {
+        Self { version }
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct KvResponse<T> {
+    meta: KvMeta,
+    value: T,
+}
+
+impl<T> KvResponse<T> {
+    pub fn new(value: T, meta: KvMeta) -> Self {
+        KvResponse { value, meta }
+    }
+
+    pub fn with_version(value: T, version: u64) -> Self {
+        KvResponse {
+            value,
+            meta: KvMeta { version },
+        }
+    }
+
+    pub fn version(&self) -> u64 {
+        self.meta.version
+    }
+
+    pub fn into_value(self) -> T {
+        self.value
+    }
+}
+
+#[derive(Clone, Copy, Eq, PartialEq, Debug)]
+pub enum KvWatchEventType {
+    PUT,
+    DELETE,
+}
+
+#[derive(Clone, Debug)]
+pub struct KvWatchEventValue<T> {
+    event: KvWatchEventType,
+    value: KvResponse<T>,
+}
+
+impl<T> KvWatchEventValue<T> {
+    pub fn event(&self) -> KvWatchEventType {
+        self.event
+    }
+
+    pub fn version(&self) -> u64 {
+        self.value.version()
+    }
+
+    pub fn into_value(self) -> T {
+        self.value.into_value()
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct KvWatchResponse<T> {
+    values: Vec<KvWatchEventValue<T>>,
+}
+
+impl<T> KvWatchResponse<T> {
+    pub fn new(values: impl Iterator<Item = (KvResponse<T>, KvWatchEventType)>) -> Self {
+        KvWatchResponse {
+            values: values
+                .map(|(v, e)| KvWatchEventValue::<T> { event: e, value: v })
+                .collect(),
+        }
+    }
+
+    pub fn into_values(self) -> Vec<KvWatchEventValue<T>> {
+        self.values
+    }
 }
 
 /// Find one entity by specified key.
@@ -142,7 +242,7 @@ pub trait Find {
         con: Self::Con,
         key: String,
         opt: FindOption,
-    ) -> Result<Option<V>, StoreError>
+    ) -> Result<Option<KvResponse<V>>, StoreError>
     where
         V: DeserializableOwned;
 }
@@ -192,4 +292,20 @@ pub trait Delete {
         key: String,
         opt: DeleteOption,
     ) -> Result<DeleteResult, StoreError>;
+}
+
+/// Watch entity by specified key.
+#[async_trait]
+pub trait Watch {
+    type Con: StoreConnection;
+
+    /// Watch entity by specified key.
+    async fn watch<V>(
+        &self,
+        con: Self::Con,
+        prefix: String,
+        opt: WatchOption,
+    ) -> Result<BoxStream<Result<KvWatchResponse<V>, StoreError>>, StoreError>
+    where
+        V: DeserializableOwned;
 }

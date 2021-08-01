@@ -36,7 +36,7 @@ where
             Some(v) => {
                 let format = api_opt.as_ref().map(|x| x.format()).unwrap_or(None);
                 let pretty = api_opt.as_ref().map(|x| x.pretty()).unwrap_or(None);
-                let r = f(v);
+                let r = f(v.into_value());
                 Ok(common::reply::into_response(&r, format, pretty))
             }
             None => Err(warp::reject::not_found()),

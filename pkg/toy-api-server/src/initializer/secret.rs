@@ -10,7 +10,7 @@ use toy_api::authentication::{self, Secret};
 
 pub(crate) async fn initialize<T, Config>(
     config: &Config,
-    store: impl KvStore<T>,
+    store: &impl KvStore<T>,
 ) -> Result<(), ApiError>
 where
     T: HttpClient,

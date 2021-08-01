@@ -5,12 +5,26 @@ use crate::{ApiError, ServerConfig};
 mod role;
 mod secret;
 
-pub async fn initialize<T, Config>(config: &Config, store: impl KvStore<T>) -> Result<(), ApiError>
+pub async fn initialize<T, Config>(
+    config: &Config,
+    store: impl KvStore<T> + 'static,
+) -> Result<(), ApiError>
 where
     T: HttpClient,
     Config: ServerConfig<T>,
 {
-    secret::initialize(config, store.clone()).await?;
-    role::initialize(config, store.clone()).await?;
+    secret::initialize(config, &store).await?;
+    role::initialize(config, &store).await?;
+
+    crate::context::rbac::initialize(&store).await?;
+
+    let s = store.clone();
+    toy_rt::spawn(async move {
+        tracing::info!("start watch context.");
+        if let Err(e) = crate::context::rbac::sync_role_bindings(s).await {
+            tracing::error!(err = ?e, "an error occured; when watch context.");
+        }
+    });
+
     Ok(())
 }

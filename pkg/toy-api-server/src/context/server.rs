@@ -28,12 +28,3 @@ pub fn rules(user: &str) -> Option<Vec<Rule>> {
     let lock = RULE_CACHES.lock().unwrap();
     lock.get(user).map(|x| x.clone())
 }
-
-pub fn set_rules(rules: HashMap<String, Vec<Rule>>) {
-    let count = rules.keys().count();
-    let mut lock = RULE_CACHES.lock().unwrap();
-    rules.into_iter().for_each(move |(k, v)| {
-        let _ = lock.insert(k, v);
-    });
-    tracing::info!("set rules cache. count:{}", count);
-}

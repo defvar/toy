@@ -21,8 +21,8 @@ where
         .and(warp::method())
         .and_then(|user, path: FullPath, method: Method| async move {
             let ctx = Context::new(user, path.as_str(), method.as_str());
-            let rules = crate::context::server::rules(ctx.user().name());
-            match authorize(&ctx, rules) {
+            let roles = crate::context::rbac::rules(ctx.user().name());
+            match authorize(&ctx, roles) {
                 Ok(_) => Ok(ctx),
                 Err(e) => {
                     tracing::info!("forbidden: {}", e.error_message());

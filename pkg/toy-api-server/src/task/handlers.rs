@@ -114,6 +114,7 @@ where
         .await
     {
         Ok(Some(v)) => {
+            let v = v.into_value();
             match v.status() {
                 PendingStatus::Allocated => {
                     return Ok(common::reply::into_response(

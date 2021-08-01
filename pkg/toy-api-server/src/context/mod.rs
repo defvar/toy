@@ -1,5 +1,6 @@
 use crate::authentication::AuthUser;
 
+pub mod rbac;
 pub mod server;
 
 #[derive(Debug, Clone)]

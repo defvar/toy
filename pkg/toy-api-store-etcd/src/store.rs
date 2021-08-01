@@ -1,12 +1,14 @@
 use crate::watch::{EventType, WatchResponse};
 use crate::Client;
+use futures_util::stream::BoxStream;
 use futures_util::StreamExt;
 use std::future::Future;
 use std::marker::PhantomData;
 use toy_api::task::PendingTask;
 use toy_api_server::store::kv::{
-    Delete, DeleteOption, DeleteResult, Find, FindOption, KvStore, KvStoreOps, List, ListOption,
-    Put, PutOperation, PutOption, PutResult,
+    Delete, DeleteOption, DeleteResult, Find, FindOption, KvResponse, KvStore, KvStoreOps,
+    KvWatchEventType, KvWatchResponse, List, ListOption, Put, PutOperation, PutOption, PutResult,
+    Watch, WatchOption,
 };
 use toy_api_server::store::{error::StoreError, StoreConnection};
 use toy_api_server::task::store::{Pending, TaskStore, TaskStoreOps, WatchPending};
@@ -117,7 +119,7 @@ where
         con: Self::Con,
         key: String,
         opt: FindOption,
-    ) -> Result<Option<V>, StoreError>
+    ) -> Result<Option<KvResponse<V>>, StoreError>
     where
         V: DeserializableOwned,
     {
@@ -125,12 +127,13 @@ where
         let res = con.client.get(&key).await?.value()?;
         match res {
             Some(v) => {
+                let version = v.version();
                 let r = toy_pack_json::unpack::<V>(&v.into_data())?;
-                Ok(Some(r))
+                Ok(Some(KvResponse::with_version(r, version)))
             }
             None => {
                 tracing::debug!("[find] not found. key:{:?}, opt:{:?}", key, opt);
-                Ok(Option::<V>::None)
+                Ok(Option::<KvResponse<V>>::None)
             }
         }
     }
@@ -268,6 +271,44 @@ where
             }
             None => Ok(DeleteResult::NotFound),
         }
+    }
+}
+
+#[toy_api_server::async_trait::async_trait]
+impl<T> Watch for EtcdStoreOps<T>
+where
+    T: HttpClient,
+{
+    type Con = EtcdStoreConnection<T>;
+
+    #[instrument(skip(self, con))]
+    async fn watch<V>(
+        &self,
+        con: Self::Con,
+        prefix: String,
+        _opt: WatchOption,
+    ) -> Result<BoxStream<Result<KvWatchResponse<V>, StoreError>>, StoreError>
+    where
+        V: DeserializableOwned,
+    {
+        let stream = con.client.watch(prefix).await?;
+        Ok(stream
+            .map(|x: Result<WatchResponse, StoreError>| match x {
+                Ok(res) => {
+                    let values = res.unpack(|x, e| {
+                        let version = x.version();
+                        let value = toy_pack_json::unpack::<V>(&x.into_data()).ok()?;
+                        let evt = match e {
+                            EventType::PUT => KvWatchEventType::PUT,
+                            EventType::DELETE => KvWatchEventType::DELETE,
+                        };
+                        Some(Ok((KvResponse::with_version(value, version), evt)))
+                    })?;
+                    Ok(KvWatchResponse::new(values.into_iter()))
+                }
+                Err(e) => Err(e),
+            })
+            .boxed())
     }
 }
 

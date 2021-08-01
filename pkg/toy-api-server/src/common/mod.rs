@@ -1,7 +1,6 @@
 //! common module for api.
 
 pub mod body;
-pub mod cache;
 pub mod error;
 pub mod filter;
 pub mod handler;
