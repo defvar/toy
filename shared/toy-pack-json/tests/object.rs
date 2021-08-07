@@ -129,6 +129,25 @@ fn de_struct_err_trailing_comma() {
 }
 
 #[test]
+fn borrowed_value() {
+    #[derive(Debug, Unpack, PartialEq, Default)]
+    struct Data<'a> {
+        text: &'a str,
+    }
+
+    let json = r#"
+{
+  "text": "aiueo"
+}
+"#;
+
+    let expected = Data { text: "aiueo" };
+
+    let r = unpack::<Data>(json.as_bytes()).unwrap();
+    assert_eq!(r, expected);
+}
+
+#[test]
 fn pretty() {
     #[derive(Debug, Pack, Unpack, PartialEq, Default)]
     #[toy(ignore_pack_if_none)]
