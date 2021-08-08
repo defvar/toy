@@ -1,19 +1,24 @@
+use crate::parsers::Parser;
 use crate::{TailContext, TailError};
 use notify::event::{ModifyKind, RenameMode};
-use notify::{Event, EventKind, RecommendedWatcher, RecursiveMode, Watcher};
+use notify::{Event, EventKind, RecursiveMode, Watcher};
 use std::path::Path;
+use std::sync::mpsc;
 
-pub async fn watch<P: AsRef<Path>>(
-    path: P,
-    prefix: &str,
-    ctx: &mut TailContext,
-) -> Result<(), TailError> {
+pub async fn watch<P, T>(path: P, prefix: &str, ctx: &mut TailContext<T>) -> Result<(), TailError>
+where
+    P: AsRef<Path>,
+    T: Parser,
+{
     let names = ctx.handler_names().await;
     tracing::info!("enable handler:{:?}", names);
 
-    let (tx, rx) = std::sync::mpsc::channel();
+    let (tx, rx) = mpsc::channel();
 
-    let mut watcher = RecommendedWatcher::new(move |res| tx.send(res).unwrap())?;
+    let mut watcher = notify::RecommendedWatcher::new(move |res| {
+        tx.send(res).unwrap();
+    })?;
+
     let path_prefix = path.as_ref().join(prefix);
     let path_prefix_str = path_prefix.to_str().unwrap();
     watcher.watch(path.as_ref(), RecursiveMode::Recursive)?;

@@ -11,19 +11,28 @@ fn main() {
         .with_thread_names(true)
         .init();
 
-    let path = "/tmp/toy";
+    let path = "/private/tmp/toy";
     let prefix = "hello.example.log";
 
     // runtime for tail handler
-    let rt = tokio::runtime::Builder::new_multi_thread()
-        .thread_name("tail-worker")
+    let rt = toy_rt::RuntimeBuilder::new()
+        .thread_name("toy-tail")
         .worker_threads(4)
-        .enable_all()
         .build()
         .unwrap();
 
     tracing::info!("watching dir:{}, prefix:{}", path, prefix);
-    let parser = RegexParser::new();
+    let regex = r"(?x)
+        (?P<datetime>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d*[+-]\d{2}:\d{2})\s+
+        (?P<level>\S+)\s+
+        (?P<thread_name>\S+)\s+
+        (?P<thread_id>\S+)\s+
+        Task\{\s*task=(?P<task_id>\S+)\s*(graph=(?P<graph>\S+))?\s*(uri=(?P<uri>\S+))?\s*}:\s+
+        (?P<target>\S+):\s+
+        (?P<time>close\s*time\.busy=(?P<busy>\S+)\s*time\.idle=(?P<idle>\S+)?)?\s?
+        (?P<message>.*)?
+    ";
+    let parser = RegexParser::new(regex);
     if let Err(e) = parser {
         tracing::error!("regex build error. {}", e);
         return;

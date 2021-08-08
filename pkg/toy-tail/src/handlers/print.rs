@@ -31,7 +31,6 @@ impl Handler for PrintHandler {
             self.buffer.push(format!("{}, {}", fl, unix_time));
         }
         if self.buffer.len() > 10 {
-            println!("buffer full, flush");
             self.buffer.iter().for_each(|x| {
                 println!("{}", x);
             });
@@ -41,7 +40,6 @@ impl Handler for PrintHandler {
     }
 
     async fn flush(&mut self) -> Result<(), TailError> {
-        println!("call flush");
         if self.buffer.len() > 0 {
             self.buffer.iter().for_each(|x| {
                 println!("{}", x);

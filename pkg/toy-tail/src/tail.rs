@@ -1,4 +1,5 @@
-use crate::{Handler, LineReader, RegexParser, TailConfig, TailError};
+use crate::parsers::Parser;
+use crate::{Handler, LineReader, TailConfig, TailError};
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::{BufReader, Seek, SeekFrom};
@@ -9,11 +10,11 @@ use tokio::sync::Mutex;
 use toy_text_parser::dfa::ByteParserBuilder;
 use toy_text_parser::Line;
 
-pub struct TailContext {
+pub struct TailContext<T> {
     position: u64,
     line_buffer: Line,
     reader: HashMap<PathBuf, LineReader<File>>,
-    parser: RegexParser,
+    parser: T,
     last_handle_at: Arc<Mutex<Option<Instant>>>,
     handlers: Arc<Mutex<Vec<Box<dyn Handler>>>>,
 }
@@ -26,14 +27,17 @@ pub struct FlushTimer {
     handlers: Arc<Mutex<Vec<Box<dyn Handler>>>>,
 }
 
-impl TailContext {
-    pub fn new(handler: Vec<Box<dyn Handler>>, parser: RegexParser) -> (Self, FlushTimer) {
+impl<T> TailContext<T>
+where
+    T: Parser,
+{
+    pub fn new(handler: Vec<Box<dyn Handler>>, parser: T) -> (Self, FlushTimer) {
         TailContext::with_capacity(handler, parser, TailConfig::default())
     }
 
     pub fn with_capacity(
         handler: Vec<Box<dyn Handler>>,
-        parser: RegexParser,
+        parser: T,
         config: TailConfig,
     ) -> (Self, FlushTimer) {
         let handler = Arc::new(Mutex::new(handler));
