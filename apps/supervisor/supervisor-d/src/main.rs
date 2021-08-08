@@ -1,3 +1,5 @@
+#![feature(backtrace)]
+
 use crate::error::Error;
 use clap::Clap;
 use std::fs::File;
@@ -7,7 +9,6 @@ use toy::core::prelude::*;
 use toy::executor::ExecutorFactory;
 use toy_api::authentication::Claims;
 use toy_jwt::Algorithm;
-use tracing_subscriber::fmt::format::FmtSpan;
 
 mod error;
 
@@ -40,16 +41,11 @@ fn go() -> Result<(), Error> {
 
     dotenv::dotenv().ok();
 
-    let time = tracing_subscriber::fmt::time::ChronoUtc::rfc3339();
-    tracing_subscriber::fmt()
-        .with_max_level(tracing::Level::DEBUG)
-        .with_span_events(FmtSpan::CLOSE)
-        .with_thread_ids(true)
-        .with_thread_names(true)
-        .with_timer(time)
-        .init();
+    //let g = toy_tracing::tcp("127.0.0.1:6060")?;
+    toy_tracing::console();
 
-    let token = get_credential(&opts.user, &opts.kid, &opts.credential)?;
+    let token = get_credential(&opts.user, &opts.kid, &opts.credential)
+        .map_err(|e| Error::read_credential_error(e))?;
     let auth = toy::api_client::auth::Auth::with_bearer_token(&opts.user, &token);
 
     tracing::info!("start supervisor for config:{:?}", opts);

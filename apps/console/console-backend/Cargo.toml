@@ -10,12 +10,12 @@ edition = "2018"
 # common
 log = "0.4"
 tracing = "0.1"
-tracing-subscriber = "0.2"
 dotenv = "0.15.0"
 
 toy = { path = "../../../pkg/toy", features = ["api-server"] }
 toy-rt = { path = "../../../pkg/toy-rt"}
 toy-h = { path = "../../../shared/toy-h", features = ["impl_reqwest"]}
+toy-tracing = { path = "../../../pkg/toy-tracing" }
 
 # plugins
 toy-plugin-commons = { path = "../../../plugins/toy-plugin-commons/toy-plugin-commons"}

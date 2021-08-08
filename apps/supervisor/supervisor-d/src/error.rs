@@ -1,3 +1,4 @@
+use std::backtrace::Backtrace;
 use std::fmt::Display;
 use thiserror::Error;
 use toy_jwt::error::JWTError;
@@ -15,6 +16,13 @@ pub enum Error {
 
     #[error("not found env. {:?}", inner)]
     NotFoundEnv { inner: String },
+
+    #[error("error: {:?}", source)]
+    IOError {
+        #[from]
+        source: std::io::Error,
+        backtrace: Backtrace,
+    },
 }
 
 impl Error {
@@ -34,12 +42,6 @@ impl Error {
         Error::NotFoundEnv {
             inner: msg.to_string(),
         }
-    }
-}
-
-impl From<std::io::Error> for Error {
-    fn from(e: std::io::Error) -> Self {
-        Error::read_credential_error(e)
     }
 }
 
