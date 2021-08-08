@@ -1,4 +1,4 @@
-use crate::{Flagments, Handler, TailError};
+use crate::{Flagments, Handler, Line, TailError};
 use async_trait::async_trait;
 use chrono::NaiveDateTime;
 
@@ -35,6 +35,13 @@ impl Handler for PrintHandler {
                 println!("{}", x);
             });
             self.buffer.clear();
+        }
+        Ok(())
+    }
+
+    async fn raw(&mut self, raw: &'_ Line, parse_successed: bool) -> Result<(), TailError> {
+        if !parse_successed {
+            self.buffer.push(format!("{}", raw));
         }
         Ok(())
     }

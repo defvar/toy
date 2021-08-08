@@ -1,5 +1,7 @@
+use std::time::Duration;
+use tokio::io::AsyncWriteExt;
 use toy_tail::handlers::PrintHandler;
-use toy_tail::{watch, Handler, RegexParser, TailContext};
+use toy_tail::{Handler, RegexParser};
 use tracing_subscriber::fmt::format::FmtSpan;
 
 fn main() {
@@ -11,9 +13,6 @@ fn main() {
         .with_thread_names(true)
         .init();
 
-    let path = "/private/tmp/toy";
-    let prefix = "hello.example.log";
-
     // runtime for tail handler
     let rt = toy_rt::RuntimeBuilder::new()
         .thread_name("toy-tail")
@@ -21,7 +20,6 @@ fn main() {
         .build()
         .unwrap();
 
-    tracing::info!("watching dir:{}, prefix:{}", path, prefix);
     let regex = r"(?x)
         (?P<datetime>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d*[+-]\d{2}:\d{2})\s+
         (?P<level>\S+)\s+
@@ -40,12 +38,12 @@ fn main() {
 
     let handlers: Vec<Box<dyn Handler>> = vec![Box::new(PrintHandler::new())];
 
-    let (mut ctx, mut timer) = TailContext::new(handlers, parser.unwrap());
+    let (ctx, mut timer) = toy_tail::listeners::TcpContext::new(handlers, parser.unwrap());
     rt.spawn(async move { timer.run().await });
 
     let (tx, rx) = std::sync::mpsc::channel();
     rt.spawn(async move {
-        match watch(path, prefix, &mut ctx).await {
+        match ctx.listen().await {
             Ok(_) => {
                 tracing::info!("watch end.");
             }
@@ -56,6 +54,15 @@ fn main() {
         let _ = tx.send(());
         drop(tx);
         std::future::ready(()).await
+    });
+
+    std::thread::sleep(Duration::from_secs(1));
+
+    rt.spawn(async move {
+        let mut st = tokio::net::TcpStream::connect("127.0.0.1:6060")
+            .await
+            .unwrap();
+        let _ = st.write(b"2021-08-07T11:54:04.565605+00:00  INFO toy-worker ThreadId(06) Task{task=123 graph=example-tick uri=awaiter}: toy_executor::executor: all upstream finish. awaiter.").await;
     });
 
     let _ = rx.recv();
