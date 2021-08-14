@@ -18,5 +18,9 @@ toy-jwt = { path = "../../../shared/toy-jwt" }
 toy-api = { path = "../../../pkg/toy-api" }
 toy-tracing = { path = "../../../pkg/toy-tracing" }
 
+toy-pack = {path = "../../../shared/toy-pack", features = ["derive"]}
+toy-pack-yaml = {path = "../../../shared/toy-pack-yaml"}
+toy-pack-json = {path = "../../../shared/toy-pack-json"}
+
 # plugins
 toy-plugin-commons = { path = "../../../plugins/toy-plugin-commons/toy-plugin-commons"}

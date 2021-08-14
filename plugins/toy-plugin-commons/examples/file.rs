@@ -30,7 +30,7 @@ fn main() {
             .build()
             .unwrap();
 
-        let (sv, mut tx, mut rx) = toy::supervisor::single(ExecutorFactory, app);
+        let (sv, mut tx, mut rx) = toy::supervisor::local(ExecutorFactory, app);
 
         // supervisor start
         rt.spawn(async {

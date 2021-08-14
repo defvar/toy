@@ -24,9 +24,10 @@ pub fn tcp<A: ToSocketAddrs>(addr: A) -> Result<WorkerGuard, std::io::Error> {
         .with_thread_ids(true)
         .with_thread_names(true)
         .with_env_filter(EnvFilter::from_default_env())
-        .with_writer(non_blocking)
+        .with_timer(time)
         .with_ansi(false)
-        .with_timer(time);
+        .with_writer(non_blocking);
+
     builder.init();
     Ok(guard)
 }

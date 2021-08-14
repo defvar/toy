@@ -15,11 +15,12 @@ use toy_api_client::{ApiClient, NoopApiClient};
 use toy_core::data::Frame;
 use toy_core::error::ServiceError;
 use toy_core::executor::{TaskExecutor, TaskExecutorFactory};
+use toy_core::graph::Graph;
 use toy_core::mpsc::{self, Incoming, Outgoing};
 use toy_core::registry::{App, Delegator, Registry};
 use toy_core::task::{TaskContext, TaskId};
 
-pub fn single<TF, O, P>(
+pub fn local<TF, O, P>(
     factory: TF,
     app: App<O, P>,
 ) -> (
@@ -40,10 +41,10 @@ where
         + Send
         + 'static,
 {
-    Supervisor::new("single-supervisor", factory, app, None)
+    Supervisor::new("local-supervisor", factory, app, None)
 }
 
-pub fn spawn<S, TF, O, P, C>(
+pub fn subscribe<S, TF, O, P, C>(
     name: S,
     factory: TF,
     app: App<O, P>,
@@ -137,6 +138,15 @@ where
             tx_req,
             rx_sys,
         )
+    }
+
+    pub async fn oneshot(self, g: Graph) -> Result<RunTaskResponse, ServiceError> {
+        let id = TaskId::new();
+        let ctx = TaskContext::new(id, g);
+        let (e, _) = TF::new(ctx.clone());
+        e.run(self.app, Frame::default())
+            .await
+            .map(|()| RunTaskResponse(id))
     }
 
     pub async fn run(mut self) -> Result<(), ()> {

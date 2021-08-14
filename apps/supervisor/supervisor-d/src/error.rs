@@ -23,6 +23,27 @@ pub enum Error {
         source: std::io::Error,
         backtrace: Backtrace,
     },
+
+    #[error("error: {:?}", source)]
+    JsonDeserializeError {
+        #[from]
+        source: toy_pack_json::DecodeError,
+        backtrace: Backtrace,
+    },
+
+    #[error("error: {:?}", source)]
+    YamlDeserializeError {
+        #[from]
+        source: toy_pack_yaml::error::YamlError,
+        backtrace: Backtrace,
+    },
+
+    #[error("error: {:?}", source)]
+    GraphConfigError {
+        #[from]
+        source: toy::core::error::ConfigError,
+        backtrace: Backtrace,
+    },
 }
 
 impl Error {
