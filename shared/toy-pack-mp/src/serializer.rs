@@ -84,8 +84,9 @@ where
         self.encode_str(v)
     }
 
-    fn serialize_bytes(self, _v: &[u8]) -> Result<Self::Ok, Self::Error> {
-        unimplemented!()
+    #[inline]
+    fn serialize_bytes(self, v: &[u8]) -> Result<Self::Ok, Self::Error> {
+        self.encode_bin(v)
     }
 
     #[inline]
@@ -108,6 +109,10 @@ where
 
         self.encode_map_len(len as u32)?;
         Ok(SerializeCompound::new(self))
+    }
+
+    fn serialize_unit(self) -> Result<Self::Ok, Self::Error> {
+        self.encode_nil()
     }
 
     #[inline]

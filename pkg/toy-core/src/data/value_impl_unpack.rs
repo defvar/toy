@@ -376,6 +376,16 @@ impl<'toy> Deserializer<'toy> for Value {
         drop(self);
         visitor.visit_unit()
     }
+
+    fn deserialize_unit<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: Visitor<'toy>,
+    {
+        match self {
+            Value::Unit => visitor.visit_unit(),
+            _ => Err(DeserializeError::invalid_type("unit", self)),
+        }
+    }
 }
 
 struct DeserializeSeq {

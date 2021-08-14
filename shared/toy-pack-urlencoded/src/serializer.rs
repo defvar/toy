@@ -94,6 +94,10 @@ where
         Ok(SerializeCompound::new(self.inner))
     }
 
+    fn serialize_unit(self) -> Result<Self::Ok, Self::Error> {
+        Err(QueryParseError::map_type_only())
+    }
+
     fn serialize_struct(
         self,
         _name: &'static str,

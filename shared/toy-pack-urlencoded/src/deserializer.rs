@@ -116,6 +116,13 @@ impl<'toy> Deserializer<'toy> for Part<'toy> {
         visitor.visit_some(self)
     }
 
+    fn deserialize_unit<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: Visitor<'toy>,
+    {
+        visitor.visit_unit()
+    }
+
     fn deserialize_any<V>(self, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: Visitor<'toy>,
@@ -248,6 +255,13 @@ impl<'toy> Deserializer<'toy> for Parse<'toy> {
     }
 
     fn deserialize_option<V>(self, _visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: Visitor<'toy>,
+    {
+        Err(QueryParseError::map_type_only())
+    }
+
+    fn deserialize_unit<V>(self, _visitor: V) -> Result<V::Value, Self::Error>
     where
         V: Visitor<'toy>,
     {

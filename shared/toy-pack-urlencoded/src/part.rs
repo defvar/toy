@@ -212,6 +212,10 @@ where
         Err(QueryParseError::unsupported("map"))
     }
 
+    fn serialize_unit(self) -> Result<Self::Ok, Self::Error> {
+        Err(QueryParseError::unsupported("unit"))
+    }
+
     fn serialize_struct(
         self,
         _name: &'static str,

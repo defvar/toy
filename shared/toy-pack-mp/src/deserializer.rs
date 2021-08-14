@@ -174,6 +174,14 @@ where
         }
     }
 
+    fn deserialize_unit<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: Visitor<'toy>,
+    {
+        self.decode_nil()?;
+        visitor.visit_unit()
+    }
+
     fn deserialize_any<V>(self, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: Visitor<'toy>,

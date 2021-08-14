@@ -207,6 +207,21 @@ where
         }
     }
 
+    fn deserialize_unit<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: Visitor<'toy>,
+    {
+        match self.peek_token()? {
+            Some(Token::Null) => {
+                self.consume();
+                self.parse_ident(b"ull")?;
+                visitor.visit_unit()
+            }
+            Some(_) => Err(DecodeError::invalid_type("unit")),
+            None => Err(DecodeError::eof_while_parsing_value()),
+        }
+    }
+
     fn deserialize_any<V>(self, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: Visitor<'toy>,
@@ -225,6 +240,11 @@ where
                     Reference::Borrowed(b) => visitor.visit_borrowed_str(b),
                     Reference::Copied(c) => visitor.visit_str(c),
                 }
+            }
+            Some(Token::Null) => {
+                self.consume();
+                self.parse_ident(b"ull")?;
+                visitor.visit_unit()
             }
             Some(Token::BeginArray) => {
                 self.consume();

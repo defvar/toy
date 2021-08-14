@@ -90,6 +90,10 @@ impl Serializer for Ser {
         Ok(SerializeHash::new(len))
     }
 
+    fn serialize_unit(self) -> Result<Self::Ok, Self::Error> {
+        Ok(Yaml::Null)
+    }
+
     fn serialize_struct(
         self,
         _name: &'static str,

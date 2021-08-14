@@ -147,6 +147,12 @@ pub trait Deserializer<'toy>: Sized {
     where
         V: Visitor<'toy>;
 
+    /// Deserialize `()` value.
+    ///
+    fn deserialize_unit<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: Visitor<'toy>;
+
     /// Deserialize any value.
     ///
     fn deserialize_any<V>(self, visitor: V) -> Result<V::Value, Self::Error>

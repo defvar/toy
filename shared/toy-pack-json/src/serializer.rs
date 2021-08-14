@@ -96,6 +96,10 @@ where
         Ok(SerializeCompound::new(self))
     }
 
+    fn serialize_unit(self) -> Result<Self::Ok, Self::Error> {
+        self.write_null()
+    }
+
     fn serialize_struct(
         self,
         _name: &'static str,

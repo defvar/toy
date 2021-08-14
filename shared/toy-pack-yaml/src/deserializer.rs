@@ -135,6 +135,18 @@ impl<'toy, 'a> Deserializer<'toy> for &'a mut Decoder {
         }
     }
 
+    fn deserialize_unit<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: Visitor<'toy>,
+    {
+        if self.peek_is_null()? {
+            let _ = self.next()?; //discard marker
+            visitor.visit_unit()
+        } else {
+            self.deserialize_any(visitor)
+        }
+    }
+
     fn deserialize_any<V>(self, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: Visitor<'toy>,

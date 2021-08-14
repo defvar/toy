@@ -7,6 +7,31 @@ use crate::deser::{DeserializeMapOps, DeserializeSeqOps};
 use core::time::Duration;
 use std::borrow::Cow;
 
+struct UnitVisitor;
+
+impl<'toy> Visitor<'toy> for UnitVisitor {
+    type Value = ();
+
+    fn visit_unit<E>(self) -> Result<Self::Value, E>
+    where
+        E: Error,
+    {
+        Ok(())
+    }
+}
+
+impl<'toy> Deserializable<'toy> for () {
+    #[inline]
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'toy>,
+    {
+        deserializer.deserialize_unit(UnitVisitor)
+    }
+}
+
+///////////////////////////////////////////////////
+
 impl<'toy, 'a, T: ?Sized> Deserializable<'toy> for Cow<'a, T>
 where
     T: ToOwned,

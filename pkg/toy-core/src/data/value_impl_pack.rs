@@ -67,7 +67,7 @@ impl Serializable for Value {
             Value::Seq(v) => serializer.collect_seq(v),
             Value::Map(v) => serializer.collect_map(v),
             Value::TimeStamp(v) => v.serialize(serializer),
-            Value::Unit => unimplemented!(), //TODO:
+            Value::Unit => serializer.serialize_unit(),
         }
     }
 }
@@ -159,6 +159,11 @@ impl<'a> Serializer for &'a mut Value {
     fn serialize_map(self, len: Option<usize>) -> Result<Self::MapAccessOps, Self::Error> {
         *self = default_empty_map(len);
         Ok(SerializeCompound::new(self, len))
+    }
+
+    fn serialize_unit(self) -> Result<Self::Ok, Self::Error> {
+        *self = Value::Unit;
+        Ok(())
     }
 
     fn serialize_struct(

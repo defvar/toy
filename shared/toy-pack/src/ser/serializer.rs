@@ -91,6 +91,10 @@ pub trait Serializer: Sized {
     ///
     fn serialize_map(self, len: Option<usize>) -> Result<Self::MapAccessOps, Self::Error>;
 
+    /// Serialize a `()` Value.
+    ///
+    fn serialize_unit(self) -> Result<Self::Ok, Self::Error>;
+
     /// Serialize the structure.
     /// Depending on the specification of the serialization format, it may be a sequence or a map.
     ///

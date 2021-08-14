@@ -5,6 +5,18 @@ use crate::ser::SerializeStructOps;
 use core::time::Duration;
 use std::borrow::Cow;
 
+impl Serializable for () {
+    #[inline]
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_unit()
+    }
+}
+
+///////////////////////////////////////////////////
+
 impl<'a, T: ?Sized> Serializable for Cow<'a, T>
 where
     T: Serializable + ToOwned,
