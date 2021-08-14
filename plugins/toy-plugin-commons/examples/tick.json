@@ -15,10 +15,10 @@
         {
             "type": "plugin.common.fanout.broadcast",
             "uri": "broadcast",
-            "port_type": { "Flow": [1, 2] },
+            "port_type": { "Flow": [1, 3] },
             "config": {
             },
-            "wires": ["last", "count"]
+            "wires": ["last", "count", "out"]
         },
         {
             "type": "plugin.common.collect.last",
@@ -31,6 +31,14 @@
         {
             "type": "plugin.common.collect.count",
             "uri": "count",
+            "port_type": { "Sink": 1 },
+            "config": {
+            },
+            "wires": []
+        },
+        {
+            "type": "plugin.common.stdio.stdout",
+            "uri": "out",
             "port_type": { "Sink": 1 },
             "config": {
             },

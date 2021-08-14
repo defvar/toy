@@ -1,0 +1,15 @@
+[package]
+name = "toy-plugin-stdio"
+version = "0.1.0"
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+toy-core = { path = "../../../pkg/toy-core" }
+toy-pack = { path = "../../../shared/toy-pack", features = ["derive"] }
+tracing = "0.1"
+
+tokio = { version = "1.10", features = ["io-std", "io-util"] }
+tokio-util = { version = "0.6.7", features = ["io"] }
+tokio-stream = { version = "0.1" }

@@ -6,5 +6,6 @@ members = [
     "toy-plugin-fanout",
     "toy-plugin-timer",
     "toy-plugin-commons",
-    "toy-plugin-collect"
+    "toy-plugin-collect",
+    "toy-plugin-stdio"
 ]

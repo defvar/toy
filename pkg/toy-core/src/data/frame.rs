@@ -179,6 +179,12 @@ impl From<Vec<Value>> for Frame {
     }
 }
 
+impl From<&[u8]> for Frame {
+    fn from(v: &[u8]) -> Self {
+        Frame::from_value(Value::from(v))
+    }
+}
+
 impl Default for Frame {
     fn default() -> Self {
         Frame::none()

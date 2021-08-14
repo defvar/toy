@@ -6,4 +6,5 @@ pub fn load() -> impl PluginRegistry {
         .with(toy_plugin_map::load())
         .with(toy_plugin_timer::load())
         .with(toy_plugin_collect::load())
+        .with(toy_plugin_stdio::load())
 }
