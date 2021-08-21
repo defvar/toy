@@ -12,6 +12,9 @@ use crate::task::TaskContext;
 use async_trait::async_trait;
 use toy_pack::deser::DeserializableOwned;
 
+/// Trait for Service Executor.
+///
+/// Create and run a service using "factory".
 pub trait ServiceExecutor {
     type Request;
     type Error;
@@ -20,10 +23,10 @@ pub trait ServiceExecutor {
     fn spawn<F>(&mut self, service_type: &ServiceType, uri: &Uri, factory: F)
     where
         F: ServiceFactory<
-            Request = Self::Request,
-            Error = Self::Error,
-            InitError = Self::InitError,
-        > + Send
+                Request = Self::Request,
+                Error = Self::Error,
+                InitError = Self::InitError,
+            > + Send
             + Sync
             + 'static,
         F::Service: Send,
@@ -31,6 +34,10 @@ pub trait ServiceExecutor {
         F::Config: DeserializableOwned + Send;
 }
 
+/// Trait for Task Executor.
+///
+/// Generate and execute tasks from Graph information.
+/// This trait called from `Supervisor`.
 #[async_trait]
 pub trait TaskExecutor {
     async fn run(
@@ -42,6 +49,7 @@ pub trait TaskExecutor {
     ) -> Result<(), ServiceError>;
 }
 
+/// Create a `TaskExecutor`.
 pub trait TaskExecutorFactory {
     type Executor: TaskExecutor + Send;
     fn new(ctx: TaskContext) -> (Self::Executor, SignalOutgoings);

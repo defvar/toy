@@ -12,6 +12,7 @@ use toy_core::ServiceType;
 use toy_core::Uri;
 use toy_pack::deser::DeserializableOwned;
 
+/// Common implementation `TaskExecutor` and `ServiceExecutor`.
 pub struct Executor {
     starters: Starters,
     awaiter: Awaiter,
@@ -21,6 +22,7 @@ pub struct Executor {
     ctx: TaskContext,
 }
 
+/// Common implementation `TaskExecutorFactory`.
 pub struct ExecutorFactory;
 
 impl Executor {
@@ -98,10 +100,10 @@ impl ServiceExecutor for Executor {
     fn spawn<F>(&mut self, service_type: &ServiceType, uri: &Uri, factory: F)
     where
         F: ServiceFactory<
-            Request = Self::Request,
-            Error = Self::Error,
-            InitError = Self::InitError,
-        > + Send
+                Request = Self::Request,
+                Error = Self::Error,
+                InitError = Self::InitError,
+            > + Send
             + Sync
             + 'static,
         F::Service: Send,
