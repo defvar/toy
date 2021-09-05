@@ -99,3 +99,9 @@ jobs:
       with:
         command: test
         args: --manifest-path ${{ github.workspace }}/plugins/toy-plugin-commons/Cargo.toml
+
+    - name: test-plugin-js
+      uses: actions-rs/cargo@v1
+      with:
+        command: test
+        args: --manifest-path ${{ github.workspace }}/plugins/toy-plugin-js/Cargo.toml
