@@ -2,6 +2,12 @@ use clap::{Clap, ValueHint};
 use std::path::PathBuf;
 
 #[derive(Clap, Debug)]
+pub struct LogOption {
+    #[clap(short, long, value_hint = ValueHint::FilePath)]
+    pub log: Option<PathBuf>,
+}
+
+#[derive(Clap, Debug)]
 pub struct Subscribe {
     pub name: String,
     #[clap(short, long, default_value = "https://localhost:3030")]
@@ -12,12 +18,16 @@ pub struct Subscribe {
     pub credential: String,
     #[clap(short, long, env = "TOY_API_CLIENT_KID")]
     pub kid: String,
+    #[clap(flatten)]
+    pub log: LogOption,
 }
 
 #[derive(Clap, Debug)]
 pub struct Local {
     #[clap(short, long, value_hint = ValueHint::FilePath)]
     pub graph: PathBuf,
+    #[clap(flatten)]
+    pub log: LogOption,
 }
 
 #[derive(Clap, Debug)]

@@ -31,7 +31,6 @@ impl MakeWriter for TcpLogger {
     type Writer = TcpLogger;
 
     fn make_writer(&self) -> Self::Writer {
-        println!("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
         match TcpStream::connect(self.addr.as_slice()) {
             Ok(st) => TcpLogger {
                 tcp: Some(st),

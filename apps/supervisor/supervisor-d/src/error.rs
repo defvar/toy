@@ -44,6 +44,9 @@ pub enum Error {
         source: toy::core::error::ConfigError,
         backtrace: Backtrace,
     },
+
+    #[error("error: invalid log path")]
+    InvalidLogPath,
 }
 
 impl Error {
@@ -63,6 +66,10 @@ impl Error {
         Error::NotFoundEnv {
             inner: msg.to_string(),
         }
+    }
+
+    pub fn invalid_log_path() -> Error {
+        Error::InvalidLogPath
     }
 }
 

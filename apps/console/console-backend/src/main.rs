@@ -45,7 +45,7 @@ impl ServerConfig<ReqwestClient> for ToyConfig {
 
 fn main() {
     dotenv::dotenv().ok();
-    toy_tracing::console();
+    let _ = toy_tracing::console();
 
     let mut api_rt = toy_rt::RuntimeBuilder::new()
         .thread_name("api-server")

@@ -11,6 +11,7 @@ use toy::core::prelude::*;
 use toy::executor::ExecutorFactory;
 use toy_api::authentication::Claims;
 use toy_jwt::Algorithm;
+use toy_tracing::LogGuard;
 
 mod error;
 mod opts;
@@ -25,9 +26,6 @@ fn go() -> Result<(), Error> {
     let opts: Opts = Opts::parse();
 
     dotenv::dotenv().ok();
-
-    //let _g = toy_tracing::tcp("127.0.0.1:6060")?;
-    toy_tracing::console();
 
     let app = app(toy_plugin_commons::load());
 
@@ -50,6 +48,7 @@ fn go() -> Result<(), Error> {
 
     match &opts.c {
         Command::Local(c) => {
+            let _guard = initialize_log(&c.log)?;
             let g = get_graph(&c.graph)?;
             let (sv, _, _) = toy::supervisor::local(ExecutorFactory, app);
 
@@ -58,6 +57,7 @@ fn go() -> Result<(), Error> {
             });
         }
         Command::Subscribe(c) => {
+            let _guard = initialize_log(&c.log)?;
             let token = get_credential(&c.user, &c.kid, &c.credential)
                 .map_err(|e| Error::read_credential_error(e))?;
             let auth = toy::api_client::auth::Auth::with_bearer_token(&c.user, &token);
@@ -72,6 +72,19 @@ fn go() -> Result<(), Error> {
     };
 
     Ok(())
+}
+
+fn initialize_log(opt: &LogOption) -> Result<LogGuard, Error> {
+    match opt.log {
+        Some(ref path) => match (path.as_path().parent(), path.as_path().file_name()) {
+            (Some(dir), Some(prefix)) => {
+                toy_tracing::file(dir, prefix, toy_tracing::LogRotation::Never)
+                    .map_err(|x| x.into())
+            }
+            _ => Err(Error::invalid_log_path()),
+        },
+        None => toy_tracing::console().map_err(|x| x.into()),
+    }
 }
 
 fn get_credential(user: &str, kid: &str, path_string: &str) -> Result<String, Error> {
