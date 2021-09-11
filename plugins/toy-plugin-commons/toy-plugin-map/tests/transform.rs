@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use toy_core::prelude::*;
 use toy_plugin_map::config::{
     IndexingConfig, MappingConfig, NamingConfig, PutConfig, ReindexingConfig, RenameConfig,
-    SingleValueConfig, ToTransform,
+    SingleValueConfig, ToMapConfig, ToSeqConfig, ToTransform,
 };
 use toy_plugin_map::{AllowedTypes, NameOrIndex};
 use toy_plugin_map::{PutValue, Transformer};
@@ -275,5 +275,35 @@ fn single_value_from_seq() {
     .into_transform()
     .transform(&mut target)
     .unwrap();
+    assert_eq!(target, expected);
+}
+
+#[test]
+fn to_map() {
+    let mut target = Value::from(0u8);
+    let expected = {
+        let mut map = Map::new();
+        map.insert("a".to_string(), Value::from(0u8));
+        Value::from(map)
+    };
+
+    ToMapConfig {
+        name: "a".to_string(),
+    }
+    .into_transform()
+    .transform(&mut target)
+    .unwrap();
+    assert_eq!(target, expected);
+}
+
+#[test]
+fn to_seq() {
+    let mut target = Value::from(0u8);
+    let expected = {
+        let seq = vec![Value::from(0u8)];
+        Value::from(seq)
+    };
+
+    ToSeqConfig.into_transform().transform(&mut target).unwrap();
     assert_eq!(target, expected);
 }

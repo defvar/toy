@@ -1,11 +1,12 @@
 use crate::config::{
     IndexingConfig, MappingConfig, NamingConfig, PutConfig, ReindexingConfig, RemoveByIndexConfig,
-    RemoveByNameConfig, RenameConfig, SingleValueConfig, ToTransform, TypedConfig,
+    RemoveByNameConfig, RenameConfig, SingleValueConfig, ToMapConfig, ToSeqConfig, ToTransform,
+    TypedConfig,
 };
 use crate::typed::convert;
 use crate::{
     Indexing, Mapping, Naming, Put, Reindexing, RemoveByIndex, RemoveByName, Rename, SingleValue,
-    Transformer,
+    ToMap, ToSeq, Transformer,
 };
 use toy_core::prelude::*;
 
@@ -39,6 +40,7 @@ pub async fn typed(
 }
 
 // transformer
+#[derive(Clone, Debug)]
 pub struct MappingContext {
     transformer: Mapping,
 }
@@ -73,6 +75,14 @@ pub struct PutContext {
 
 pub struct SingleValueContext {
     transformer: SingleValue,
+}
+
+pub struct ToMapContext {
+    transformer: ToMap,
+}
+
+pub struct ToSeqContext {
+    transformer: ToSeq,
 }
 
 macro_rules! transform {
@@ -135,3 +145,5 @@ transform!(
     SingleValueConfig,
     SingleValueContext
 );
+transform!(to_map, new_to_map_context, ToMapConfig, ToMapContext);
+transform!(to_seq, new_to_seq_context, ToSeqConfig, ToSeqContext);

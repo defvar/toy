@@ -1,6 +1,6 @@
 use crate::transform::{
     Indexing, Mapping, NameOrIndex, Naming, Put, PutValue, Reindexing, RemoveByIndex, RemoveByName,
-    Rename, SingleValue, Transformer,
+    Rename, SingleValue, ToMap, ToSeq, Transformer,
 };
 use crate::typed::AllowedTypes;
 use std::collections::HashMap;
@@ -88,6 +88,16 @@ pub struct SingleValueConfig {
     pub name_or_index: NameOrIndex,
 }
 
+/// create single key and value from other value.
+#[derive(Debug, Clone, Default, Unpack, Schema)]
+pub struct ToMapConfig {
+    pub name: String,
+}
+
+/// create single element seq from other value.
+#[derive(Debug, Clone, Default, Unpack, Schema)]
+pub struct ToSeqConfig;
+
 pub trait ToTransform<T>
 where
     T: Transformer,
@@ -148,5 +158,17 @@ impl ToTransform<RemoveByName> for RemoveByNameConfig {
 impl ToTransform<SingleValue> for SingleValueConfig {
     fn into_transform(self) -> SingleValue {
         SingleValue(self.name_or_index)
+    }
+}
+
+impl ToTransform<ToMap> for ToMapConfig {
+    fn into_transform(self) -> ToMap {
+        ToMap(self.name)
+    }
+}
+
+impl ToTransform<ToSeq> for ToSeqConfig {
+    fn into_transform(self) -> ToSeq {
+        ToSeq()
     }
 }

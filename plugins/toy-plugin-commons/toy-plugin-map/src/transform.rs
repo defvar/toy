@@ -20,28 +20,28 @@ impl Default for NameOrIndex {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Mapping(pub Map<String, String>);
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Naming(pub HashMap<String, u32>);
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Indexing(pub Vec<String>);
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Reindexing(pub Vec<u32>);
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Rename(pub HashMap<String, String>);
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Put(pub HashMap<String, PutValue>);
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct RemoveByName(pub Vec<String>);
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct RemoveByIndex(pub Vec<u32>);
 
 #[derive(Debug, Clone, PartialEq, Unpack, Schema)]
@@ -50,14 +50,14 @@ pub struct PutValue {
     tp: AllowedTypes,
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct SingleValue(pub NameOrIndex);
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct ToMap(pub String);
 
-#[derive(Debug)]
-pub struct ToSeq(pub Option<u32>);
+#[derive(Clone, Debug)]
+pub struct ToSeq();
 
 impl Transformer for Mapping {
     fn transform(&self, value: &mut Value) -> Result<(), ()> {
@@ -241,5 +241,22 @@ impl Transformer for SingleValue {
             }
             _ => Err(()),
         }
+    }
+}
+
+impl Transformer for ToMap {
+    fn transform(&self, value: &mut Value) -> Result<(), ()> {
+        let mut map = Map::new();
+        map.insert(self.0.clone(), value.clone());
+        *value = Value::Map(map);
+        Ok(())
+    }
+}
+
+impl Transformer for ToSeq {
+    fn transform(&self, value: &mut Value) -> Result<(), ()> {
+        let vec = vec![value.clone()];
+        *value = Value::Seq(vec);
+        Ok(())
     }
 }

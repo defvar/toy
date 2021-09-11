@@ -65,4 +65,14 @@ pub fn load() -> impl PluginRegistry {
         PortType::flow(),
         factory!(single_value, SingleValueConfig, new_single_value_context),
     )
+    .with(
+        "toMap",
+        PortType::flow(),
+        factory!(to_map, ToMapConfig, new_to_map_context),
+    )
+    .with(
+        "toSeq",
+        PortType::flow(),
+        factory!(to_seq, ToSeqConfig, new_to_seq_context),
+    )
 }

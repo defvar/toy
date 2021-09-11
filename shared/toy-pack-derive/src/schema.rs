@@ -171,7 +171,13 @@ fn body_struct(target: &Model) -> Result<TokenStream, syn::Error> {
             };
             Ok(q)
         }
-        Style::Unit => unimplemented!(),
+        Style::Unit => {
+            let q = quote! {
+                let mut struct_visitor = visitor.struct_visitor(#struct_name_str)?;
+                struct_visitor.end()
+            };
+            Ok(q)
+        }
         Style::Tuple => unimplemented!(),
         Style::Newtype => unimplemented!(),
     }

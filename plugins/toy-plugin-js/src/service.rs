@@ -4,6 +4,7 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use toy_core::prelude::*;
 
+#[derive(Debug, Clone)]
 pub struct FunctionContext {
     config: FunctionConfig,
 }

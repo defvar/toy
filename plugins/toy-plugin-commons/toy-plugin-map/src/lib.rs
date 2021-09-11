@@ -8,7 +8,7 @@ mod typed;
 
 pub use self::transform::{
     Indexing, Mapping, NameOrIndex, Naming, Put, Reindexing, RemoveByIndex, RemoveByName, Rename,
-    SingleValue,
+    SingleValue, ToMap, ToSeq,
 };
 pub use self::transform::{PutValue, Transformer};
 pub use plugin::load;

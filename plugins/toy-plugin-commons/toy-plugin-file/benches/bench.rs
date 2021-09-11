@@ -7,8 +7,9 @@ use test::test::Bencher;
 
 use quick_csv::Csv;
 
-use toy_plugin_file::parse::{ReadResult, ReaderBuilder};
-use toy_plugin_file::{FileReaderBuilder, Row};
+use toy_plugin_file::FileReaderBuilder;
+use toy_text_parser::dfa::*;
+use toy_text_parser::Line;
 
 static CSV_DATA: &'static str = "./benches/bench.csv";
 // header:1, data:9999
@@ -60,7 +61,7 @@ fn read_toy(b: &mut Bencher) {
     let builder = FileReaderBuilder::default();
 
     let mut line = 0u32;
-    let mut row = Row::new();
+    let mut row = Line::new();
 
     b.iter(|| {
         let mut s = builder.from_reader(&*text);
@@ -97,8 +98,7 @@ fn read_toy_rows_iterator(b: &mut Bencher) {
 fn read_toy_raw_reader(b: &mut Bencher) {
     let text = file_to_mem(CSV_DATA);
     b.bytes = text.len() as u64;
-
-    let mut r = ReaderBuilder::default().build();
+    let mut r = ByteParserBuilder::default().build();
 
     let mut buf = [0u8; 2048];
     let mut idx = [0usize; 30];
@@ -112,15 +112,15 @@ fn read_toy_raw_reader(b: &mut Bencher) {
             idx_pos += col;
             data = &data[in_pos..];
             match state {
-                ReadResult::OutputFull => panic!("output full"),
-                ReadResult::OutputEdgeFull => panic!("index full"),
-                ReadResult::InputEmpty => {
+                ParseResult::OutputFull => panic!("output full"),
+                ParseResult::OutputEdgeFull => panic!("index full"),
+                ParseResult::InputEmpty => {
                     if !data.is_empty() {
                         panic!("missing input data")
                     }
                 }
-                ReadResult::End => break,
-                ReadResult::Record => {
+                ParseResult::End => break,
+                ParseResult::Record => {
                     idx_pos = 0;
                     count += 1;
                 }
