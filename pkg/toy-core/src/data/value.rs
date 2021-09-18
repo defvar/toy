@@ -2,7 +2,7 @@ use crate::data::map::Map;
 use core::time::Duration;
 use std::fmt;
 use std::str::FromStr;
-use toy_pack::deser::from_primitive::FromPrimitive;
+use toy_pack::FromPrimitive;
 
 /// The value itself is represented by a scalar, key-value pair, array, etc.
 #[derive(Debug, Clone, PartialEq)]
@@ -44,6 +44,13 @@ impl Value {
     pub fn as_map(&self) -> Option<&Map<String, Value>> {
         match *self {
             Value::Map(ref map) => Some(map),
+            _ => None,
+        }
+    }
+
+    pub fn as_vec(&self) -> Option<&Vec<Value>> {
+        match *self {
+            Value::Seq(ref vec) => Some(vec),
             _ => None,
         }
     }

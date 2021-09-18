@@ -2,11 +2,11 @@
 //!
 
 use crate::error::ConfigError;
+use serde::{Deserialize, Serialize};
 use std::fmt::{Debug, Error, Formatter};
-use toy_pack::{Pack, Unpack};
 
 /// The type of service.
-#[derive(Clone, PartialEq, Eq, Hash, Pack, Unpack)]
+#[derive(Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct ServiceType {
     full_name: String,
     name_space: String,

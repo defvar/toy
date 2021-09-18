@@ -1,65 +1,66 @@
 use crate::typed;
 use crate::typed::AllowedTypes;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use toy_core::data::{Map, Value};
-use toy_pack::{Schema, Unpack};
+use toy_pack::Schema;
 
 pub trait Transformer {
     fn transform(&self, value: &mut Value) -> Result<(), ()>;
 }
 
-#[derive(Debug, Clone, PartialEq, Unpack, Schema)]
-pub enum NameOrIndex {
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, Schema)]
+pub enum NameOrIndexTransformer {
     Name(String),
     Index(u32),
 }
 
-impl Default for NameOrIndex {
+impl Default for NameOrIndexTransformer {
     fn default() -> Self {
-        NameOrIndex::Index(0)
+        NameOrIndexTransformer::Index(0)
     }
 }
 
 #[derive(Clone, Debug)]
-pub struct Mapping(pub Map<String, String>);
+pub struct MappingTransformer(pub Map<String, String>);
 
 #[derive(Clone, Debug)]
-pub struct Naming(pub HashMap<String, u32>);
+pub struct NamingTransformer(pub HashMap<String, u32>);
 
 #[derive(Clone, Debug)]
-pub struct Indexing(pub Vec<String>);
+pub struct IndexingTransformer(pub Vec<String>);
 
 #[derive(Clone, Debug)]
-pub struct Reindexing(pub Vec<u32>);
+pub struct ReindexingTransformer(pub Vec<u32>);
 
 #[derive(Clone, Debug)]
-pub struct Rename(pub HashMap<String, String>);
+pub struct RenameTransformer(pub HashMap<String, String>);
 
 #[derive(Clone, Debug)]
-pub struct Put(pub HashMap<String, PutValue>);
+pub struct PutTransformer(pub HashMap<String, PutValueTransformer>);
 
 #[derive(Clone, Debug)]
-pub struct RemoveByName(pub Vec<String>);
+pub struct RemoveByNameTransformer(pub Vec<String>);
 
 #[derive(Clone, Debug)]
-pub struct RemoveByIndex(pub Vec<u32>);
+pub struct RemoveByIndexTransformer(pub Vec<u32>);
 
-#[derive(Debug, Clone, PartialEq, Unpack, Schema)]
-pub struct PutValue {
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Schema)]
+pub struct PutValueTransformer {
     value: Option<String>,
     tp: AllowedTypes,
 }
 
 #[derive(Clone, Debug)]
-pub struct SingleValue(pub NameOrIndex);
+pub struct SingleValueTransformer(pub NameOrIndexTransformer);
 
 #[derive(Clone, Debug)]
-pub struct ToMap(pub String);
+pub struct ToMapTransformer(pub String);
 
 #[derive(Clone, Debug)]
-pub struct ToSeq();
+pub struct ToSeqTransformer();
 
-impl Transformer for Mapping {
+impl Transformer for MappingTransformer {
     fn transform(&self, value: &mut Value) -> Result<(), ()> {
         match value {
             Value::Map(_) => {
@@ -76,7 +77,7 @@ impl Transformer for Mapping {
     }
 }
 
-impl Transformer for Naming {
+impl Transformer for NamingTransformer {
     fn transform(&self, value: &mut Value) -> Result<(), ()> {
         match value {
             Value::Seq(src) => {
@@ -101,7 +102,7 @@ impl Transformer for Naming {
     }
 }
 
-impl Transformer for Indexing {
+impl Transformer for IndexingTransformer {
     fn transform(&self, value: &mut Value) -> Result<(), ()> {
         match value {
             Value::Map(_) => {
@@ -123,7 +124,7 @@ impl Transformer for Indexing {
     }
 }
 
-impl Transformer for Reindexing {
+impl Transformer for ReindexingTransformer {
     fn transform(&self, value: &mut Value) -> Result<(), ()> {
         match value {
             Value::Seq(src) => {
@@ -139,7 +140,7 @@ impl Transformer for Reindexing {
     }
 }
 
-impl Transformer for Rename {
+impl Transformer for RenameTransformer {
     fn transform(&self, value: &mut Value) -> Result<(), ()> {
         match value {
             Value::Map(src) => {
@@ -158,7 +159,7 @@ impl Transformer for Rename {
     }
 }
 
-impl Transformer for Put {
+impl Transformer for PutTransformer {
     fn transform(&self, value: &mut Value) -> Result<(), ()> {
         match value {
             Value::Map(src) => {
@@ -178,7 +179,7 @@ impl Transformer for Put {
     }
 }
 
-impl Transformer for RemoveByName {
+impl Transformer for RemoveByNameTransformer {
     fn transform(&self, value: &mut Value) -> Result<(), ()> {
         match value {
             Value::Map(src) => {
@@ -192,7 +193,7 @@ impl Transformer for RemoveByName {
     }
 }
 
-impl Transformer for RemoveByIndex {
+impl Transformer for RemoveByIndexTransformer {
     fn transform(&self, value: &mut Value) -> Result<(), ()> {
         match value {
             Value::Seq(src) => {
@@ -206,9 +207,9 @@ impl Transformer for RemoveByIndex {
     }
 }
 
-impl PutValue {
-    pub fn new(value: Option<String>, tp: AllowedTypes) -> PutValue {
-        PutValue { value, tp }
+impl PutValueTransformer {
+    pub fn new(value: Option<String>, tp: AllowedTypes) -> PutValueTransformer {
+        PutValueTransformer { value, tp }
     }
 
     pub fn value(&self) -> Value {
@@ -221,15 +222,15 @@ impl PutValue {
     }
 }
 
-impl Transformer for SingleValue {
+impl Transformer for SingleValueTransformer {
     fn transform(&self, value: &mut Value) -> Result<(), ()> {
         let v = match value {
             Value::Map(_) => match &self.0 {
-                NameOrIndex::Name(k) => Ok(value.path(&k)),
+                NameOrIndexTransformer::Name(k) => Ok(value.path(&k)),
                 _ => Err(Option::<&Value>::None),
             },
             Value::Seq(vec) => match &self.0 {
-                NameOrIndex::Index(i) => Ok(vec.get(*i as usize)),
+                NameOrIndexTransformer::Index(i) => Ok(vec.get(*i as usize)),
                 _ => Err(Option::<&Value>::None),
             },
             _ => Err(Option::<&Value>::None),
@@ -244,7 +245,7 @@ impl Transformer for SingleValue {
     }
 }
 
-impl Transformer for ToMap {
+impl Transformer for ToMapTransformer {
     fn transform(&self, value: &mut Value) -> Result<(), ()> {
         let mut map = Map::new();
         map.insert(self.0.clone(), value.clone());
@@ -253,7 +254,7 @@ impl Transformer for ToMap {
     }
 }
 
-impl Transformer for ToSeq {
+impl Transformer for ToSeqTransformer {
     fn transform(&self, value: &mut Value) -> Result<(), ()> {
         let vec = vec![value.clone()];
         *value = Value::Seq(vec);

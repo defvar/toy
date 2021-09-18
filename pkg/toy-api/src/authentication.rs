@@ -1,6 +1,6 @@
-use toy_pack::{Pack, Unpack};
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Eq, PartialEq, Clone, Pack, Unpack)]
+#[derive(Debug, Eq, PartialEq, Clone, Serialize, Deserialize)]
 pub struct Claims {
     sub: String,
 }
@@ -15,14 +15,14 @@ impl Claims {
     }
 }
 
-#[derive(Debug, Eq, PartialEq, Clone, Pack, Unpack)]
+#[derive(Debug, Eq, PartialEq, Clone, Serialize, Deserialize)]
 pub enum Secret {
     KeyPair(KeyPair),
 }
 
 pub const TLS_SECRET_KID: &'static str = "__TLS_SECRET_KID__";
 
-#[derive(Debug, Eq, PartialEq, Clone, Pack, Unpack)]
+#[derive(Debug, Eq, PartialEq, Clone, Serialize, Deserialize)]
 pub struct KeyPair {
     kid: String,
     private_key: String,
@@ -51,7 +51,7 @@ impl KeyPair {
     }
 }
 
-#[derive(Clone, Debug, Pack, Unpack)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct SecretList {
     items: Vec<Secret>,
     count: u32,

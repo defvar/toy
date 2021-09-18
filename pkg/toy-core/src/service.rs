@@ -2,6 +2,7 @@
 //!
 
 use crate::mpsc::Outgoing;
+use crate::registry::PortType;
 use crate::service_type::ServiceType;
 use crate::task::TaskContext;
 use std::any;
@@ -10,12 +11,19 @@ use std::future::Future;
 use std::marker::PhantomData;
 use std::pin::Pin;
 use std::task::{Context, Poll};
+use toy_pack::schema::{Schema, SchemaVisitor, StructVisitor};
 
-pub fn fn_service<F, Ctx, Req, Fut, Err>(tp: ServiceType, f: F) -> FnService<F, Ctx, Req, Fut, Err>
+pub fn fn_service<F, Ctx, Req, Fut, Err, Pt>(
+    tp: ServiceType,
+    f: F,
+    port: Pt,
+) -> FnService<F, Ctx, Req, Fut, Err, Pt>
 where
     F: FnMut(TaskContext, Ctx, Req, Outgoing<Req, Err>) -> Fut,
     Fut: Future<Output = Result<ServiceContext<Ctx>, Err>> + Send,
+    Pt: FnPortType,
 {
+    let _ = port;
     FnService {
         tp,
         f,
@@ -23,19 +31,23 @@ where
     }
 }
 
-pub fn fn_service_factory<F, Fut, S, InitErr, CtxF, Cfg>(
+pub fn fn_service_factory<F, Fut, S, InitErr, CtxF, Cfg, Pt>(
     f: F,
     ctx_f: CtxF,
-) -> FnServiceFactory<F, Fut, S, InitErr, CtxF, Cfg>
+    port: Pt,
+) -> FnServiceFactory<F, Fut, S, InitErr, CtxF, Cfg, Pt>
 where
-    F: Fn(ServiceType) -> Fut,
+    F: Fn(ServiceType, Pt) -> Fut,
     Fut: Future<Output = Result<S, InitErr>> + Send,
     S: Service,
     CtxF: Fn(ServiceType, Cfg) -> Result<S::Context, InitErr>,
+    Cfg: Schema,
+    Pt: FnPortType,
 {
     FnServiceFactory {
         f,
         ctx_f,
+        port,
         _t: PhantomData,
     }
 }
@@ -44,7 +56,7 @@ pub trait ServiceFactory {
     type Future: Future<Output = Result<Self::Service, Self::InitError>> + Send;
     type Service: Service<Request = Self::Request, Error = Self::Error, Context = Self::Context>;
     type Context;
-    type Config;
+    type Config: Schema;
     type Request;
     type Error;
     type InitError;
@@ -87,10 +99,13 @@ pub trait Service {
     type Future: Future<Output = Result<ServiceContext<Self::Context>, Self::Error>> + Send;
     type UpstreamFinishFuture: Future<Output = Result<ServiceContext<Self::Context>, Self::Error>>
         + Send;
-    type UpstreamFinishAllFuture: Future<
-        Output = Result<ServiceContext<Self::Context>, Self::Error>,
-    > + Send;
+    type UpstreamFinishAllFuture: Future<Output = Result<ServiceContext<Self::Context>, Self::Error>>
+        + Send;
     type Error;
+
+    fn port_type() -> PortType {
+        PortType::flow()
+    }
 
     fn handle(
         &mut self,
@@ -130,22 +145,24 @@ pub trait Service {
     ) -> Self::UpstreamFinishAllFuture;
 }
 
-pub struct FnService<F, Ctx, Req, Fut, Err>
+pub struct FnService<F, Ctx, Req, Fut, Err, Pt>
 where
     F: FnMut(TaskContext, Ctx, Req, Outgoing<Req, Err>) -> Fut,
     Fut: Future<Output = Result<ServiceContext<Ctx>, Err>> + Send,
+    Pt: FnPortType,
 {
     tp: ServiceType,
     f: F,
-    _t: PhantomData<(Ctx, Req, Fut, Err)>,
+    _t: PhantomData<(Ctx, Req, Fut, Err, Pt)>,
 }
 
-impl<F, Ctx, Req, Fut, Err> Service for FnService<F, Ctx, Req, Fut, Err>
+impl<F, Ctx, Req, Fut, Err, Pt> Service for FnService<F, Ctx, Req, Fut, Err, Pt>
 where
     F: FnMut(TaskContext, Ctx, Req, Outgoing<Req, Err>) -> Fut,
     Fut: Future<Output = Result<ServiceContext<Ctx>, Err>> + Send,
     Ctx: Send,
     Err: Send,
+    Pt: FnPortType,
 {
     type Context = Ctx;
     type Request = Req;
@@ -153,6 +170,10 @@ where
     type UpstreamFinishFuture = Ready<Result<ServiceContext<Ctx>, Err>>;
     type UpstreamFinishAllFuture = Ready<Result<ServiceContext<Ctx>, Err>>;
     type Error = Err;
+
+    fn port_type() -> PortType {
+        Pt::port_type()
+    }
 
     fn handle(
         &mut self,
@@ -184,35 +205,41 @@ where
     }
 }
 
-impl<F, Ctx, Req, Fut, Err> Debug for FnService<F, Ctx, Req, Fut, Err>
+impl<F, Ctx, Req, Fut, Err, Pt> Debug for FnService<F, Ctx, Req, Fut, Err, Pt>
 where
     F: FnMut(TaskContext, Ctx, Req, Outgoing<Req, Err>) -> Fut,
     Fut: Future<Output = Result<ServiceContext<Ctx>, Err>> + Send,
+    Pt: FnPortType,
 {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), Error> {
         write!(f, "FnService {{ service_type:{:?} }}", self.tp)
     }
 }
 
-pub struct FnServiceFactory<F, Fut, S, InitErr, CtxF, Cfg>
+pub struct FnServiceFactory<F, Fut, S, InitErr, CtxF, Cfg, Pt>
 where
-    F: Fn(ServiceType) -> Fut,
+    F: Fn(ServiceType, Pt) -> Fut,
     Fut: Future<Output = Result<S, InitErr>> + Send,
     S: Service,
     CtxF: Fn(ServiceType, Cfg) -> Result<S::Context, InitErr>,
+    Cfg: Schema,
+    Pt: FnPortType,
 {
     f: F,
     ctx_f: CtxF,
+    port: Pt,
     _t: PhantomData<Cfg>,
 }
 
-impl<F, Fut, S, InitErr, CtxF, Cfg> ServiceFactory
-    for FnServiceFactory<F, Fut, S, InitErr, CtxF, Cfg>
+impl<F, Fut, S, InitErr, CtxF, Cfg, Pt> ServiceFactory
+    for FnServiceFactory<F, Fut, S, InitErr, CtxF, Cfg, Pt>
 where
-    F: Fn(ServiceType) -> Fut,
+    F: Fn(ServiceType, Pt) -> Fut,
     Fut: Future<Output = Result<S, InitErr>> + Send,
     S: Service,
     CtxF: Fn(ServiceType, Cfg) -> Result<S::Context, InitErr>,
+    Cfg: Schema,
+    Pt: FnPortType,
 {
     type Future = Fut;
     type Service = S;
@@ -223,7 +250,8 @@ where
     type InitError = InitErr;
 
     fn new_service(&self, tp: ServiceType) -> Self::Future {
-        (self.f)(tp)
+        let port = self.port;
+        (self.f)(tp, port)
     }
 
     fn new_context(
@@ -235,28 +263,35 @@ where
     }
 }
 
-impl<F, Fut, S, InitErr, CtxF, Cfg> Clone for FnServiceFactory<F, Fut, S, InitErr, CtxF, Cfg>
+impl<F, Fut, S, InitErr, CtxF, Cfg, Pt> Clone
+    for FnServiceFactory<F, Fut, S, InitErr, CtxF, Cfg, Pt>
 where
-    F: Fn(ServiceType) -> Fut + Clone,
+    F: Fn(ServiceType, Pt) -> Fut + Clone,
     Fut: Future<Output = Result<S, InitErr>> + Send,
     S: Service,
     CtxF: Fn(ServiceType, Cfg) -> Result<S::Context, InitErr> + Clone,
+    Cfg: Schema,
+    Pt: FnPortType,
 {
     fn clone(&self) -> Self {
         FnServiceFactory {
             f: self.f.clone(),
             ctx_f: self.ctx_f.clone(),
+            port: self.port,
             _t: PhantomData,
         }
     }
 }
 
-impl<F, Fut, S, InitErr, CtxF, Cfg> Debug for FnServiceFactory<F, Fut, S, InitErr, CtxF, Cfg>
+impl<F, Fut, S, InitErr, CtxF, Cfg, Pt> Debug
+    for FnServiceFactory<F, Fut, S, InitErr, CtxF, Cfg, Pt>
 where
-    F: Fn(ServiceType) -> Fut + Clone,
+    F: Fn(ServiceType, Pt) -> Fut + Clone,
     Fut: Future<Output = Result<S, InitErr>> + Send,
     S: Service,
     CtxF: Fn(ServiceType, Cfg) -> Result<S::Context, InitErr>,
+    Cfg: Schema,
+    Pt: FnPortType,
 {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), Error> {
         write!(
@@ -311,13 +346,26 @@ impl Service for NoopService {
     }
 }
 
+#[derive(Debug, Clone)]
+pub struct NoopServiceConfig;
+
+impl Schema for NoopServiceConfig {
+    fn scan<V>(_name: &str, mut visitor: V) -> Result<V::Value, V::Error>
+    where
+        V: SchemaVisitor,
+    {
+        let v = visitor.struct_visitor("NoopServiceConfig")?;
+        v.end()
+    }
+}
+
 pub struct NoopServiceFactory;
 
 impl ServiceFactory for NoopServiceFactory {
     type Future = Ready<Result<NoopService, ()>>;
     type Service = NoopService;
     type Context = NoopContext;
-    type Config = ();
+    type Config = NoopServiceConfig;
     type Request = ();
     type Error = ();
     type InitError = ();
@@ -366,5 +414,34 @@ impl<T> Future for Ready<T> {
     #[inline]
     fn poll(mut self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<T> {
         Poll::Ready(self.0.take().unwrap())
+    }
+}
+
+pub trait FnPortType: Copy {
+    fn port_type() -> PortType;
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct SourcePort;
+#[derive(Debug, Clone, Copy)]
+pub struct FlowPort;
+#[derive(Debug, Clone, Copy)]
+pub struct SinkPort;
+
+impl FnPortType for SourcePort {
+    fn port_type() -> PortType {
+        PortType::source()
+    }
+}
+
+impl FnPortType for FlowPort {
+    fn port_type() -> PortType {
+        PortType::flow()
+    }
+}
+
+impl FnPortType for SinkPort {
+    fn port_type() -> PortType {
+        PortType::sink()
     }
 }

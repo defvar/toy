@@ -1,22 +1,22 @@
-use toy_pack::{Pack, Unpack};
+use serde::{Deserialize, Serialize};
 
 pub const RESOURCE_ALL: &'static str = "*";
 pub const VERB_ALL: &'static str = "*";
 
-#[derive(Clone, Debug, Pack, Unpack)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Rule {
     resources: Vec<String>,
     verbs: Vec<String>,
 }
 
-#[derive(Clone, Debug, Pack, Unpack)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Role {
     name: String,
     note: Option<String>,
     rules: Vec<Rule>,
 }
 
-#[derive(Clone, Debug, Pack, Unpack)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct RoleList {
     items: Vec<Role>,
     count: u32,

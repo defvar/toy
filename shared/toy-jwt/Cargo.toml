@@ -11,8 +11,6 @@ jsonwebtoken = "7"
 serde = {version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 thiserror = "1.0"
-toy-pack = {path = "../toy-pack"}
 toy-pack-json = {path = "../toy-pack-json"}
 
 [dev-dependencies]
-toy-pack-derive = {path = "../toy-pack-derive"}

@@ -1,7 +1,7 @@
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use toy_pack::{Pack, Unpack};
 
-#[derive(Clone, Copy, Debug, Pack, Unpack)]
+#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 pub enum Severity {
     DEFAULT,
     INFO,
@@ -9,21 +9,20 @@ pub enum Severity {
     ERROR,
 }
 
-#[derive(Clone, Debug, Pack, Unpack)]
-#[toy(ignore_pack_if_none)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Entry {
-    #[toy(rename = "logName")]
+    #[serde(rename = "logName")]
     log_name: String,
     resource: Resource,
     timestamp: Option<String>,
-    #[toy(rename = "receiveTimestamp")]
+    #[serde(rename = "receiveTimestamp")]
     receive_timestamp: Option<String>,
     severity: Option<Severity>,
-    #[toy(rename = "insertId")]
+    #[serde(rename = "insertId")]
     insert_id: Option<String>,
     labels: Option<HashMap<String, String>>,
     operation: Option<Operation>,
-    #[toy(rename = "jsonPayload")]
+    #[serde(rename = "jsonPayload")]
     json_payload: Option<HashMap<String, String>>,
 }
 
@@ -33,16 +32,14 @@ pub struct EntryBuilder {
     json_payload: HashMap<String, String>,
 }
 
-#[derive(Default, Clone, Debug, Pack, Unpack)]
-#[toy(ignore_pack_if_none)]
+#[derive(Default, Clone, Debug, Serialize, Deserialize)]
 pub struct Resource {
-    #[toy(rename = "type")]
+    #[serde(rename = "type")]
     tp: String,
     labels: Option<HashMap<String, String>>,
 }
 
-#[derive(Default, Clone, Debug, Pack, Unpack)]
-#[toy(ignore_pack_if_none)]
+#[derive(Default, Clone, Debug, Serialize, Deserialize)]
 pub struct Operation {
     id: Option<String>,
     producer: Option<String>,
@@ -50,12 +47,12 @@ pub struct Operation {
     last: Option<bool>,
 }
 
-#[derive(Default, Clone, Debug, Unpack)]
+#[derive(Default, Clone, Debug, Deserialize)]
 pub struct ErrorResponse {
     error: ErrorInfo,
 }
 
-#[derive(Default, Clone, Debug, Unpack)]
+#[derive(Default, Clone, Debug, Deserialize)]
 pub struct ErrorInfo {
     code: u32,
     message: String,
@@ -63,15 +60,15 @@ pub struct ErrorInfo {
     details: Vec<ErrorDetail>,
 }
 
-#[derive(Default, Clone, Debug, Unpack)]
+#[derive(Default, Clone, Debug, Deserialize)]
 pub struct ErrorDetail {
-    #[toy(rename = "@type")]
+    #[serde(rename = "@type")]
     tp: String,
-    #[toy(rename = "fieldViolations")]
+    #[serde(rename = "fieldViolations")]
     field_violations: Vec<FieldViolation>,
 }
 
-#[derive(Default, Clone, Debug, Unpack)]
+#[derive(Default, Clone, Debug, Deserialize)]
 pub struct FieldViolation {
     description: String,
 }
@@ -80,24 +77,23 @@ pub struct FieldViolation {
 // List
 ///////////////////////////////
 
-#[derive(Clone, Debug, Pack)]
-#[toy(ignore_pack_if_none)]
+#[derive(Clone, Debug, Serialize)]
 pub struct ListRequest {
-    #[toy(rename = "resourceNames")]
+    #[serde(rename = "resourceNames")]
     resource_names: Vec<String>,
     filter: Option<String>,
-    #[toy(rename = "orderBy")]
+    #[serde(rename = "orderBy")]
     order_by: Option<String>,
-    #[toy(rename = "pageSize")]
+    #[serde(rename = "pageSize")]
     page_size: Option<u32>,
-    #[toy(rename = "pageToken")]
+    #[serde(rename = "pageToken")]
     page_token: Option<String>,
 }
 
-#[derive(Clone, Debug, Unpack)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct ListResponse {
     entries: Vec<Entry>,
-    #[toy(rename = "nextPageToken")]
+    #[serde(rename = "nextPageToken")]
     next_page_token: Option<String>,
 }
 
@@ -105,63 +101,61 @@ pub struct ListResponse {
 // Write
 ///////////////////////////////
 
-#[derive(Clone, Debug, Pack)]
-#[toy(ignore_pack_if_none)]
+#[derive(Clone, Debug, Serialize)]
 pub struct WriteRequest {
-    #[toy(rename = "logName")]
+    #[serde(rename = "logName")]
     log_name: Option<String>,
     resource: Option<Resource>,
     labels: Option<HashMap<String, String>>,
     entries: Vec<Entry>,
-    #[toy(rename = "partialSuccess")]
+    #[serde(rename = "partialSuccess")]
     partial_success: Option<bool>,
-    #[toy(rename = "dryRun")]
+    #[serde(rename = "dryRun")]
     dry_run: Option<bool>,
 }
 
-#[derive(Clone, Debug, Unpack)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct WriteResponse;
 
 ///////////////////////////////
 // Tail
 ///////////////////////////////
-#[derive(Clone, Debug, Pack)]
-#[toy(ignore_pack_if_none)]
+#[derive(Clone, Debug, Serialize)]
 pub struct TailRequest {
-    #[toy(rename = "resourceNames")]
+    #[serde(rename = "resourceNames")]
     resource_names: Vec<String>,
     filter: Option<String>,
-    #[toy(rename = "bufferWindow")]
+    #[serde(rename = "bufferWindow")]
     buffer_window: Option<TailDuration>,
 }
 
-#[derive(Default, Clone, Debug, Pack)]
+#[derive(Default, Clone, Debug, Serialize)]
 pub struct TailDuration {
     seconds: u64,
     nanos: u32,
 }
 
-#[derive(Clone, Debug, Unpack)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct TailResponse {
     entries: Vec<Entry>,
-    #[toy(rename = "suppressionInfo")]
+    #[serde(rename = "suppressionInfo")]
     suppression_info: SuppressionInfo,
 }
 
-#[derive(Default, Clone, Debug, Unpack)]
+#[derive(Default, Clone, Debug, Deserialize)]
 pub struct SuppressionInfo {
     reason: SuppressionReason,
-    #[toy(rename = "suppressedCount")]
+    #[serde(rename = "suppressedCount")]
     suppressed_count: u32,
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Unpack)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Deserialize)]
 pub enum SuppressionReason {
-    #[toy(rename = "REASON_UNSPECIFIED")]
+    #[serde(rename = "REASON_UNSPECIFIED")]
     ReasonUnspecified,
-    #[toy(rename = "RATE_LIMIT")]
+    #[serde(rename = "RATE_LIMIT")]
     RateLimit,
-    #[toy(rename = "NOT_CONSUMED")]
+    #[serde(rename = "NOT_CONSUMED")]
     NotConsumed,
 }
 

@@ -1,34 +1,33 @@
 use crate::kv::{encode, get_range_end, Kv, ResponseHeader, Versioning};
+use serde::{Deserialize, Serialize};
 use toy_api_server::store::error::StoreError;
-use toy_pack::{Pack, Unpack};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Pack, Unpack)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum FilterType {
     NOPUT,
     NODELETE,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Pack, Unpack)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum EventType {
     PUT,
     DELETE,
 }
 
-#[derive(Debug, Unpack)]
+#[derive(Debug, Deserialize)]
 pub struct Event {
-    #[toy(rename = "type")]
+    #[serde(rename = "type")]
     tp: EventType,
     kv: Kv,
     prev_kv: Kv,
 }
 
-#[derive(Debug, Pack)]
+#[derive(Debug, Serialize)]
 pub struct WatchCreateRequest {
     create_request: WatchCreateRequestInner,
 }
 
-#[derive(Debug, Pack)]
-#[toy(ignore_pack_if_none)]
+#[derive(Debug, Serialize)]
 struct WatchCreateRequestInner {
     key: String,
     range_end: Option<String>,
@@ -38,17 +37,17 @@ struct WatchCreateRequestInner {
     prev_kv: Option<bool>,
 }
 
-#[derive(Debug, Pack)]
+#[derive(Debug, Serialize)]
 pub struct WatchCancelRequest {
     watch_id: u64,
 }
 
-#[derive(Debug, Unpack)]
+#[derive(Debug, Deserialize)]
 pub struct WatchResponse {
     result: Option<WatchResponseInner>,
 }
 
-#[derive(Debug, Unpack)]
+#[derive(Debug, Deserialize)]
 struct WatchResponseInner {
     header: ResponseHeader,
     watch_id: u64,

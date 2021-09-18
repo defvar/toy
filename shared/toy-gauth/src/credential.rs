@@ -1,10 +1,10 @@
 use crate::constants;
 use crate::error::GAuthError;
+use serde::Deserialize;
 use std::fs::File;
 use std::io::Read;
-use toy_pack::Unpack;
 
-#[derive(Debug, Clone, Unpack)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct Credential {
     client_email: String,
     private_key: String,

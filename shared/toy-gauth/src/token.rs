@@ -3,11 +3,11 @@ use crate::constants;
 use crate::credential::Credential;
 use crate::error::GAuthError;
 use crate::scope::Scope;
+use serde::Deserialize;
 use std::time::{SystemTime, UNIX_EPOCH};
 use toy_h::{HttpClient, RequestBuilder, Response, Uri};
-use toy_pack::Unpack;
 
-#[derive(Debug, Clone, Unpack)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct GToken {
     access_token: String,
     expires_in: u64,
@@ -28,7 +28,7 @@ impl GToken {
     }
 }
 
-#[derive(Debug, Clone, Unpack)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct GTokenError {
     error: String,
     error_description: String,

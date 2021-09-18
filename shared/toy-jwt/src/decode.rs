@@ -2,10 +2,9 @@ use crate::error::JWTError;
 use crate::header::Header;
 use crate::validation::Validation;
 use jsonwebtoken::DecodingKey;
-use std::collections::HashMap;
-use toy_pack::deser::DeserializableOwned;
+use serde::de::DeserializeOwned;
 
-pub fn from_rsa_pem<T: DeserializableOwned>(
+pub fn from_rsa_pem<T: DeserializeOwned>(
     token: &str,
     v: Validation,
     key: &[u8],
@@ -15,7 +14,7 @@ pub fn from_rsa_pem<T: DeserializableOwned>(
     claims(token, &key, v)
 }
 
-pub fn from_rsa_components<T: DeserializableOwned>(
+pub fn from_rsa_components<T: DeserializeOwned>(
     token: &str,
     v: Validation,
     modulus: &str,
@@ -46,17 +45,12 @@ fn header(token: &str, v: &Validation) -> Result<jsonwebtoken::Header, JWTError>
     Ok(h)
 }
 
-fn claims<T: DeserializableOwned>(
+fn claims<T: DeserializeOwned>(
     token: &str,
     key: &jsonwebtoken::DecodingKey,
     v: Validation,
 ) -> Result<T, JWTError> {
     let token_data =
-        jsonwebtoken::decode::<HashMap<String, serde_json::Value>>(token, &key, &v.convert())
-            .map_err(|e| JWTError::error(e))?;
-
-    let json = serde_json::to_string(&token_data.claims).map_err(|e| JWTError::error(e))?;
-    let r = toy_pack_json::unpack(json.as_bytes()).map_err(|e| JWTError::error(e))?;
-
-    Ok(r)
+        jsonwebtoken::decode::<T>(token, &key, &v.convert()).map_err(|e| JWTError::error(e))?;
+    Ok(token_data.claims)
 }

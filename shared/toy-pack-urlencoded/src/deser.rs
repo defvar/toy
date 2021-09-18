@@ -1,15 +1,14 @@
-use crate::deserializer::Parse;
 use crate::error::QueryParseError;
-use toy_pack::deser::Deserializable;
+use serde::Deserialize;
 
 /// Deserialize from byte slice.
 ///
 /// # Example
 ///
 /// ```
-/// # use toy_pack_derive::*;
+/// use serde::Deserialize;
 ///
-/// #[derive(Debug, PartialEq, Unpack)]
+/// #[derive(Debug, PartialEq, Deserialize)]
 /// struct User {
 ///   id: u32,
 ///   name: String
@@ -26,7 +25,7 @@ use toy_pack::deser::Deserializable;
 #[inline]
 pub fn unpack<'toy, T>(slice: &'toy [u8]) -> Result<T, QueryParseError>
 where
-    T: Deserializable<'toy>,
+    T: Deserialize<'toy>,
 {
-    T::deserialize(Parse::new(slice))
+    serde_urlencoded::from_bytes(slice).map_err(|e| QueryParseError::custom(e))
 }

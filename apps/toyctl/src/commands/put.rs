@@ -1,5 +1,6 @@
 use crate::error::Error;
 use crate::opts::PutCommand;
+use serde::de::DeserializeOwned;
 use std::fs::File;
 use std::io::Read;
 use std::io::Write;
@@ -8,7 +9,6 @@ use toy::api_client::client::{Rbaclient, RoleBindingClient, RoleClient};
 use toy::api_client::http::HttpApiClient;
 use toy::api_client::toy_api::common::PutOption;
 use toy::api_client::ApiClient;
-use toy_pack::deser::DeserializableOwned;
 
 pub async fn execute<W>(c: PutCommand, client: HttpApiClient, _writer: W) -> Result<(), Error>
 where
@@ -42,7 +42,7 @@ where
 
 fn from_file<T>(file: PathBuf) -> Result<T, Error>
 where
-    T: DeserializableOwned,
+    T: DeserializeOwned,
 {
     let mut f = File::open(file)?;
     let mut buffer = Vec::new();

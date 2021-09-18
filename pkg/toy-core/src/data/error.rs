@@ -4,7 +4,6 @@
 use crate::data::Value;
 use std::fmt::Display;
 use thiserror::Error as ThisError;
-use toy_pack::{deser, ser};
 
 #[derive(Debug, ThisError)]
 pub enum SerializeError {
@@ -53,7 +52,7 @@ impl SerializeError {
     }
 }
 
-impl ser::Error for SerializeError {
+impl serde::ser::Error for SerializeError {
     fn custom<T>(msg: T) -> Self
     where
         T: Display,
@@ -72,18 +71,18 @@ impl DeserializeError {
         }
     }
 
-    pub fn invalid_type<T>(expected: T, v: Value) -> DeserializeError
+    pub fn invalid_type<T>(expected: T, v: &Value) -> DeserializeError
     where
         T: Display,
     {
         DeserializeError::InvalidType {
             expected: expected.to_string(),
-            candidate: v,
+            candidate: v.clone(),
         }
     }
 }
 
-impl deser::Error for DeserializeError {
+impl serde::de::Error for DeserializeError {
     fn custom<T>(msg: T) -> Self
     where
         T: Display,

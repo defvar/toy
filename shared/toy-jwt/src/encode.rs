@@ -1,9 +1,9 @@
 use crate::algorithm::Algorithm;
 use crate::error::JWTError;
+use serde::Serialize;
 use std::collections::HashMap;
-use toy_pack::ser::Serializable;
 
-pub fn from_rsa_pem<T: Serializable>(
+pub fn from_rsa_pem<T: Serialize>(
     claims: &T,
     alg: Algorithm,
     kid: Option<String>,

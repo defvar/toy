@@ -31,18 +31,12 @@ pub struct HttpApiClient {
     sv: HttpSupervisorClient<ReqwestClient>,
     service: HttpServiceClient<ReqwestClient>,
     rbac: HttpRbacClient,
-
-    root: String,
-    auth: Arc<Auth>,
-    inner: ReqwestClient,
 }
 
 #[derive(Debug, Clone)]
 pub struct HttpRbacClient {
     role: HttpRoleClient<ReqwestClient>,
     role_binding: HttpRoleBindingClient<ReqwestClient>,
-
-    auth: Arc<Auth>,
 }
 
 impl HttpApiClient {
@@ -64,9 +58,6 @@ impl HttpApiClient {
             sv: HttpSupervisorClient::new(root.as_ref(), Arc::clone(&auth), inner.clone()),
             service: HttpServiceClient::new(root.as_ref(), Arc::clone(&auth), inner.clone()),
             rbac,
-            root: root.as_ref().to_string(),
-            auth,
-            inner: inner.clone(),
         })
     }
 }
@@ -84,7 +75,6 @@ impl HttpRbacClient {
                 Arc::clone(&auth),
                 inner.clone(),
             ),
-            auth,
         })
     }
 }

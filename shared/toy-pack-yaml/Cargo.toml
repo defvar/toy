@@ -6,9 +6,8 @@ edition = "2018"
 
 [dependencies]
 thiserror = "1.0"
-yaml-rust = "0.4"
-toy-pack = {path = "../toy-pack"}
-ryu = "1.0"
+serde = { version = "1.0" }
+serde_yaml = "0.8"
 
 [dev-dependencies]
-toy-pack-derive = {path = "../toy-pack-derive"}
+serde = { version = "1.0", features = ["derive"] }

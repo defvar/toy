@@ -3,11 +3,11 @@ use crate::store::error::StoreError;
 use crate::store::kv;
 use crate::store::kv::{Delete, DeleteResult, Find, KvStore, List, Put};
 use crate::{common, ApiError};
+use serde::de::DeserializeOwned;
+use serde::Serialize;
 use std::convert::Infallible;
 use toy_api::common::{DeleteOption, FindOption, ListOption, PutOption};
 use toy_h::{Bytes, HttpClient};
-use toy_pack::deser::DeserializableOwned;
-use toy_pack::ser::Serializable;
 use warp::http::StatusCode;
 use warp::reply::Reply;
 
@@ -23,8 +23,8 @@ where
     Store: KvStore<H>,
     H: HttpClient,
     F: FnOnce(V) -> R,
-    V: DeserializableOwned,
-    R: Serializable,
+    V: DeserializeOwned,
+    R: Serialize,
 {
     tracing::trace!("handle: {:?}", ctx);
     match store
@@ -60,8 +60,8 @@ where
     Store: KvStore<H>,
     H: HttpClient,
     F: FnOnce(Vec<V>) -> R,
-    V: DeserializableOwned,
-    R: Serializable,
+    V: DeserializeOwned,
+    R: Serialize,
 {
     tracing::trace!("handle: {:?}", ctx);
     match store
@@ -94,8 +94,8 @@ pub async fn put<H, Store, Req, V, F>(
 where
     Store: KvStore<H>,
     H: HttpClient,
-    Req: DeserializableOwned + Send,
-    V: Serializable + Send,
+    Req: DeserializeOwned + Send,
+    V: Serialize + Send,
     F: FnOnce(&Context, &Store, Req) -> Result<V, ApiError>,
 {
     tracing::trace!("handle: {:?}", ctx);

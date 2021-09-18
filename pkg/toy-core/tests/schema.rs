@@ -1,12 +1,12 @@
+use serde::Serialize;
 use std::collections::HashMap;
 use toy_core::data::schema::visitors::*;
 use toy_core::data::schema::JsonSchema;
 use toy_pack::{schema::to_schema, Schema};
-use toy_pack_derive::*;
 
 #[test]
 fn schema_struct() {
-    #[derive(Debug, Pack, Schema)]
+    #[derive(Debug, Serialize, Schema)]
     struct Dum {
         v_u8: u8,
         v_u64: u64,
@@ -19,7 +19,7 @@ fn schema_struct() {
         abc: ABC,
     }
 
-    #[derive(Debug, Pack, Schema)]
+    #[derive(Debug, Serialize, Schema)]
     enum ABC {
         _A,
         _B(u32, u32),

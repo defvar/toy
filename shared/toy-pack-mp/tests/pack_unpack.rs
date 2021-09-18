@@ -1,5 +1,5 @@
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use toy_pack_derive::*;
 use toy_pack_mp::{pack, unpack};
 
 #[test]
@@ -78,8 +78,7 @@ fn struct_variant() {
 
 #[test]
 fn ignore_if_none() {
-    #[derive(Debug, PartialEq, Eq, Pack, Unpack)]
-    #[toy(ignore_pack_if_none)]
+    #[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
     struct Test {
         a: Option<String>,
         b: bool,
@@ -95,8 +94,7 @@ fn ignore_if_none() {
 
 #[test]
 fn ignore_if_none_all() {
-    #[derive(Debug, Clone, PartialEq, Eq, Pack, Unpack)]
-    #[toy(ignore_pack_if_none)]
+    #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
     struct Test {
         a: Option<String>,
         b: Option<String>,
@@ -112,8 +110,7 @@ fn ignore_if_none_all() {
 
 #[test]
 fn skip_none_struct() {
-    #[derive(Debug, Clone, PartialEq, Pack, Unpack)]
-    #[toy(ignore_pack_if_none)]
+    #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
     struct Test {
         b: Option<HashMap<String, u32>>,
     }
@@ -134,7 +131,7 @@ fn skip_none_struct() {
 }
 
 //enum pattern ///////////////////////////////////////////////
-#[derive(Debug, PartialEq, Eq, Pack, Unpack)]
+#[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
 enum TestEnum {
     //unit variant
     A,
@@ -153,7 +150,7 @@ impl Default for TestEnum {
 }
 
 //struct pattern ///////////////////////////////////////////////
-#[derive(Debug, PartialEq, Pack, Unpack)]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 struct Dum<'a> {
     v_u32: u32,
     v_f32: f32,
@@ -162,7 +159,7 @@ struct Dum<'a> {
     borrowed_name: &'a str,
 }
 
-#[derive(Debug, PartialEq, Pack)]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 struct DumPlusOne<'a> {
     v_u32: u32,
     v_f32: f32,

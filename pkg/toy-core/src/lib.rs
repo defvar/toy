@@ -34,14 +34,14 @@ pub mod prelude {
     pub use super::error::ServiceError;
     pub use super::graph::Graph;
     pub use super::mpsc::{Incoming, Outgoing};
-    pub use super::registry::{
-        app, plugin, App, Layered, Plugin, PluginRegistry, PortType, Registry,
+    pub use super::registry::{app, plugin, App, Layered, PortType, Registry};
+    pub use super::service::{
+        FlowPort, Service, ServiceContext, ServiceFactory, SinkPort, SourcePort,
     };
-    pub use super::service::{Service, ServiceContext, ServiceFactory};
     pub use super::service_type::ServiceType;
     pub use super::service_uri::Uri;
     pub use super::task::{TaskContext, TaskId};
     pub use super::{factory, map_value, seq_value};
     #[doc(hidden)]
-    pub use toy_pack::deser::from_primitive::FromPrimitive;
+    pub use toy_pack::FromPrimitive;
 }

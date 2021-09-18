@@ -1,8 +1,8 @@
 use crate::ApiError;
 use futures_util::stream::Stream;
+use serde::Serialize;
 use std::marker::PhantomData;
 use toy_api::common::Format;
-use toy_pack::ser::Serializable;
 use warp::http::header::{HeaderValue, CACHE_CONTROL, CONTENT_TYPE, TRANSFER_ENCODING};
 use warp::http::StatusCode;
 use warp::hyper::body::Bytes;
@@ -11,7 +11,7 @@ use warp::reply::Response;
 
 pub fn into_response<T>(v: &T, format: Option<Format>, pretty: Option<bool>) -> Response
 where
-    T: Serializable,
+    T: Serialize,
 {
     let format = format.unwrap_or(Format::default());
     match format {
@@ -36,7 +36,7 @@ where
 
 pub fn encode<T>(v: &T, format: Option<Format>, pretty: Option<bool>) -> Result<Bytes, ApiError>
 where
-    T: Serializable,
+    T: Serialize,
 {
     let format = format.unwrap_or_default();
     match format {
@@ -57,37 +57,37 @@ where
 
 fn mp<T>(v: &T) -> Mp
 where
-    T: Serializable,
+    T: Serialize,
 {
     Mp {
         inner: toy_pack_mp::pack(v)
-            .map_err(|e| tracing::error!("reply::message pack error: {}", e)),
+            .map_err(|e| tracing::error!("reply::message pack error: {:?}", e)),
     }
 }
 
 fn yaml<T>(v: &T) -> Yaml
 where
-    T: Serializable,
+    T: Serialize,
 {
     Yaml {
         inner: toy_pack_yaml::pack_to_string(v)
-            .map_err(|e| tracing::error!("reply::yaml error: {}", e)),
+            .map_err(|e| tracing::error!("reply::yaml error: {:?}", e)),
     }
 }
 
 fn json<T>(v: &T, pretty: Option<bool>) -> Json
 where
-    T: Serializable,
+    T: Serialize,
 {
     if pretty.is_some() && pretty.unwrap() {
         Json {
             inner: toy_pack_json::pack_to_string_pretty(v)
-                .map_err(|e| tracing::error!("reply::json error: {}", e)),
+                .map_err(|e| tracing::error!("reply::json error: {:?}", e)),
         }
     } else {
         Json {
             inner: toy_pack_json::pack_to_string(v)
-                .map_err(|e| tracing::error!("reply::json error: {}", e)),
+                .map_err(|e| tracing::error!("reply::json error: {:?}", e)),
         }
     }
 }

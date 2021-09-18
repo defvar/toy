@@ -1,7 +1,7 @@
 use std::ops::Deref;
 use std::str;
 
-use toy_pack::deser::from_primitive::FromPrimitive;
+use toy_pack::FromPrimitive;
 
 use crate::marker::Marker;
 

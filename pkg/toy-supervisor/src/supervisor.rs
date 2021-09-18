@@ -6,6 +6,7 @@ use core::future::Future;
 use core::pin::Pin;
 use core::task::{Context, Poll};
 use std::collections::HashMap;
+use std::fmt::Formatter;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use toy_api::common::PutOption;
@@ -17,107 +18,71 @@ use toy_core::error::ServiceError;
 use toy_core::executor::{TaskExecutor, TaskExecutorFactory};
 use toy_core::graph::Graph;
 use toy_core::mpsc::{self, Incoming, Outgoing};
-use toy_core::registry::{App, Delegator, Registry};
+use toy_core::registry::{App, Registry, ServiceSchema};
 use toy_core::task::{TaskContext, TaskId};
 
-pub fn local<TF, O, P>(
+pub fn local<TF, P>(
     factory: TF,
-    app: App<O, P>,
+    app: App<P>,
 ) -> (
-    Supervisor<TF, O, P, NoopApiClient>,
+    Supervisor<TF, P, NoopApiClient>,
     Outgoing<Request, ServiceError>,
     Incoming<(), ServiceError>,
 )
 where
     TF: TaskExecutorFactory + Send,
-    O: Delegator<Request = Frame, Error = ServiceError, InitError = ServiceError>
-        + Registry
-        + Clone
-        + Send
-        + 'static,
-    P: Delegator<Request = Frame, Error = ServiceError, InitError = ServiceError>
-        + Registry
-        + Clone
-        + Send
-        + 'static,
+    P: Registry + 'static,
 {
     Supervisor::new("local-supervisor", factory, app, None)
 }
 
-pub fn subscribe<S, TF, O, P, C>(
+pub fn subscribe<S, TF, P, C>(
     name: S,
     factory: TF,
-    app: App<O, P>,
+    app: App<P>,
     client: C,
 ) -> (
-    Supervisor<TF, O, P, C>,
+    Supervisor<TF, P, C>,
     Outgoing<Request, ServiceError>,
     Incoming<(), ServiceError>,
 )
 where
     S: Into<String>,
     TF: TaskExecutorFactory + Send,
-    O: Delegator<Request = Frame, Error = ServiceError, InitError = ServiceError>
-        + Registry
-        + Clone
-        + Send
-        + 'static,
-    P: Delegator<Request = Frame, Error = ServiceError, InitError = ServiceError>
-        + Registry
-        + Clone
-        + Send
-        + 'static,
+    P: Registry + 'static,
     C: ApiClient + Clone + Send + Sync + 'static,
 {
     Supervisor::new(name, factory, app, Some(client))
 }
 
-#[derive(Debug)]
-pub struct Supervisor<TF, O, P, C> {
+pub struct Supervisor<TF, P, C> {
     name: String,
-
-    factory: TF,
-
-    app: App<O, P>,
-
+    _factory: TF,
+    app: App<P>,
     client: Option<C>,
-
     /// receive any request.
     rx: Incoming<Request, ServiceError>,
-
     /// send shutdown.
     tx: Outgoing<(), ServiceError>,
-
     /// use watcher.
     tx_watcher: Outgoing<Request, ServiceError>,
-
     tasks: Arc<Mutex<HashMap<TaskId, RunningTask>>>,
-
     started_at: Option<DateTime<Utc>>,
 }
 
-impl<TF, O, P, C> Supervisor<TF, O, P, C>
+impl<TF, P, C> Supervisor<TF, P, C>
 where
     TF: TaskExecutorFactory + Send,
-    O: Delegator<Request = Frame, Error = ServiceError, InitError = ServiceError>
-        + Registry
-        + Clone
-        + Send
-        + 'static,
-    P: Delegator<Request = Frame, Error = ServiceError, InitError = ServiceError>
-        + Registry
-        + Clone
-        + Send
-        + 'static,
+    P: Registry + 'static,
     C: ApiClient + Clone + Send + Sync + 'static,
 {
     fn new<S: Into<String>>(
         name: S,
         factory: TF,
-        app: App<O, P>,
+        app: App<P>,
         client: Option<C>,
     ) -> (
-        Supervisor<TF, O, P, C>,
+        Supervisor<TF, P, C>,
         Outgoing<Request, ServiceError>,
         Incoming<(), ServiceError>,
     ) {
@@ -126,7 +91,7 @@ where
         (
             Supervisor {
                 name: name.into(),
-                factory,
+                _factory: factory,
                 app,
                 client,
                 rx: rx_req,
@@ -141,6 +106,8 @@ where
     }
 
     pub async fn oneshot(self, g: Graph) -> Result<RunTaskResponse, ServiceError> {
+        tracing::info!("oneshot supervisor");
+
         let id = TaskId::new();
         let ctx = TaskContext::new(id, g);
         let (e, _) = TF::new(ctx.clone());
@@ -153,7 +120,7 @@ where
         tracing::info!("start supervisor");
 
         self.started_at = Some(Utc::now());
-        if let Err(_) = self.register().await {
+        if let Err(_) = self.register(self.app.schemas()).await {
             return Err(());
         }
 
@@ -255,7 +222,7 @@ where
         });
     }
 
-    async fn register(&self) -> Result<(), ()> {
+    async fn register(&self, schemas: Vec<ServiceSchema>) -> Result<(), ()> {
         if self.client.is_none() {
             return Ok(());
         }
@@ -273,9 +240,7 @@ where
             return Err(());
         }
 
-        let specs = self
-            .app
-            .schemas()
+        let specs = schemas
             .iter()
             .map(|x| {
                 ServiceSpec::new(
@@ -319,6 +284,20 @@ async fn send_stop_signal(task: &mut RunningTask) {
         }
     }
     tracing::info!(uuid = ?task.id(), "send stop signal to task.");
+}
+
+impl<TF, P, C> std::fmt::Debug for Supervisor<TF, P, C> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let mode = if self.client.is_none() {
+            "local"
+        } else {
+            "subscribe"
+        };
+        f.debug_struct("Supervisor")
+            .field("name", &self.name)
+            .field("mode", &mode)
+            .finish()
+    }
 }
 
 struct Shutdown {

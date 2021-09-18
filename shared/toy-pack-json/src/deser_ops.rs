@@ -1,10 +1,8 @@
-use toy_pack::deser::{
-    DeserializableCore, DeserializeMapOps, DeserializeSeqOps, DeserializeVariantOps, Visitor,
-};
-
-use crate::decode::{Reference, Token};
-
 use super::decode::{DecodeError, Decoder, Reader};
+use crate::decode::Token;
+use serde::de::{
+    DeserializeSeed, EnumAccess, MapAccess, SeqAccess, Unexpected, VariantAccess, Visitor,
+};
 
 pub struct DeserializeSeq<'a, B: 'a> {
     de: &'a mut Decoder<B>,
@@ -17,15 +15,15 @@ impl<'a, B: 'a> DeserializeSeq<'a, B> {
     }
 }
 
-impl<'toy, 'a, B> DeserializeSeqOps<'toy> for DeserializeSeq<'a, B>
+impl<'toy, 'a, B> SeqAccess<'toy> for DeserializeSeq<'a, B>
 where
     B: Reader<'toy> + 'a,
 {
     type Error = DecodeError;
 
-    fn next_core<T>(&mut self, core: T) -> Result<Option<T::Value>, Self::Error>
+    fn next_element_seed<T>(&mut self, seed: T) -> Result<Option<T::Value>, Self::Error>
     where
-        T: DeserializableCore<'toy>,
+        T: DeserializeSeed<'toy>,
     {
         let b = match self.de.peek_until()? {
             Some(b']') => return Ok(None),
@@ -46,7 +44,7 @@ where
 
         match b {
             Some(b']') => Err(DecodeError::trailing_comma(self.de.position())),
-            Some(_) => core.deserialize(&mut *self.de).map(Some),
+            Some(_) => seed.deserialize(&mut *self.de).map(Some),
             None => Err(DecodeError::eof_while_parsing_value()),
         }
     }
@@ -67,51 +65,15 @@ impl<'a, B: 'a> DeserializeMap<'a, B> {
     }
 }
 
-impl<'toy, 'a, B> DeserializeMapOps<'toy> for DeserializeMap<'a, B>
+impl<'toy, 'a, B> MapAccess<'toy> for DeserializeMap<'a, B>
 where
     B: Reader<'toy> + 'a,
 {
     type Error = DecodeError;
 
-    fn next_identifier<V>(&mut self, visitor: V) -> Result<Option<V::Value>, Self::Error>
+    fn next_key_seed<K>(&mut self, seed: K) -> Result<Option<K::Value>, Self::Error>
     where
-        V: Visitor<'toy>,
-    {
-        let b = match self.de.peek_until()? {
-            Some(b'}') => return Ok(None),
-            Some(b',') if !self.first => {
-                self.de.consume();
-                self.de.peek_until()?
-            }
-            Some(b) => {
-                if self.first {
-                    self.first = false;
-                    Some(b)
-                } else {
-                    return Err(DecodeError::object_comma_or_end(self.de.position()));
-                }
-            }
-            None => return Err(DecodeError::eof_while_parsing_value()),
-        };
-
-        match b {
-            Some(b'}') => Err(DecodeError::trailing_comma(self.de.position())),
-            Some(b'"') => {
-                let mut buf = Vec::new();
-                match self.de.decode_str(&mut buf)? {
-                    Reference::Borrowed(b) => visitor.visit_borrowed_str::<DecodeError>(b),
-                    Reference::Copied(b) => visitor.visit_str::<DecodeError>(b),
-                }
-                .map(Some)
-            }
-            Some(_) => Err(DecodeError::key_must_be_a_string(self.de.position())),
-            None => Err(DecodeError::eof_while_parsing_value()),
-        }
-    }
-
-    fn next_key_core<T>(&mut self, core: T) -> Result<Option<T::Value>, Self::Error>
-    where
-        T: DeserializableCore<'toy>,
+        K: DeserializeSeed<'toy>,
     {
         let b = match self.de.peek_token()? {
             Some(Token::EndObject) => return Ok(None),
@@ -132,20 +94,20 @@ where
 
         match b {
             Some(Token::EndObject) => Err(DecodeError::trailing_comma(self.de.position())),
-            Some(Token::String) => core.deserialize(&mut *self.de).map(Some),
+            Some(Token::String) => seed.deserialize(&mut *self.de).map(Some),
             Some(_) => Err(DecodeError::key_must_be_a_string(self.de.position())),
             None => Err(DecodeError::eof_while_parsing_value()),
         }
     }
 
-    fn next_value_core<T>(&mut self, core: T) -> Result<T::Value, Self::Error>
+    fn next_value_seed<V>(&mut self, seed: V) -> Result<V::Value, Self::Error>
     where
-        T: DeserializableCore<'toy>,
+        V: DeserializeSeed<'toy>,
     {
         match self.de.peek_token()? {
             Some(Token::Colon) => {
                 self.de.consume();
-                core.deserialize(&mut *self.de)
+                seed.deserialize(&mut *self.de)
             }
             Some(_) => Err(DecodeError::expected_colon(self.de.position())),
             None => Err(DecodeError::eof_while_parsing_value()),
@@ -157,123 +119,142 @@ where
     }
 }
 
-pub struct DeserializeVarinat<'a, B: 'a> {
+pub struct DeserializeVariant<'a, B: 'a> {
     de: &'a mut Decoder<B>,
 }
 
-impl<'a, B: 'a> DeserializeVarinat<'a, B> {
+pub struct DeserializeUnitVariant<'a, B: 'a> {
+    de: &'a mut Decoder<B>,
+}
+
+impl<'a, B: 'a> DeserializeVariant<'a, B> {
     pub fn new(de: &'a mut Decoder<B>) -> Self {
         Self { de }
     }
 }
 
-impl<'toy, 'a, B> DeserializeVariantOps<'toy> for DeserializeVarinat<'a, B>
+impl<'a, B: 'a> DeserializeUnitVariant<'a, B> {
+    pub fn new(de: &'a mut Decoder<B>) -> Self {
+        Self { de }
+    }
+}
+
+impl<'toy, 'a, B> VariantAccess<'toy> for DeserializeVariant<'a, B>
 where
     B: Reader<'toy> + 'a,
 {
     type Error = DecodeError;
 
-    fn variant_identifier<V>(self, visitor: V) -> Result<(V::Value, Self), Self::Error>
+    fn unit_variant(self) -> Result<(), Self::Error> {
+        serde::de::Deserialize::deserialize(self.de)
+    }
+
+    fn newtype_variant_seed<T>(self, seed: T) -> Result<T::Value, Self::Error>
+    where
+        T: DeserializeSeed<'toy>,
+    {
+        seed.deserialize(self.de)
+    }
+
+    fn tuple_variant<V>(self, _len: usize, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: Visitor<'toy>,
     {
-        let mut buf = Vec::new();
-        let s = match self.de.decode_str(&mut buf)? {
-            Reference::Borrowed(b) => visitor.visit_borrowed_str::<DecodeError>(b),
-            Reference::Copied(c) => visitor.visit_str::<DecodeError>(c),
-        }?;
+        serde::de::Deserializer::deserialize_seq(self.de, visitor)
+    }
+
+    fn struct_variant<V>(
+        self,
+        _fields: &'static [&'static str],
+        visitor: V,
+    ) -> Result<V::Value, Self::Error>
+    where
+        V: Visitor<'toy>,
+    {
+        serde::de::Deserializer::deserialize_struct(self.de, "", _fields, visitor)
+    }
+}
+
+impl<'toy, 'a, B> EnumAccess<'toy> for DeserializeVariant<'a, B>
+where
+    B: Reader<'toy> + 'a,
+{
+    type Error = DecodeError;
+    type Variant = Self;
+
+    fn variant_seed<V>(self, seed: V) -> Result<(V::Value, Self::Variant), Self::Error>
+    where
+        V: DeserializeSeed<'toy>,
+    {
+        let val = seed.deserialize(&mut *self.de)?;
         match self.de.peek_token()? {
             Some(Token::Colon) => {
                 self.de.consume();
             }
             Some(_) => return Err(DecodeError::expected_colon(self.de.position())),
             None => return Err(DecodeError::eof_while_parsing_value()),
-        }
-        Ok((s, self))
-    }
-
-    fn unit_variant(self) -> Result<(), Self::Error> {
-        Ok(())
-    }
-
-    fn newtype_variant_core<T>(self, core: T) -> Result<T::Value, Self::Error>
-    where
-        T: DeserializableCore<'toy>,
-    {
-        core.deserialize(self.de)
-    }
-
-    fn tuple_variant<V>(self, visitor: V) -> Result<V::Value, Self::Error>
-    where
-        V: Visitor<'toy>,
-    {
-        toy_pack::deser::Deserializer::deserialize_seq(self.de, visitor)
-    }
-
-    fn struct_variant<V>(self, visitor: V) -> Result<<V as Visitor<'toy>>::Value, Self::Error>
-    where
-        V: Visitor<'toy>,
-    {
-        toy_pack::deser::Deserializer::deserialize_struct(self.de, visitor)
+        };
+        Ok((val, self))
     }
 }
 
-pub struct DeserializeUnitVarinat<'a, B: 'a> {
-    de: &'a mut Decoder<B>,
-}
-
-impl<'a, B: 'a> DeserializeUnitVarinat<'a, B> {
-    pub fn new(de: &'a mut Decoder<B>) -> Self {
-        Self { de }
-    }
-}
-
-impl<'toy, 'a, B> DeserializeVariantOps<'toy> for DeserializeUnitVarinat<'a, B>
+impl<'toy, 'a, B> VariantAccess<'toy> for DeserializeUnitVariant<'a, B>
 where
     B: Reader<'toy> + 'a,
 {
     type Error = DecodeError;
 
-    fn variant_identifier<V>(
-        self,
-        visitor: V,
-    ) -> Result<(<V as Visitor<'toy>>::Value, Self), Self::Error>
-    where
-        V: Visitor<'toy>,
-    {
-        let mut buf = Vec::new();
-        let s = match self.de.decode_str(&mut buf)? {
-            Reference::Borrowed(b) => visitor.visit_borrowed_str::<DecodeError>(b),
-            Reference::Copied(c) => visitor.visit_str::<DecodeError>(c),
-        }?;
-        Ok((s, self))
-    }
-
     fn unit_variant(self) -> Result<(), Self::Error> {
         Ok(())
     }
 
-    fn newtype_variant_core<T>(
+    fn newtype_variant_seed<T>(self, _seed: T) -> Result<T::Value, Self::Error>
+    where
+        T: DeserializeSeed<'toy>,
+    {
+        Err(serde::de::Error::invalid_type(
+            Unexpected::UnitVariant,
+            &"newtype variant",
+        ))
+    }
+
+    fn tuple_variant<V>(self, _len: usize, _visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: Visitor<'toy>,
+    {
+        Err(serde::de::Error::invalid_type(
+            Unexpected::UnitVariant,
+            &"tuple variant",
+        ))
+    }
+
+    fn struct_variant<V>(
         self,
-        _core: T,
-    ) -> Result<<T as DeserializableCore<'toy>>::Value, Self::Error>
-    where
-        T: DeserializableCore<'toy>,
-    {
-        unreachable!()
-    }
-
-    fn tuple_variant<V>(self, _visitor: V) -> Result<<V as Visitor<'toy>>::Value, Self::Error>
+        _fields: &'static [&'static str],
+        _visitor: V,
+    ) -> Result<V::Value, Self::Error>
     where
         V: Visitor<'toy>,
     {
-        unreachable!()
+        Err(serde::de::Error::invalid_type(
+            Unexpected::UnitVariant,
+            &"struct variant",
+        ))
     }
+}
 
-    fn struct_variant<V>(self, _visitor: V) -> Result<<V as Visitor<'toy>>::Value, Self::Error>
+impl<'toy, 'a, B> EnumAccess<'toy> for DeserializeUnitVariant<'a, B>
+where
+    B: Reader<'toy> + 'a,
+{
+    type Error = DecodeError;
+    type Variant = Self;
+
+    fn variant_seed<V>(self, seed: V) -> Result<(V::Value, Self::Variant), Self::Error>
     where
-        V: Visitor<'toy>,
+        V: DeserializeSeed<'toy>,
     {
-        unreachable!()
+        let v = seed.deserialize(&mut *self.de)?;
+        Ok((v, self))
     }
 }

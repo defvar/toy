@@ -8,13 +8,12 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use toy_h::{header, HttpClient, RequestBuilder, Response, Uri};
-use toy_pack::Unpack;
 
 thread_local! {
   static KEYS: RefCell<KeyCache> = RefCell::new(KeyCache::new());
 }
 
-#[derive(Debug, Deserialize, Unpack)]
+#[derive(Debug, Deserialize)]
 struct KeysResponse {
     keys: Vec<JWK>,
 }

@@ -1,8 +1,8 @@
+use serde::{Deserialize, Serialize};
 use std::time::{SystemTime, UNIX_EPOCH};
 use toy_jwt::{Algorithm, Validation};
-use toy_pack_derive::{Pack, Unpack};
 
-#[derive(Debug, Eq, PartialEq, Pack, Unpack)]
+#[derive(Debug, Eq, PartialEq, Serialize, Deserialize)]
 struct Calims {
     sub: String,
     company: String,

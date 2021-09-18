@@ -1,57 +1,55 @@
 use crate::data::Map;
-use toy_pack::deser::{Deserializable, Deserializer, Error, Visitor};
-use toy_pack::ser::{Serializable, Serializer};
-use toy_pack::{Pack, Unpack};
+use serde::{de::Error, de::Visitor, Deserialize, Deserializer, Serialize, Serializer};
+use std::fmt::Formatter;
 
 /// JsonSchema Object Type.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Pack, Unpack)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum SchemaTypes {
-    #[toy(rename = "array")]
+    #[serde(rename = "array")]
     Array,
-    #[toy(rename = "boolean")]
+    #[serde(rename = "boolean")]
     Boolean,
-    #[toy(rename = "integer")]
+    #[serde(rename = "integer")]
     Integer,
-    #[toy(rename = "null")]
+    #[serde(rename = "null")]
     Null,
-    #[toy(rename = "number")]
+    #[serde(rename = "number")]
     Number,
-    #[toy(rename = "object")]
+    #[serde(rename = "object")]
     Object,
-    #[toy(rename = "string")]
+    #[serde(rename = "string")]
     String,
 }
 
 /// JsonSchema Structure.
-#[derive(Clone, Debug, Pack, Unpack)]
-#[toy(ignore_pack_if_none)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct JsonSchema {
-    #[toy(rename = "$id")]
+    #[serde(rename = "$id")]
     pub(crate) id: Option<String>,
     pub(crate) title: Option<String>,
     pub(crate) properties: Option<Map<String, JsonSchema>>,
     pub(crate) items: Option<Vec<JsonSchema>>,
     pub(crate) required: Option<Vec<String>>,
-    #[toy(rename = "type")]
+    #[serde(rename = "type")]
     pub(crate) tp: Option<SchemaTypes>,
 
-    #[toy(rename = "oneOf")]
+    #[serde(rename = "oneOf")]
     pub(crate) one_of: Option<Vec<JsonSchema>>,
-    #[toy(rename = "const")]
+    #[serde(rename = "const")]
     pub(crate) const_: Option<String>,
 
-    #[toy(rename = "additionalProperties")]
+    #[serde(rename = "additionalProperties")]
     pub(crate) additional_properties: Option<Box<JsonSchema>>,
 
     pub(crate) minimum: Option<RangeValue>,
     pub(crate) maximum: Option<RangeValue>,
 
-    #[toy(rename = "minLength")]
+    #[serde(rename = "minLength")]
     pub(crate) min_length: Option<u64>,
-    #[toy(rename = "maxLength")]
+    #[serde(rename = "maxLength")]
     pub(crate) max_length: Option<u64>,
 
-    #[toy(ignore)]
+    #[serde(skip)]
     pub(crate) is_optional: bool,
 }
 
@@ -118,7 +116,7 @@ pub enum RangeValue {
     F64(f64),
 }
 
-impl Serializable for RangeValue {
+impl Serialize for RangeValue {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -135,32 +133,8 @@ struct RangeValueVisitor;
 
 impl<'a> Visitor<'a> for RangeValueVisitor {
     type Value = RangeValue;
-    fn visit_u8<E>(self, v: u8) -> Result<Self::Value, E>
-    where
-        E: Error,
-    {
-        Ok(RangeValue::U64(v as u64))
-    }
-
-    fn visit_u16<E>(self, v: u16) -> Result<Self::Value, E>
-    where
-        E: Error,
-    {
-        Ok(RangeValue::U64(v as u64))
-    }
-
-    fn visit_u32<E>(self, v: u32) -> Result<Self::Value, E>
-    where
-        E: Error,
-    {
-        Ok(RangeValue::U64(v as u64))
-    }
-
-    fn visit_u64<E>(self, v: u64) -> Result<Self::Value, E>
-    where
-        E: Error,
-    {
-        Ok(RangeValue::U64(v as u64))
+    fn expecting(&self, formatter: &mut Formatter) -> std::fmt::Result {
+        formatter.write_str("RangeValue")
     }
 
     fn visit_i8<E>(self, v: i8) -> Result<Self::Value, E>
@@ -191,6 +165,34 @@ impl<'a> Visitor<'a> for RangeValueVisitor {
         Ok(RangeValue::I64(v as i64))
     }
 
+    fn visit_u8<E>(self, v: u8) -> Result<Self::Value, E>
+    where
+        E: Error,
+    {
+        Ok(RangeValue::U64(v as u64))
+    }
+
+    fn visit_u16<E>(self, v: u16) -> Result<Self::Value, E>
+    where
+        E: Error,
+    {
+        Ok(RangeValue::U64(v as u64))
+    }
+
+    fn visit_u32<E>(self, v: u32) -> Result<Self::Value, E>
+    where
+        E: Error,
+    {
+        Ok(RangeValue::U64(v as u64))
+    }
+
+    fn visit_u64<E>(self, v: u64) -> Result<Self::Value, E>
+    where
+        E: Error,
+    {
+        Ok(RangeValue::U64(v as u64))
+    }
+
     fn visit_f32<E>(self, v: f32) -> Result<Self::Value, E>
     where
         E: Error,
@@ -206,7 +208,7 @@ impl<'a> Visitor<'a> for RangeValueVisitor {
     }
 }
 
-impl<'toy> Deserializable<'toy> for RangeValue {
+impl<'toy> Deserialize<'toy> for RangeValue {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'toy>,

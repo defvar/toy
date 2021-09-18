@@ -1,6 +1,6 @@
+use serde::{Deserialize, Serialize};
 use toy_core::data::{self, Map, Value};
 use toy_core::{map_value, seq_value};
-use toy_pack_derive::*;
 
 #[test]
 fn ser_empty_map() {
@@ -12,7 +12,7 @@ fn ser_empty_map() {
 
 #[test]
 fn ser_tuple_variant() {
-    #[derive(Pack, Unpack, PartialEq, Debug)]
+    #[derive(Serialize, Deserialize, PartialEq, Debug)]
     enum Variant {
         One(u32),
         Two(u32, u32),
@@ -27,7 +27,7 @@ fn ser_tuple_variant() {
 
 #[test]
 fn ser_struct_variant() {
-    #[derive(Pack, Unpack, PartialEq, Debug)]
+    #[derive(Serialize, Deserialize, PartialEq, Debug)]
     enum Variant {
         A { id: u64, name: String },
     }
@@ -75,7 +75,7 @@ fn ser_struct() {
     assert_eq!(dest, expected);
 }
 
-#[derive(Debug, PartialEq, Pack)]
+#[derive(Debug, PartialEq, Serialize)]
 struct Dum {
     v_u8: u8,
     v_i8_opt: Option<i8>,
@@ -87,12 +87,12 @@ struct Dum {
     terminator: Terminator,
 }
 
-#[derive(Debug, PartialEq, Default, Pack)]
+#[derive(Debug, PartialEq, Default, Serialize)]
 struct Inner {
     v_u8: u8,
 }
 
-#[derive(Debug, Pack, PartialEq)]
+#[derive(Debug, Serialize, PartialEq)]
 enum Terminator {
     CRLF,
     LF,

@@ -4,9 +4,9 @@ use crate::store::error::StoreError;
 use crate::store::StoreConnection;
 use async_trait::async_trait;
 use futures_util::stream::BoxStream;
+use serde::de::DeserializeOwned;
+use serde::Serialize;
 use std::fmt::Debug;
-use toy_pack::deser::DeserializableOwned;
-use toy_pack::ser::Serializable;
 
 /// Trait Composit store operations.
 #[async_trait]
@@ -244,7 +244,7 @@ pub trait Find {
         opt: FindOption,
     ) -> Result<Option<KvResponse<V>>, StoreError>
     where
-        V: DeserializableOwned;
+        V: DeserializeOwned;
 }
 
 /// List all or part entities by specified prefix of key.
@@ -260,7 +260,7 @@ pub trait List {
         opt: ListOption,
     ) -> Result<Vec<V>, StoreError>
     where
-        V: DeserializableOwned;
+        V: DeserializeOwned;
 }
 
 /// Put one entity by specified key.
@@ -277,7 +277,7 @@ pub trait Put {
         opt: PutOption,
     ) -> Result<PutResult, StoreError>
     where
-        V: Serializable + Send;
+        V: Serialize + Send;
 }
 
 /// Delete one entity by specified key.
@@ -307,5 +307,5 @@ pub trait Watch {
         opt: WatchOption,
     ) -> Result<BoxStream<Result<KvWatchResponse<V>, StoreError>>, StoreError>
     where
-        V: DeserializableOwned;
+        V: DeserializeOwned;
 }

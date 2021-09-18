@@ -2,18 +2,18 @@ use crate::kv::{
     encode, DeleteRangeRequest, DeleteRangeResponse, PutRequest, PutResponse, RangeRequest,
     RangeResponse, ResponseHeader,
 };
-use toy_pack::{Pack, Unpack};
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Eq, PartialEq, Pack, Unpack)]
+#[derive(Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub enum CompareResult {
     EQUAL,
     GREATER,
     LESS,
-    #[toy(rename = "NOT_EQUAL")]
+    #[serde(rename = "NOT_EQUAL")]
     NotEqual,
 }
 
-#[derive(Debug, Eq, PartialEq, Pack, Unpack)]
+#[derive(Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub enum CompareTarget {
     VERSION,
     CREATE,
@@ -21,8 +21,7 @@ pub enum CompareTarget {
     VALUE,
 }
 
-#[derive(Debug, Pack, Unpack)]
-#[toy(ignore_pack_if_none)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Compare {
     key: String,
     result: Option<CompareResult>,
@@ -33,31 +32,28 @@ pub struct Compare {
     mod_revision: Option<String>,
 }
 
-#[derive(Debug, Pack)]
-#[toy(ignore_pack_if_none)]
+#[derive(Debug, Serialize)]
 pub struct RequestOp {
     request_range: Option<RangeRequest>,
     request_put: Option<PutRequest>,
     request_delete_range: Option<DeleteRangeRequest>,
 }
 
-#[derive(Debug, Unpack)]
-#[toy(ignore_pack_if_none)]
+#[derive(Debug, Deserialize)]
 pub struct ResponseOp {
     response_range: Option<RangeResponse>,
     response_put: Option<PutResponse>,
     response_delete_range: Option<DeleteRangeResponse>,
 }
 
-#[derive(Debug, Pack)]
-#[toy(ignore_pack_if_none)]
+#[derive(Debug, Serialize)]
 pub struct TxnRequest {
     compare: Vec<Compare>,
     success: Option<Vec<RequestOp>>,
     failure: Option<Vec<RequestOp>>,
 }
 
-#[derive(Debug, Unpack)]
+#[derive(Debug, Deserialize)]
 pub struct TxnResponse {
     header: ResponseHeader,
     succeeded: bool,

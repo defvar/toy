@@ -1,14 +1,14 @@
+use serde::{Deserialize, Serialize};
 use toy_core::data::schema::JsonSchema;
 use toy_core::prelude::{PortType, ServiceType};
-use toy_pack::{Pack, Unpack};
 
-#[derive(Clone, Debug, Pack, Unpack)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ServiceSpecList {
     items: Vec<ServiceSpec>,
     count: u32,
 }
 
-#[derive(Debug, Clone, Pack, Unpack)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ServiceSpec {
     service_type: ServiceType,
     port_type: PortType,

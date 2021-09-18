@@ -1,15 +1,14 @@
 //! Toy Plugin for Transform Object.
 
+#![feature(type_alias_impl_trait)]
+
 pub mod config;
 mod plugin;
 pub mod service;
-mod transform;
-mod typed;
+pub mod transform;
+pub mod typed;
 
-pub use self::transform::{
-    Indexing, Mapping, NameOrIndex, Naming, Put, Reindexing, RemoveByIndex, RemoveByName, Rename,
-    SingleValue, ToMap, ToSeq,
+pub use plugin::{
+    indexing, mapping, naming, put, reindexing, remove_by_index, remove_by_name, rename,
+    single_value, to_map, to_seq,
 };
-pub use self::transform::{PutValue, Transformer};
-pub use plugin::load;
-pub use typed::{convert, AllowedTypes};

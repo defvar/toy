@@ -1,10 +1,23 @@
 use super::QuoteStyle;
+use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
-use toy_pack::{Schema, Unpack};
+use toy_pack::Schema;
 use toy_text_parser::Terminator;
 
 pub const fn default_capacity() -> usize {
     8 * (1 << 10)
+}
+
+const fn default_quote() -> char {
+    '"'
+}
+
+const fn default_delimiter() -> char {
+    ','
+}
+
+const fn default_has_headers() -> bool {
+    true
 }
 
 pub fn char_to_u8(v: char) -> u8 {
@@ -13,28 +26,29 @@ pub fn char_to_u8(v: char) -> u8 {
     dest[0]
 }
 
-#[derive(Debug, Clone, Default, Unpack, Schema)]
-pub struct FileReadConfig {
+#[derive(Debug, Clone, Default, Serialize, Deserialize, Schema)]
+pub struct ReadConfig {
     pub(crate) kind: SourceType,
     pub(crate) path: Option<PathBuf>,
+    #[serde(default)]
     pub(crate) option: ReadOption,
 }
 
-#[derive(Debug, Clone, Unpack, Schema)]
+#[derive(Debug, Clone, Serialize, Deserialize, Schema)]
 pub struct ReadOption {
-    #[toy(default = ',')]
+    #[serde(default = "default_delimiter")]
     pub(crate) delimiter: char,
-    #[toy(default = '"')]
+    #[serde(default = "default_quote")]
     pub(crate) quote: char,
     pub(crate) quoting: bool,
     pub(crate) terminator: Terminator,
     pub(crate) escape: Option<u8>,
     pub(crate) double_quote: bool,
     pub(crate) comment: Option<u8>,
-    #[toy(default = true)]
+    #[serde(default = "default_has_headers")]
     pub(crate) has_headers: bool,
     pub(crate) flexible: bool,
-    #[toy(default_expr = "default_capacity")]
+    #[serde(default = "default_capacity")]
     pub(crate) capacity: usize,
 }
 
@@ -55,31 +69,32 @@ impl Default for ReadOption {
     }
 }
 
-#[derive(Debug, Clone, Default, Unpack, Schema)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize, Schema)]
 pub struct Column {
     pub(crate) name: String,
 }
 
-#[derive(Debug, Clone, Default, Unpack, Schema)]
-pub struct FileWriteConfig {
+#[derive(Debug, Clone, Default, Serialize, Deserialize, Schema)]
+pub struct WriteConfig {
     pub(crate) kind: SinkType,
     pub(crate) path: Option<PathBuf>,
+    #[serde(default)]
     pub(crate) option: WriteOption,
 }
 
-#[derive(Debug, Clone, Unpack, Schema)]
+#[derive(Debug, Clone, Serialize, Deserialize, Schema)]
 pub struct WriteOption {
-    #[toy(default = true)]
+    #[serde(default = "default_has_headers")]
     pub(crate) has_headers: bool,
-    #[toy(default = ',')]
+    #[serde(default = "default_delimiter")]
     pub(crate) delimiter: char,
-    #[toy(default = '"')]
+    #[serde(default = "default_quote")]
     pub(crate) quote: char,
     pub(crate) quote_style: QuoteStyle,
     pub(crate) terminator: Terminator,
     pub(crate) escape: u8,
     pub(crate) double_quote: bool,
-    #[toy(default_expr = "default_capacity")]
+    #[serde(default = "default_capacity")]
     pub(crate) capacity: usize,
 }
 
@@ -98,7 +113,7 @@ impl Default for WriteOption {
     }
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Unpack, Schema)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize, Schema)]
 pub enum SourceType {
     File,
     Stdin,
@@ -110,7 +125,7 @@ impl Default for SourceType {
     }
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Unpack, Schema)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize, Schema)]
 pub enum SinkType {
     File,
     Stdout,

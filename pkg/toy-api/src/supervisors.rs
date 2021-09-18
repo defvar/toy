@@ -1,6 +1,6 @@
-use toy_pack::{Pack, Unpack};
+use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Debug, Pack, Unpack)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Supervisor {
     name: String,
     start_time: String,
@@ -17,7 +17,7 @@ impl Supervisor {
     }
 }
 
-#[derive(Clone, Debug, Pack, Unpack)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct SupervisorList {
     items: Vec<Supervisor>,
     count: u32,

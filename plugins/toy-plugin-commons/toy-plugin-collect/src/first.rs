@@ -1,4 +1,4 @@
-use crate::config::CountConfig;
+use crate::config::FirstConfig;
 use std::future::Future;
 use toy_core::prelude::{
     Frame, Outgoing, PortType, Service, ServiceContext, ServiceError, ServiceFactory, ServiceType,
@@ -6,20 +6,18 @@ use toy_core::prelude::{
 };
 
 #[derive(Clone, Debug)]
-pub struct Count;
+pub struct First;
 
-pub struct CountContext {
-    count: u64,
-}
+pub struct FirstContext {}
 
-impl Service for Count {
-    type Context = CountContext;
+impl Service for First {
+    type Context = FirstContext;
     type Request = Frame;
-    type Future = impl Future<Output = Result<ServiceContext<CountContext>, ServiceError>> + Send;
+    type Future = impl Future<Output = Result<ServiceContext<FirstContext>, ServiceError>> + Send;
     type UpstreamFinishFuture =
-        impl Future<Output = Result<ServiceContext<CountContext>, ServiceError>> + Send;
+        impl Future<Output = Result<ServiceContext<FirstContext>, ServiceError>> + Send;
     type UpstreamFinishAllFuture =
-        impl Future<Output = Result<ServiceContext<CountContext>, ServiceError>> + Send;
+        impl Future<Output = Result<ServiceContext<FirstContext>, ServiceError>> + Send;
     type Error = ServiceError;
 
     fn port_type() -> PortType {
@@ -29,13 +27,14 @@ impl Service for Count {
     fn handle(
         &mut self,
         _task_ctx: TaskContext,
-        mut ctx: Self::Context,
-        _req: Self::Request,
-        _tx: Outgoing<Self::Request, Self::Error>,
+        ctx: Self::Context,
+        req: Self::Request,
+        mut tx: Outgoing<Self::Request, Self::Error>,
     ) -> Self::Future {
         async move {
-            ctx.count += 1;
-            Ok(ServiceContext::Ready(ctx))
+            tracing::debug!(send =?req);
+            tx.send_ok(req).await?;
+            Ok(ServiceContext::Complete(ctx))
         }
     }
 
@@ -51,30 +50,25 @@ impl Service for Count {
 
     fn upstream_finish_all(
         &mut self,
-        task_ctx: TaskContext,
+        _task_ctx: TaskContext,
         ctx: Self::Context,
-        mut tx: Outgoing<Self::Request, Self::Error>,
+        _tx: Outgoing<Self::Request, Self::Error>,
     ) -> Self::UpstreamFinishAllFuture {
-        async move {
-            let span = task_ctx.span();
-            tracing::debug!(parent: span, send =?ctx.count);
-            tx.send_ok(Frame::from(ctx.count)).await?;
-            Ok(ServiceContext::Complete(ctx))
-        }
+        async move { Ok(ServiceContext::Complete(ctx)) }
     }
 }
 
-impl ServiceFactory for Count {
+impl ServiceFactory for First {
     type Future = impl Future<Output = Result<Self::Service, Self::InitError>> + Send;
-    type Service = Count;
-    type Context = CountContext;
-    type Config = CountConfig;
+    type Service = First;
+    type Context = FirstContext;
+    type Config = FirstConfig;
     type Request = Frame;
     type Error = ServiceError;
     type InitError = ServiceError;
 
     fn new_service(&self, _tp: ServiceType) -> Self::Future {
-        async move { Ok(Count) }
+        async move { Ok(First) }
     }
 
     fn new_context(
@@ -82,6 +76,6 @@ impl ServiceFactory for Count {
         _tp: ServiceType,
         _config: Self::Config,
     ) -> Result<Self::Context, Self::InitError> {
-        Ok(CountContext { count: 0 })
+        Ok(FirstContext {})
     }
 }

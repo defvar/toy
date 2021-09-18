@@ -1,23 +1,22 @@
+use serde::{Deserialize, Serialize};
 use toy_core::prelude::Value;
 use toy_core::registry::PortType;
-use toy_pack::{Pack, Unpack};
 
-#[derive(Clone, Debug, Default, Pack, Unpack)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct Position {
     x: u32,
     y: u32,
 }
 
-#[derive(Clone, Debug, Pack, Unpack)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Graph {
     name: String,
     services: Vec<GraphNode>,
 }
 
-#[derive(Clone, Debug, Pack, Unpack)]
-#[toy(ignore_pack_if_none)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct GraphNode {
-    #[toy(rename = "type")]
+    #[serde(rename = "type")]
     tp: String,
     uri: String,
     position: Position,
@@ -26,7 +25,7 @@ pub struct GraphNode {
     wires: Vec<String>,
 }
 
-#[derive(Clone, Debug, Pack, Unpack)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct GraphList {
     graphs: Vec<Graph>,
     count: u32,

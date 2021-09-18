@@ -1,15 +1,14 @@
 use crate::error::QueryParseError;
-use crate::serializer::Encoder;
-use toy_pack::ser::Serializable;
+use serde::Serialize;
 
 /// Serialize from data structure to `String`.
 ///
 /// # Example
 ///
 /// ```
-/// # use toy_pack_derive::*;
+/// use serde::Serialize;
 ///
-/// #[derive(Pack)]
+/// #[derive(Serialize)]
 /// struct User {
 ///   id: u32,
 ///   name: String
@@ -29,9 +28,7 @@ use toy_pack::ser::Serializable;
 #[inline]
 pub fn pack_to_string<T>(item: &T) -> Result<String, QueryParseError>
 where
-    T: Serializable,
+    T: Serialize,
 {
-    let mut urlencoder = form_urlencoded::Serializer::new("".to_owned());
-    item.serialize(Encoder::new(&mut urlencoder))?;
-    Ok(urlencoder.finish())
+    serde_urlencoded::to_string(item).map_err(|e| QueryParseError::custom(e))
 }

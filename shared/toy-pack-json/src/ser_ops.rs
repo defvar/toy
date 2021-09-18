@@ -1,9 +1,10 @@
 use super::encode::{EncodeError, Encoder};
-use std::io;
-use toy_pack::ser::{
-    Serializable, SerializeMapOps, SerializeSeqOps, SerializeStructOps, SerializeStructVariantOps,
-    SerializeTupleVariantOps,
+use serde::ser::{
+    SerializeMap, SerializeSeq, SerializeStruct, SerializeStructVariant, SerializeTuple,
+    SerializeTupleStruct, SerializeTupleVariant,
 };
+use serde::Serialize;
+use std::io;
 
 /// Any Serialize Ops implementation json.
 ///
@@ -12,7 +13,7 @@ pub struct SerializeCompound<'a, W: 'a> {
     first: bool,
 }
 
-pub struct SerializeTupleVariant<'a, W: 'a> {
+pub struct SerializeTupleVariantImpl<'a, W: 'a> {
     ser: &'a mut Encoder<W>,
     first: bool,
 }
@@ -23,13 +24,13 @@ impl<'a, W> SerializeCompound<'a, W> {
     }
 }
 
-impl<'a, W> SerializeTupleVariant<'a, W> {
+impl<'a, W> SerializeTupleVariantImpl<'a, W> {
     pub fn new(ser: &'a mut Encoder<W>) -> Self {
         Self { ser, first: true }
     }
 }
 
-impl<'a, W> SerializeSeqOps for SerializeCompound<'a, W>
+impl<'a, W> SerializeSeq for SerializeCompound<'a, W>
 where
     W: io::Write,
 {
@@ -37,9 +38,9 @@ where
     type Error = EncodeError;
 
     #[inline]
-    fn next<T: ?Sized>(&mut self, value: &T) -> Result<(), Self::Error>
+    fn serialize_element<T: ?Sized>(&mut self, value: &T) -> Result<(), Self::Error>
     where
-        T: Serializable,
+        T: Serialize,
     {
         self.ser.write_begin_array_element(self.first)?;
         self.first = false;
@@ -55,7 +56,7 @@ where
     }
 }
 
-impl<'a, W> SerializeMapOps for SerializeCompound<'a, W>
+impl<'a, W> SerializeMap for SerializeCompound<'a, W>
 where
     W: io::Write,
 {
@@ -63,9 +64,9 @@ where
     type Error = EncodeError;
 
     #[inline]
-    fn next_key<T: ?Sized>(&mut self, key: &T) -> Result<(), Self::Error>
+    fn serialize_key<T: ?Sized>(&mut self, key: &T) -> Result<(), Self::Error>
     where
-        T: Serializable,
+        T: Serialize,
     {
         self.ser.write_begin_object_key(self.first)?;
         self.first = false;
@@ -75,9 +76,9 @@ where
     }
 
     #[inline]
-    fn next_value<T: ?Sized>(&mut self, value: &T) -> Result<(), Self::Error>
+    fn serialize_value<T: ?Sized>(&mut self, value: &T) -> Result<(), Self::Error>
     where
-        T: Serializable,
+        T: Serialize,
     {
         self.ser.write_begin_object_value()?;
         value.serialize(&mut *self.ser)?;
@@ -92,7 +93,7 @@ where
     }
 }
 
-impl<'a, W> SerializeStructOps for SerializeCompound<'a, W>
+impl<'a, W> SerializeStruct for SerializeCompound<'a, W>
 where
     W: io::Write,
 {
@@ -100,23 +101,46 @@ where
     type Error = EncodeError;
 
     #[inline]
-    fn field<T: ?Sized>(&mut self, key: &'static str, value: &T) -> Result<(), Self::Error>
+    fn serialize_field<T: ?Sized>(
+        &mut self,
+        key: &'static str,
+        value: &T,
+    ) -> Result<(), Self::Error>
     where
-        T: Serializable,
+        T: Serialize,
     {
-        SerializeMapOps::next_key(self, key)?;
-        SerializeMapOps::next_value(self, value)?;
+        SerializeMap::serialize_key(self, key)?;
+        SerializeMap::serialize_value(self, value)?;
         Ok(())
     }
 
     #[inline]
     fn end(self) -> Result<Self::Ok, Self::Error> {
-        SerializeMapOps::end(self)?;
+        SerializeMap::end(self)?;
         Ok(())
     }
 }
 
-impl<'a, W> SerializeTupleVariantOps for SerializeTupleVariant<'a, W>
+impl<'a, W> SerializeTuple for SerializeCompound<'a, W>
+where
+    W: io::Write,
+{
+    type Ok = ();
+    type Error = EncodeError;
+
+    fn serialize_element<T: ?Sized>(&mut self, value: &T) -> Result<(), Self::Error>
+    where
+        T: Serialize,
+    {
+        serde::ser::SerializeSeq::serialize_element(self, value)
+    }
+
+    fn end(self) -> Result<Self::Ok, Self::Error> {
+        serde::ser::SerializeSeq::end(self)
+    }
+}
+
+impl<'a, W> SerializeTupleVariant for SerializeTupleVariantImpl<'a, W>
 where
     W: io::Write,
 {
@@ -124,9 +148,9 @@ where
     type Error = EncodeError;
 
     #[inline]
-    fn next<T: ?Sized>(&mut self, value: &T) -> Result<(), Self::Error>
+    fn serialize_field<T: ?Sized>(&mut self, value: &T) -> Result<(), Self::Error>
     where
-        T: Serializable,
+        T: Serialize,
     {
         self.ser.write_begin_array_element(self.first)?;
         self.first = false;
@@ -144,19 +168,42 @@ where
     }
 }
 
-impl<'a, W> SerializeStructVariantOps for SerializeCompound<'a, W>
+impl<'a, W> SerializeTupleStruct for SerializeCompound<'a, W>
 where
     W: io::Write,
 {
     type Ok = ();
     type Error = EncodeError;
 
-    fn field<T: ?Sized>(&mut self, key: &'static str, value: &T) -> Result<(), Self::Error>
+    fn serialize_field<T: ?Sized>(&mut self, value: &T) -> Result<(), Self::Error>
     where
-        T: Serializable,
+        T: Serialize,
     {
-        SerializeMapOps::next_key(self, key)?;
-        SerializeMapOps::next_value(self, value)?;
+        serde::ser::SerializeSeq::serialize_element(self, value)
+    }
+
+    fn end(self) -> Result<Self::Ok, Self::Error> {
+        serde::ser::SerializeSeq::end(self)
+    }
+}
+
+impl<'a, W> SerializeStructVariant for SerializeCompound<'a, W>
+where
+    W: io::Write,
+{
+    type Ok = ();
+    type Error = EncodeError;
+
+    fn serialize_field<T: ?Sized>(
+        &mut self,
+        key: &'static str,
+        value: &T,
+    ) -> Result<(), Self::Error>
+    where
+        T: Serialize,
+    {
+        SerializeMap::serialize_key(self, key)?;
+        SerializeMap::serialize_value(self, value)?;
         Ok(())
     }
 

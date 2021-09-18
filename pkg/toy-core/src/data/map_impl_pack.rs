@@ -1,11 +1,11 @@
 use crate::data::Map;
+use serde::{Serialize, Serializer};
 use std::hash::Hash;
-use toy_pack::ser::{Serializable, Serializer};
 
-impl<K, V> Serializable for Map<K, V>
+impl<K, V> Serialize for Map<K, V>
 where
-    K: Serializable + Eq + Hash,
-    V: Serializable,
+    K: Serialize + Eq + Hash,
+    V: Serialize,
 {
     #[inline]
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>

@@ -10,7 +10,6 @@ edition = "2018"
 thiserror = "1.0"
 tracing = { version = "0.1" }
 
-toy-pack = {path = "../../shared/toy-pack", features = ["derive"]}
 toy-pack-json = {path = "../../shared/toy-pack-json"}
 
 toy-api = {path = "../toy-api"}

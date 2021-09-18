@@ -2,7 +2,6 @@ use std::fmt::Display;
 use std::io;
 use std::str::Utf8Error;
 use thiserror::Error as ThisError;
-use toy_pack::deser::Error;
 
 use crate::decode::{Position, Token};
 use std::backtrace::Backtrace;
@@ -74,6 +73,16 @@ impl DecodeError {
         }
     }
 
+    pub fn invalid_type<T>(expected_type_name: T) -> Self
+    where
+        T: Display,
+    {
+        DecodeError::error(format_args!(
+            "invalid type, expected:{}",
+            expected_type_name
+        ))
+    }
+
     pub fn invalid_number(pos: Position) -> DecodeError {
         DecodeError::InvalidNumber {
             line: pos.line,
@@ -121,7 +130,7 @@ impl DecodeError {
     }
 }
 
-impl Error for DecodeError {
+impl serde::de::Error for DecodeError {
     fn custom<T>(msg: T) -> Self
     where
         T: Display,

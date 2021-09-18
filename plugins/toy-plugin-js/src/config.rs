@@ -1,6 +1,7 @@
-use toy_pack::{Schema, Unpack};
+use serde::Deserialize;
+use toy_pack::Schema;
 
-#[derive(Debug, Clone, Default, Unpack, Schema)]
+#[derive(Debug, Clone, Default, Deserialize, Schema)]
 pub struct FunctionConfig {
     pub code: String,
 }

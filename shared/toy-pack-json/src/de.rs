@@ -1,6 +1,6 @@
 use std::io;
 
-use toy_pack::deser::{Deserializable, DeserializableOwned};
+use serde::de::{Deserialize, DeserializeOwned};
 
 use super::decode::{decoder_from_reader, decoder_from_slice, DecodeError};
 
@@ -9,9 +9,9 @@ use super::decode::{decoder_from_reader, decoder_from_slice, DecodeError};
 /// # Example
 ///
 /// ```edition2018
-/// use toy_pack_derive::*;
+/// use serde::Deserialize;
 ///
-/// #[derive(Unpack)]
+/// #[derive(Deserialize)]
 /// struct User {
 ///   id: u32,
 ///   name: String
@@ -30,7 +30,7 @@ use super::decode::{decoder_from_reader, decoder_from_slice, DecodeError};
 #[inline]
 pub fn unpack<'toy, T>(slice: &'toy [u8]) -> Result<T, DecodeError>
 where
-    T: Deserializable<'toy>,
+    T: Deserialize<'toy>,
 {
     T::deserialize(&mut decoder_from_slice(slice))
 }
@@ -42,7 +42,7 @@ where
 pub fn unpack_from_reader<R, T>(reader: R) -> Result<T, DecodeError>
 where
     R: io::Read,
-    T: DeserializableOwned,
+    T: DeserializeOwned,
 {
     T::deserialize(&mut decoder_from_reader(reader))
 }

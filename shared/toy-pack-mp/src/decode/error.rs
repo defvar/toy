@@ -3,7 +3,6 @@ use std::fmt::Display;
 use std::io;
 use std::str::Utf8Error;
 use thiserror::Error as ThisError;
-use toy_pack::deser::Error;
 
 use crate::marker::Marker;
 
@@ -85,7 +84,7 @@ impl From<Marker> for DecodeError {
     }
 }
 
-impl Error for DecodeError {
+impl serde::de::Error for DecodeError {
     fn custom<T>(msg: T) -> Self
     where
         T: Display,

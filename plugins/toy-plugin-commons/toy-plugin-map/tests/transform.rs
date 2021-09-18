@@ -4,8 +4,7 @@ use toy_plugin_map::config::{
     IndexingConfig, MappingConfig, NamingConfig, PutConfig, ReindexingConfig, RenameConfig,
     SingleValueConfig, ToMapConfig, ToSeqConfig, ToTransform,
 };
-use toy_plugin_map::{AllowedTypes, NameOrIndex};
-use toy_plugin_map::{PutValue, Transformer};
+use toy_plugin_map::{transform::*, typed::*};
 
 #[test]
 fn mapping() {
@@ -212,7 +211,7 @@ fn put_map() {
         let mut map = HashMap::new();
         map.insert(
             "b".to_string(),
-            PutValue::new(Some("4".to_string()), AllowedTypes::U32),
+            PutValueTransformer::new(Some("4".to_string()), AllowedTypes::U32),
         );
         map
     };
@@ -236,7 +235,7 @@ fn put_map_err() {
         let mut map = HashMap::new();
         map.insert(
             "b".to_string(),
-            PutValue::new(Some("xx".to_string()), AllowedTypes::U32),
+            PutValueTransformer::new(Some("xx".to_string()), AllowedTypes::U32),
         );
         map
     };
@@ -256,7 +255,7 @@ fn single_value_from_map() {
     let expected = Value::from(2u64);
 
     SingleValueConfig {
-        name_or_index: NameOrIndex::Name("b".to_string()),
+        name_or_index: NameOrIndexTransformer::Name("b".to_string()),
     }
     .into_transform()
     .transform(&mut target)
@@ -270,7 +269,7 @@ fn single_value_from_seq() {
     let expected = Value::from(20u32);
 
     SingleValueConfig {
-        name_or_index: NameOrIndex::Index(1),
+        name_or_index: NameOrIndexTransformer::Index(1),
     }
     .into_transform()
     .transform(&mut target)

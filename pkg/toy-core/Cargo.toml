@@ -11,13 +11,14 @@ async-trait = "0.1.42"
 tokio = { version = "1", features = ["sync"] }
 thiserror = "1.0"
 tracing = "0.1"
-toy-pack = {path = "../../shared/toy-pack", features = ["derive"]}
+toy-pack = { path = "../../shared/toy-pack", features = ["derive"] }
 indexmap = "1.3.2"
 itoa = "0.4"
 ryu = "1.0"
 uuid = { version = "0.8", features = ["v4"] }
+serde = { version = "1.0", features = ["derive"]  }
 
 [dev-dependencies]
-toy-pack-derive = {path = "../../shared/toy-pack-derive"}
-toy-pack-json = {path = "../../shared/toy-pack-json"}
+toy-pack = { path = "../../shared/toy-pack", features = ["derive"] }
+toy-pack-json = { path = "../../shared/toy-pack-json" }
 tokio = { version = "1", features = ["rt-multi-thread"] }

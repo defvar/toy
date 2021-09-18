@@ -1,6 +1,6 @@
 use std::io;
 
-use toy_pack::ser::Serializable;
+use serde::Serialize;
 
 use super::encode::{encoder_from_writer, EncodeError};
 
@@ -11,9 +11,9 @@ use super::encode::{encoder_from_writer, EncodeError};
 /// # Example
 ///
 /// ```edition2018
-/// use toy_pack_derive::*;
+/// use serde::Serialize;
 ///
-/// #[derive(Pack)]
+/// #[derive(Serialize)]
 /// struct User {
 ///   id: u32,
 ///   name: String
@@ -32,7 +32,7 @@ use super::encode::{encoder_from_writer, EncodeError};
 #[inline]
 pub fn pack<T>(item: &T) -> Result<Vec<u8>, EncodeError>
 where
-    T: Serializable,
+    T: Serialize,
 {
     let mut writer = Vec::with_capacity(128);
     pack_to_writer(&mut writer, item)?;
@@ -47,7 +47,7 @@ where
 pub fn pack_to_writer<W, T>(writer: W, item: &T) -> Result<(), EncodeError>
 where
     W: io::Write,
-    T: Serializable,
+    T: Serialize,
 {
     let mut w = encoder_from_writer(writer);
     item.serialize(&mut w)?;

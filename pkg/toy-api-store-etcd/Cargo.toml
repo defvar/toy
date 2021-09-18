@@ -12,8 +12,8 @@ futures-util = { version = "0.3", default-features = false }
 thiserror = "1.0"
 tracing = { version = "0.1", features = ["attributes"] }
 tracing-futures = "0.2.4"
+serde = { version = "1.0", features = ["derive"] }
 
-toy-pack = {path = "../../shared/toy-pack", features = ["derive"]}
 toy-pack-json = {path = "../../shared/toy-pack-json"}
 toy-h = {path = "../../shared/toy-h"}
 toy-api = {path = "../toy-api"}

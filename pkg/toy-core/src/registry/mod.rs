@@ -5,74 +5,64 @@
 use crate::data::schema::visitors::JsonSchemaVisitor;
 use crate::data::schema::JsonSchema;
 use crate::data::Frame;
-use crate::error::{Error, ServiceError};
+use crate::error::ServiceError;
 use crate::executor::ServiceExecutor;
 use crate::service::ServiceFactory;
 use crate::service_type::ServiceType;
 use crate::service_uri::Uri;
+use serde::{Deserialize, Serialize};
 use toy_pack::schema::{to_schema, Schema};
-use toy_pack::{Pack, Unpack};
 
 mod app;
 mod layered;
-mod plugin;
 mod port_type;
 
 pub use app::App;
 pub use layered::Layered;
-pub use plugin::Plugin;
 pub use port_type::PortType;
+use serde::de::DeserializeOwned;
 
 /// Create plugin.
-pub fn plugin<F, R>(
-    name_space: &str,
-    service_name: &str,
-    port_type: PortType,
-    callback: F,
-) -> Plugin<F>
+pub fn plugin<F>(layer: (&str, &str, F)) -> Layered<NoopEntry, F>
 where
-    F: Fn() -> R + Clone,
-    R: ServiceFactory,
-    R::Config: Schema,
+    F: ServiceFactory<Request = Frame, Error = ServiceError, InitError = ServiceError>
+        + Send
+        + Sync
+        + Clone
+        + 'static,
+    F::Service: Send,
+    F::Context: Send,
+    F::Config: DeserializeOwned + Send,
 {
-    Plugin::<F>::new(name_space, service_name, port_type, callback)
+    let (name_space, service_name, factory) = layer;
+    Layered::<NoopEntry, F>::new(NoopEntry, name_space, service_name, factory)
 }
 
 /// Create app.
-pub fn app<P>(plugin: P) -> App<NoopEntry, P>
+pub fn app<P>(plugin: P) -> App<P>
 where
     P: Registry,
 {
-    App::<NoopEntry, P>::new(plugin)
+    App::<P>::new(plugin)
 }
 
-pub trait PluginRegistry:
-    Registry + Delegator<Request = Frame, Error = ServiceError, InitError = ServiceError> + Clone
-{
-}
-
-pub trait Registry {
+pub trait Registry: Clone + Send {
     fn service_types(&self) -> Vec<ServiceType>;
 
     fn schemas(&self) -> Vec<ServiceSchema>;
-}
 
-pub trait Delegator {
-    type Request;
-    type Error: Error;
-    type InitError: Error;
-
-    fn delegate<T>(&self, tp: &ServiceType, uri: &Uri, executor: &mut T) -> Result<(), Self::Error>
+    fn delegate<T>(
+        &self,
+        tp: &ServiceType,
+        uri: &Uri,
+        executor: &mut T,
+    ) -> Result<(), ServiceError>
     where
-        T: ServiceExecutor<
-            Request = Self::Request,
-            Error = Self::Error,
-            InitError = Self::InitError,
-        >;
+        T: ServiceExecutor<Request = Frame, Error = ServiceError, InitError = ServiceError>;
 }
 
 /// ServiceSchema (json schema format) for front-end api.
-#[derive(Debug, Clone, Pack, Unpack)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ServiceSchema {
     service_type: ServiceType,
     port_type: PortType,
@@ -111,36 +101,24 @@ impl ServiceSchema {
 #[derive(Debug, Clone)]
 pub struct NoopEntry;
 
-impl PluginRegistry for NoopEntry {}
-
 impl Registry for NoopEntry {
     fn service_types(&self) -> Vec<ServiceType> {
-        unreachable!()
+        Vec::new()
     }
 
     fn schemas(&self) -> Vec<ServiceSchema> {
-        unreachable!()
+        Vec::new()
     }
-}
-
-impl Delegator for NoopEntry {
-    type Request = Frame;
-    type Error = ServiceError;
-    type InitError = ServiceError;
 
     fn delegate<T>(
         &self,
-        _tp: &ServiceType,
+        tp: &ServiceType,
         _uri: &Uri,
         _executor: &mut T,
-    ) -> Result<(), Self::Error>
+    ) -> Result<(), ServiceError>
     where
-        T: ServiceExecutor<
-            Request = Self::Request,
-            Error = Self::Error,
-            InitError = Self::InitError,
-        >,
+        T: ServiceExecutor<Request = Frame, Error = ServiceError, InitError = ServiceError>,
     {
-        Ok(())
+        Err(ServiceError::service_not_found(tp))
     }
 }

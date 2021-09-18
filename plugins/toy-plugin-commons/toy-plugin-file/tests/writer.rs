@@ -1,5 +1,5 @@
 use toy_core::data::{Map, Value};
-use toy_plugin_file::{FileWriter, FileWriterBuilder};
+use toy_plugin_file::{file_writer::FileWriter, file_writer_builder::FileWriterBuilder};
 
 #[test]
 fn write_value() {

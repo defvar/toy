@@ -1,25 +1,25 @@
-use toy_pack::{Pack, Unpack};
+use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Copy, Debug, Pack, Unpack)]
+#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 pub enum Kind {
     User,
     ServiceAccount,
 }
 
-#[derive(Clone, Debug, Pack, Unpack)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Subject {
     kind: Kind,
     name: String,
 }
 
-#[derive(Clone, Debug, Pack, Unpack)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct RoleBinding {
     name: String,
     role: String,
     subjects: Vec<Subject>,
 }
 
-#[derive(Clone, Debug, Pack, Unpack)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct RoleBindingList {
     items: Vec<RoleBinding>,
     count: u32,

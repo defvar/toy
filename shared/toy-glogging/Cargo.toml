@@ -8,7 +8,7 @@ edition = "2018"
 
 [dependencies]
 tracing = { version = "0.1" }
-toy-pack = {path = "../toy-pack", features = ["derive"]}
+serde = { version = "1.0" }
 toy-pack-json = {path = "../toy-pack-json"}
 toy-gauth = {path = "../toy-gauth"}
 toy-h = {path = "../toy-h"}

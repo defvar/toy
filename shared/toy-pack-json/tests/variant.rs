@@ -1,10 +1,10 @@
-use toy_pack_derive::*;
+use serde::{Deserialize, Serialize};
 use toy_pack_json::{pack_to_string, unpack};
 use toy_test_utils::unindent;
 
 #[test]
 fn ser_de_unit_variant() {
-    #[derive(Debug, PartialEq, Pack, Unpack)]
+    #[derive(Debug, PartialEq, Deserialize, Serialize)]
     enum Test {
         A,
         B,
@@ -20,7 +20,7 @@ fn ser_de_unit_variant() {
 
 #[test]
 fn ser_de_tuple_variant() {
-    #[derive(Debug, PartialEq, Pack, Unpack)]
+    #[derive(Debug, PartialEq, Deserialize, Serialize)]
     enum Test {
         A(u32, u32, u32),
         B(u8, u8),
@@ -38,7 +38,7 @@ fn ser_de_tuple_variant() {
 
 #[test]
 fn ser_de_new_type_variant() {
-    #[derive(Debug, PartialEq, Pack, Unpack)]
+    #[derive(Debug, PartialEq, Deserialize, Serialize)]
     enum Test {
         A(u32),
         B(u8),
@@ -54,7 +54,7 @@ fn ser_de_new_type_variant() {
 
 #[test]
 fn ser_de_struct_variant() {
-    #[derive(Debug, PartialEq, Pack, Unpack)]
+    #[derive(Debug, PartialEq, Deserialize, Serialize)]
     enum Test {
         A { id: u32, name: String },
     }

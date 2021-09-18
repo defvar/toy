@@ -1,10 +1,10 @@
 use futures_util::StreamExt;
+use serde::{Deserialize, Serialize};
 use toy_api_server::store::error::StoreError;
 use toy_h::impl_reqwest::ReqwestClient;
-use toy_pack::{Pack, Unpack};
 use tracing_subscriber::fmt::format::FmtSpan;
 
-#[derive(Debug, Pack, Unpack)]
+#[derive(Debug, Serialize, Deserialize)]
 struct Test {
     name: String,
     age: u32,

@@ -1,21 +1,20 @@
-use core::time::Duration;
+use serde::{Deserialize, Serialize};
 use toy_core::data::{self, Map, Value};
 use toy_core::{map_value, seq_value};
-use toy_pack_derive::*;
 
 macro_rules! pass_de_integer {
     ($func: ident, $t: ident,  $expected: expr) => {
         #[test]
         fn $func() {
-            assert_eq!($expected, data::unpack::<$t>(Value::from(1i8)).unwrap());
-            assert_eq!($expected, data::unpack::<$t>(Value::from(1i16)).unwrap());
-            assert_eq!($expected, data::unpack::<$t>(Value::from(1i32)).unwrap());
-            assert_eq!($expected, data::unpack::<$t>(Value::from(1i64)).unwrap());
+            assert_eq!($expected, data::unpack::<$t>(&Value::from(1i8)).unwrap());
+            assert_eq!($expected, data::unpack::<$t>(&Value::from(1i16)).unwrap());
+            assert_eq!($expected, data::unpack::<$t>(&Value::from(1i32)).unwrap());
+            assert_eq!($expected, data::unpack::<$t>(&Value::from(1i64)).unwrap());
 
-            assert_eq!($expected, data::unpack::<$t>(Value::from(1u8)).unwrap());
-            assert_eq!($expected, data::unpack::<$t>(Value::from(1u16)).unwrap());
-            assert_eq!($expected, data::unpack::<$t>(Value::from(1u32)).unwrap());
-            assert_eq!($expected, data::unpack::<$t>(Value::from(1u64)).unwrap());
+            assert_eq!($expected, data::unpack::<$t>(&Value::from(1u8)).unwrap());
+            assert_eq!($expected, data::unpack::<$t>(&Value::from(1u16)).unwrap());
+            assert_eq!($expected, data::unpack::<$t>(&Value::from(1u32)).unwrap());
+            assert_eq!($expected, data::unpack::<$t>(&Value::from(1u64)).unwrap());
         }
     };
 }
@@ -31,15 +30,8 @@ pass_de_integer!(de_i32, i32, 1i32);
 pass_de_integer!(de_i64, i64, 1i64);
 
 #[test]
-fn de_timestamp() {
-    let src = Duration::new(3, 4);
-    let dest = data::unpack::<Duration>(Value::from(src)).unwrap();
-    assert_eq!(src, dest);
-}
-
-#[test]
 fn de_tuple_variant() {
-    #[derive(Pack, Unpack, PartialEq, Debug)]
+    #[derive(Serialize, Deserialize, PartialEq, Debug)]
     enum Variant {
         One(u32),
         Two(u32, u32),
@@ -47,13 +39,13 @@ fn de_tuple_variant() {
     let v = map_value! {
         "Two" => seq_value! [1u32, 2u32],
     };
-    let r = data::unpack::<Variant>(v).unwrap();
+    let r = data::unpack::<Variant>(&v).unwrap();
     assert_eq!(r, Variant::Two(1, 2));
 }
 
 #[test]
 fn de_struct_variant() {
-    #[derive(Pack, Unpack, PartialEq, Debug)]
+    #[derive(Serialize, Deserialize, PartialEq, Debug)]
     enum Variant {
         A { id: u64, name: String },
     }
@@ -63,7 +55,7 @@ fn de_struct_variant() {
           "name" => "aiueo",
         }
     };
-    let r = data::unpack::<Variant>(v).unwrap();
+    let r = data::unpack::<Variant>(&v).unwrap();
     assert_eq!(
         r,
         Variant::A {
@@ -86,8 +78,6 @@ fn de_struct() {
         name: "aiueo".to_string(),
         vec: vec![Value::from(0u8), Value::from(1u8), Value::from(2u8)],
         inner: Inner { v_u8: 8 },
-        terminator: Terminator::CRLF,
-        terminator_from_str: Terminator::CRLF,
     };
 
     // inner struct
@@ -110,15 +100,13 @@ fn de_struct() {
     map.insert("name".to_string(), Value::from(expected.name.clone()));
     map.insert("vec".to_string(), Value::from(expected.vec.clone()));
     map.insert("inner".to_string(), Value::from(inner.clone()));
-    map.insert("terminator".to_string(), Value::from(terminator));
-    map.insert("terminator_from_str".to_string(), Value::from("CRLF"));
 
     let v = Value::from(map);
-    let v = data::unpack::<Dum>(v).unwrap();
+    let v = data::unpack::<Dum>(&v).unwrap();
     assert_eq!(v, expected);
 }
 
-#[derive(Debug, PartialEq, Unpack)]
+#[derive(Debug, PartialEq, Deserialize)]
 struct Dum {
     v_u8: u8,
     v_u16: u16,
@@ -130,16 +118,14 @@ struct Dum {
     name: String,
     vec: Vec<Value>,
     inner: Inner,
-    terminator: Terminator,
-    terminator_from_str: Terminator,
 }
 
-#[derive(Debug, PartialEq, Default, Unpack)]
+#[derive(Debug, PartialEq, Default, Deserialize)]
 struct Inner {
     v_u8: u8,
 }
 
-#[derive(Debug, Unpack, PartialEq)]
+#[derive(Debug, Deserialize, PartialEq)]
 enum Terminator {
     CRLF,
     LF,

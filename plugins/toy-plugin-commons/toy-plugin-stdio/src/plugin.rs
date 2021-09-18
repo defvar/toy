@@ -1,20 +1,11 @@
-use super::config::*;
 use super::service::*;
-use toy_core::prelude::*;
-use toy_core::registry::PortType;
 
 const NAME_SPACE: &str = &"plugin.common.stdio";
 
-pub fn load() -> impl PluginRegistry {
-    plugin(
-        NAME_SPACE,
-        "stdin",
-        PortType::source(),
-        factory!(stdin, StdinConfig, new_stdin_context),
-    )
-    .with(
-        "stdout",
-        PortType::sink(),
-        factory!(stdout, StdoutConfig, new_stdout_context),
-    )
+pub fn stdin() -> (&'static str, &'static str, Stdin) {
+    (NAME_SPACE, "stdin", Stdin)
+}
+
+pub fn stdout() -> (&'static str, &'static str, Stdout) {
+    (NAME_SPACE, "stdout", Stdout)
 }

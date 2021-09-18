@@ -1,78 +1,47 @@
-use super::config::*;
 use super::service::*;
-use toy_core::prelude::*;
-use toy_core::registry::PortType;
 
 const NAME_SPACE: &str = &"plugin.common.map";
 
-pub fn load() -> impl PluginRegistry {
-    plugin(
-        NAME_SPACE,
-        "typed",
-        PortType::flow(),
-        factory!(typed, TypedConfig, new_typed_context),
-    )
-    .with(
-        "mapping",
-        PortType::flow(),
-        factory!(mapping, MappingConfig, new_mapping_context),
-    )
-    .with(
-        "naming",
-        PortType::flow(),
-        factory!(naming, NamingConfig, new_naming_context),
-    )
-    .with(
-        "indexing",
-        PortType::flow(),
-        factory!(indexing, IndexingConfig, new_indexing_context),
-    )
-    .with(
-        "reindexing",
-        PortType::flow(),
-        factory!(reindexing, ReindexingConfig, new_reindexing_context),
-    )
-    .with(
-        "rename",
-        PortType::flow(),
-        factory!(rename, RenameConfig, new_rename_context),
-    )
-    .with(
-        "removeByIndex",
-        PortType::flow(),
-        factory!(
-            remove_by_index,
-            RemoveByIndexConfig,
-            new_remove_by_index_context
-        ),
-    )
-    .with(
-        "removeByName",
-        PortType::flow(),
-        factory!(
-            remove_by_name,
-            RemoveByNameConfig,
-            new_remove_by_name_context
-        ),
-    )
-    .with(
-        "put",
-        PortType::flow(),
-        factory!(put, PutConfig, new_put_context),
-    )
-    .with(
-        "singleValue",
-        PortType::flow(),
-        factory!(single_value, SingleValueConfig, new_single_value_context),
-    )
-    .with(
-        "toMap",
-        PortType::flow(),
-        factory!(to_map, ToMapConfig, new_to_map_context),
-    )
-    .with(
-        "toSeq",
-        PortType::flow(),
-        factory!(to_seq, ToSeqConfig, new_to_seq_context),
-    )
+pub fn mapping() -> (&'static str, &'static str, Mapping) {
+    (NAME_SPACE, "mapping", Mapping)
+}
+
+pub fn indexing() -> (&'static str, &'static str, Indexing) {
+    (NAME_SPACE, "indexing", Indexing)
+}
+
+pub fn reindexing() -> (&'static str, &'static str, Reindexing) {
+    (NAME_SPACE, "reindexing", Reindexing)
+}
+
+pub fn naming() -> (&'static str, &'static str, Naming) {
+    (NAME_SPACE, "naming", Naming)
+}
+
+pub fn rename() -> (&'static str, &'static str, Rename) {
+    (NAME_SPACE, "rename", Rename)
+}
+
+pub fn put() -> (&'static str, &'static str, Put) {
+    (NAME_SPACE, "put", Put)
+}
+
+pub fn remove_by_index() -> (&'static str, &'static str, RemoveByIndex) {
+    (NAME_SPACE, "removeByIndex", RemoveByIndex)
+}
+
+pub fn remove_by_name() -> (&'static str, &'static str, RemoveByName) {
+    (NAME_SPACE, "removeByName", RemoveByName)
+}
+
+pub fn single_value() -> (&'static str, &'static str, SingleValue) {
+    (NAME_SPACE, "singleValue", SingleValue)
+}
+
+pub fn to_map() -> (&'static str, &'static str, ToMap) {
+    (NAME_SPACE, "toMap", ToMap)
+}
+
+pub fn to_seq() -> (&'static str, &'static str, ToSeq) {
+    (NAME_SPACE, "toSeq", ToSeq)
 }

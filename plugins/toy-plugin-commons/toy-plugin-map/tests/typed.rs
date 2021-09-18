@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use toy_core::prelude::*;
 use toy_plugin_map::config::{TypedConfig, TypedConfigOption};
-use toy_plugin_map::{convert, AllowedTypes};
+use toy_plugin_map::typed::{convert, AllowedTypes};
 
 #[test]
 fn typed() {

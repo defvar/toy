@@ -1,17 +1,14 @@
 use crate::common::error::ApiError;
+use serde::de::DeserializeOwned;
 use toy_api::common::Format;
 use toy_h::Bytes;
-use toy_pack::deser::DeserializableOwned;
 use warp::{Buf, Filter};
 
 pub fn bytes() -> impl Filter<Extract = (Bytes,), Error = warp::Rejection> + Copy {
     warp::body::bytes()
 }
 
-pub fn decode<B: Buf, T: DeserializableOwned>(
-    buf: B,
-    format: Option<Format>,
-) -> Result<T, ApiError> {
+pub fn decode<B: Buf, T: DeserializeOwned>(buf: B, format: Option<Format>) -> Result<T, ApiError> {
     let format = format.unwrap_or_default();
     match format {
         Format::Json => decode_json(buf).map_err(|e| ApiError::from(e)),
@@ -20,17 +17,15 @@ pub fn decode<B: Buf, T: DeserializableOwned>(
     }
 }
 
-fn decode_json<B: Buf, T: DeserializableOwned>(
-    mut buf: B,
-) -> Result<T, toy_pack_json::DecodeError> {
+fn decode_json<B: Buf, T: DeserializeOwned>(mut buf: B) -> Result<T, toy_pack_json::DecodeError> {
     toy_pack_json::unpack::<T>(&buf.copy_to_bytes(buf.remaining()))
 }
 
-fn decode_mp<B: Buf, T: DeserializableOwned>(mut buf: B) -> Result<T, toy_pack_mp::DecodeError> {
+fn decode_mp<B: Buf, T: DeserializeOwned>(mut buf: B) -> Result<T, toy_pack_mp::DecodeError> {
     toy_pack_mp::unpack::<T>(&buf.copy_to_bytes(buf.remaining()))
 }
 
-fn decode_yaml<B: Buf, T: DeserializableOwned>(buf: B) -> Result<T, ApiError> {
+fn decode_yaml<B: Buf, T: DeserializeOwned>(buf: B) -> Result<T, ApiError> {
     let s = buf_to_string(buf);
     match s {
         Ok(x) => toy_pack_yaml::unpack::<T>(x.as_str()).map_err(|x| ApiError::error(x)),

@@ -2,6 +2,8 @@ use crate::watch::{EventType, WatchResponse};
 use crate::Client;
 use futures_util::stream::BoxStream;
 use futures_util::StreamExt;
+use serde::de::DeserializeOwned;
+use serde::Serialize;
 use std::future::Future;
 use std::marker::PhantomData;
 use toy_api::task::PendingTask;
@@ -13,8 +15,6 @@ use toy_api_server::store::kv::{
 use toy_api_server::store::{error::StoreError, StoreConnection};
 use toy_api_server::task::store::{Pending, TaskStore, TaskStoreOps, WatchPending};
 use toy_h::HttpClient;
-use toy_pack::deser::DeserializableOwned;
-use toy_pack::ser::Serializable;
 use tracing::{instrument, span, Instrument, Level};
 
 #[derive(Clone, Debug)]
@@ -121,7 +121,7 @@ where
         opt: FindOption,
     ) -> Result<Option<KvResponse<V>>, StoreError>
     where
-        V: DeserializableOwned,
+        V: DeserializeOwned,
     {
         tracing::debug!("find key:{:?}", key);
         let res = con.client.get(&key).await?.value()?;
@@ -154,7 +154,7 @@ where
         _opt: ListOption,
     ) -> Result<Vec<V>, StoreError>
     where
-        V: DeserializableOwned,
+        V: DeserializeOwned,
     {
         tracing::debug!("list prefix:{:?}", prefix);
         con.client
@@ -180,7 +180,7 @@ where
         opt: PutOption,
     ) -> Result<PutResult, StoreError>
     where
-        V: Serializable + Send,
+        V: Serialize + Send,
     {
         async fn insert<C>(
             con: &EtcdStoreConnection<C>,
@@ -289,7 +289,7 @@ where
         _opt: WatchOption,
     ) -> Result<BoxStream<Result<KvWatchResponse<V>, StoreError>>, StoreError>
     where
-        V: DeserializableOwned,
+        V: DeserializeOwned,
     {
         let stream = con.client.watch(prefix).await?;
         Ok(stream

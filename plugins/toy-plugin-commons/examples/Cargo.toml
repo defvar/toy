@@ -7,15 +7,13 @@ edition = "2018"
 
 [dev-dependencies]
 tracing = "0.1"
-tracing-subscriber = "0.2"
-tracing-appender = "0.1"
+toy-tracing = { path = "../../../pkg/toy-tracing" }
 
 # runtime
 toy-rt = { path = "../../../pkg/toy-rt"}
 
 # core module
 toy = {path = "../../../pkg/toy", features = ["plugin", "supervisor"]}
-toy-pack = {path = "../../../shared/toy-pack", features = ["derive"]}
 
 # config
 toy-pack-yaml = {path = "../../../shared/toy-pack-yaml"}

@@ -1,17 +1,17 @@
 use crate::error::ApiClientError;
+use serde::de::DeserializeOwned;
+use serde::Serialize;
 use toy_api::common::Format;
 #[cfg(feature = "http")]
 use toy_api::error::ErrorMessage;
 #[cfg(feature = "http")]
 use toy_h::Response;
-use toy_pack::deser::DeserializableOwned;
-use toy_pack::ser::Serializable;
 
 #[cfg(feature = "http")]
 pub async fn response<T, V>(res: T, format: Option<Format>) -> Result<V, ApiClientError>
 where
     T: Response,
-    V: DeserializableOwned,
+    V: DeserializeOwned,
 {
     if res.status().is_success() {
         let bytes = res.bytes().await?;
@@ -42,7 +42,7 @@ where
 #[allow(dead_code)]
 pub fn encode<T>(v: &T, format: Option<Format>) -> Result<Vec<u8>, ApiClientError>
 where
-    T: Serializable,
+    T: Serialize,
 {
     match format.unwrap_or(Format::MessagePack) {
         Format::Json => encode_json(v),
@@ -54,7 +54,7 @@ where
 #[allow(dead_code)]
 pub fn decode<T>(bytes: &[u8], format: Option<Format>) -> Result<T, ApiClientError>
 where
-    T: DeserializableOwned,
+    T: DeserializeOwned,
 {
     match format.unwrap_or(Format::MessagePack) {
         Format::Json => decode_json(bytes),
@@ -65,14 +65,14 @@ where
 
 fn encode_json<T>(v: &T) -> Result<Vec<u8>, ApiClientError>
 where
-    T: Serializable,
+    T: Serialize,
 {
     toy_pack_json::pack(v).map_err(|e| e.into())
 }
 
 fn decode_json<T>(bytes: &[u8]) -> Result<T, ApiClientError>
 where
-    T: DeserializableOwned,
+    T: DeserializeOwned,
 {
     toy_pack_json::unpack(bytes).map_err(|e| e.into())
 }
@@ -81,14 +81,14 @@ where
 
 fn encode_mp<T>(v: &T) -> Result<Vec<u8>, ApiClientError>
 where
-    T: Serializable,
+    T: Serialize,
 {
     toy_pack_mp::pack(v).map_err(|e| e.into())
 }
 
 fn decode_mp<T>(bytes: &[u8]) -> Result<T, ApiClientError>
 where
-    T: DeserializableOwned,
+    T: DeserializeOwned,
 {
     toy_pack_mp::unpack(bytes).map_err(|e| e.into())
 }

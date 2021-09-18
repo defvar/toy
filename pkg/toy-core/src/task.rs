@@ -3,11 +3,11 @@
 
 use crate::graph::Graph;
 use crate::Uri;
+use serde::{de::Visitor, Deserialize, Deserializer, Serialize, Serializer};
 use std::fmt;
+use std::fmt::Formatter;
 use std::sync::Arc;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
-use toy_pack::deser::{Deserializable, Deserializer, Visitor};
-use toy_pack::ser::{Serializable, Serializer};
 use uuid::Uuid;
 
 /// Task Identifier
@@ -150,7 +150,7 @@ impl fmt::Debug for TaskContext {
 
 //impl deser / ser
 
-impl<'toy> Deserializable<'toy> for TaskId {
+impl<'toy> Deserialize<'toy> for TaskId {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'toy>,
@@ -160,40 +160,44 @@ impl<'toy> Deserializable<'toy> for TaskId {
         impl<'a> Visitor<'a> for TaskIdVisitor {
             type Value = TaskId;
 
+            fn expecting(&self, formatter: &mut Formatter) -> fmt::Result {
+                write!(formatter, "error")
+            }
+
             fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
             where
-                E: toy_pack::deser::Error,
+                E: serde::de::Error,
             {
                 Uuid::parse_str(v)
                     .map(TaskId::from)
-                    .map_err(|_| toy_pack::deser::Error::invalid_value("[borrowed bytes]", "bytes"))
+                    .map_err(|e| serde::de::Error::custom(e))
             }
 
             fn visit_string<E>(self, v: String) -> Result<Self::Value, E>
             where
-                E: toy_pack::deser::Error,
+                E: serde::de::Error,
             {
                 Uuid::parse_str(&v)
                     .map(TaskId::from)
-                    .map_err(|_| toy_pack::deser::Error::invalid_value("[borrowed bytes]", "bytes"))
+                    .map_err(|e| serde::de::Error::custom(e))
             }
 
             fn visit_bytes<E>(self, v: &[u8]) -> Result<Self::Value, E>
             where
-                E: toy_pack::deser::Error,
+                E: serde::de::Error,
             {
                 Uuid::from_slice(v)
                     .map(TaskId::from)
-                    .map_err(|_| toy_pack::deser::Error::invalid_value("[borrowed bytes]", "bytes"))
+                    .map_err(|e| serde::de::Error::custom(e))
             }
 
             fn visit_byte_buf<E>(self, v: Vec<u8>) -> Result<Self::Value, E>
             where
-                E: toy_pack::deser::Error,
+                E: serde::de::Error,
             {
                 Uuid::from_slice(&v)
                     .map(TaskId::from)
-                    .map_err(|_| toy_pack::deser::Error::invalid_value("[borrowed bytes]", "bytes"))
+                    .map_err(|e| serde::de::Error::custom(e))
             }
         }
 
@@ -201,7 +205,7 @@ impl<'toy> Deserializable<'toy> for TaskId {
     }
 }
 
-impl Serializable for TaskId {
+impl Serialize for TaskId {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,

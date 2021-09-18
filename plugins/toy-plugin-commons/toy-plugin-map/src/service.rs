@@ -3,11 +3,13 @@ use crate::config::{
     RemoveByNameConfig, RenameConfig, SingleValueConfig, ToMapConfig, ToSeqConfig, ToTransform,
     TypedConfig,
 };
-use crate::typed::convert;
-use crate::{
-    Indexing, Mapping, Naming, Put, Reindexing, RemoveByIndex, RemoveByName, Rename, SingleValue,
-    ToMap, ToSeq, Transformer,
+use crate::transform::{
+    IndexingTransformer, MappingTransformer, NamingTransformer, PutTransformer,
+    ReindexingTransformer, RemoveByIndexTransformer, RemoveByNameTransformer, RenameTransformer,
+    SingleValueTransformer, ToMapTransformer, ToSeqTransformer, Transformer,
 };
+use crate::typed::convert;
+use std::future::Future;
 use toy_core::prelude::*;
 
 // typed
@@ -42,108 +44,137 @@ pub async fn typed(
 // transformer
 #[derive(Clone, Debug)]
 pub struct MappingContext {
-    transformer: Mapping,
+    transformer: MappingTransformer,
 }
 
 pub struct NamingContext {
-    transformer: Naming,
+    transformer: NamingTransformer,
 }
 
 pub struct IndexingContext {
-    transformer: Indexing,
+    transformer: IndexingTransformer,
 }
 
-pub struct RindexingContext {
-    transformer: Reindexing,
+pub struct ReindexingContext {
+    transformer: ReindexingTransformer,
 }
 
 pub struct RenameContext {
-    transformer: Rename,
+    transformer: RenameTransformer,
 }
 
 pub struct RemoveByIndexContext {
-    transformer: RemoveByIndex,
+    transformer: RemoveByIndexTransformer,
 }
 
 pub struct RemoveByNameContext {
-    transformer: RemoveByName,
+    transformer: RemoveByNameTransformer,
 }
 
 pub struct PutContext {
-    transformer: Put,
+    transformer: PutTransformer,
 }
 
 pub struct SingleValueContext {
-    transformer: SingleValue,
+    transformer: SingleValueTransformer,
 }
 
 pub struct ToMapContext {
-    transformer: ToMap,
+    transformer: ToMapTransformer,
 }
 
 pub struct ToSeqContext {
-    transformer: ToSeq,
+    transformer: ToSeqTransformer,
 }
 
-macro_rules! transform {
-    ($service_func:ident, $new_context_func:ident, $config: ident, $ctx: ident) => {
-        pub fn $new_context_func(_tp: ServiceType, config: $config) -> Result<$ctx, ServiceError> {
-            Ok($ctx {
-                transformer: config.into_transform(),
-            })
+macro_rules! transform_service {
+    ($service:ident, $config: ident, $ctx: ident) => {
+        #[derive(Clone, Debug)]
+        pub struct $service;
+
+        impl Service for $service {
+            type Context = $ctx;
+            type Request = Frame;
+            type Future = impl Future<Output = Result<ServiceContext<$ctx>, ServiceError>> + Send;
+            type UpstreamFinishFuture =
+                impl Future<Output = Result<ServiceContext<$ctx>, ServiceError>> + Send;
+            type UpstreamFinishAllFuture =
+                impl Future<Output = Result<ServiceContext<$ctx>, ServiceError>> + Send;
+            type Error = ServiceError;
+
+            fn handle(
+                &mut self,
+                _task_ctx: TaskContext,
+                ctx: Self::Context,
+                mut req: Self::Request,
+                mut tx: Outgoing<Self::Request, Self::Error>,
+            ) -> Self::Future {
+                async move {
+                    match req.value_mut() {
+                        Some(v) => {
+                            let _ = ctx.transformer.transform(v);
+                            tx.send_ok(req).await?;
+                        }
+                        None => (),
+                    }
+                    Ok(ServiceContext::Ready(ctx))
+                }
+            }
+
+            fn upstream_finish(
+                &mut self,
+                _task_ctx: TaskContext,
+                ctx: Self::Context,
+                _req: Self::Request,
+                _tx: Outgoing<Self::Request, Self::Error>,
+            ) -> Self::UpstreamFinishFuture {
+                async move { Ok(ServiceContext::Ready(ctx)) }
+            }
+
+            fn upstream_finish_all(
+                &mut self,
+                _task_ctx: TaskContext,
+                ctx: Self::Context,
+                _tx: Outgoing<Self::Request, Self::Error>,
+            ) -> Self::UpstreamFinishAllFuture {
+                async move { Ok(ServiceContext::Complete(ctx)) }
+            }
         }
 
-        pub async fn $service_func(
-            _task_ctx: TaskContext,
-            ctx: $ctx,
-            mut req: Frame,
-            mut tx: Outgoing<Frame, ServiceError>,
-        ) -> Result<ServiceContext<$ctx>, ServiceError> {
-            match req.value_mut() {
-                Some(v) => {
-                    let _ = ctx.transformer.transform(v);
-                    tx.send_ok(req).await?;
-                }
-                None => (),
+        impl ServiceFactory for $service {
+            type Future = impl Future<Output = Result<Self::Service, Self::InitError>> + Send;
+            type Service = $service;
+            type Context = $ctx;
+            type Config = $config;
+            type Request = Frame;
+            type Error = ServiceError;
+            type InitError = ServiceError;
+
+            fn new_service(&self, _tp: ServiceType) -> Self::Future {
+                async move { Ok($service) }
             }
-            Ok(ServiceContext::Ready(ctx))
+
+            fn new_context(
+                &self,
+                _tp: ServiceType,
+                config: Self::Config,
+            ) -> Result<Self::Context, Self::InitError> {
+                Ok($ctx {
+                    transformer: config.into_transform(),
+                })
+            }
         }
     };
 }
 
-transform!(mapping, new_mapping_context, MappingConfig, MappingContext);
-transform!(naming, new_naming_context, NamingConfig, NamingContext);
-transform!(
-    indexing,
-    new_indexing_context,
-    IndexingConfig,
-    IndexingContext
-);
-transform!(
-    reindexing,
-    new_reindexing_context,
-    ReindexingConfig,
-    RindexingContext
-);
-transform!(rename, new_rename_context, RenameConfig, RenameContext);
-transform!(
-    remove_by_index,
-    new_remove_by_index_context,
-    RemoveByIndexConfig,
-    RemoveByIndexContext
-);
-transform!(
-    remove_by_name,
-    new_remove_by_name_context,
-    RemoveByNameConfig,
-    RemoveByNameContext
-);
-transform!(put, new_put_context, PutConfig, PutContext);
-transform!(
-    single_value,
-    new_single_value_context,
-    SingleValueConfig,
-    SingleValueContext
-);
-transform!(to_map, new_to_map_context, ToMapConfig, ToMapContext);
-transform!(to_seq, new_to_seq_context, ToSeqConfig, ToSeqContext);
+transform_service!(Mapping, MappingConfig, MappingContext);
+transform_service!(Indexing, IndexingConfig, IndexingContext);
+transform_service!(Reindexing, ReindexingConfig, ReindexingContext);
+transform_service!(Naming, NamingConfig, NamingContext);
+transform_service!(Rename, RenameConfig, RenameContext);
+transform_service!(Put, PutConfig, PutContext);
+transform_service!(RemoveByIndex, RemoveByIndexConfig, RemoveByIndexContext);
+transform_service!(RemoveByName, RemoveByNameConfig, RemoveByNameContext);
+transform_service!(SingleValue, SingleValueConfig, SingleValueContext);
+transform_service!(ToMap, ToMapConfig, ToMapContext);
+transform_service!(ToSeq, ToSeqConfig, ToSeqContext);

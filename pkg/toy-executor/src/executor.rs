@@ -1,16 +1,16 @@
 use async_trait::async_trait;
+use serde::de::DeserializeOwned;
 use toy_core::data::{self, Frame};
 use toy_core::error::ServiceError;
 use toy_core::executor::{ServiceExecutor, TaskExecutor, TaskExecutorFactory};
 use toy_core::graph::Graph;
 use toy_core::mpsc::{Incoming, Outgoing};
 use toy_core::node_channel::{self, Awaiter, Incomings, Outgoings, SignalOutgoings, Starters};
-use toy_core::registry::Delegator;
+use toy_core::registry::{App, Registry};
 use toy_core::service::{Service, ServiceContext, ServiceFactory};
 use toy_core::task::TaskContext;
 use toy_core::ServiceType;
 use toy_core::Uri;
-use toy_pack::deser::DeserializableOwned;
 
 /// Common implementation `TaskExecutor` and `ServiceExecutor`.
 pub struct Executor {
@@ -108,7 +108,7 @@ impl ServiceExecutor for Executor {
             + 'static,
         F::Service: Send,
         F::Context: Send,
-        F::Config: DeserializableOwned + Send,
+        F::Config: DeserializeOwned + Send,
     {
         let (tx, (rx, upstream_count)) = self.pop_channels(uri);
         let uri = uri.clone();
@@ -122,7 +122,7 @@ impl ServiceExecutor for Executor {
 
         let task_ctx = self.ctx.clone();
         let task_ctx = task_ctx.with_uri(&uri);
-        match data::unpack::<F::Config>(config_value.unwrap().config()) {
+        match data::unpack::<F::Config>(&config_value.unwrap().config()) {
             Ok(config) => {
                 toy_rt::spawn(async move {
                     let new_service = factory.new_service(service_type.clone()).await;
@@ -150,13 +150,10 @@ impl ServiceExecutor for Executor {
 
 #[async_trait]
 impl TaskExecutor for Executor {
-    async fn run(
-        mut self,
-        delegator: impl Delegator<Request = Frame, Error = ServiceError, InitError = ServiceError>
-            + Send
-            + 'static,
-        start_frame: Frame,
-    ) -> Result<(), ServiceError> {
+    async fn run<T>(mut self, app: App<T>, start_frame: Frame) -> Result<(), ServiceError>
+    where
+        T: Registry,
+    {
         let span = self.ctx.info_span();
 
         // need to reverse ....
@@ -168,7 +165,7 @@ impl TaskExecutor for Executor {
             .collect::<Vec<_>>();
 
         for (stype, uri) in &nodes {
-            if let Err(e) = delegator.delegate(stype, uri, &mut self) {
+            if let Err(e) = app.delegate(stype, uri, &mut self) {
                 tracing::error!(parent: &span, "an error occured; {:?}", e);
                 return Err(e);
             }

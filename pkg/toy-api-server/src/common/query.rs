@@ -1,10 +1,10 @@
 use crate::ApiError;
-use toy_pack::deser::DeserializableOwned;
+use serde::de::DeserializeOwned;
 use warp::Filter;
 
 pub fn query_opt<T>() -> impl Filter<Extract = (Option<T>,), Error = warp::Rejection> + Clone
 where
-    T: DeserializableOwned + Send,
+    T: DeserializeOwned + Send,
 {
     query::<T>()
         .map(Some)
@@ -13,7 +13,7 @@ where
 
 pub fn query<T>() -> impl Filter<Extract = (T,), Error = warp::Rejection> + Clone
 where
-    T: DeserializableOwned + Send,
+    T: DeserializeOwned + Send,
 {
     warp::query::raw().and_then(|h: String| {
         tracing::debug!("query:{:?}", h);

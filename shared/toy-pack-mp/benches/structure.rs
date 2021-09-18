@@ -8,11 +8,10 @@ use test::black_box;
 use test::test::Bencher;
 
 use serde::{Deserialize, Serialize};
-use toy_pack_derive::*;
 use toy_pack_mp::marker::marker_from_byte;
 use toy_pack_mp::{pack, unpack};
 
-#[derive(Pack, Unpack, Deserialize, Serialize)]
+#[derive(Deserialize, Serialize)]
 struct TestData<'a> {
     int0: u8,
     uint1: u8,

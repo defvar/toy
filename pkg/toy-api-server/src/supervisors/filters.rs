@@ -5,6 +5,7 @@ use crate::store::kv::KvStore;
 use toy_api::supervisors::{Supervisor, SupervisorList};
 use toy_h::HttpClient;
 use warp::Filter;
+
 /// warp filter for supervisors api.
 pub fn supervisors<T>(
     auth: impl Auth<T> + Clone,

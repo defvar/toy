@@ -1,5 +1,5 @@
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use toy_pack_derive::*;
 use toy_pack_mp::{pack, unpack};
 
 #[test]
@@ -17,8 +17,7 @@ fn hash_map_values() {
 
 #[test]
 fn hash_map_value_if_none() {
-    #[derive(Debug, Clone, PartialEq, Pack, Unpack)]
-    #[toy(ignore_pack_if_none)]
+    #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
     struct Test {
         b: Option<u32>,
     }

@@ -1,6 +1,6 @@
 name: "file sample"
 services:
-  - type: plugin.common.file.reader
+  - type: plugin.common.file.read
     uri: "reader"
     config:
         kind: File
@@ -14,9 +14,9 @@ services:
             qtr: "qtr"
             description: "description"
     wires: writer
-  - type: plugin.common.file.writer
+  - type: plugin.common.file.write
     uri: "writer"
     config:
         kind: File
         path: "/tmp/file.out"
-    wires:
+    wires: []

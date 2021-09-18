@@ -3,12 +3,12 @@ use crate::models::{
     ErrorResponse, ListRequest, ListResponse, TailRequest, TailResponse, WriteRequest,
     WriteResponse,
 };
+use serde::de::DeserializeOwned;
 use toy_gauth::GToken;
 use toy_h::{
     header::HeaderValue, header::AUTHORIZATION, header::CONTENT_TYPE, Bytes, HttpClient,
     RequestBuilder, Response, StatusCode, Uri,
 };
-use toy_pack::deser::DeserializableOwned;
 
 #[derive(Clone, Debug)]
 pub struct Client<T> {
@@ -87,8 +87,8 @@ where
 
     async fn to_response<R, E>(&self, status: StatusCode, bytes: Bytes) -> Result<R, GLoggingError>
     where
-        R: DeserializableOwned,
-        E: DeserializableOwned + Into<GLoggingError>,
+        R: DeserializeOwned,
+        E: DeserializeOwned + Into<GLoggingError>,
     {
         if status.is_success() {
             Ok(toy_pack_json::unpack::<R>(&bytes)?)

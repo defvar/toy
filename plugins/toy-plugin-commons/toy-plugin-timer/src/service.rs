@@ -1,10 +1,13 @@
+use serde::{Deserialize, Serialize};
+use std::future::Future;
 use tokio::time::Duration;
-use toy_core::prelude::{Frame, Outgoing, ServiceError, ServiceType};
-use toy_core::service::ServiceContext;
-use toy_core::task::TaskContext;
-use toy_pack::{Schema, Unpack};
+use toy_core::prelude::{
+    Frame, Outgoing, PortType, Service, ServiceContext, ServiceError, ServiceFactory, ServiceType,
+    TaskContext,
+};
+use toy_pack::Schema;
 
-#[derive(Debug, Clone, Default, Unpack, Schema)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize, Schema)]
 pub struct TickConfig {
     interval_millis: u64,
     start: u64,
@@ -16,32 +19,90 @@ pub struct TickContext {
     config: TickConfig,
 }
 
-pub fn new_tick_context(_tp: ServiceType, config: TickConfig) -> Result<TickContext, ServiceError> {
-    Ok(TickContext {
-        count: config.start,
-        config,
-    })
+#[derive(Debug, Clone)]
+pub struct Tick;
+
+impl Service for Tick {
+    type Context = TickContext;
+    type Request = Frame;
+    type Future = impl Future<Output = Result<ServiceContext<TickContext>, ServiceError>> + Send;
+    type UpstreamFinishFuture =
+        impl Future<Output = Result<ServiceContext<TickContext>, ServiceError>> + Send;
+    type UpstreamFinishAllFuture =
+        impl Future<Output = Result<ServiceContext<TickContext>, ServiceError>> + Send;
+    type Error = ServiceError;
+
+    fn port_type() -> PortType {
+        PortType::source()
+    }
+
+    fn handle(
+        &mut self,
+        task_ctx: TaskContext,
+        mut ctx: Self::Context,
+        _req: Self::Request,
+        mut tx: Outgoing<Self::Request, Self::Error>,
+    ) -> Self::Future {
+        async move {
+            tokio::time::sleep(Duration::from_millis(ctx.config.interval_millis)).await;
+            let span = task_ctx.span();
+            tracing::debug!(parent: span, send = ctx.count);
+
+            tx.send_ok(Frame::from(ctx.count)).await?;
+            match ctx.config.end {
+                Some(end) if end <= ctx.count => {
+                    tracing::debug!(parent: span, "count end");
+                    Ok(ServiceContext::Complete(ctx))
+                }
+                _ => {
+                    ctx.count += 1;
+                    Ok(ServiceContext::Next(ctx))
+                }
+            }
+        }
+    }
+
+    fn upstream_finish(
+        &mut self,
+        _task_ctx: TaskContext,
+        ctx: Self::Context,
+        _req: Self::Request,
+        _tx: Outgoing<Self::Request, Self::Error>,
+    ) -> Self::UpstreamFinishFuture {
+        async move { Ok(ServiceContext::Ready(ctx)) }
+    }
+
+    fn upstream_finish_all(
+        &mut self,
+        _task_ctx: TaskContext,
+        ctx: Self::Context,
+        _tx: Outgoing<Self::Request, Self::Error>,
+    ) -> Self::UpstreamFinishAllFuture {
+        async move { Ok(ServiceContext::Complete(ctx)) }
+    }
 }
 
-pub async fn tick(
-    task_ctx: TaskContext,
-    mut ctx: TickContext,
-    _req: Frame,
-    mut tx: Outgoing<Frame, ServiceError>,
-) -> Result<ServiceContext<TickContext>, ServiceError> {
-    tokio::time::sleep(Duration::from_millis(ctx.config.interval_millis)).await;
-    let span = task_ctx.span();
-    tracing::debug!(parent: span, send = ctx.count);
+impl ServiceFactory for Tick {
+    type Future = impl Future<Output = Result<Self::Service, Self::InitError>> + Send;
+    type Service = Tick;
+    type Context = TickContext;
+    type Config = TickConfig;
+    type Request = Frame;
+    type Error = ServiceError;
+    type InitError = ServiceError;
 
-    tx.send_ok(Frame::from(ctx.count)).await?;
-    match ctx.config.end {
-        Some(end) if end <= ctx.count => {
-            tracing::debug!(parent: span, "count end");
-            Ok(ServiceContext::Complete(ctx))
-        }
-        _ => {
-            ctx.count += 1;
-            Ok(ServiceContext::Next(ctx))
-        }
+    fn new_service(&self, _tp: ServiceType) -> Self::Future {
+        async move { Ok(Tick) }
+    }
+
+    fn new_context(
+        &self,
+        _tp: ServiceType,
+        config: Self::Config,
+    ) -> Result<Self::Context, Self::InitError> {
+        Ok(TickContext {
+            count: config.start,
+            config,
+        })
     }
 }

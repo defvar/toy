@@ -1,23 +1,22 @@
 use std::io::Read;
 use toy::core::prelude::*;
 use toy::executor::ExecutorFactory;
-use tracing_subscriber::fmt::format::FmtSpan;
 
 static CONFIG: &'static str = "./examples/tick.json";
 
 fn main() {
-    let time = tracing_subscriber::fmt::time::ChronoUtc::rfc3339();
-    tracing_subscriber::fmt()
-        .with_ansi(false)
-        .with_max_level(tracing::Level::DEBUG)
-        .with_span_events(FmtSpan::FULL)
-        .with_thread_ids(true)
-        .with_thread_names(true)
-        .with_timer(time)
-        .init();
+    let _ = toy_tracing::console();
 
-    let app = app(toy_plugin_commons::load());
+    let p = plugin(toy_plugin_commons::read())
+        .layer(toy_plugin_commons::write())
+        .layer(toy_plugin_commons::stdin())
+        .layer(toy_plugin_commons::stdout())
+        .layer(toy_plugin_commons::first())
+        .layer(toy_plugin_commons::last())
+        .layer(toy_plugin_commons::count())
+        .layer(toy_plugin_commons::tick());
 
+    let app = app(p);
     let mut f = std::fs::File::open(CONFIG).unwrap();
     let mut s = String::new();
     f.read_to_string(&mut s).unwrap();

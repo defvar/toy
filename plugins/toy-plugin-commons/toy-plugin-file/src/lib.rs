@@ -1,23 +1,20 @@
 //! Toy Plugin for File read and write.
 
-use toy_pack::{Schema, Unpack};
+#![feature(type_alias_impl_trait)]
 
-use self::file_reader::FileReaderState;
-pub use self::file_reader::{FileReader, RowIntoIterator, RowIterator};
-pub use self::file_reader_builder::FileReaderBuilder;
-pub use self::file_writer::FileWriter;
-pub use self::file_writer_builder::FileWriterBuilder;
-pub use plugin::load;
+use serde::{Deserialize, Serialize};
+use toy_pack::Schema;
 
+pub use plugin::{read, write};
 pub mod config;
-mod file_reader;
-mod file_reader_builder;
-mod file_writer;
-mod file_writer_builder;
+pub mod file_reader;
+pub mod file_reader_builder;
+pub mod file_writer;
+pub mod file_writer_builder;
 mod plugin;
 pub mod service;
 
-#[derive(Clone, Copy, Debug, Unpack, Schema)]
+#[derive(Clone, Copy, Debug, Serialize, Deserialize, Schema)]
 pub enum QuoteStyle {
     Always,
     Necessary,

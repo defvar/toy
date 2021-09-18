@@ -1,5 +1,10 @@
+#![feature(type_alias_impl_trait)]
+
 mod plugin;
 pub mod service;
 
-pub use plugin::load;
-pub use service::{TickConfig, TickContext};
+pub mod config {
+    pub use crate::service::TickConfig;
+}
+
+pub use plugin::tick;

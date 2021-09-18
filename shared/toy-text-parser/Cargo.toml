@@ -8,3 +8,4 @@ edition = "2018"
 
 [dependencies]
 toy-pack = {path = "../toy-pack", features = ["derive"] }
+serde = { version = "1.0", features = ["derive"] }

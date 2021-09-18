@@ -1,6 +1,6 @@
-use toy_pack::{Pack, Unpack};
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, PartialEq, Eq, Pack, Unpack)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum PortType {
     Source(u32),
     Flow(u32, u32),

@@ -1,7 +1,7 @@
 use crate::error::EtcdError;
+use serde::de::DeserializeOwned;
+use serde::{Deserialize, Serialize};
 use toy_api_server::store::error::StoreError;
-use toy_pack::deser::DeserializableOwned;
-use toy_pack::{Pack, Unpack};
 
 #[derive(Debug)]
 pub struct Versioning {
@@ -10,7 +10,7 @@ pub struct Versioning {
     version: u64,
 }
 
-#[derive(Debug, Unpack, Default)]
+#[derive(Debug, Deserialize, Default)]
 pub struct ResponseHeader {
     cluster_id: String,
     member_id: String,
@@ -18,7 +18,7 @@ pub struct ResponseHeader {
     raft_term: String,
 }
 
-#[derive(Debug, Default, Pack, Unpack)]
+#[derive(Debug, Default, Serialize, Deserialize)]
 pub struct Kv {
     key: String,
     create_revision: String,
@@ -31,14 +31,13 @@ pub struct Kv {
 // Range
 ///////////////////////////////
 
-#[derive(Debug, Pack)]
-#[toy(ignore_pack_if_none)]
+#[derive(Debug, Serialize)]
 pub struct RangeRequest {
     key: String,
     range_end: Option<String>,
 }
 
-#[derive(Debug, Unpack)]
+#[derive(Debug, Deserialize)]
 pub struct RangeResponse {
     header: ResponseHeader,
     kvs: Vec<Kv>,
@@ -57,13 +56,13 @@ pub struct SingleResponse {
 // Put
 ///////////////////////////////
 
-#[derive(Debug, Pack)]
+#[derive(Debug, Serialize)]
 pub struct PutRequest {
     key: String,
     value: String,
 }
 
-#[derive(Debug, Unpack)]
+#[derive(Debug, Deserialize)]
 pub struct PutResponse {
     header: ResponseHeader,
 }
@@ -72,13 +71,13 @@ pub struct PutResponse {
 // Delete
 ///////////////////////////////
 
-#[derive(Debug, Pack)]
+#[derive(Debug, Serialize)]
 pub struct DeleteRangeRequest {
     key: String,
     range_end: Option<String>,
 }
 
-#[derive(Debug, Unpack)]
+#[derive(Debug, Deserialize)]
 pub struct DeleteRangeResponse {
     header: ResponseHeader,
     deleted: String,
@@ -108,7 +107,7 @@ impl Versioning {
 
     pub fn unpack<T, F>(self, f: F) -> Result<T, StoreError>
     where
-        T: DeserializableOwned,
+        T: DeserializeOwned,
         F: FnOnce(Self) -> Result<T, StoreError>,
     {
         f(self)
@@ -184,7 +183,7 @@ impl RangeResponse {
 
     pub fn unpack<T, F>(&self, mut f: F) -> Result<Vec<T>, StoreError>
     where
-        T: DeserializableOwned,
+        T: DeserializeOwned,
         F: FnMut(Versioning) -> Result<T, StoreError>,
     {
         self.kvs.iter().try_fold(Vec::new(), |mut vec, x| {

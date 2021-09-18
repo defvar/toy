@@ -1,14 +1,9 @@
-use crate::decoder::Decoder;
 use crate::error::YamlError;
-use toy_pack::deser::Deserializable;
+use serde::de::DeserializeOwned;
 
-#[inline]
-pub fn unpack<'toy, T>(s: &'toy str) -> Result<T, YamlError>
+pub fn unpack<T>(s: &str) -> Result<T, YamlError>
 where
-    T: Deserializable<'toy>,
+    T: DeserializeOwned,
 {
-    match Decoder::from_str(s) {
-        Ok(mut d) => T::deserialize(&mut d),
-        Err(e) => Err(e),
-    }
+    serde_yaml::from_str(s).map_err(|e| YamlError::error(e))
 }

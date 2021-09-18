@@ -2,8 +2,9 @@ use std::fs::File;
 use std::io::{self, BufWriter, Error, ErrorKind};
 use std::path::Path;
 
-use super::config::{self, char_to_u8, FileWriteConfig, SinkType};
-use super::{FileWriter, QuoteStyle};
+use super::config::{self, char_to_u8, SinkType, WriteConfig};
+use super::file_writer::FileWriter;
+use crate::QuoteStyle;
 use toy_text_parser::Terminator;
 
 #[derive(Clone)]
@@ -19,9 +20,7 @@ pub struct FileWriterBuilder {
 }
 
 impl FileWriterBuilder {
-    pub fn configure(
-        config: &FileWriteConfig,
-    ) -> Result<FileWriter<Box<dyn io::Write + Send>>, Error> {
+    pub fn configure(config: &WriteConfig) -> Result<FileWriter<Box<dyn io::Write + Send>>, Error> {
         if config.kind == SinkType::File && config.path.is_none() {
             return Err(Error::new(
                 ErrorKind::InvalidInput,

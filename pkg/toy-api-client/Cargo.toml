@@ -10,13 +10,12 @@ edition = "2018"
 thiserror = "1.0"
 tracing = "0.1"
 async-trait = "0.1.42"
-
+serde = { version = "1.0", features = ["derive"] }
 futures-core = { version = "0.3" }
 futures-util = { version = "0.3", default-features = false }
 
 toy-api = { path = "../toy-api" }
 toy-h = {path = "../../shared/toy-h", optional = true}
-toy-pack = {path = "../../shared/toy-pack", features = ["derive"]}
 toy-pack-urlencoded = {path = "../../shared/toy-pack-urlencoded", optional = true}
 toy-pack-json = {path = "../../shared/toy-pack-json"}
 toy-pack-mp = {path = "../../shared/toy-pack-mp"}

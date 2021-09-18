@@ -1,5 +1,4 @@
-use toy_pack_derive::*;
-use toy_pack_yaml::deser;
+use serde::Deserialize;
 
 #[test]
 fn int() {
@@ -10,7 +9,7 @@ fn int() {
 
 #[test]
 fn unit_variant() {
-    #[derive(Pack, Unpack, PartialEq, Debug)]
+    #[derive(Deserialize, PartialEq, Debug)]
     enum Variant {
         First,
         Second,
@@ -23,7 +22,7 @@ First"#;
 
 #[test]
 fn tuple_variant() {
-    #[derive(Pack, Unpack, PartialEq, Debug)]
+    #[derive(Deserialize, PartialEq, Debug)]
     enum Variant {
         One(u32),
         Two(u32, u32),
@@ -39,7 +38,7 @@ Two:
 
 #[test]
 fn nested_struct() {
-    #[derive(Debug, Unpack, PartialEq, Default)]
+    #[derive(Debug, Deserialize, PartialEq, Default)]
     struct Outer {
         id: u32,
         name: String,
@@ -48,7 +47,7 @@ fn nested_struct() {
         columns: Option<Vec<Inner>>,
     }
 
-    #[derive(Debug, Unpack, Default, PartialEq)]
+    #[derive(Debug, Deserialize, Default, PartialEq)]
     struct Inner {
         name: String,
     }
@@ -66,7 +65,7 @@ columns:
   - {name: 'b'}
 ";
 
-    let a = deser::unpack::<Outer>(s).unwrap();
+    let a = toy_pack_yaml::unpack::<Outer>(s).unwrap();
     let expected = Outer {
         id: 1,
         name: "aiueo".to_owned(),

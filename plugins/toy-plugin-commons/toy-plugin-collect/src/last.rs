@@ -1,10 +1,11 @@
 use crate::config::LastConfig;
 use std::future::Future;
 use toy_core::prelude::{
-    Frame, Outgoing, Service, ServiceContext, ServiceError, ServiceType, TaskContext,
+    Frame, Outgoing, PortType, Service, ServiceContext, ServiceError, ServiceType, TaskContext,
 };
 use toy_core::service::ServiceFactory;
 
+#[derive(Clone, Debug)]
 pub struct Last;
 
 pub struct LastContext {
@@ -21,6 +22,10 @@ impl Service for Last {
     type UpstreamFinishAllFuture =
         impl Future<Output = Result<ServiceContext<LastContext>, ServiceError>> + Send;
     type Error = ServiceError;
+
+    fn port_type() -> PortType {
+        PortType::sink()
+    }
 
     fn handle(
         &mut self,

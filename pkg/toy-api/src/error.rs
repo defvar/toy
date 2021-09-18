@@ -1,6 +1,6 @@
-use toy_pack::{Pack, Unpack};
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Pack, Unpack)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct ErrorMessage {
     code: u16,
     message: String,

@@ -1,11 +1,13 @@
+use serde::Deserialize;
 use toy_core::prelude::{Frame, Outgoing, ServiceError, ServiceType};
 use toy_core::service::ServiceContext;
 use toy_core::task::TaskContext;
-use toy_pack::{Schema, Unpack};
+use toy_pack::Schema;
 
-#[derive(Debug, Clone, Default, Unpack, Schema)]
+#[derive(Debug, Clone, Default, Deserialize, Schema)]
 pub struct BroadcastConfig {}
 
+#[derive(Debug, Clone, Default)]
 pub struct BroadcastContext {}
 
 pub fn new_broadcast_context(

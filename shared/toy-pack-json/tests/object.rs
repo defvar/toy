@@ -1,21 +1,21 @@
-use toy_pack_derive::*;
+use serde::{Deserialize, Serialize};
 use toy_pack_json::{pack_to_string, pack_to_string_pretty, unpack, DecodeError};
 use toy_test_utils::unindent;
 
 #[test]
 fn ser_de_nested_struct() {
-    #[derive(Debug, Pack, Unpack, PartialEq, Default)]
-    #[toy(ignore_pack_if_none)]
+    #[derive(Debug, Serialize, Deserialize, PartialEq, Default)]
     struct Outer {
         id: u32,
         name: String,
         age: Option<u32>,
+        #[serde(skip_serializing_if = "Option::is_none")]
         address: Option<String>,
         numbers: Vec<i64>,
         columns: Option<Vec<Inner>>,
     }
 
-    #[derive(Debug, Pack, Unpack, Default, PartialEq)]
+    #[derive(Debug, Serialize, Deserialize, Default, PartialEq)]
     struct Inner {
         name: String,
     }
@@ -53,10 +53,10 @@ fn ser_de_nested_struct() {
 
 #[test]
 fn ser_de_unit_struct() {
-    #[derive(Debug, Pack, Unpack, PartialEq, Default)]
+    #[derive(Debug, Serialize, Deserialize, PartialEq, Default)]
     struct Unit;
     let expected = Unit;
-    let json = "{}";
+    let json = "null";
     let r = unpack::<Unit>(json.as_bytes()).unwrap();
     assert_eq!(r, expected);
 
@@ -66,7 +66,7 @@ fn ser_de_unit_struct() {
 
 #[test]
 fn de_struct_err_eof() {
-    #[derive(Debug, Unpack, PartialEq, Default)]
+    #[derive(Debug, Serialize, Deserialize, PartialEq, Default)]
     struct Data {
         id: u32,
     }
@@ -86,7 +86,7 @@ fn de_struct_err_eof() {
 
 #[test]
 fn de_struct_err_expected_comma() {
-    #[derive(Debug, Unpack, PartialEq, Default)]
+    #[derive(Debug, Serialize, Deserialize, PartialEq, Default)]
     struct Data {
         id: u32,
         name: String,
@@ -109,7 +109,7 @@ fn de_struct_err_expected_comma() {
 
 #[test]
 fn de_struct_err_trailing_comma() {
-    #[derive(Debug, Unpack, PartialEq, Default)]
+    #[derive(Debug, Serialize, Deserialize, PartialEq, Default)]
     struct Data {
         id: u32,
     }
@@ -130,7 +130,7 @@ fn de_struct_err_trailing_comma() {
 
 #[test]
 fn borrowed_value() {
-    #[derive(Debug, Unpack, PartialEq, Default)]
+    #[derive(Debug, Serialize, Deserialize, PartialEq, Default)]
     struct Data<'a> {
         text: &'a str,
     }
@@ -149,15 +149,14 @@ fn borrowed_value() {
 
 #[test]
 fn pretty() {
-    #[derive(Debug, Pack, Unpack, PartialEq, Default)]
-    #[toy(ignore_pack_if_none)]
+    #[derive(Debug, Serialize, Deserialize, PartialEq, Default)]
     struct Outer {
         id: u32,
         numbers: Vec<i64>,
         columns: Vec<Inner>,
     }
 
-    #[derive(Debug, Pack, Unpack, Default, PartialEq)]
+    #[derive(Debug, Serialize, Deserialize, Default, PartialEq)]
     struct Inner {
         name: String,
     }

@@ -1,6 +1,6 @@
 use crate::error::Error;
+use serde::Serializable;
 use std::io::Write;
-use toy_pack::ser::Serializable;
 
 pub trait Output<W> {
     fn write(self, writer: W, pretty: bool) -> Result<(), Error>;

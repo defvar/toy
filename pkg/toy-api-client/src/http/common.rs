@@ -1,10 +1,9 @@
 use crate::auth::Auth;
 use crate::error::ApiClientError;
+use serde::de::DeserializeOwned;
+use serde::Serialize;
 use toy_api::common::{DeleteOption, FindOption, Format, ListOption, PutOption};
 use toy_h::{HeaderMap, HttpClient, RequestBuilder, Uri};
-use toy_pack::deser::DeserializableOwned;
-use toy_pack::ser::Serializable;
-use toy_pack::Pack;
 use toy_pack_urlencoded::QueryParseError;
 
 pub(crate) async fn find<T, V>(
@@ -17,7 +16,7 @@ pub(crate) async fn find<T, V>(
 ) -> Result<V, ApiClientError>
 where
     T: HttpClient,
-    V: DeserializableOwned,
+    V: DeserializeOwned,
 {
     let query = prepare_query(&opt)?;
     let uri = format!("{}/{}/{}?{}", root, path, key, query).parse::<Uri>()?;
@@ -35,7 +34,7 @@ pub(crate) async fn list<T, V>(
 ) -> Result<V, ApiClientError>
 where
     T: HttpClient,
-    V: DeserializableOwned,
+    V: DeserializeOwned,
 {
     let query = prepare_query(&opt)?;
     let uri = format!("{}/{}?{}", root, path, query).parse::<Uri>()?;
@@ -55,7 +54,7 @@ pub(crate) async fn put<T, V>(
 ) -> Result<(), ApiClientError>
 where
     T: HttpClient,
-    V: Serializable,
+    V: Serialize,
 {
     let query = prepare_query(&opt)?;
     let uri = format!("{}/{}/{}?{}", root, path, key, query).parse::<Uri>()?;
@@ -111,9 +110,9 @@ pub(crate) fn common_headers(format: Option<Format>, auth: &Auth) -> toy_h::Head
 
 pub(crate) fn prepare_query<T>(p: &T) -> Result<String, QueryParseError>
 where
-    T: Serializable,
+    T: Serialize,
 {
-    #[derive(Pack)]
+    #[derive(Serialize)]
     struct DefaultFormat {
         format: Format,
     }

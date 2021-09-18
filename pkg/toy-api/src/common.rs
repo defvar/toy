@@ -1,12 +1,12 @@
-use toy_pack::{Pack, Unpack};
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Eq, PartialEq, Clone, Copy, Pack, Unpack)]
+#[derive(Debug, Eq, PartialEq, Clone, Copy, Serialize, Deserialize)]
 pub enum Format {
-    #[toy(rename = "json")]
+    #[serde(rename = "json")]
     Json,
-    #[toy(rename = "yaml")]
+    #[serde(rename = "yaml")]
     Yaml,
-    #[toy(rename = "mp")]
+    #[serde(rename = "mp")]
     MessagePack,
 }
 
@@ -16,7 +16,7 @@ impl Default for Format {
     }
 }
 
-#[derive(Clone, Debug, Pack, Unpack)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct FindOption {
     format: Option<Format>,
     pretty: Option<bool>,
@@ -46,7 +46,7 @@ impl FindOption {
     }
 }
 
-#[derive(Clone, Debug, Pack, Unpack)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ListOption {
     format: Option<Format>,
     pretty: Option<bool>,
@@ -76,7 +76,7 @@ impl ListOption {
     }
 }
 
-#[derive(Clone, Debug, Pack, Unpack)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct PutOption {
     format: Option<Format>,
     pretty: Option<bool>,
@@ -106,7 +106,7 @@ impl PutOption {
     }
 }
 
-#[derive(Clone, Debug, Pack, Unpack)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct DeleteOption {
     format: Option<Format>,
     pretty: Option<bool>,

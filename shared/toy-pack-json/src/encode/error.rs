@@ -2,7 +2,6 @@ use std::backtrace::Backtrace;
 use std::fmt::Display;
 use std::io;
 use thiserror::Error as ThisError;
-use toy_pack::ser::Error;
 
 /// Using Encoder and Serializer.
 /// It is used when an error occurs in the implementation of serialization.
@@ -34,7 +33,7 @@ impl EncodeError {
     }
 }
 
-impl Error for EncodeError {
+impl serde::ser::Error for EncodeError {
     fn custom<T>(msg: T) -> Self
     where
         T: Display,

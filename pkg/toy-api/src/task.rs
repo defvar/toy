@@ -1,16 +1,15 @@
 use crate::common::Format;
 use crate::graph::Graph;
+use serde::{Deserialize, Serialize};
 use toy_core::prelude::TaskId;
-use toy_pack::{Pack, Unpack};
 
-#[derive(Debug, Clone, Pack, Unpack)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum PendingStatus {
     Created,
     Allocated,
 }
 
-#[derive(Debug, Clone, Pack, Unpack)]
-#[toy(ignore_pack_if_none)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PendingTask {
     task_id: TaskId,
     status: PendingStatus,
@@ -19,43 +18,42 @@ pub struct PendingTask {
     graph: Option<Graph>,
 }
 
-#[derive(Debug, Clone, Pack, Unpack)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PendingTaskList {
     items: Vec<PendingTask>,
     count: u32,
 }
 
-#[derive(Debug, Clone, Pack)]
+#[derive(Debug, Clone, Serialize)]
 pub struct PendingResult {
     task_id: TaskId,
 }
 
-#[derive(Debug, Clone, Pack, Unpack)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AllocateRequest {
     supervisor: String,
 }
 
-#[derive(Debug, Clone, Pack, Unpack)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AllocateResponse {
     task_id: TaskId,
     status: AllocateStatus,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Pack, Unpack)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum AllocateStatus {
     Ok,
     NotFound,
 }
 
-#[derive(Debug, Pack, Unpack)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct TaskLog {
     task_id: TaskId,
     payload: Vec<TaskLogInner>,
     count: u32,
 }
 
-#[derive(Debug, Pack, Unpack)]
-#[toy(ignore_pack_if_none)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct TaskLogInner {
     message: String,
     target: String,
@@ -65,14 +63,13 @@ pub struct TaskLogInner {
     idle: Option<String>,
 }
 
-#[derive(Debug, Pack, Unpack)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Tasks {
     tasks: Vec<TasksInner>,
     count: u32,
 }
 
-#[derive(Debug, Pack, Unpack)]
-#[toy(ignore_pack_if_none)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct TasksInner {
     task_id: TaskId,
     started_at: Option<String>,
@@ -224,7 +221,7 @@ impl TasksInner {
 }
 
 /// Watch api option.
-#[derive(Clone, Debug, Pack, Unpack)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct WatchOption {
     format: Option<Format>,
 }
@@ -240,7 +237,7 @@ impl WatchOption {
 }
 
 /// List api option.
-#[derive(Clone, Debug, Pack, Unpack)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ListOption {
     format: Option<Format>,
 }
@@ -256,7 +253,7 @@ impl ListOption {
 }
 
 /// Post api option.
-#[derive(Clone, Debug, Pack, Unpack)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct PostOption {
     format: Option<Format>,
 }
@@ -272,7 +269,7 @@ impl PostOption {
 }
 
 /// Allocate api option.
-#[derive(Clone, Debug, Pack, Unpack)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct AllocateOption {
     format: Option<Format>,
 }
@@ -288,7 +285,7 @@ impl AllocateOption {
 }
 
 /// Log api option.
-#[derive(Clone, Debug, Pack, Unpack)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct LogOption {
     format: Option<Format>,
 }

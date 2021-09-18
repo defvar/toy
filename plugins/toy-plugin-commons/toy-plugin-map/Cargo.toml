@@ -7,9 +7,11 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+serde = { version = "1.0", features = ["derive"] }
+tracing = "0.1"
+
 toy-core = { path = "../../../pkg/toy-core" }
 toy-pack = { path = "../../../shared/toy-pack", features = ["derive"] }
-tracing = "0.1"
 
 [dev-dependencies]
 toy-plugin-test = { path = "../../toy-plugin-test" }

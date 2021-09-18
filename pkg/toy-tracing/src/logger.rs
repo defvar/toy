@@ -14,7 +14,7 @@ pub enum LogRotation {
 
 #[derive(Debug)]
 pub struct LogGuard {
-    g: Option<WorkerGuard>,
+    _g: Option<WorkerGuard>,
 }
 
 pub fn console() -> Result<LogGuard, std::io::Error> {
@@ -26,7 +26,7 @@ pub fn console() -> Result<LogGuard, std::io::Error> {
         .with_env_filter(EnvFilter::from_default_env())
         .with_timer(time);
     builder.init();
-    Ok(LogGuard { g: None })
+    Ok(LogGuard { _g: None })
 }
 
 pub fn file(
@@ -52,7 +52,7 @@ pub fn file(
         .with_writer(non_blocking);
 
     builder.init();
-    Ok(LogGuard { g: Some(guard) })
+    Ok(LogGuard { _g: Some(guard) })
 }
 
 pub fn tcp<A: ToSocketAddrs>(addr: A) -> Result<LogGuard, std::io::Error> {
@@ -69,5 +69,5 @@ pub fn tcp<A: ToSocketAddrs>(addr: A) -> Result<LogGuard, std::io::Error> {
         .with_writer(non_blocking);
 
     builder.init();
-    Ok(LogGuard { g: Some(guard) })
+    Ok(LogGuard { _g: Some(guard) })
 }

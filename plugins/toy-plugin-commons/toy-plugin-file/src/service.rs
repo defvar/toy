@@ -1,73 +1,196 @@
-use crate::config::{FileReadConfig, FileWriteConfig};
-use crate::{FileReader, FileReaderBuilder, FileWriter, FileWriterBuilder};
+use crate::config::{ReadConfig, WriteConfig};
+use crate::file_reader::FileReader;
+use crate::file_reader_builder::FileReaderBuilder;
+use crate::file_writer::FileWriter;
+use crate::file_writer_builder::FileWriterBuilder;
 use core::fmt::Formatter;
+use std::future::Future;
 use std::io;
-use toy_core::data::{Frame, Map, Value};
-use toy_core::error::ServiceError;
-use toy_core::mpsc::Outgoing;
-use toy_core::service::ServiceContext;
-use toy_core::task::TaskContext;
-use toy_core::ServiceType;
+use toy_core::prelude::*;
 use toy_text_parser::Line;
 
-pub struct FileReadContext {
+pub struct ReadContext {
     line: u32,
     reader: FileReader<Box<dyn io::Read + Send>>,
     buf: Line,
 }
 
-pub struct FileWriteContext {
+pub struct WriteContext {
     line: u32,
     writer: FileWriter<Box<dyn io::Write + Send>>,
 }
 
-impl std::fmt::Debug for FileWriteContext {
+impl std::fmt::Debug for WriteContext {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
-        f.debug_struct(std::any::type_name::<FileWriteContext>())
+        f.debug_struct(std::any::type_name::<WriteContext>())
             .field("line", &self.line)
             .finish()
     }
 }
 
-impl std::fmt::Debug for FileReadContext {
+impl std::fmt::Debug for ReadContext {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
-        f.debug_struct(std::any::type_name::<FileReadContext>())
+        f.debug_struct(std::any::type_name::<ReadContext>())
             .field("line", &self.line)
             .finish()
     }
 }
 
-pub fn new_read_context(
-    _tp: ServiceType,
-    config: FileReadConfig,
-) -> Result<FileReadContext, ServiceError> {
-    FileReaderBuilder::configure(&config)
-        .map(|r| FileReadContext {
-            line: 0u32,
-            reader: r,
-            buf: Line::new(),
-        })
-        .map_err(|e| e.into())
+#[derive(Debug, Clone)]
+pub struct Read;
+
+impl Service for Read {
+    type Context = ReadContext;
+    type Request = Frame;
+    type Future = impl Future<Output = Result<ServiceContext<ReadContext>, ServiceError>> + Send;
+    type UpstreamFinishFuture =
+        impl Future<Output = Result<ServiceContext<ReadContext>, ServiceError>> + Send;
+    type UpstreamFinishAllFuture =
+        impl Future<Output = Result<ServiceContext<ReadContext>, ServiceError>> + Send;
+    type Error = ServiceError;
+
+    fn port_type() -> PortType {
+        PortType::source()
+    }
+
+    fn handle(
+        &mut self,
+        task_ctx: TaskContext,
+        ctx: Self::Context,
+        req: Self::Request,
+        tx: Outgoing<Self::Request, Self::Error>,
+    ) -> Self::Future {
+        async move { read(task_ctx, ctx, req, tx).await }
+    }
+
+    fn upstream_finish(
+        &mut self,
+        _task_ctx: TaskContext,
+        ctx: Self::Context,
+        _req: Self::Request,
+        _tx: Outgoing<Self::Request, Self::Error>,
+    ) -> Self::UpstreamFinishFuture {
+        async move { Ok(ServiceContext::Ready(ctx)) }
+    }
+
+    fn upstream_finish_all(
+        &mut self,
+        _task_ctx: TaskContext,
+        ctx: Self::Context,
+        _tx: Outgoing<Self::Request, Self::Error>,
+    ) -> Self::UpstreamFinishAllFuture {
+        async move { Ok(ServiceContext::Complete(ctx)) }
+    }
 }
 
-pub fn new_write_context(
-    _tp: ServiceType,
-    config: FileWriteConfig,
-) -> Result<FileWriteContext, ServiceError> {
-    FileWriterBuilder::configure(&config)
-        .map(|w| FileWriteContext {
-            line: 0u32,
-            writer: w,
-        })
-        .map_err(|e| e.into())
+impl ServiceFactory for Read {
+    type Future = impl Future<Output = Result<Self::Service, Self::InitError>> + Send;
+    type Service = Read;
+    type Context = ReadContext;
+    type Config = ReadConfig;
+    type Request = Frame;
+    type Error = ServiceError;
+    type InitError = ServiceError;
+
+    fn new_service(&self, _tp: ServiceType) -> Self::Future {
+        async move { Ok(Read) }
+    }
+
+    fn new_context(
+        &self,
+        _tp: ServiceType,
+        config: Self::Config,
+    ) -> Result<Self::Context, Self::InitError> {
+        FileReaderBuilder::configure(&config)
+            .map(|r| ReadContext {
+                line: 0u32,
+                reader: r,
+                buf: Line::new(),
+            })
+            .map_err(|e| e.into())
+    }
 }
 
-pub async fn read(
+#[derive(Debug, Clone)]
+pub struct Write;
+
+impl Service for Write {
+    type Context = WriteContext;
+    type Request = Frame;
+    type Future = impl Future<Output = Result<ServiceContext<WriteContext>, ServiceError>> + Send;
+    type UpstreamFinishFuture =
+        impl Future<Output = Result<ServiceContext<WriteContext>, ServiceError>> + Send;
+    type UpstreamFinishAllFuture =
+        impl Future<Output = Result<ServiceContext<WriteContext>, ServiceError>> + Send;
+    type Error = ServiceError;
+
+    fn port_type() -> PortType {
+        PortType::sink()
+    }
+
+    fn handle(
+        &mut self,
+        task_ctx: TaskContext,
+        ctx: Self::Context,
+        req: Self::Request,
+        tx: Outgoing<Self::Request, Self::Error>,
+    ) -> Self::Future {
+        async move { write(task_ctx, ctx, req, tx).await }
+    }
+
+    fn upstream_finish(
+        &mut self,
+        _task_ctx: TaskContext,
+        ctx: Self::Context,
+        _req: Self::Request,
+        _tx: Outgoing<Self::Request, Self::Error>,
+    ) -> Self::UpstreamFinishFuture {
+        async move { Ok(ServiceContext::Ready(ctx)) }
+    }
+
+    fn upstream_finish_all(
+        &mut self,
+        _task_ctx: TaskContext,
+        ctx: Self::Context,
+        _tx: Outgoing<Self::Request, Self::Error>,
+    ) -> Self::UpstreamFinishAllFuture {
+        async move { Ok(ServiceContext::Complete(ctx)) }
+    }
+}
+
+impl ServiceFactory for Write {
+    type Future = impl Future<Output = Result<Self::Service, Self::InitError>> + Send;
+    type Service = Write;
+    type Context = WriteContext;
+    type Config = WriteConfig;
+    type Request = Frame;
+    type Error = ServiceError;
+    type InitError = ServiceError;
+
+    fn new_service(&self, _tp: ServiceType) -> Self::Future {
+        async move { Ok(Write) }
+    }
+
+    fn new_context(
+        &self,
+        _tp: ServiceType,
+        config: Self::Config,
+    ) -> Result<Self::Context, Self::InitError> {
+        FileWriterBuilder::configure(&config)
+            .map(|w| WriteContext {
+                line: 0u32,
+                writer: w,
+            })
+            .map_err(|e| e.into())
+    }
+}
+
+async fn read(
     _task_ctx: TaskContext,
-    mut ctx: FileReadContext,
+    mut ctx: ReadContext,
     _req: Frame,
     mut tx: Outgoing<Frame, ServiceError>,
-) -> Result<ServiceContext<FileReadContext>, ServiceError> {
+) -> Result<ServiceContext<ReadContext>, ServiceError> {
     while ctx.reader.read(&mut ctx.buf)? {
         let v = if ctx.reader.has_headers() {
             let v = ctx
@@ -88,12 +211,12 @@ pub async fn read(
     Ok(ServiceContext::Complete(ctx))
 }
 
-pub async fn write(
+async fn write(
     _task_ctx: TaskContext,
-    mut ctx: FileWriteContext,
+    mut ctx: WriteContext,
     req: Frame,
     mut tx: Outgoing<Frame, ServiceError>,
-) -> Result<ServiceContext<FileWriteContext>, ServiceError> {
+) -> Result<ServiceContext<WriteContext>, ServiceError> {
     match req.value() {
         Some(v) => {
             ctx.writer.write_value(v)?;

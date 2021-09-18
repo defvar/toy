@@ -58,6 +58,7 @@ pub struct FieldAttr {
     pub default: DefaultExpr,
     pub borrowed_lifetimes: BTreeSet<syn::Lifetime>,
     pub rename: RenameExpr,
+    pub flatten: bool,
 }
 
 impl FieldAttr {
@@ -65,6 +66,7 @@ impl FieldAttr {
         let mut ignore: Option<bool> = None;
         let mut default: Option<DefaultExpr> = None;
         let mut rename: Option<RenameExpr> = None;
+        let mut flatten: Option<bool> = None;
 
         for attr in &field.attrs {
             if let Some(items) = get_meta_items(attr) {
@@ -95,6 +97,8 @@ impl FieldAttr {
                             let path = get_lit_str(&m.ident, &m.lit)?;
                             rename = Some(RenameExpr::Lit(path.value()));
                         }
+
+                        Meta(NameValue(ref m)) if m.ident == "flatten" => flatten = Some(true),
                         _ => (),
                     }
                 }
@@ -109,6 +113,7 @@ impl FieldAttr {
             default: default.unwrap_or(DefaultExpr::Default),
             borrowed_lifetimes: lifetimes,
             rename: rename.unwrap_or(RenameExpr::Default),
+            flatten: flatten.unwrap_or(false),
         };
         Ok(r)
     }

@@ -1,6 +1,7 @@
-use toy_pack::{Pack, Schema, Unpack};
+use serde::{Deserialize, Serialize};
+use toy_pack::Schema;
 
-#[derive(Copy, Clone, Debug, Eq, PartialEq, Pack, Unpack, Schema)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, Serialize, Deserialize, Schema)]
 pub enum Terminator {
     CRLF,
     Any(u8),

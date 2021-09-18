@@ -1,22 +1,32 @@
 use std::io::Read;
 use toy::core::prelude::*;
-use toy::core::task::TaskId;
 use toy::executor::ExecutorFactory;
-use toy::supervisor::Request;
-use tracing_subscriber::fmt::format::FmtSpan;
 
 static CONFIG: &'static str = "./examples/file.yml";
 
 fn main() {
-    tracing_subscriber::fmt()
-        .with_max_level(tracing::Level::DEBUG)
-        .with_span_events(FmtSpan::CLOSE)
-        .with_thread_ids(true)
-        .with_thread_names(true)
-        .init();
+    let _ = toy_tracing::console();
+    let p = plugin(toy_plugin_commons::read())
+        .layer(toy_plugin_commons::write())
+        .layer(toy_plugin_commons::mapping())
+        .layer(toy_plugin_commons::indexing())
+        .layer(toy_plugin_commons::naming())
+        .layer(toy_plugin_commons::put())
+        .layer(toy_plugin_commons::reindexing())
+        .layer(toy_plugin_commons::remove_by_index())
+        .layer(toy_plugin_commons::remove_by_name())
+        .layer(toy_plugin_commons::rename())
+        .layer(toy_plugin_commons::single_value())
+        .layer(toy_plugin_commons::to_map())
+        .layer(toy_plugin_commons::to_seq())
+        .layer(toy_plugin_commons::stdin())
+        .layer(toy_plugin_commons::stdout())
+        .layer(toy_plugin_commons::first())
+        .layer(toy_plugin_commons::last())
+        .layer(toy_plugin_commons::count())
+        .layer(toy_plugin_commons::tick());
 
-    let app = app(toy_plugin_commons::load());
-
+    let app = app(p);
     let mut f = std::fs::File::open(CONFIG).unwrap();
     let mut s = String::new();
     f.read_to_string(&mut s).unwrap();
@@ -30,24 +40,10 @@ fn main() {
             .build()
             .unwrap();
 
-        let (sv, mut tx, mut rx) = toy::supervisor::local(ExecutorFactory, app);
+        let (sv, _, _) = toy::supervisor::local(ExecutorFactory, app);
 
-        // supervisor start
-        rt.spawn(async {
-            let _ = sv.run().await;
-        });
-
-        let _ = rt.block_on(async {
-            let (tx2, rx2) = toy::core::oneshot::channel();
-            let id = TaskId::new();
-            let _ = tx.send_ok(Request::RunTask(id, g, tx2)).await;
-            let uuid = rx2.recv().await;
-            tracing::info!("task:{:?}", uuid);
-        });
-
-        tracing::info!("waiting shutdown reply from supervisor");
-        let _ = rt.block_on(async {
-            rx.next().await;
+        rt.block_on(async {
+            let _ = sv.oneshot(g).await;
         });
     }
 }

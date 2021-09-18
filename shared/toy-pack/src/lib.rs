@@ -1,8 +1,10 @@
 //! Data structure serialization and deserialization api.
 
-pub mod deser;
+mod deser;
 pub mod schema;
-pub mod ser;
+mod ser;
+
+pub use deser::from_primitive::FromPrimitive;
 
 pub mod export {
     pub use std::default::Default;

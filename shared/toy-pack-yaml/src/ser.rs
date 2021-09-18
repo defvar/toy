@@ -1,14 +1,9 @@
 use crate::error::YamlError;
-use crate::serializer::Ser;
-use toy_pack::ser::Serializable;
-use yaml_rust::YamlEmitter;
+use serde::Serialize;
 
 pub fn pack_to_string<T>(v: T) -> Result<String, YamlError>
 where
-    T: Serializable,
+    T: Serialize,
 {
-    let doc = v.serialize(Ser)?;
-    let mut buf = String::new();
-    YamlEmitter::new(&mut buf).dump(&doc)?;
-    Ok(buf)
+    serde_yaml::to_string(&v).map_err(|e| YamlError::error(e))
 }

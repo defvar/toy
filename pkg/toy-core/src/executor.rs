@@ -4,13 +4,13 @@
 use crate::data::Frame;
 use crate::error::ServiceError;
 use crate::node_channel::SignalOutgoings;
-use crate::registry::Delegator;
+use crate::registry::{App, Registry};
 use crate::service::ServiceFactory;
 use crate::service_type::ServiceType;
 use crate::service_uri::Uri;
 use crate::task::TaskContext;
 use async_trait::async_trait;
-use toy_pack::deser::DeserializableOwned;
+use serde::de::DeserializeOwned;
 
 /// Trait for Service Executor.
 ///
@@ -31,7 +31,7 @@ pub trait ServiceExecutor {
             + 'static,
         F::Service: Send,
         F::Context: Send,
-        F::Config: DeserializableOwned + Send;
+        F::Config: DeserializeOwned + Send;
 }
 
 /// Trait for Task Executor.
@@ -40,13 +40,9 @@ pub trait ServiceExecutor {
 /// This trait called from `Supervisor`.
 #[async_trait]
 pub trait TaskExecutor {
-    async fn run(
-        self,
-        delegator: impl Delegator<Request = Frame, Error = ServiceError, InitError = ServiceError>
-            + Send
-            + 'static,
-        start_frame: Frame,
-    ) -> Result<(), ServiceError>;
+    async fn run<T>(self, app: App<T>, start_frame: Frame) -> Result<(), ServiceError>
+    where
+        T: Registry;
 }
 
 /// Create a `TaskExecutor`.
