@@ -8,7 +8,12 @@ on:
 jobs:
   build:
     name: build toy app
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os:
+          - ubuntu-latest
+          - macos-latest
     steps:
       - name: checkout
         uses: actions/checkout@v2
@@ -16,18 +21,24 @@ jobs:
       - name: install rust
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: nightly
+          toolchain: nightly-2021-07-05
           profile: minimal
           override: true
 
-      - name: build-console-backend
+      - name: test-console-backend
         uses: actions-rs/cargo@v1
         with:
-          command: build
+          command: test
           args: --manifest-path ${{ github.workspace }}/apps/console/console-backend/Cargo.toml
 
-      - name: build-supervisor-cli
+      - name: test-supervisor
         uses: actions-rs/cargo@v1
         with:
-          command: build
+          command: test
           args: --manifest-path ${{ github.workspace }}/apps/supervisor/Cargo.toml
+
+      - name: test-toyctl
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --manifest-path ${{ github.workspace }}/apps/toyctl/Cargo.toml
