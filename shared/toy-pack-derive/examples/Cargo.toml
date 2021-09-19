@@ -10,4 +10,3 @@ path = "src/derive.rs"
 
 [dependencies]
 toy-pack-derive = {path = "../toy-pack-derive"}
-toy-pack-mp = {path = "../toy-pack-mp"}

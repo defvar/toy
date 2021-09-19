@@ -1,6 +1,7 @@
 use toy_pack_derive::*;
 
-#[derive(Pack, Unpack, Schema, Debug, PartialEq)]
+#[allow(dead_code)]
+#[derive(Schema, Debug, PartialEq)]
 struct Dum<'a> {
     #[toy(rename = "u32")]
     v_u32: u32,
@@ -10,7 +11,8 @@ struct Dum<'a> {
     v_test_enum: TestEnum,
 }
 
-#[derive(Eq, PartialEq, Debug, Pack, Unpack, Schema)]
+#[allow(dead_code)]
+#[derive(Eq, PartialEq, Debug, Schema)]
 enum TestEnum {
     //unit variant
     #[toy(rename = "Variant_A")]
