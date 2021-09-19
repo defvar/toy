@@ -8,7 +8,6 @@ on:
       - 'plugins/**'
 
 env:
-  RUSTFLAGS: -Dwarnings
   RUST_BACKTRACE: 1
 
 jobs:
@@ -25,18 +24,10 @@ jobs:
     - name: checkout
       uses: actions/checkout@v2
 
-    - name: install rust
-      uses: actions-rs/toolchain@v1
-      with:
-        toolchain: nightly-2021-07-05
-        profile: minimal
-        override: true
+    - run: rustup update nightly --no-self-update && rustup default nightly
 
     - name: test-pkg
-      uses: actions-rs/cargo@v1
-      with:
-        command: test
-        args: --manifest-path ${{ github.workspace }}/pkg/Cargo.toml
+      run: cargo test --manifest-path ${{ github.workspace }}/pkg/Cargo.toml
 
     - name: test-shared-gauth
       uses: actions-rs/cargo@v1
@@ -117,12 +108,7 @@ jobs:
       - name: checkout
         uses: actions/checkout@v2
 
-      - name: install rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: nightly-2021-07-05
-          profile: minimal
-          override: true
+      - run: rustup update nightly --no-self-update && rustup default nightly
 
       - name: test-plugin-commons
         uses: actions-rs/cargo@v1

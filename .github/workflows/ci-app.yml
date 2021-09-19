@@ -5,6 +5,9 @@ on:
     paths:
       - 'apps/**'
 
+env:
+    RUST_BACKTRACE: 1
+
 jobs:
   build:
     name: build toy app
@@ -18,12 +21,7 @@ jobs:
       - name: checkout
         uses: actions/checkout@v2
 
-      - name: install rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: nightly-2021-07-05
-          profile: minimal
-          override: true
+      - run: rustup update nightly --no-self-update && rustup default nightly
 
       - name: test-console-backend
         uses: actions-rs/cargo@v1
