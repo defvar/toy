@@ -135,4 +135,4 @@ jobs:
         with:
           command: test
           args: --manifest-path ${{ github.workspace }}/plugins/toy-plugin-js/Cargo.toml
-        if: !startsWith(matrix.os, 'windows')
+        if: startsWith(matrix.os, 'ubuntu') || startsWith(matrix.os, 'macos')
