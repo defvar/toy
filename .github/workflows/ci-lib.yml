@@ -8,9 +8,15 @@ on:
       - 'plugins/**'
 
 jobs:
-  build:
-    name: build toy lib
-    runs-on: ubuntu-latest
+  test-shared:
+    name: build toy shared
+    runs-on: ${{ matrix.os }}
+    strategy:
+        matrix:
+          os:
+            - windows-latest
+            - ubuntu-latest
+            - macos-latest
     steps:
     - name: checkout
       uses: actions/checkout@v2
@@ -85,8 +91,8 @@ jobs:
     - name: test-shared-text-parser
       uses: actions-rs/cargo@v1
       with:
-          command: test
-          args: --manifest-path ${{ github.workspace }}/shared/toy-text-parser/Cargo.toml
+        command: test
+        args: --manifest-path ${{ github.workspace }}/shared/toy-text-parser/Cargo.toml
 
     - name: test-shared-jwt
       uses: actions-rs/cargo@v1
@@ -94,14 +100,34 @@ jobs:
         command: test
         args: --manifest-path ${{ github.workspace }}/shared/toy-jwt/Cargo.toml
 
-    - name: test-plugin-commons
-      uses: actions-rs/cargo@v1
-      with:
-        command: test
-        args: --manifest-path ${{ github.workspace }}/plugins/toy-plugin-commons/Cargo.toml
+  test-plugin:
+    name: build toy plugin
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os:
+          - windows-latest
+          - ubuntu-latest
+          - macos-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v2
 
-    - name: test-plugin-js
-      uses: actions-rs/cargo@v1
-      with:
-        command: test
-        args: --manifest-path ${{ github.workspace }}/plugins/toy-plugin-js/Cargo.toml
+      - name: install rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          profile: minimal
+          override: true
+
+      - name: test-plugin-commons
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --manifest-path ${{ github.workspace }}/plugins/toy-plugin-commons/Cargo.toml
+
+      - name: test-plugin-js
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --manifest-path ${{ github.workspace }}/plugins/toy-plugin-js/Cargo.toml
