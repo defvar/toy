@@ -1,6 +1,7 @@
 //! Toy Plugins.
 
 pub use toy_plugin_collect::{count, first, last};
+pub use toy_plugin_fanout::broadcast;
 pub use toy_plugin_file::{read, write};
 pub use toy_plugin_map::{
     indexing, mapping, naming, put, reindexing, remove_by_index, remove_by_name, rename,

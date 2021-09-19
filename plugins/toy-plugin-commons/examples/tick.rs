@@ -7,11 +7,8 @@ static CONFIG: &'static str = "./examples/tick.json";
 fn main() {
     let _ = toy_tracing::console();
 
-    let p = plugin(toy_plugin_commons::read())
-        .layer(toy_plugin_commons::write())
-        .layer(toy_plugin_commons::stdin())
+    let p = plugin(toy_plugin_commons::broadcast())
         .layer(toy_plugin_commons::stdout())
-        .layer(toy_plugin_commons::first())
         .layer(toy_plugin_commons::last())
         .layer(toy_plugin_commons::count())
         .layer(toy_plugin_commons::tick());

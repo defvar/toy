@@ -1,5 +1,5 @@
 use super::service::*;
-use toy_core::prelude::*;
+use toy_core::prelude::PortType;
 use toy_core::service::FnPortType;
 
 const NAME_SPACE: &str = &"plugin.common.fanout";
@@ -13,15 +13,6 @@ impl FnPortType for FanOutFlowPort {
     }
 }
 
-// pub fn load() -> impl PluginRegistry {
-//     plugin(
-//         NAME_SPACE,
-//         "broadcast",
-//         factory!(
-//             broadcast,
-//             BroadcastConfig,
-//             new_broadcast_context,
-//             FanOutFlowPort
-//         ),
-//     )
-// }
+pub fn broadcast() -> (&'static str, &'static str, Broadcast) {
+    (NAME_SPACE, "broadcast", Broadcast)
+}
