@@ -21,7 +21,7 @@ toy-api-server = {path = "../toy-api-server"}
 
 [dev-dependencies]
 tracing-subscriber = "0.2"
-tokio = { version = "1", features = ["full"] }
+tokio = { version = "1.11", features = ["full"] }
 toy-h = {path = "../../shared/toy-h", features = ["impl_reqwest"]}
 
 [[example]]

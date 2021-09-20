@@ -16,6 +16,6 @@ tracing = "0.1"
 
 [dev-dependencies]
 toy-h = {path = "../../shared/toy-h", features = ["impl_reqwest"]}
-tokio = { version = "1", features = ["full"] }
+tokio = { version = "1.11", features = ["full"] }
 tracing-subscriber = "0.2"
 dotenv = "0.15.0"

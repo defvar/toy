@@ -18,7 +18,7 @@ notify = "5.0.0-pre.11"
 chrono = "0.4"
 regex = "1.4.2"
 async-trait = "0.1.42"
-tokio = { version = "1", features = ["sync", "time", "net", "io-util"] }
+tokio = { version = "1.11", features = ["sync", "time", "net", "io-util"] }
 tokio-util = { version = "0.6", features = ["codec"]}
 tokio-stream = { version = "0.1" }
 toy-text-parser = {path = "../../shared/toy-text-parser"}
