@@ -68,6 +68,7 @@ impl Service for Broadcast {
 impl ServiceFactory for Broadcast {
     type Future = impl Future<Output = Result<Self::Service, Self::InitError>> + Send;
     type Service = Broadcast;
+    type CtxFuture = impl Future<Output = Result<Self::Context, Self::InitError>> + Send;
     type Context = BroadcastContext;
     type Config = BroadcastConfig;
     type Request = Frame;
@@ -78,11 +79,7 @@ impl ServiceFactory for Broadcast {
         async move { Ok(Broadcast) }
     }
 
-    fn new_context(
-        &self,
-        _tp: ServiceType,
-        _config: Self::Config,
-    ) -> Result<Self::Context, Self::InitError> {
-        Ok(BroadcastContext {})
+    fn new_context(&self, _tp: ServiceType, _config: Self::Config) -> Self::CtxFuture {
+        async move { Ok(BroadcastContext {}) }
     }
 }

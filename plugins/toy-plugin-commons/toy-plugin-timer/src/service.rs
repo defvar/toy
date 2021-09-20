@@ -85,6 +85,7 @@ impl Service for Tick {
 impl ServiceFactory for Tick {
     type Future = impl Future<Output = Result<Self::Service, Self::InitError>> + Send;
     type Service = Tick;
+    type CtxFuture = impl Future<Output = Result<Self::Context, Self::InitError>> + Send;
     type Context = TickContext;
     type Config = TickConfig;
     type Request = Frame;
@@ -95,14 +96,12 @@ impl ServiceFactory for Tick {
         async move { Ok(Tick) }
     }
 
-    fn new_context(
-        &self,
-        _tp: ServiceType,
-        config: Self::Config,
-    ) -> Result<Self::Context, Self::InitError> {
-        Ok(TickContext {
-            count: config.start,
-            config,
-        })
+    fn new_context(&self, _tp: ServiceType, config: Self::Config) -> Self::CtxFuture {
+        async move {
+            Ok(TickContext {
+                count: config.start,
+                config,
+            })
+        }
     }
 }

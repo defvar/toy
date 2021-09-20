@@ -75,6 +75,7 @@ impl Service for Last {
 impl ServiceFactory for Last {
     type Future = impl Future<Output = Result<Self::Service, Self::InitError>> + Send;
     type Service = Last;
+    type CtxFuture = impl Future<Output = Result<Self::Context, Self::InitError>> + Send;
     type Context = LastContext;
     type Config = LastConfig;
     type Request = Frame;
@@ -85,11 +86,7 @@ impl ServiceFactory for Last {
         async move { Ok(Last) }
     }
 
-    fn new_context(
-        &self,
-        _tp: ServiceType,
-        config: Self::Config,
-    ) -> Result<Self::Context, Self::InitError> {
-        Ok(LastContext { config, v: None })
+    fn new_context(&self, _tp: ServiceType, config: Self::Config) -> Self::CtxFuture {
+        async move { Ok(LastContext { config, v: None }) }
     }
 }

@@ -31,16 +31,17 @@ where
     }
 }
 
-pub fn fn_service_factory<F, Fut, S, InitErr, CtxF, Cfg, Pt>(
+pub fn fn_service_factory<F, Fut, S, InitErr, CtxF, CtxFut, Cfg, Pt>(
     f: F,
     ctx_f: CtxF,
     port: Pt,
-) -> FnServiceFactory<F, Fut, S, InitErr, CtxF, Cfg, Pt>
+) -> FnServiceFactory<F, Fut, S, InitErr, CtxF, CtxFut, Cfg, Pt>
 where
     F: Fn(ServiceType, Pt) -> Fut,
     Fut: Future<Output = Result<S, InitErr>> + Send,
     S: Service,
-    CtxF: Fn(ServiceType, Cfg) -> Result<S::Context, InitErr>,
+    CtxF: Fn(ServiceType, Cfg) -> CtxFut,
+    CtxFut: Future<Output = Result<S::Context, InitErr>> + Send,
     Cfg: Schema,
     Pt: FnPortType,
 {
@@ -55,6 +56,7 @@ where
 pub trait ServiceFactory {
     type Future: Future<Output = Result<Self::Service, Self::InitError>> + Send;
     type Service: Service<Request = Self::Request, Error = Self::Error, Context = Self::Context>;
+    type CtxFuture: Future<Output = Result<Self::Context, Self::InitError>> + Send;
     type Context;
     type Config: Schema;
     type Request;
@@ -63,11 +65,7 @@ pub trait ServiceFactory {
 
     fn new_service(&self, tp: ServiceType) -> Self::Future;
 
-    fn new_context(
-        &self,
-        tp: ServiceType,
-        config: Self::Config,
-    ) -> Result<Self::Context, Self::InitError>;
+    fn new_context(&self, tp: ServiceType, config: Self::Config) -> Self::CtxFuture;
 }
 
 /// A value for reporting the current context to the executor.
@@ -216,12 +214,13 @@ where
     }
 }
 
-pub struct FnServiceFactory<F, Fut, S, InitErr, CtxF, Cfg, Pt>
+pub struct FnServiceFactory<F, Fut, S, InitErr, CtxF, CtxFut, Cfg, Pt>
 where
     F: Fn(ServiceType, Pt) -> Fut,
     Fut: Future<Output = Result<S, InitErr>> + Send,
     S: Service,
-    CtxF: Fn(ServiceType, Cfg) -> Result<S::Context, InitErr>,
+    CtxF: Fn(ServiceType, Cfg) -> CtxFut,
+    CtxFut: Future<Output = Result<S::Context, InitErr>> + Send,
     Cfg: Schema,
     Pt: FnPortType,
 {
@@ -231,18 +230,20 @@ where
     _t: PhantomData<Cfg>,
 }
 
-impl<F, Fut, S, InitErr, CtxF, Cfg, Pt> ServiceFactory
-    for FnServiceFactory<F, Fut, S, InitErr, CtxF, Cfg, Pt>
+impl<F, Fut, S, InitErr, CtxF, CtxFut, Cfg, Pt> ServiceFactory
+    for FnServiceFactory<F, Fut, S, InitErr, CtxF, CtxFut, Cfg, Pt>
 where
     F: Fn(ServiceType, Pt) -> Fut,
     Fut: Future<Output = Result<S, InitErr>> + Send,
     S: Service,
-    CtxF: Fn(ServiceType, Cfg) -> Result<S::Context, InitErr>,
+    CtxF: Fn(ServiceType, Cfg) -> CtxFut,
+    CtxFut: Future<Output = Result<S::Context, InitErr>> + Send,
     Cfg: Schema,
     Pt: FnPortType,
 {
     type Future = Fut;
     type Service = S;
+    type CtxFuture = CtxFut;
     type Context = S::Context;
     type Config = Cfg;
     type Request = S::Request;
@@ -254,22 +255,19 @@ where
         (self.f)(tp, port)
     }
 
-    fn new_context(
-        &self,
-        tp: ServiceType,
-        config: Self::Config,
-    ) -> Result<Self::Context, Self::InitError> {
+    fn new_context(&self, tp: ServiceType, config: Self::Config) -> Self::CtxFuture {
         (self.ctx_f)(tp, config)
     }
 }
 
-impl<F, Fut, S, InitErr, CtxF, Cfg, Pt> Clone
-    for FnServiceFactory<F, Fut, S, InitErr, CtxF, Cfg, Pt>
+impl<F, Fut, S, InitErr, CtxF, CtxFut, Cfg, Pt> Clone
+    for FnServiceFactory<F, Fut, S, InitErr, CtxF, CtxFut, Cfg, Pt>
 where
     F: Fn(ServiceType, Pt) -> Fut + Clone,
     Fut: Future<Output = Result<S, InitErr>> + Send,
     S: Service,
-    CtxF: Fn(ServiceType, Cfg) -> Result<S::Context, InitErr> + Clone,
+    CtxF: Fn(ServiceType, Cfg) -> CtxFut + Clone,
+    CtxFut: Future<Output = Result<S::Context, InitErr>> + Send,
     Cfg: Schema,
     Pt: FnPortType,
 {
@@ -283,13 +281,14 @@ where
     }
 }
 
-impl<F, Fut, S, InitErr, CtxF, Cfg, Pt> Debug
-    for FnServiceFactory<F, Fut, S, InitErr, CtxF, Cfg, Pt>
+impl<F, Fut, S, InitErr, CtxF, CtxFut, Cfg, Pt> Debug
+    for FnServiceFactory<F, Fut, S, InitErr, CtxF, CtxFut, Cfg, Pt>
 where
     F: Fn(ServiceType, Pt) -> Fut + Clone,
     Fut: Future<Output = Result<S, InitErr>> + Send,
     S: Service,
-    CtxF: Fn(ServiceType, Cfg) -> Result<S::Context, InitErr>,
+    CtxF: Fn(ServiceType, Cfg) -> CtxFut,
+    CtxFut: Future<Output = Result<S::Context, InitErr>> + Send,
     Cfg: Schema,
     Pt: FnPortType,
 {
@@ -364,6 +363,7 @@ pub struct NoopServiceFactory;
 impl ServiceFactory for NoopServiceFactory {
     type Future = Ready<Result<NoopService, ()>>;
     type Service = NoopService;
+    type CtxFuture = Ready<Result<NoopContext, ()>>;
     type Context = NoopContext;
     type Config = NoopServiceConfig;
     type Request = ();
@@ -378,12 +378,8 @@ impl ServiceFactory for NoopServiceFactory {
         ok(NoopService)
     }
 
-    fn new_context(
-        &self,
-        _tp: ServiceType,
-        _config: Self::Config,
-    ) -> Result<Self::Context, Self::InitError> {
-        Ok(NoopContext)
+    fn new_context(&self, _tp: ServiceType, _config: Self::Config) -> Self::CtxFuture {
+        ok(NoopContext)
     }
 }
 

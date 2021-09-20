@@ -79,6 +79,7 @@ impl Service for Stdin {
 impl ServiceFactory for Stdin {
     type Future = impl Future<Output = Result<Self::Service, Self::InitError>> + Send;
     type Service = Stdin;
+    type CtxFuture = impl Future<Output = Result<Self::Context, Self::InitError>> + Send;
     type Context = StdinContext;
     type Config = StdinConfig;
     type Request = Frame;
@@ -89,13 +90,11 @@ impl ServiceFactory for Stdin {
         async move { Ok(Stdin) }
     }
 
-    fn new_context(
-        &self,
-        _tp: ServiceType,
-        config: Self::Config,
-    ) -> Result<Self::Context, Self::InitError> {
-        let reader = ReaderStream::new(tokio::io::stdin());
-        Ok(StdinContext { config, reader })
+    fn new_context(&self, _tp: ServiceType, config: Self::Config) -> Self::CtxFuture {
+        async move {
+            let reader = ReaderStream::new(tokio::io::stdin());
+            Ok(StdinContext { config, reader })
+        }
     }
 }
 
@@ -162,6 +161,7 @@ impl Service for Stdout {
 impl ServiceFactory for Stdout {
     type Future = impl Future<Output = Result<Self::Service, Self::InitError>> + Send;
     type Service = Stdout;
+    type CtxFuture = impl Future<Output = Result<Self::Context, Self::InitError>> + Send;
     type Context = StdoutContext;
     type Config = StdoutConfig;
     type Request = Frame;
@@ -172,12 +172,10 @@ impl ServiceFactory for Stdout {
         async move { Ok(Stdout) }
     }
 
-    fn new_context(
-        &self,
-        _tp: ServiceType,
-        config: Self::Config,
-    ) -> Result<Self::Context, Self::InitError> {
-        let writer = tokio::io::stdout();
-        Ok(StdoutContext { config, writer })
+    fn new_context(&self, _tp: ServiceType, config: Self::Config) -> Self::CtxFuture {
+        async move {
+            let writer = tokio::io::stdout();
+            Ok(StdoutContext { config, writer })
+        }
     }
 }

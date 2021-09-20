@@ -67,6 +67,7 @@ impl Service for Count {
 impl ServiceFactory for Count {
     type Future = impl Future<Output = Result<Self::Service, Self::InitError>> + Send;
     type Service = Count;
+    type CtxFuture = impl Future<Output = Result<Self::Context, Self::InitError>> + Send;
     type Context = CountContext;
     type Config = CountConfig;
     type Request = Frame;
@@ -77,11 +78,7 @@ impl ServiceFactory for Count {
         async move { Ok(Count) }
     }
 
-    fn new_context(
-        &self,
-        _tp: ServiceType,
-        _config: Self::Config,
-    ) -> Result<Self::Context, Self::InitError> {
-        Ok(CountContext { count: 0 })
+    fn new_context(&self, _tp: ServiceType, _config: Self::Config) -> Self::CtxFuture {
+        async move { Ok(CountContext { count: 0 }) }
     }
 }

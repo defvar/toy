@@ -86,6 +86,7 @@ impl Service for Read {
 impl ServiceFactory for Read {
     type Future = impl Future<Output = Result<Self::Service, Self::InitError>> + Send;
     type Service = Read;
+    type CtxFuture = impl Future<Output = Result<Self::Context, Self::InitError>> + Send;
     type Context = ReadContext;
     type Config = ReadConfig;
     type Request = Frame;
@@ -96,18 +97,16 @@ impl ServiceFactory for Read {
         async move { Ok(Read) }
     }
 
-    fn new_context(
-        &self,
-        _tp: ServiceType,
-        config: Self::Config,
-    ) -> Result<Self::Context, Self::InitError> {
-        FileReaderBuilder::configure(&config)
-            .map(|r| ReadContext {
-                line: 0u32,
-                reader: r,
-                buf: Line::new(),
-            })
-            .map_err(|e| e.into())
+    fn new_context(&self, _tp: ServiceType, config: Self::Config) -> Self::CtxFuture {
+        async move {
+            FileReaderBuilder::configure(&config)
+                .map(|r| ReadContext {
+                    line: 0u32,
+                    reader: r,
+                    buf: Line::new(),
+                })
+                .map_err(|e| e.into())
+        }
     }
 }
 
@@ -161,6 +160,7 @@ impl Service for Write {
 impl ServiceFactory for Write {
     type Future = impl Future<Output = Result<Self::Service, Self::InitError>> + Send;
     type Service = Write;
+    type CtxFuture = impl Future<Output = Result<Self::Context, Self::InitError>> + Send;
     type Context = WriteContext;
     type Config = WriteConfig;
     type Request = Frame;
@@ -171,17 +171,15 @@ impl ServiceFactory for Write {
         async move { Ok(Write) }
     }
 
-    fn new_context(
-        &self,
-        _tp: ServiceType,
-        config: Self::Config,
-    ) -> Result<Self::Context, Self::InitError> {
-        FileWriterBuilder::configure(&config)
-            .map(|w| WriteContext {
-                line: 0u32,
-                writer: w,
-            })
-            .map_err(|e| e.into())
+    fn new_context(&self, _tp: ServiceType, config: Self::Config) -> Self::CtxFuture {
+        async move {
+            FileWriterBuilder::configure(&config)
+                .map(|w| WriteContext {
+                    line: 0u32,
+                    writer: w,
+                })
+                .map_err(|e| e.into())
+        }
     }
 }
 

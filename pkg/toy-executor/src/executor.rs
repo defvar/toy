@@ -126,7 +126,7 @@ impl ServiceExecutor for Executor {
             Ok(config) => {
                 toy_rt::spawn(async move {
                     let new_service = factory.new_service(service_type.clone()).await;
-                    let new_ctx = factory.new_context(service_type.clone(), config);
+                    let new_ctx = factory.new_context(service_type.clone(), config).await;
                     match (new_service, new_ctx) {
                         (Ok(service), Ok(ctx)) => {
                             if let Err(e) =

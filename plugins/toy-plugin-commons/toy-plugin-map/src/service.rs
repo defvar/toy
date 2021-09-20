@@ -144,6 +144,7 @@ macro_rules! transform_service {
         impl ServiceFactory for $service {
             type Future = impl Future<Output = Result<Self::Service, Self::InitError>> + Send;
             type Service = $service;
+            type CtxFuture = impl Future<Output = Result<Self::Context, Self::InitError>> + Send;
             type Context = $ctx;
             type Config = $config;
             type Request = Frame;
@@ -154,14 +155,12 @@ macro_rules! transform_service {
                 async move { Ok($service) }
             }
 
-            fn new_context(
-                &self,
-                _tp: ServiceType,
-                config: Self::Config,
-            ) -> Result<Self::Context, Self::InitError> {
-                Ok($ctx {
-                    transformer: config.into_transform(),
-                })
+            fn new_context(&self, _tp: ServiceType, config: Self::Config) -> Self::CtxFuture {
+                async move {
+                    Ok($ctx {
+                        transformer: config.into_transform(),
+                    })
+                }
             }
         }
     };
