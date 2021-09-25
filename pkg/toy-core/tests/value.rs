@@ -174,18 +174,32 @@ pass_parse_integer!(
     u32::max_value(),
     u32::max_value() as u64
 );
-
-pass_parse_integer!(
-    parse_u64_from_u64_max,
-    u64,
-    u64::max_value(),
-    u64::max_value()
-);
+none_parse_integer!(parse_u64_from_u64_max, u64, u64::max_value());
 
 #[test]
 fn partial_eq_u64() {
     let mut v = Value::from(1u64);
     let other = 1u64;
+    assert_eq!(&v, other);
+    assert_eq!(&mut v, other);
+    assert_eq!(v, other);
+    assert_eq!(other, v);
+}
+
+#[test]
+fn partial_eq_f64() {
+    let mut v = Value::from(1f64);
+    let other = 1f64;
+    assert_eq!(&v, other);
+    assert_eq!(&mut v, other);
+    assert_eq!(v, other);
+    assert_eq!(other, v);
+}
+
+#[test]
+fn partial_eq_bool() {
+    let mut v = Value::from(true);
+    let other = true;
     assert_eq!(&v, other);
     assert_eq!(&mut v, other);
     assert_eq!(v, other);

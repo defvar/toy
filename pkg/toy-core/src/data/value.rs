@@ -8,28 +8,13 @@ use toy_pack::FromPrimitive;
 #[derive(Debug, Clone, PartialEq)]
 pub enum Value {
     Bool(bool),
-
-    U8(u8),
-    U16(u16),
-    U32(u32),
-    U64(u64),
-
-    I8(i8),
-    I16(i16),
-    I32(i32),
-    I64(i64),
-
-    F32(f32),
-    F64(f64),
-
+    Integer(i64),
+    Number(f64),
     String(String),
     Bytes(Vec<u8>),
-
     None,
-
     Seq(Vec<Value>),
     Map(Map<String, Value>),
-
     TimeStamp(Duration),
 }
 
@@ -52,32 +37,37 @@ impl Value {
         }
     }
 
+    pub fn as_bool(&self) -> Option<bool> {
+        match *self {
+            Value::Bool(v) => Some(v),
+            _ => None,
+        }
+    }
+
+    pub fn is_true(&self) -> bool {
+        match *self {
+            Value::Bool(v) => v,
+            _ => false,
+        }
+    }
+
+    pub fn is_false(&self) -> bool {
+        match *self {
+            Value::Bool(v) => !v,
+            _ => false,
+        }
+    }
+
     pub fn is_number(&self) -> bool {
         match *self {
-            Value::U8(_)
-            | Value::U16(_)
-            | Value::U32(_)
-            | Value::U64(_)
-            | Value::I8(_)
-            | Value::I16(_)
-            | Value::I32(_)
-            | Value::I64(_)
-            | Value::F32(_)
-            | Value::F64(_) => true,
+            Value::Number(_) => true,
             _ => false,
         }
     }
 
     pub fn is_integer(&self) -> bool {
         match *self {
-            Value::U8(_)
-            | Value::U16(_)
-            | Value::U32(_)
-            | Value::U64(_)
-            | Value::I8(_)
-            | Value::I16(_)
-            | Value::I32(_)
-            | Value::I64(_) => true,
+            Value::Integer(_) => true,
             _ => false,
         }
     }
@@ -99,7 +89,7 @@ impl Value {
 
     pub fn as_u32(&self) -> Option<u32> {
         match *self {
-            Value::U32(v) => Some(v),
+            Value::Integer(v) => u32::from_i64(v),
             _ => None,
         }
     }
@@ -110,7 +100,7 @@ impl Value {
 
     pub fn as_u64(&self) -> Option<u64> {
         match *self {
-            Value::U64(v) => Some(v),
+            Value::Integer(v) => u64::from_i64(v),
             _ => None,
         }
     }
@@ -243,14 +233,7 @@ impl Value {
     {
         match self {
             Value::String(ref s) => s.parse::<T>().ok(),
-            Value::U8(v) => T::from_u8(*v),
-            Value::U16(v) => T::from_u16(*v),
-            Value::U32(v) => T::from_u32(*v),
-            Value::U64(v) => T::from_u64(*v),
-            Value::I8(v) => T::from_i8(*v),
-            Value::I16(v) => T::from_i16(*v),
-            Value::I32(v) => T::from_i32(*v),
-            Value::I64(v) => T::from_i64(*v),
+            Value::Integer(v) => T::from_i64(*v),
             _ => None,
         }
     }
@@ -258,16 +241,8 @@ impl Value {
     pub fn parse_f32(&self) -> Option<f32> {
         match self {
             Value::String(ref s) => s.parse::<f32>().ok(),
-            Value::U8(v) => f32::from_u8(*v),
-            Value::U16(v) => f32::from_u16(*v),
-            Value::U32(v) => f32::from_u32(*v),
-            Value::U64(v) => f32::from_u64(*v),
-            Value::I8(v) => f32::from_i8(*v),
-            Value::I16(v) => f32::from_i16(*v),
-            Value::I32(v) => f32::from_i32(*v),
-            Value::I64(v) => f32::from_i64(*v),
-            Value::F32(v) => Some(*v),
-            Value::F64(v) => Some(*v as f32),
+            Value::Integer(v) => f32::from_i64(*v),
+            Value::Number(v) => Some(*v as f32),
             _ => None,
         }
     }
@@ -275,16 +250,8 @@ impl Value {
     pub fn parse_f64(&self) -> Option<f64> {
         match self {
             Value::String(ref s) => s.parse::<f64>().ok(),
-            Value::U8(v) => f64::from_u8(*v),
-            Value::U16(v) => f64::from_u16(*v),
-            Value::U32(v) => f64::from_u32(*v),
-            Value::U64(v) => f64::from_u64(*v),
-            Value::I8(v) => f64::from_i8(*v),
-            Value::I16(v) => f64::from_i16(*v),
-            Value::I32(v) => f64::from_i32(*v),
-            Value::I64(v) => f64::from_i64(*v),
-            Value::F32(v) => Some(*v as f64),
-            Value::F64(v) => Some(*v),
+            Value::Integer(v) => f64::from_i64(*v),
+            Value::Number(v) => Some(*v as f64),
             _ => None,
         }
     }
@@ -300,16 +267,8 @@ impl Value {
             Value::Bytes(bytes) => std::str::from_utf8(bytes.as_slice())
                 .map(|x| x.to_string())
                 .ok(),
-            Value::U8(v) => parse_str_from_integer(*v),
-            Value::U16(v) => parse_str_from_integer(*v),
-            Value::U32(v) => parse_str_from_integer(*v),
-            Value::U64(v) => parse_str_from_integer(*v),
-            Value::I8(v) => parse_str_from_integer(*v),
-            Value::I16(v) => parse_str_from_integer(*v),
-            Value::I32(v) => parse_str_from_integer(*v),
-            Value::I64(v) => parse_str_from_integer(*v),
-            Value::F32(v) => parse_str_from_float(*v),
-            Value::F64(v) => parse_str_from_float(*v),
+            Value::Integer(v) => parse_str_from_integer(*v),
+            Value::Number(v) => parse_str_from_float(*v),
             _ => None,
         }
     }
@@ -367,28 +326,65 @@ impl fmt::Display for Value {
 // from ///////////////////////////////////
 ///////////////////////////////////////////
 
-macro_rules! impl_from_to_value {
-    ($t:ident, $variant: ident) => {
+macro_rules! impl_from_to_value_integer {
+    ($t:ident, $expr: ident) => {
         impl From<$t> for Value {
             fn from(v: $t) -> Self {
-                Value::$variant(v)
+                let r = i64::$expr(v);
+                match r {
+                    Some(i) => Value::Integer(i),
+                    None => Value::None,
+                }
             }
         }
     };
 }
 
-impl_from_to_value!(bool, Bool);
-impl_from_to_value!(u8, U8);
-impl_from_to_value!(u16, U16);
-impl_from_to_value!(u32, U32);
-impl_from_to_value!(u64, U64);
-impl_from_to_value!(i8, I8);
-impl_from_to_value!(i16, I16);
-impl_from_to_value!(i32, I32);
-impl_from_to_value!(i64, I64);
-impl_from_to_value!(f32, F32);
-impl_from_to_value!(f64, F64);
-impl_from_to_value!(String, String);
+impl_from_to_value_integer!(u8, from_u8);
+impl_from_to_value_integer!(u16, from_u16);
+impl_from_to_value_integer!(u32, from_u32);
+impl_from_to_value_integer!(u64, from_u64);
+impl_from_to_value_integer!(i8, from_i8);
+impl_from_to_value_integer!(i16, from_i16);
+impl_from_to_value_integer!(i32, from_i32);
+impl_from_to_value_integer!(i64, from_i64);
+
+impl From<bool> for Value {
+    fn from(v: bool) -> Self {
+        Value::Bool(v)
+    }
+}
+
+impl<T> From<Option<T>> for Value
+where
+    T: Into<Value>,
+    Value: From<T>,
+{
+    fn from(v: Option<T>) -> Self {
+        match v {
+            Some(v) => Value::from(v),
+            None => Value::None,
+        }
+    }
+}
+
+impl From<usize> for Value {
+    fn from(v: usize) -> Self {
+        Value::from(v as i64)
+    }
+}
+
+impl From<f32> for Value {
+    fn from(v: f32) -> Self {
+        Value::Number(v as f64)
+    }
+}
+
+impl From<f64> for Value {
+    fn from(v: f64) -> Self {
+        Value::Number(v)
+    }
+}
 
 impl From<&[u8]> for Value {
     fn from(v: &[u8]) -> Self {
@@ -399,6 +395,12 @@ impl From<&[u8]> for Value {
 impl From<Vec<u8>> for Value {
     fn from(v: Vec<u8>) -> Self {
         Value::Bytes(v)
+    }
+}
+
+impl From<String> for Value {
+    fn from(v: String) -> Self {
+        Value::String(v)
     }
 }
 
@@ -449,7 +451,34 @@ impl From<Duration> for Value {
 ////////////////////////////////////////////////
 
 ////////////////////////////////////////////////
+// bool
+impl PartialEq<bool> for Value {
+    fn eq(&self, other: &bool) -> bool {
+        self.as_bool().map_or(false, |x| x == *other)
+    }
+}
+
+impl PartialEq<Value> for bool {
+    fn eq(&self, other: &Value) -> bool {
+        other.as_bool().map_or(false, |x| x == *self)
+    }
+}
+
+impl<'a> PartialEq<bool> for &'a Value {
+    fn eq(&self, other: &bool) -> bool {
+        self.as_bool().map_or(false, |x| x == *other)
+    }
+}
+
+impl<'a> PartialEq<bool> for &'a mut Value {
+    fn eq(&self, other: &bool) -> bool {
+        self.as_bool().map_or(false, |x| x == *other)
+    }
+}
+
+////////////////////////////////////////////////
 // string / str
+
 impl PartialEq<str> for Value {
     fn eq(&self, other: &str) -> bool {
         self.as_str().map_or(false, |x| x == other)
@@ -502,14 +531,62 @@ impl PartialEq<Value> for Duration {
 }
 
 ////////////////////////////////////////////////
-// number
+// integer & number
+
+macro_rules! impl_partial_eq_integer {
+    ($t:ident, $variant: ident, $to: ident, $expr: ident) => {
+        impl PartialEq<$t> for Value {
+            fn eq(&self, other: &$t) -> bool {
+                let i = $to::$expr(*other);
+                i.is_some()
+                    && match *self {
+                        Value::$variant(ref v) => *v == i.unwrap(),
+                        _ => false,
+                    }
+            }
+        }
+
+        impl PartialEq<Value> for $t {
+            fn eq(&self, other: &Value) -> bool {
+                let i = $to::$expr(*self);
+                i.is_some()
+                    && match *other {
+                        Value::$variant(ref v) => *v == i.unwrap(),
+                        _ => false,
+                    }
+            }
+        }
+
+        impl<'a> PartialEq<$t> for &'a Value {
+            fn eq(&self, other: &$t) -> bool {
+                let i = $to::$expr(*other);
+                i.is_some()
+                    && match *self {
+                        Value::$variant(ref v) => *v == i.unwrap(),
+                        _ => false,
+                    }
+            }
+        }
+
+        impl<'a> PartialEq<$t> for &'a mut Value {
+            fn eq(&self, other: &$t) -> bool {
+                let i = $to::$expr(*other);
+                i.is_some()
+                    && match *self {
+                        Value::$variant(ref v) => *v == i.unwrap(),
+                        _ => false,
+                    }
+            }
+        }
+    };
+}
 
 macro_rules! impl_partial_eq_number {
     ($t:ident, $variant: ident) => {
         impl PartialEq<$t> for Value {
             fn eq(&self, other: &$t) -> bool {
                 match *self {
-                    Value::$variant(ref v) => *v == *other,
+                    Value::$variant(ref v) => *v == *other as f64,
                     _ => false,
                 }
             }
@@ -518,7 +595,7 @@ macro_rules! impl_partial_eq_number {
         impl PartialEq<Value> for $t {
             fn eq(&self, other: &Value) -> bool {
                 match *other {
-                    Value::$variant(ref v) => *v == *self,
+                    Value::$variant(ref v) => *v == *self as f64,
                     _ => false,
                 }
             }
@@ -527,7 +604,7 @@ macro_rules! impl_partial_eq_number {
         impl<'a> PartialEq<$t> for &'a Value {
             fn eq(&self, other: &$t) -> bool {
                 match *self {
-                    Value::$variant(ref v) => *v == *other,
+                    Value::$variant(ref v) => *v == *other as f64,
                     _ => false,
                 }
             }
@@ -536,7 +613,7 @@ macro_rules! impl_partial_eq_number {
         impl<'a> PartialEq<$t> for &'a mut Value {
             fn eq(&self, other: &$t) -> bool {
                 match *self {
-                    Value::$variant(ref v) => *v == *other,
+                    Value::$variant(ref v) => *v == *other as f64,
                     _ => false,
                 }
             }
@@ -544,17 +621,15 @@ macro_rules! impl_partial_eq_number {
     };
 }
 
-impl_partial_eq_number!(u8, U8);
-impl_partial_eq_number!(u16, U16);
-impl_partial_eq_number!(u32, U32);
-impl_partial_eq_number!(u64, U64);
+impl_partial_eq_integer!(u8, Integer, i64, from_u8);
+impl_partial_eq_integer!(u16, Integer, i64, from_u16);
+impl_partial_eq_integer!(u32, Integer, i64, from_u32);
+impl_partial_eq_integer!(u64, Integer, i64, from_u64);
 
-impl_partial_eq_number!(i8, I8);
-impl_partial_eq_number!(i16, I16);
-impl_partial_eq_number!(i32, I32);
-impl_partial_eq_number!(i64, I64);
+impl_partial_eq_integer!(i8, Integer, i64, from_i8);
+impl_partial_eq_integer!(i16, Integer, i64, from_i16);
+impl_partial_eq_integer!(i32, Integer, i64, from_i32);
+impl_partial_eq_integer!(i64, Integer, i64, from_i64);
 
-impl_partial_eq_number!(f32, F32);
-impl_partial_eq_number!(f64, F64);
-
-impl_partial_eq_number!(bool, Bool);
+impl_partial_eq_number!(f32, Number);
+impl_partial_eq_number!(f64, Number);

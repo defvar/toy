@@ -88,18 +88,11 @@ fn encode(f: &Frame) -> JsValue {
     fn encode0(v: &Value) -> JsValue {
         match v {
             Value::Bool(v) => JsValue::from(*v),
-            Value::U8(v) => JsValue::from(*v),
-            Value::U16(v) => JsValue::from(*v),
-            Value::U32(v) => JsValue::from(*v),
-            Value::I8(v) => JsValue::from(*v),
-            Value::I16(v) => JsValue::from(*v),
-            Value::I32(v) => JsValue::from(*v),
-            Value::U64(_) | Value::I64(_) => match v.parse_integer::<i32>() {
-                Some(n) => JsValue::Int(n),
+            Value::Integer(_) => match v.parse_integer::<i32>() {
+                Some(i) => JsValue::Int(i),
                 None => JsValue::Undefined,
             },
-            Value::F32(v) => JsValue::from(*v as f64),
-            Value::F64(v) => JsValue::from(*v as f64),
+            Value::Number(v) => JsValue::from(*v),
             Value::String(v) => JsValue::String(v.clone()),
             Value::Seq(ref vec) => {
                 let mut r = Vec::new();

@@ -198,14 +198,14 @@ macro_rules! de_value_number {
 impl<'toy, 'a> Deserializer<'toy> for &'a mut ValueDeserializer<'toy> {
     type Error = DeserializeError;
 
-    de_value_number!(u8, deserialize_u8, visit_u8, U8, "u8");
-    de_value_number!(u16, deserialize_u16, visit_u16, U16, "u16");
-    de_value_number!(u32, deserialize_u32, visit_u32, U32, "u32");
-    de_value_number!(u64, deserialize_u64, visit_u64, U64, "u64");
-    de_value_number!(i8, deserialize_i8, visit_i8, I8, "i8");
-    de_value_number!(i16, deserialize_i16, visit_i16, I16, "i16");
-    de_value_number!(i32, deserialize_i32, visit_i32, I32, "i32");
-    de_value_number!(i64, deserialize_i64, visit_i64, I64, "i64");
+    de_value_number!(u8, deserialize_u8, visit_u8, Integer, "u8");
+    de_value_number!(u16, deserialize_u16, visit_u16, Integer, "u16");
+    de_value_number!(u32, deserialize_u32, visit_u32, Integer, "u32");
+    de_value_number!(u64, deserialize_u64, visit_u64, Integer, "u64");
+    de_value_number!(i8, deserialize_i8, visit_i8, Integer, "i8");
+    de_value_number!(i16, deserialize_i16, visit_i16, Integer, "i16");
+    de_value_number!(i32, deserialize_i32, visit_i32, Integer, "i32");
+    de_value_number!(i64, deserialize_i64, visit_i64, Integer, "i64");
 
     fn deserialize_any<V>(self, visitor: V) -> Result<V::Value, Self::Error>
     where
@@ -213,16 +213,8 @@ impl<'toy, 'a> Deserializer<'toy> for &'a mut ValueDeserializer<'toy> {
     {
         match self.value {
             Value::Bool(v) => visitor.visit_bool(*v),
-            Value::U8(v) => visitor.visit_u8(*v),
-            Value::U16(v) => visitor.visit_u16(*v),
-            Value::U32(v) => visitor.visit_u32(*v),
-            Value::U64(v) => visitor.visit_u64(*v),
-            Value::I8(v) => visitor.visit_i8(*v),
-            Value::I16(v) => visitor.visit_i16(*v),
-            Value::I32(v) => visitor.visit_i32(*v),
-            Value::I64(v) => visitor.visit_i64(*v),
-            Value::F32(v) => visitor.visit_f32(*v),
-            Value::F64(v) => visitor.visit_f64(*v),
+            Value::Integer(v) => visitor.visit_i64(*v),
+            Value::Number(v) => visitor.visit_f64(*v),
             Value::String(ref v) => visitor.visit_str(v),
             Value::Bytes(v) => visitor.visit_bytes(v.as_slice()),
             Value::None => self.deserialize_option(visitor),

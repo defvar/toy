@@ -61,6 +61,14 @@ impl Frame {
     }
 
     #[inline]
+    pub fn into_value(self) -> Option<Value> {
+        match self.payload {
+            Some(v) => Some(v),
+            None => None,
+        }
+    }
+
+    #[inline]
     pub fn port(&self) -> u8 {
         self.header.port
     }

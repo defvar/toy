@@ -5,26 +5,6 @@ use super::QuoteStyle;
 use toy_core::data::Value;
 use toy_text_parser::{Line, Terminator};
 
-macro_rules! itoa_write {
-    ($tp: ident, $fun_name: ident) => {
-        fn $fun_name(&mut self, v: $tp, need_delimiter: bool) -> Result<(), Error> {
-            let mut buf = itoa::Buffer::new();
-            let b = buf.format(v).as_bytes();
-            self.write_column(b, need_delimiter)
-        }
-    };
-}
-
-macro_rules! ryu_write {
-    ($tp: ident, $fun_name: ident) => {
-        fn $fun_name(&mut self, v: $tp, need_delimiter: bool) -> Result<(), Error> {
-            let mut buf = ryu::Buffer::new();
-            let b = buf.format(v).as_bytes();
-            self.write_column(b, need_delimiter)
-        }
-    };
-}
-
 pub struct FileWriter<W: Write> {
     raw: BufWriter<W>,
     delimiter: u8,
@@ -123,16 +103,17 @@ impl<W: Write> FileWriter<W> {
         self.state.wrote_row
     }
 
-    itoa_write!(u8, write_value_u8);
-    itoa_write!(u16, write_value_u16);
-    itoa_write!(u32, write_value_u32);
-    itoa_write!(u64, write_value_u64);
-    itoa_write!(i8, write_value_i8);
-    itoa_write!(i16, write_value_i16);
-    itoa_write!(i32, write_value_i32);
-    itoa_write!(i64, write_value_i64);
-    ryu_write!(f32, write_value_f32);
-    ryu_write!(f64, write_value_f64);
+    fn write_value_integer(&mut self, v: i64, need_delimiter: bool) -> Result<(), Error> {
+        let mut buf = itoa::Buffer::new();
+        let b = buf.format(v).as_bytes();
+        self.write_column(b, need_delimiter)
+    }
+
+    fn write_value_number(&mut self, v: f64, need_delimiter: bool) -> Result<(), Error> {
+        let mut buf = ryu::Buffer::new();
+        let b = buf.format(v).as_bytes();
+        self.write_column(b, need_delimiter)
+    }
 
     pub fn write_value(&mut self, value: &Value) -> Result<(), Error> {
         if self.state.has_headers && self.state.wrote_row == 0 {
@@ -153,16 +134,8 @@ impl<W: Write> FileWriter<W> {
             Value::Bool(v) => {
                 self.write_column(if *v { b"true" } else { b"false" }, need_delimiter)
             }
-            Value::U8(v) => self.write_value_u8(*v, need_delimiter),
-            Value::U16(v) => self.write_value_u16(*v, need_delimiter),
-            Value::U32(v) => self.write_value_u32(*v, need_delimiter),
-            Value::U64(v) => self.write_value_u64(*v, need_delimiter),
-            Value::I8(v) => self.write_value_i8(*v, need_delimiter),
-            Value::I16(v) => self.write_value_i16(*v, need_delimiter),
-            Value::I32(v) => self.write_value_i32(*v, need_delimiter),
-            Value::I64(v) => self.write_value_i64(*v, need_delimiter),
-            Value::F32(v) => self.write_value_f32(*v, need_delimiter),
-            Value::F64(v) => self.write_value_f64(*v, need_delimiter),
+            Value::Integer(v) => self.write_value_integer(*v, need_delimiter),
+            Value::Number(v) => self.write_value_number(*v, need_delimiter),
             Value::String(v) => self.write_column(v.as_bytes(), need_delimiter),
             Value::Bytes(v) => self.write_column(v.as_slice(), need_delimiter),
             Value::Map(map) => self.write_inner_values(map.values(), need_delimiter),

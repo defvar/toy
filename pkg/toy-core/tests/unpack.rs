@@ -94,7 +94,10 @@ fn de_struct() {
     map.insert("v_u16".to_string(), Value::from(expected.v_u16));
     map.insert("v_u32".to_string(), Value::from(expected.v_u32));
     map.insert("v_u64".to_string(), Value::from(expected.v_u64));
-    map.insert("v_i8_opt".to_string(), Value::from(expected.v_i8_opt));
+    map.insert(
+        "v_i8_opt".to_string(),
+        Value::from(expected.v_i8_opt.unwrap()),
+    );
     map.insert("v_f32".to_string(), Value::from(expected.v_f32));
     map.insert("v_f64".to_string(), Value::from(expected.v_f64));
     map.insert("name".to_string(), Value::from(expected.name.clone()));

@@ -50,16 +50,8 @@ impl Serialize for Value {
     {
         match self {
             Value::Bool(v) => serializer.serialize_bool(*v),
-            Value::U8(v) => serializer.serialize_u8(*v),
-            Value::U16(v) => serializer.serialize_u16(*v),
-            Value::U32(v) => serializer.serialize_u32(*v),
-            Value::U64(v) => serializer.serialize_u64(*v),
-            Value::I8(v) => serializer.serialize_i8(*v),
-            Value::I16(v) => serializer.serialize_i16(*v),
-            Value::I32(v) => serializer.serialize_i32(*v),
-            Value::I64(v) => serializer.serialize_i64(*v),
-            Value::F32(v) => serializer.serialize_f32(*v),
-            Value::F64(v) => serializer.serialize_f64(*v),
+            Value::Integer(v) => serializer.serialize_i64(*v),
+            Value::Number(v) => serializer.serialize_f64(*v),
             Value::String(v) => serializer.serialize_str(v),
             Value::Bytes(v) => serializer.serialize_bytes(v.as_slice()),
             Value::None => serializer.serialize_none(),
