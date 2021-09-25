@@ -7,7 +7,7 @@ extern crate lazy_static;
 
 pub use self::decode::{decoder_from_reader, decoder_from_slice, DecodeError, Decoder, DecoderOps};
 pub use self::deser::{unpack, unpack_from_reader};
-pub use self::encode::{encoder_from_writer, EncodeError, Encoder, EncoderOps};
+pub use self::encode::{encoder_from_vec, encoder_from_writer, EncodeError, Encoder, EncoderOps};
 pub use self::ser::{pack, pack_to_writer};
 
 mod decode;

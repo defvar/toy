@@ -3,6 +3,7 @@ use std::io;
 use serde::Serialize;
 
 use super::encode::{encoder_from_writer, EncodeError};
+use crate::encode::encoder_from_vec;
 
 /// Serialize from data structure to [`Vec<u8>`].
 ///
@@ -34,9 +35,10 @@ pub fn pack<T>(item: &T) -> Result<Vec<u8>, EncodeError>
 where
     T: Serialize,
 {
-    let mut writer = Vec::with_capacity(128);
-    pack_to_writer(&mut writer, item)?;
-    Ok(writer)
+    let mut vec = Vec::with_capacity(128);
+    let mut w = encoder_from_vec(&mut vec);
+    item.serialize(&mut w)?;
+    Ok(vec)
 }
 
 /// Serialize from data structure to [`io::Write`].
