@@ -11,7 +11,7 @@ env:
   RUST_BACKTRACE: 1
 
 jobs:
-  test-shared:
+  test-pkg:
     name: build toy shared
     runs-on: ${{ matrix.os }}
     strategy:
@@ -28,6 +28,21 @@ jobs:
 
     - name: test-pkg
       run: cargo test --manifest-path ${{ github.workspace }}/pkg/Cargo.toml
+
+  test-shared:
+    name: build toy shared
+    runs-on: ${{ matrix.os }}
+    strategy:
+        matrix:
+          os:
+            - windows-latest
+            - ubuntu-latest
+            - macos-latest
+    steps:
+    - name: checkout
+      uses: actions/checkout@v2
+
+    - run: rustup update nightly --no-self-update && rustup default nightly
 
     - name: test-shared-gauth
       uses: actions-rs/cargo@v1
