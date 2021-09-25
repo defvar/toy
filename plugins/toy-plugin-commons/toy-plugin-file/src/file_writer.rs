@@ -167,9 +167,8 @@ impl<W: Write> FileWriter<W> {
             Value::Bytes(v) => self.write_column(v.as_slice(), need_delimiter),
             Value::Map(map) => self.write_inner_values(map.values(), need_delimiter),
             Value::Seq(seq) => self.write_inner_values(seq.iter(), need_delimiter),
-            Value::Some(v) => self.write_value_0(v, need_delimiter),
             Value::TimeStamp(_) => Ok(()),
-            Value::None | Value::Unit => Ok(()),
+            Value::None => Ok(()),
         }
     }
 
@@ -224,7 +223,6 @@ impl<W: Write> FileWriter<W> {
                 }
                 Ok(())
             }
-            Value::Some(v) => self.write_value_headers(v, need_delimiter, parent),
             _ => {
                 let text = if parent.len() == 0 {
                     "unknown".as_bytes()

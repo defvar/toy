@@ -134,14 +134,14 @@ impl<'toy: 'a, 'a> Deserialize<'toy> for Value {
             where
                 D: Deserializer<'a>,
             {
-                Value::deserialize(deserializer).map(|x| Value::Some(Box::new(x)))
+                Value::deserialize(deserializer).map(|x| x)
             }
 
             fn visit_unit<E>(self) -> Result<Self::Value, E>
             where
                 E: Error,
             {
-                Ok(Value::Unit)
+                Ok(Value::None)
             }
 
             fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
@@ -225,11 +225,10 @@ impl<'toy, 'a> Deserializer<'toy> for &'a mut ValueDeserializer<'toy> {
             Value::F64(v) => visitor.visit_f64(*v),
             Value::String(ref v) => visitor.visit_str(v),
             Value::Bytes(v) => visitor.visit_bytes(v.as_slice()),
-            Value::None | Value::Some(_) => self.deserialize_option(visitor),
+            Value::None => self.deserialize_option(visitor),
             Value::Seq(_) => self.deserialize_seq(visitor),
             Value::Map(_) => self.deserialize_map(visitor),
             Value::TimeStamp(_) => self.deserialize_map(visitor),
-            Value::Unit => visitor.visit_unit(),
         }
     }
 
@@ -317,20 +316,16 @@ impl<'toy, 'a> Deserializer<'toy> for &'a mut ValueDeserializer<'toy> {
         V: Visitor<'toy>,
     {
         match self.value {
-            Value::Some(_) => visitor.visit_some(self),
             Value::None => visitor.visit_none(),
             _ => visitor.visit_some(self),
         }
     }
 
-    fn deserialize_unit<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    fn deserialize_unit<V>(self, _visitor: V) -> Result<V::Value, Self::Error>
     where
         V: Visitor<'toy>,
     {
-        match self.value {
-            Value::Unit => visitor.visit_unit(),
-            _ => Err(DeserializeError::invalid_type("unit", self.value)),
-        }
+        Err(DeserializeError::invalid_type("unit", self.value))
     }
 
     fn deserialize_unit_struct<V>(

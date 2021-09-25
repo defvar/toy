@@ -26,14 +26,11 @@ pub enum Value {
     Bytes(Vec<u8>),
 
     None,
-    Some(Box<Value>),
 
     Seq(Vec<Value>),
     Map(Map<String, Value>),
 
     TimeStamp(Duration),
-
-    Unit,
 }
 
 impl Value {
@@ -254,7 +251,6 @@ impl Value {
             Value::I16(v) => T::from_i16(*v),
             Value::I32(v) => T::from_i32(*v),
             Value::I64(v) => T::from_i64(*v),
-            Value::Some(v) => Value::parse_integer::<T>(v),
             _ => None,
         }
     }
@@ -272,7 +268,6 @@ impl Value {
             Value::I64(v) => f32::from_i64(*v),
             Value::F32(v) => Some(*v),
             Value::F64(v) => Some(*v as f32),
-            Value::Some(v) => Value::parse_f32(v),
             _ => None,
         }
     }
@@ -290,7 +285,6 @@ impl Value {
             Value::I64(v) => f64::from_i64(*v),
             Value::F32(v) => Some(*v as f64),
             Value::F64(v) => Some(*v),
-            Value::Some(v) => Value::parse_f64(v),
             _ => None,
         }
     }
@@ -316,7 +310,6 @@ impl Value {
             Value::I64(v) => parse_str_from_integer(*v),
             Value::F32(v) => parse_str_from_float(*v),
             Value::F64(v) => parse_str_from_float(*v),
-            Value::Some(v) => Value::parse_str(v),
             _ => None,
         }
     }
@@ -364,7 +357,6 @@ impl fmt::Display for Value {
                 }
                 f.write_str("]")
             }
-            Value::Unit => f.write_str("Unit"),
             Value::None => f.write_str("None"),
             _ => f.write_str(&self.parse_str().unwrap_or_else(|| "".to_string())),
         }
@@ -449,18 +441,6 @@ impl From<&mut Vec<Value>> for Value {
 impl From<Duration> for Value {
     fn from(v: Duration) -> Self {
         Value::TimeStamp(v)
-    }
-}
-
-impl<T> From<Option<T>> for Value
-where
-    T: Into<Value>,
-{
-    fn from(v: Option<T>) -> Self {
-        match v {
-            Some(r) => Value::Some(Box::new(r.into())),
-            None => Value::None,
-        }
     }
 }
 

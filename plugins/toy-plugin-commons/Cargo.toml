@@ -7,5 +7,6 @@ members = [
     "toy-plugin-timer",
     "toy-plugin-commons",
     "toy-plugin-collect",
-    "toy-plugin-stdio"
+    "toy-plugin-stdio",
+    "toy-plugin-tcp"
 ]
