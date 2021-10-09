@@ -137,3 +137,10 @@ jobs:
           command: test
           args: --manifest-path ${{ github.workspace }}/plugins/toy-plugin-js/Cargo.toml
         if: startsWith(matrix.os, 'ubuntu') || startsWith(matrix.os, 'macos')
+
+      - name: test-plugin-lua
+        uses: actions-rs/cargo@v1
+        with:
+            command: test
+            args: --manifest-path ${{ github.workspace }}/plugins/toy-plugin-lua/Cargo.toml
+        if: startsWith(matrix.os, 'ubuntu') || startsWith(matrix.os, 'macos')

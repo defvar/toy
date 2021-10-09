@@ -1,0 +1,19 @@
+[package]
+name = "toy-plugin-lua"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }
+rlua = "0.17.1"
+thiserror = "1.0"
+
+toy-pack = { path = "../../shared/toy-pack", features = ["derive"]}
+toy-core = { path = "../../pkg/toy-core" }
+
+[dev-dependencies]
+toy-plugin-test = { path = "../toy-plugin-test" }
+tokio = { version = "1.11.0", features = ["full", "test-util"] }
+tokio-test = "0.4.2"
