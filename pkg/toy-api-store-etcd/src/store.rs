@@ -331,29 +331,30 @@ where
     }
 }
 
+#[toy_api_server::async_trait::async_trait]
 impl<T> WatchPending for EtcdStoreOps<T>
 where
     T: HttpClient + 'static,
 {
     type Con = EtcdStoreConnection<T>;
     type Stream = impl toy_h::Stream<Item = Result<Vec<PendingTask>, StoreError>> + Send + 'static;
-    type T = impl Future<Output = Result<Self::Stream, StoreError>> + Send + 'static;
 
-    fn watch_pending(&self, con: Self::Con, prefix: String) -> Self::T {
-        let span = span!(Level::DEBUG, "watch", prefix = ?prefix);
+    #[instrument(skip(self, con))]
+    async fn watch_pending(
+        &self,
+        con: Self::Con,
+        prefix: String,
+    ) -> Result<Self::Stream, StoreError> {
         let prefix = prefix.clone();
-        async move {
-            let stream = con.client.watch(prefix).await?;
-            Ok(stream.map(|x: Result<WatchResponse, StoreError>| match x {
-                Ok(res) => res.unpack(|x, e| match e {
-                    EventType::PUT => Some(
-                        toy_pack_json::unpack::<PendingTask>(&x.into_data()).map_err(|e| e.into()),
-                    ),
-                    _ => None,
-                }),
-                Err(e) => Err(e),
-            }))
-        }
-        .instrument(span)
+        let stream = con.client.watch(prefix).await?;
+        Ok(stream.map(|x: Result<WatchResponse, StoreError>| match x {
+            Ok(res) => res.unpack(|x, e| match e {
+                EventType::PUT => {
+                    Some(toy_pack_json::unpack::<PendingTask>(&x.into_data()).map_err(|e| e.into()))
+                }
+                _ => None,
+            }),
+            Err(e) => Err(e),
+        }))
     }
 }

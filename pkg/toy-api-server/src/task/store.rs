@@ -71,13 +71,17 @@ pub trait Pending {
 }
 
 /// Watch Pending task entity.
+#[async_trait]
 pub trait WatchPending {
     type Con: StoreConnection;
     type Stream: toy_h::Stream<Item = Result<Vec<PendingTask>, StoreError>> + Send + 'static;
-    type T: Future<Output = Result<Self::Stream, StoreError>> + Send + 'static;
 
     /// Watch Pending task entity.
-    fn watch_pending(&self, con: Self::Con, prefix: String) -> Self::T;
+    async fn watch_pending(
+        &self,
+        con: Self::Con,
+        prefix: String,
+    ) -> Result<Self::Stream, StoreError>;
 }
 
 /// Find task log.

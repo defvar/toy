@@ -12,7 +12,7 @@ env:
 
 jobs:
   test-pkg:
-    name: build toy shared
+    name: build toy pkg
     runs-on: ${{ matrix.os }}
     strategy:
         matrix:
