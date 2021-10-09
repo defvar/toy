@@ -103,9 +103,28 @@ fn encode_and_set(lua_ctx: &rlua::Context, f: Frame) -> Result<(), LuaFunctionEr
     fn encode0<'b>(lua_ctx: &rlua::Context<'b>, v: Value) -> rlua::Result<rlua::Value<'b>> {
         let v = match v {
             Value::Bool(v) => rlua::Value::Boolean(v),
-            Value::U8(v) => rlua::Value::Integer(v as i64),
+            Value::Integer(v) => rlua::Value::Integer(v),
+            Value::Number(v) => rlua::Value::Number(v),
             Value::String(v) => rlua::Value::String(lua_ctx.create_string(&v)?),
-            _ => rlua::Value::Nil,
+            Value::Bytes(_) => rlua::Value::Nil,
+            Value::None => rlua::Value::Nil,
+            Value::Seq(v) => {
+                let table = lua_ctx.create_table()?;
+                for (idx, element) in v.into_iter().enumerate() {
+                    let rv = encode0(lua_ctx, element)?;
+                    table.set(idx, rv)?;
+                }
+                rlua::Value::Table(table)
+            }
+            Value::Map(v) => {
+                let table = lua_ctx.create_table()?;
+                for (k, v) in v.into_iter() {
+                    let rv = encode0(lua_ctx, v)?;
+                    table.set(k, rv)?;
+                }
+                rlua::Value::Table(table)
+            }
+            Value::TimeStamp(_) => rlua::Value::Nil,
         };
         Ok(v)
     }

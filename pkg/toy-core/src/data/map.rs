@@ -7,8 +7,8 @@ use core::fmt::Formatter;
 use core::iter::FromIterator;
 use indexmap::IndexMap;
 use std::borrow::Borrow;
+use std::fmt;
 use std::hash::Hash;
-use std::{fmt, ops};
 
 /// A map which preserves insertion order.
 /// By default the map is backed by a [`IndexMap`].
@@ -99,6 +99,11 @@ where
     #[inline]
     pub fn iter(&self) -> impl Iterator<Item = (&K, &V)> {
         self.map.iter()
+    }
+
+    #[inline]
+    pub fn into_iter(self) -> impl IntoIterator<Item = (K, V)> {
+        self.map.into_iter()
     }
 
     #[inline]
@@ -270,28 +275,6 @@ impl PartialEq for Map<String, Value> {
 
         self.iter()
             .all(|(key, value)| other.get(key).map_or(false, |v| *value == *v))
-    }
-}
-
-impl<'a, Q: ?Sized> ops::Index<&'a Q> for Map<String, Value>
-where
-    String: Borrow<Q>,
-    Q: Ord + Eq + Hash,
-{
-    type Output = Value;
-
-    fn index(&self, index: &Q) -> &Value {
-        self.map.index(index)
-    }
-}
-
-impl<'a, Q: ?Sized> ops::IndexMut<&'a Q> for Map<String, Value>
-where
-    String: Borrow<Q>,
-    Q: Ord + Eq + Hash,
-{
-    fn index_mut(&mut self, index: &Q) -> &mut Value {
-        self.map.get_mut(index).expect("no entry found for key")
     }
 }
 

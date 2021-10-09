@@ -8,8 +8,8 @@ async fn test_lua_function() {
     let (tx, mut rx) = toy_core::mpsc::channel(10);
     let task_ctx = toy_plugin_test::dummy_task_context();
     let code = r#"
-    toy["message"] = "lua"
-    toy["number"] = 1
+    toy.payload.message = "lua"
+    toy.payload.number = 1
     "#;
     let config = LuaFunctionConfig {
         code: code.to_string(),
