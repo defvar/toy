@@ -12,7 +12,5 @@ members = [
     "toy-api-store-glogging",
     "toy-api-auth-firebase",
     "toy-api-auth-jwt",
-    "toy-tail",
-    "toy-tail-glogging",
     "toy-tracing"
 ]
