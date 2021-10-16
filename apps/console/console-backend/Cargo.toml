@@ -17,9 +17,6 @@ toy-rt = { path = "../../../pkg/toy-rt"}
 toy-h = { path = "../../../shared/toy-h", features = ["impl_reqwest"]}
 toy-tracing = { path = "../../../pkg/toy-tracing" }
 
-# plugins
-toy-plugin-commons = { path = "../../../plugins/toy-plugin-commons/toy-plugin-commons"}
-
 # store
 toy-api-store-etcd = { path = "../../../pkg/toy-api-store-etcd"}
 toy-api-store-glogging = { path = "../../../pkg/toy-api-store-glogging"}

@@ -14,3 +14,4 @@ toy-plugin-map = { path = "../toy-plugin-map" }
 toy-plugin-timer = { path = "../toy-plugin-timer" }
 toy-plugin-collect = { path = "../toy-plugin-collect" }
 toy-plugin-stdio = { path = "../toy-plugin-stdio" }
+toy-plugin-tcp = { path = "../toy-plugin-tcp" }

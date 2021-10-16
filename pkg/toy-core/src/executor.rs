@@ -40,7 +40,7 @@ pub trait ServiceExecutor {
 /// This trait called from `Supervisor`.
 #[async_trait]
 pub trait TaskExecutor {
-    async fn run<T>(self, app: App<T>, start_frame: Frame) -> Result<(), ServiceError>
+    async fn run<T>(self, app: &App<T>, start_frame: Frame) -> Result<(), ServiceError>
     where
         T: Registry;
 }

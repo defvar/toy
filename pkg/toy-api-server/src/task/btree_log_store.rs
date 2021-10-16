@@ -17,7 +17,7 @@ pub struct BTreeLogStore<T> {
 
 #[derive(Clone, Debug)]
 pub struct BTreeLogStoreConnection {
-    map: Arc<Mutex<BTreeMap<String, TaskLog>>>,
+    _map: Arc<Mutex<BTreeMap<String, TaskLog>>>,
 }
 
 #[derive(Clone, Debug)]
@@ -53,7 +53,7 @@ where
 
     fn establish(&mut self, _client: T) -> Result<(), StoreError> {
         self.con = Some(BTreeLogStoreConnection {
-            map: Arc::new(Mutex::new(BTreeMap::new())),
+            _map: Arc::new(Mutex::new(BTreeMap::new())),
         });
         Ok(())
     }

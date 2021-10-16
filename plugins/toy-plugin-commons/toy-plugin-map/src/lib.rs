@@ -9,6 +9,6 @@ pub mod transform;
 pub mod typed;
 
 pub use plugin::{
-    indexing, mapping, naming, put, reindexing, remove_by_index, remove_by_name, rename,
+    all, indexing, mapping, naming, put, reindexing, remove_by_index, remove_by_name, rename,
     single_value, to_map, to_seq,
 };

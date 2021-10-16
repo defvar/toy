@@ -7,13 +7,12 @@ static CONFIG: &'static str = "./examples/tick.json";
 fn main() {
     let _ = toy_tracing::console();
 
-    let p = plugin(toy_plugin_commons::broadcast())
-        .layer(toy_plugin_commons::stdout())
-        .layer(toy_plugin_commons::last())
-        .layer(toy_plugin_commons::count())
-        .layer(toy_plugin_commons::tick());
+    let app = app(toy_plugin_commons::collect::all())
+        .with(toy_plugin_commons::fanout::all())
+        .with(toy_plugin_commons::stdio::all())
+        .with(toy_plugin_commons::timer::all())
+        .build();
 
-    let app = app(p);
     let mut f = std::fs::File::open(CONFIG).unwrap();
     let mut s = String::new();
     f.read_to_string(&mut s).unwrap();

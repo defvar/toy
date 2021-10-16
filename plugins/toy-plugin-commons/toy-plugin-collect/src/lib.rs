@@ -7,7 +7,7 @@ mod count;
 mod first;
 mod last;
 
-pub use plugin::{count, first, last};
+pub use plugin::{all, count, first, last};
 
 pub mod service {
     pub use super::count::{Count, CountContext};

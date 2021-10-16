@@ -27,7 +27,7 @@ fn go() -> Result<(), Error> {
 
     dotenv::dotenv().ok();
 
-    let app = app(plugin(toy_plugin_commons::mapping()));
+    let app = app(toy_plugin_commons::map::all()).build();
 
     let thread_name = format!(
         "{}-{}",

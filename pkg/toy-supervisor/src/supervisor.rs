@@ -30,7 +30,7 @@ pub fn local<TF, P>(
     Incoming<(), ServiceError>,
 )
 where
-    TF: TaskExecutorFactory + Send,
+    TF: TaskExecutorFactory + Send + 'static,
     P: Registry + 'static,
 {
     Supervisor::new("local-supervisor", factory, app, None)
@@ -48,7 +48,7 @@ pub fn subscribe<S, TF, P, C>(
 )
 where
     S: Into<String>,
-    TF: TaskExecutorFactory + Send,
+    TF: TaskExecutorFactory + Send + 'static,
     P: Registry + 'static,
     C: ApiClient + Clone + Send + Sync + 'static,
 {
@@ -58,7 +58,7 @@ where
 pub struct Supervisor<TF, P, C> {
     name: String,
     _factory: TF,
-    app: App<P>,
+    app: Arc<App<P>>,
     client: Option<C>,
     /// receive any request.
     rx: Incoming<Request, ServiceError>,
@@ -72,7 +72,7 @@ pub struct Supervisor<TF, P, C> {
 
 impl<TF, P, C> Supervisor<TF, P, C>
 where
-    TF: TaskExecutorFactory + Send,
+    TF: TaskExecutorFactory + Send + 'static,
     P: Registry + 'static,
     C: ApiClient + Clone + Send + Sync + 'static,
 {
@@ -92,7 +92,7 @@ where
             Supervisor {
                 name: name.into(),
                 _factory: factory,
-                app,
+                app: Arc::new(app),
                 client,
                 rx: rx_req,
                 tx: tx_sys,
@@ -111,7 +111,7 @@ where
         let id = TaskId::new();
         let ctx = TaskContext::new(id, g);
         let (e, _) = TF::new(ctx.clone());
-        e.run(self.app, Frame::default())
+        e.run(&self.app, Frame::default())
             .await
             .map(|()| RunTaskResponse(id))
     }
@@ -131,9 +131,9 @@ where
             match r {
                 Ok(m) => match m {
                     Request::RunTask(id, g, tx) => {
-                        let app = self.app.clone();
                         let tasks = Arc::clone(&self.tasks);
                         let ctx = TaskContext::new(id, g);
+                        let app = Arc::clone(&self.app);
                         let _ = toy_rt::spawn(async move {
                             let (e, tx_signal) = TF::new(ctx.clone());
                             let task = RunningTask::new(&ctx, tx_signal);
@@ -141,7 +141,7 @@ where
                                 let mut tasks = tasks.lock().await;
                                 let _ = tasks.insert(ctx.id(), task);
                             }
-                            let _ = e.run(app, Frame::default()).await;
+                            let _ = e.run(&app, Frame::default()).await;
                             {
                                 let mut tasks = tasks.lock().await;
                                 let _ = tasks.remove(&ctx.id());

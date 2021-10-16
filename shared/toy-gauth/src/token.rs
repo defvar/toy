@@ -34,6 +34,16 @@ pub struct GTokenError {
     error_description: String,
 }
 
+impl GTokenError {
+    pub fn error(&self) -> &str {
+        &self.error
+    }
+
+    pub fn error_description(&self) -> &str {
+        &self.error_description
+    }
+}
+
 pub async fn request_token<T>(client: T, scope: Scope) -> Result<GToken, GAuthError>
 where
     T: HttpClient,

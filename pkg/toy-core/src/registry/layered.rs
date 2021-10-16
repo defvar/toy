@@ -8,7 +8,6 @@ use crate::ServiceType;
 use serde::de::DeserializeOwned;
 use std::fmt::{self, Debug};
 
-/// Multiple registered plugins.
 #[derive(Clone)]
 pub struct Layered<L, R> {
     other: L,

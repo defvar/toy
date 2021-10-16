@@ -21,6 +21,7 @@ pub enum CompareTarget {
     VALUE,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Compare {
     key: String,
@@ -32,6 +33,7 @@ pub struct Compare {
     mod_revision: Option<String>,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Serialize)]
 pub struct RequestOp {
     request_range: Option<RangeRequest>,
@@ -39,6 +41,7 @@ pub struct RequestOp {
     request_delete_range: Option<DeleteRangeRequest>,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Deserialize)]
 pub struct ResponseOp {
     response_range: Option<RangeResponse>,
@@ -46,6 +49,7 @@ pub struct ResponseOp {
     response_delete_range: Option<DeleteRangeResponse>,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Serialize)]
 pub struct TxnRequest {
     compare: Vec<Compare>,
@@ -53,6 +57,7 @@ pub struct TxnRequest {
     failure: Option<Vec<RequestOp>>,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Deserialize)]
 pub struct TxnResponse {
     header: ResponseHeader,

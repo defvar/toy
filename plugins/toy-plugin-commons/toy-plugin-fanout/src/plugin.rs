@@ -1,5 +1,5 @@
 use super::service::*;
-use toy_core::prelude::PortType;
+use toy_core::prelude::{layer, Layered, NoopEntry, PortType};
 use toy_core::service::FnPortType;
 
 const NAME_SPACE: &str = &"plugin.common.fanout";
@@ -15,4 +15,8 @@ impl FnPortType for FanOutFlowPort {
 
 pub fn broadcast() -> (&'static str, &'static str, Broadcast) {
     (NAME_SPACE, "broadcast", Broadcast)
+}
+
+pub fn all() -> Layered<NoopEntry, Broadcast> {
+    layer(broadcast())
 }

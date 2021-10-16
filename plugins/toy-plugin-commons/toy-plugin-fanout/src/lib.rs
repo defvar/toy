@@ -6,4 +6,4 @@
 mod plugin;
 pub mod service;
 
-pub use plugin::{broadcast, FanOutFlowPort};
+pub use plugin::{all, broadcast, FanOutFlowPort};

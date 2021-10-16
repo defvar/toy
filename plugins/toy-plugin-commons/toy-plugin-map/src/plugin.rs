@@ -1,4 +1,5 @@
 use super::service::*;
+use toy_core::prelude::{layer, Layered, NoopEntry};
 
 const NAME_SPACE: &str = &"plugin.common.map";
 
@@ -44,4 +45,42 @@ pub fn to_map() -> (&'static str, &'static str, ToMap) {
 
 pub fn to_seq() -> (&'static str, &'static str, ToSeq) {
     (NAME_SPACE, "toSeq", ToSeq)
+}
+
+pub fn all() -> Layered<
+    Layered<
+        Layered<
+            Layered<
+                Layered<
+                    Layered<
+                        Layered<
+                            Layered<
+                                Layered<Layered<Layered<NoopEntry, Mapping>, Indexing>, Reindexing>,
+                                Naming,
+                            >,
+                            Rename,
+                        >,
+                        Put,
+                    >,
+                    RemoveByIndex,
+                >,
+                RemoveByName,
+            >,
+            SingleValue,
+        >,
+        ToMap,
+    >,
+    ToSeq,
+> {
+    layer(mapping())
+        .layer(indexing())
+        .layer(reindexing())
+        .layer(naming())
+        .layer(rename())
+        .layer(put())
+        .layer(remove_by_index())
+        .layer(remove_by_name())
+        .layer(single_value())
+        .layer(to_map())
+        .layer(to_seq())
 }

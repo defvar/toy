@@ -10,6 +10,7 @@ pub struct Versioning {
     version: u64,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Deserialize, Default)]
 pub struct ResponseHeader {
     cluster_id: String,
@@ -37,6 +38,7 @@ pub struct RangeRequest {
     range_end: Option<String>,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Deserialize)]
 pub struct RangeResponse {
     header: ResponseHeader,
@@ -45,6 +47,7 @@ pub struct RangeResponse {
 }
 
 /// convert only from `RangeResponse'
+#[allow(dead_code)]
 #[derive(Debug)]
 pub struct SingleResponse {
     header: ResponseHeader,
@@ -62,6 +65,7 @@ pub struct PutRequest {
     value: String,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Deserialize)]
 pub struct PutResponse {
     header: ResponseHeader,
@@ -77,6 +81,7 @@ pub struct DeleteRangeRequest {
     range_end: Option<String>,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Deserialize)]
 pub struct DeleteRangeResponse {
     header: ResponseHeader,

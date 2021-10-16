@@ -219,6 +219,40 @@ impl Operation {
     }
 }
 
+impl ErrorInfo {
+    pub fn code(&self) -> u32 {
+        self.code
+    }
+
+    pub fn message(&self) -> &str {
+        &self.message
+    }
+
+    pub fn status(&self) -> &str {
+        &self.status
+    }
+
+    pub fn details(&self) -> &[ErrorDetail] {
+        &self.details
+    }
+}
+
+impl ErrorDetail {
+    pub fn tp(&self) -> &str {
+        &self.tp
+    }
+
+    pub fn field_violations(&self) -> &[FieldViolation] {
+        &self.field_violations
+    }
+}
+
+impl FieldViolation {
+    pub fn description(&self) -> &str {
+        &self.description
+    }
+}
+
 impl Entry {
     /// Get timestamp.
     pub fn timestamp(&self) -> Option<&String> {
@@ -430,5 +464,25 @@ impl TailRequest {
             filter: None,
             buffer_window: None,
         }
+    }
+}
+
+impl TailResponse {
+    pub fn entries(&self) -> &[Entry] {
+        &self.entries
+    }
+
+    pub fn suppression_info(&self) -> &SuppressionInfo {
+        &self.suppression_info
+    }
+}
+
+impl SuppressionInfo {
+    pub fn reason(&self) -> &SuppressionReason {
+        &self.reason
+    }
+
+    pub fn suppressed_count(&self) -> u32 {
+        self.suppressed_count
     }
 }

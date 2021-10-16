@@ -14,6 +14,7 @@ pub enum EventType {
     DELETE,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Deserialize)]
 pub struct Event {
     #[serde(rename = "type")]
@@ -27,6 +28,7 @@ pub struct WatchCreateRequest {
     create_request: WatchCreateRequestInner,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Serialize)]
 struct WatchCreateRequestInner {
     key: String,
@@ -47,6 +49,7 @@ pub struct WatchResponse {
     result: Option<WatchResponseInner>,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Deserialize)]
 struct WatchResponseInner {
     header: ResponseHeader,

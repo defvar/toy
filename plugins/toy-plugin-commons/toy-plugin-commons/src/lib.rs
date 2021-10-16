@@ -1,11 +1,29 @@
 //! Toy Plugins.
 
-pub use toy_plugin_collect::{count, first, last};
-pub use toy_plugin_fanout::broadcast;
-pub use toy_plugin_file::{read, write};
-pub use toy_plugin_map::{
-    indexing, mapping, naming, put, reindexing, remove_by_index, remove_by_name, rename,
-    single_value, to_map, to_seq,
-};
-pub use toy_plugin_stdio::{stdin, stdout};
-pub use toy_plugin_timer::tick;
+pub mod map {
+    pub use toy_plugin_map::*;
+}
+
+pub mod collect {
+    pub use toy_plugin_collect::*;
+}
+
+pub mod fanout {
+    pub use toy_plugin_fanout::*;
+}
+
+pub mod stdio {
+    pub use toy_plugin_stdio::*;
+}
+
+pub mod file {
+    pub use toy_plugin_file::*;
+}
+
+pub mod tcp {
+    pub use toy_plugin_tcp::*;
+}
+
+pub mod timer {
+    pub use toy_plugin_timer::*;
+}

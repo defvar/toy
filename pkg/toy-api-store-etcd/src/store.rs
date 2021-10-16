@@ -4,7 +4,6 @@ use futures_util::stream::BoxStream;
 use futures_util::StreamExt;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
-use std::future::Future;
 use std::marker::PhantomData;
 use toy_api::task::PendingTask;
 use toy_api_server::store::kv::{
@@ -15,7 +14,7 @@ use toy_api_server::store::kv::{
 use toy_api_server::store::{error::StoreError, StoreConnection};
 use toy_api_server::task::store::{Pending, TaskStore, TaskStoreOps, WatchPending};
 use toy_h::HttpClient;
-use tracing::{instrument, span, Instrument, Level};
+use tracing::instrument;
 
 #[derive(Clone, Debug)]
 pub struct EtcdStore<T> {

@@ -4,4 +4,4 @@ pub mod config;
 mod plugin;
 pub mod service;
 
-pub use plugin::{stdin, stdout};
+pub use plugin::{all, stdin, stdout};

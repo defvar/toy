@@ -34,7 +34,7 @@ pub mod prelude {
     pub use super::error::ServiceError;
     pub use super::graph::Graph;
     pub use super::mpsc::{Incoming, Outgoing};
-    pub use super::registry::{app, plugin, App, Layered, PortType, Registry};
+    pub use super::registry::{app, layer, App, Layered, NoopEntry, Plugin, PortType, Registry};
     pub use super::service::{
         FlowPort, Service, ServiceContext, ServiceFactory, SinkPort, SourcePort,
     };

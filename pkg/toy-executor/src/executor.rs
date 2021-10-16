@@ -150,7 +150,7 @@ impl ServiceExecutor for Executor {
 
 #[async_trait]
 impl TaskExecutor for Executor {
-    async fn run<T>(mut self, app: App<T>, start_frame: Frame) -> Result<(), ServiceError>
+    async fn run<T>(mut self, app: &App<T>, start_frame: Frame) -> Result<(), ServiceError>
     where
         T: Registry,
     {

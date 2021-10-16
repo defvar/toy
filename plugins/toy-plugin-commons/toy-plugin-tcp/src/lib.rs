@@ -11,4 +11,4 @@ pub mod service {
     pub use super::write::{TcpWrite, TcpWriteContext};
 }
 
-pub use plugin::write;
+pub use plugin::{all, write};

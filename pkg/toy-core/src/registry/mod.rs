@@ -15,15 +15,18 @@ use toy_pack::schema::{to_schema, Schema};
 
 mod app;
 mod layered;
+mod plugin;
 mod port_type;
 
 pub use app::App;
 pub use layered::Layered;
+pub use plugin::Plugin;
 pub use port_type::PortType;
 use serde::de::DeserializeOwned;
 
-/// Create plugin.
-pub fn plugin<F>(layer: (&str, &str, F)) -> Layered<NoopEntry, F>
+/// Create layer.
+/// Register a single service in a layered structure to compose a plugin.
+pub fn layer<F>(layer: (&str, &str, F)) -> Layered<NoopEntry, F>
 where
     F: ServiceFactory<Request = Frame, Error = ServiceError, InitError = ServiceError>
         + Send
@@ -38,15 +41,15 @@ where
     Layered::<NoopEntry, F>::new(NoopEntry, name_space, service_name, factory)
 }
 
-/// Create app.
-pub fn app<P>(plugin: P) -> App<P>
+/// Multiple layer structures are grouped together to form a plugin.
+pub fn app<T>(registry: T) -> Plugin<NoopEntry, T>
 where
-    P: Registry,
+    T: Registry,
 {
-    App::<P>::new(plugin)
+    Plugin::new(NoopEntry, registry)
 }
 
-pub trait Registry: Clone + Send {
+pub trait Registry: Clone + Send + Sync {
     fn service_types(&self) -> Vec<ServiceType>;
 
     fn schemas(&self) -> Vec<ServiceSchema>;
