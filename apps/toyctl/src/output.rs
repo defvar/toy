@@ -1,5 +1,5 @@
 use crate::error::Error;
-use serde::Serializable;
+use serde::Serialize;
 use std::io::Write;
 
 pub trait Output<W> {
@@ -8,7 +8,7 @@ pub trait Output<W> {
 
 impl<T, W> Output<W> for T
 where
-    T: Serializable,
+    T: Serialize,
     W: Write,
 {
     fn write(self, writer: W, pretty: bool) -> Result<(), Error> {
@@ -27,7 +27,7 @@ pub struct JsonFormatter<T> {
 
 impl<T, W> OutputFormatter<W> for JsonFormatter<T>
 where
-    T: Serializable,
+    T: Serialize,
     W: Write,
 {
     fn format(&self, writer: W) -> Result<(), Error> {
