@@ -45,6 +45,14 @@ jobs:
 
     - run: rustup update nightly --no-self-update && rustup default nightly
 
+    - name: Remove msys64 # Workaround to resolve link error with C:\msys64\mingw64\bin\libclang.dll
+      if: runner.os == 'Windows'
+      run: Remove-Item -LiteralPath "C:\msys64\" -Force -Recurse
+
+    - name: Install dependencies
+      if: runner.os == 'Windows'
+      run: choco install llvm -y
+
     - name: test-shared-gauth
       uses: actions-rs/cargo@v1
       with:
@@ -116,7 +124,6 @@ jobs:
       with:
         command: build
         args: --manifest-path ${{ github.workspace }}/shared/toy-rocksdb/Cargo.toml
-      if: startsWith(matrix.os, 'ubuntu') || startsWith(matrix.os, 'macos')
 
   test-plugin:
     name: build toy plugin
@@ -132,6 +139,14 @@ jobs:
         uses: actions/checkout@v2
 
       - run: rustup update nightly --no-self-update && rustup default nightly
+
+      - name: Remove msys64 # Workaround to resolve link error with C:\msys64\mingw64\bin\libclang.dll
+        if: runner.os == 'Windows'
+        run: Remove-Item -LiteralPath "C:\msys64\" -Force -Recurse
+
+      - name: Install dependencies
+        if: runner.os == 'Windows'
+        run: choco install llvm -y
 
       - name: test-plugin-commons
         uses: actions-rs/cargo@v1
