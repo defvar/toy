@@ -1,16 +1,18 @@
 use super::value::Value;
 use crate::data::map::Map;
 use crate::mpsc::OutgoingMessage;
+use serde::{Deserialize, Serialize};
+use std::cmp::Ordering;
 use std::fmt;
 
 /// A Value with header information added, which is used when transferring between channels.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Frame {
     header: Header,
     payload: Option<Value>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 struct Header {
     port: u8,
     frame_type: FrameType,
@@ -21,14 +23,14 @@ struct Header {
 /// In the case of Data, the payload exists, but in the case of Signal, it does not exist.
 /// Generally, the message exchanged between nodes is Data.
 /// Signal is used for special messages for each node.
-#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Serialize, Deserialize)]
 pub enum FrameType {
     Data,
     Signal(Signal),
 }
 
 /// Special messages for each node.
-#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Serialize, Deserialize)]
 pub enum Signal {
     Stop,
     UpstreamFinish,
@@ -196,5 +198,25 @@ impl From<&[u8]> for Frame {
 impl Default for Frame {
     fn default() -> Self {
         Frame::none()
+    }
+}
+
+impl PartialEq for Frame {
+    fn eq(&self, other: &Self) -> bool {
+        self.payload == other.payload
+    }
+}
+
+impl Eq for Frame {}
+
+impl PartialOrd for Frame {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        self.payload.partial_cmp(&other.payload)
+    }
+}
+
+impl Ord for Frame {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.payload.cmp(&other.payload)
     }
 }

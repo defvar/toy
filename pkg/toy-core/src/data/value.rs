@@ -1,11 +1,12 @@
 use crate::data::map::Map;
 use core::time::Duration;
+use std::cmp::Ordering;
 use std::fmt;
 use std::str::FromStr;
 use toy_pack::FromPrimitive;
 
 /// The value itself is represented by a scalar, key-value pair, array, etc.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub enum Value {
     Bool(bool),
     Integer(i64),
@@ -28,6 +29,10 @@ impl Value {
             Value::Map(ref map) => Some(map),
             _ => None,
         }
+    }
+
+    pub fn is_vec(&self) -> bool {
+        self.as_vec().is_some()
     }
 
     pub fn as_vec(&self) -> Option<&Vec<Value>> {
@@ -101,6 +106,17 @@ impl Value {
     pub fn as_u64(&self) -> Option<u64> {
         match *self {
             Value::Integer(v) => u64::from_i64(v),
+            _ => None,
+        }
+    }
+
+    pub fn is_bytes(&self) -> bool {
+        self.as_bytes().is_some()
+    }
+
+    pub fn as_bytes(&self) -> Option<&Vec<u8>> {
+        match *self {
+            Value::Bytes(ref bytes) => Some(bytes),
             _ => None,
         }
     }
@@ -447,8 +463,31 @@ impl From<Duration> for Value {
 }
 
 ////////////////////////////////////////////////
-// partial_eq///////////////////////////////////
+// Eq
+
+impl Eq for Value {}
+
 ////////////////////////////////////////////////
+// Ord
+
+impl Ord for Value {
+    fn cmp(&self, other: &Self) -> Ordering {
+        match self {
+            Value::Number(v) => {
+                if v.is_sign_negative() && v.is_infinite() {
+                    Ordering::Less
+                } else if v.is_infinite() {
+                    Ordering::Greater
+                } else if v.is_nan() {
+                    Ordering::Less
+                } else {
+                    self.partial_cmp(other).unwrap()
+                }
+            }
+            _ => self.partial_cmp(other).unwrap(),
+        }
+    }
+}
 
 ////////////////////////////////////////////////
 // bool
@@ -512,6 +551,51 @@ impl PartialEq<String> for Value {
 impl PartialEq<Value> for String {
     fn eq(&self, other: &Value) -> bool {
         other.as_str().map_or(false, |x| x == self.as_str())
+    }
+}
+
+////////////////////////////////////////////////
+// vec
+
+impl PartialEq<Value> for Vec<Value> {
+    fn eq(&self, other: &Value) -> bool {
+        other.as_vec().map_or(false, |x| x == self)
+    }
+}
+
+impl PartialEq<Vec<Value>> for Value {
+    fn eq(&self, other: &Vec<Value>) -> bool {
+        self.as_vec().map_or(false, |x| x == other)
+    }
+}
+
+////////////////////////////////////////////////
+// map
+
+impl PartialEq<Value> for Map<String, Value> {
+    fn eq(&self, other: &Value) -> bool {
+        other.as_map().map_or(false, |x| x == self)
+    }
+}
+
+impl PartialEq<Map<String, Value>> for Value {
+    fn eq(&self, other: &Map<String, Value>) -> bool {
+        self.as_map().map_or(false, |x| x == other)
+    }
+}
+
+////////////////////////////////////////////////
+// bytes
+
+impl PartialEq<Vec<u8>> for Value {
+    fn eq(&self, other: &Vec<u8>) -> bool {
+        self.as_bytes().map_or(false, |x| x == other)
+    }
+}
+
+impl PartialEq<Value> for Vec<u8> {
+    fn eq(&self, other: &Value) -> bool {
+        other.as_bytes().map_or(false, |x| x == self)
     }
 }
 

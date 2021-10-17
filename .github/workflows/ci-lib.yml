@@ -110,6 +110,12 @@ jobs:
         command: test
         args: --manifest-path ${{ github.workspace }}/shared/toy-jwt/Cargo.toml
 
+    - name: test-shared-rocksdb
+      uses: actions-rs/cargo@v1
+      with:
+        command: build
+        args: --manifest-path ${{ github.workspace }}/shared/toy-rocksdb/Cargo.toml
+
   test-plugin:
     name: build toy plugin
     runs-on: ${{ matrix.os }}

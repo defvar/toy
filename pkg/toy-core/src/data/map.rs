@@ -7,6 +7,7 @@ use core::fmt::Formatter;
 use core::iter::FromIterator;
 use indexmap::IndexMap;
 use std::borrow::Borrow;
+use std::cmp::Ordering;
 use std::fmt;
 use std::hash::Hash;
 
@@ -266,7 +267,11 @@ where
     }
 }
 
-impl PartialEq for Map<String, Value> {
+impl<K, V> PartialEq for Map<K, V>
+where
+    K: Eq + Hash + std::cmp::Ord,
+    V: PartialEq,
+{
     #[inline]
     fn eq(&self, other: &Self) -> bool {
         if self.len() != other.len() {
@@ -275,6 +280,16 @@ impl PartialEq for Map<String, Value> {
 
         self.iter()
             .all(|(key, value)| other.get(key).map_or(false, |v| *value == *v))
+    }
+}
+
+impl<K, V> PartialOrd for Map<K, V>
+where
+    K: Eq + Hash + std::cmp::Ord + PartialEq,
+    V: PartialEq,
+{
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        self.keys().partial_cmp(other.keys())
     }
 }
 

@@ -8,5 +8,6 @@ members = [
     "toy-plugin-commons",
     "toy-plugin-collect",
     "toy-plugin-stdio",
-    "toy-plugin-tcp"
+    "toy-plugin-tcp",
+    "toy-plugin-sort"
 ]
