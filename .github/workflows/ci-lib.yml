@@ -3,6 +3,7 @@ name: ci-lib
 on:
   push:
     paths:
+      - '.github/workflows/**'
       - 'pkg/**'
       - 'shared/**'
       - 'plugins/**'
@@ -115,6 +116,7 @@ jobs:
       with:
         command: build
         args: --manifest-path ${{ github.workspace }}/shared/toy-rocksdb/Cargo.toml
+      if: startsWith(matrix.os, 'ubuntu') || startsWith(matrix.os, 'macos')
 
   test-plugin:
     name: build toy plugin

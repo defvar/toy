@@ -3,6 +3,7 @@ name: ci-app
 on:
   push:
     paths:
+      - '.github/workflows/**'
       - 'apps/**'
 
 env:
