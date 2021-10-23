@@ -17,7 +17,6 @@ pub struct TcpWriteConfig {
 pub struct TcpWriteContext {
     config: TcpWriteConfig,
     raw: BufWriter<tokio::net::TcpStream>,
-    write_count: usize,
 }
 
 #[derive(Debug, Clone)]
@@ -43,7 +42,7 @@ impl Service for TcpWrite {
         _task_ctx: TaskContext,
         mut ctx: Self::Context,
         req: Self::Request,
-        mut tx: Outgoing<Self::Request, Self::Error>,
+        _tx: Outgoing<Self::Request, Self::Error>,
     ) -> Self::Future {
         async move {
             match req.value() {
@@ -57,14 +56,8 @@ impl Service for TcpWrite {
                             ))
                         }
                     };
-                    ctx.write_count += 1;
-                    tx.send(Ok(Frame::none())).await?;
                 }
                 None => (),
-            }
-            if ctx.write_count > 9 {
-                ctx.raw.flush().await?;
-                ctx.write_count = 0;
             }
             Ok(ServiceContext::Ready(ctx))
         }
@@ -113,7 +106,6 @@ impl ServiceFactory for TcpWrite {
             Ok(TcpWriteContext {
                 config,
                 raw: BufWriter::new(tokio::net::TcpStream::connect(addr).await?),
-                write_count: 0,
             })
         }
     }

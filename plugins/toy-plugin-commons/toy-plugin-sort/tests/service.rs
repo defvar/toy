@@ -2,6 +2,8 @@ use toy_core::prelude::*;
 use toy_plugin_sort::config::{BufferFullStrategy, SortConfig, SortKey};
 use toy_plugin_sort::service::Sort;
 
+const TMP_PATH: &'static str = "/tmp/toy-plugin-sort-test";
+
 #[tokio::test]
 async fn test_sort_by_value() {
     let data = vec![
@@ -37,15 +39,18 @@ async fn test_sort_by_name() {
 }
 
 async fn sort(data: &Vec<Value>, key: SortKey) -> Vec<Frame> {
+    let _ = tokio::fs::create_dir(TMP_PATH).await;
+
     let mut service = Sort;
     let (tx, mut rx) = toy_core::mpsc::channel(10);
     let task_ctx = toy_plugin_test::dummy_task_context();
 
-    // let config = SortConfig::new(
+    // let config = SortConfig::with(
     //     5,
     //     BufferFullStrategy::Persist {
-    //         temp_path: "/tmp/toy-plugin-sort-test".into(),
+    //         path: TMP_PATH.into(),
     //     },
+    //     key,
     // );
     let config = SortConfig::with(10, BufferFullStrategy::Flush, key);
     let mut c = service
@@ -70,7 +75,6 @@ async fn sort(data: &Vec<Value>, key: SortKey) -> Vec<Frame> {
 
     let mut result = vec![];
     while let Some(Ok(item)) = rx.next().await {
-        println!("{:?}", item);
         result.push(item);
     }
 

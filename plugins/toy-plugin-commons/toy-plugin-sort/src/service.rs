@@ -1,6 +1,8 @@
 use crate::config::{BufferFullStrategy, SortConfig, SortKey};
+use crate::merge::{create_merge_reader, to_disk};
+use serde::{Deserialize, Serialize};
 use std::cmp::{Ordering, Reverse};
-use std::collections::BinaryHeap;
+use std::collections::{BinaryHeap, HashSet};
 use std::future::Future;
 use std::path::PathBuf;
 use toy_core::prelude::{
@@ -8,7 +10,6 @@ use toy_core::prelude::{
     TaskContext, Value,
 };
 use toy_core::Uri;
-use toy_rocksdb::Client;
 
 #[derive(Clone, Debug)]
 pub struct Sort;
@@ -16,10 +17,11 @@ pub struct Sort;
 pub struct SortContext {
     config: SortConfig,
     buffer: BinaryHeap<Reverse<Candidate>>,
-    client: Option<Client>,
+    paths: HashSet<PathBuf>,
 }
 
-struct Candidate {
+#[derive(Serialize, Deserialize)]
+pub struct Candidate {
     key: Value,
     payload: Frame,
 }
@@ -27,6 +29,14 @@ struct Candidate {
 impl Candidate {
     pub fn from(key: Value, payload: Frame) -> Self {
         Self { key, payload }
+    }
+
+    pub fn key(&self) -> &Value {
+        &self.key
+    }
+
+    pub fn payload(&self) -> &Frame {
+        &self.payload
     }
 }
 
@@ -56,7 +66,7 @@ impl SortContext {
         task_ctx: &TaskContext,
         tx: &mut Outgoing<Frame, ServiceError>,
     ) -> Result<(), ServiceError> {
-        if self.buffer.len() >= (self.config.buffer_capacity() as usize) {
+        if self.buffer.len() > (self.config.buffer_capacity() as usize) {
             self.flush0(task_ctx, tx).await
         } else {
             Ok(())
@@ -86,33 +96,21 @@ impl SortContext {
                     tx.send_ok(item.0.payload).await?;
                 }
             }
-            BufferFullStrategy::Persist { temp_path } => {
-                let path = PathBuf::from(temp_path).join(task_ctx.id().to_string());
-                let cf = task_ctx
+            BufferFullStrategy::Persist { path: temp_path } => {
+                let name = task_ctx
                     .uri()
                     .unwrap_or_else(|| Uri::from("unknown"))
                     .to_string()
                     .replace("/", "-");
-                tracing::debug!(
-                    "buffer full, write temp data. path: {:?}, cf: {:?}",
-                    path,
-                    cf
-                );
-                if self.client.is_none() {
-                    self.client =
-                        Some(Client::new(&path, &cf).map_err(|e| ServiceError::error(e))?);
-                }
-                let mut bytes = Vec::new();
-                for Reverse(item) in &self.buffer {
-                    let v = toy_pack_mp::pack(&item.payload).map_err(|e| ServiceError::error(e))?;
-                    let k = toy_pack_mp::pack(&item.key).map_err(|e| ServiceError::error(e))?;
-                    bytes.push((k, v));
-                }
-                self.client
-                    .as_ref()
-                    .unwrap()
-                    .put_batch(&bytes)
-                    .map_err(|e| ServiceError::error(e))?;
+                let path = PathBuf::from(temp_path).join(format!(
+                    "{}-{}-{}",
+                    task_ctx.id().to_string(),
+                    name,
+                    self.paths.len()
+                ));
+                tracing::debug!("buffer full, create temp data. path: {:?}", path);
+                to_disk(&path, &mut self.buffer).await?;
+                self.paths.insert(path);
                 self.buffer.clear();
             }
         }
@@ -179,16 +177,11 @@ impl Service for Sort {
     ) -> Self::UpstreamFinishAllFuture {
         async move {
             ctx.force_flush(&task_ctx, &mut tx).await?;
-
             match ctx.config.buffer_full_strategy() {
                 BufferFullStrategy::Persist { .. } => {
-                    let client = ctx.client.take().unwrap();
-                    let mut iter = client.iter().map_err(|e| ServiceError::error(e))?;
-
-                    while let Some((_, v)) = iter.next() {
-                        let v = toy_pack_mp::unpack::<Frame>(v.as_ref())
-                            .map_err(|e| ServiceError::error(e))?;
-                        tx.send_ok(v).await?;
+                    let mut reader = create_merge_reader(&ctx.paths, 200).await?;
+                    while let Some(v) = reader.next().await? {
+                        tx.send_ok(v.payload).await?;
                     }
                 }
                 _ => (),
@@ -219,7 +212,7 @@ impl ServiceFactory for Sort {
             Ok(SortContext {
                 config,
                 buffer: BinaryHeap::with_capacity(count as usize),
-                client: None,
+                paths: HashSet::new(),
             })
         }
     }

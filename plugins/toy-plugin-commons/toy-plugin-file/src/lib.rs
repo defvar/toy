@@ -5,6 +5,8 @@
 use serde::{Deserialize, Serialize};
 use toy_pack::Schema;
 
+pub use file_reader_builder::FileReaderBuilder;
+pub use file_writer_builder::FileWriterBuilder;
 pub use plugin::{all, read, write};
 
 pub mod config;

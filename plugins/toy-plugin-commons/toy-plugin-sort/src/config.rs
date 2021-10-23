@@ -15,7 +15,7 @@ pub enum BufferFullStrategy {
 
     /// When the buffer is full, it will save the contents to a file and clear the buffer.
     /// After the data reaches the end, it retrieves the data again from the saved contents and sends the data to the next service after sorting.
-    Persist { temp_path: PathBuf },
+    Persist { path: PathBuf },
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Schema)]

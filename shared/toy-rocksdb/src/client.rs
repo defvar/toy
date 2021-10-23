@@ -1,5 +1,7 @@
 use crate::error::RocksError;
-use rocksdb::{BlockBasedOptions, DBWithThreadMode, IteratorMode, MultiThreaded, WriteBatch};
+use rocksdb::{
+    BlockBasedOptions, DBCompactionStyle, DBWithThreadMode, IteratorMode, MultiThreaded, WriteBatch,
+};
 use std::path::Path;
 
 #[derive(Debug)]
@@ -10,9 +12,11 @@ pub struct Client {
 
 impl Client {
     pub fn new<P: AsRef<Path>, N: AsRef<str>>(path: P, cf: N) -> Result<Client, RocksError> {
+        let cf_opt = default_options();
         let opt = default_options();
+        let desc = rocksdb::ColumnFamilyDescriptor::new(cf.as_ref(), cf_opt);
         Ok(Client {
-            db: rocksdb::DB::open_cf(&opt, path, &[cf.as_ref()])?,
+            db: rocksdb::DB::open_cf_descriptors(&opt, path, [desc])?,
             current_cf: cf.as_ref().to_owned(),
         })
     }
@@ -50,7 +54,7 @@ impl Client {
         for (k, v) in values {
             batch.put_cf(&h, k, v);
         }
-        self.db.write(batch).map_err(|e| e.into())
+        self.db.write(batch).map_err(|e| RocksError::error(e))
     }
 
     pub fn drop(&self) -> Result<(), RocksError> {
@@ -64,11 +68,22 @@ fn default_options() -> rocksdb::Options {
 
     opt.create_if_missing(true);
     opt.create_missing_column_families(true);
+    opt.set_max_write_buffer_number(4);
+    opt.set_min_write_buffer_number_to_merge(2);
+    opt.enable_statistics();
+
+    // level compaction
+    opt.set_compaction_style(DBCompactionStyle::Level);
+    opt.set_level_zero_file_num_compaction_trigger(8);
+    opt.set_level_zero_slowdown_writes_trigger(17);
+    opt.set_level_zero_stop_writes_trigger(24);
+    opt.set_num_levels(4);
+    opt.set_max_bytes_for_level_base(536870912); //512MB
+    opt.set_max_bytes_for_level_multiplier(8.0);
 
     //recommend
     //https://github.com/facebook/rocksdb/wiki/Setup-Options-and-Basic-Tuning
     opt.set_max_background_jobs(4);
-    opt.set_level_compaction_dynamic_level_bytes(true);
     opt.set_bytes_per_sync(1048576);
 
     let mut block_opts = BlockBasedOptions::default();

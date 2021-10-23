@@ -8,11 +8,15 @@ edition = "2021"
 [dependencies]
 serde = { version = "1.0", features = ["derive"] }
 tracing = "0.1"
+bytes = "1"
+tokio = { version = "1.11", features = ["fs"] }
+tokio-util = { version = "0.6.7", features = ["codec"] }
+tokio-stream = { version = "0.1" }
+futures-util = { version = "0.3", features = ["sink"] }
 
 toy-core = { path = "../../../pkg/toy-core" }
 toy-pack = { path = "../../../shared/toy-pack", features = ["derive"] }
 
-toy-rocksdb = { path = "../../../shared/toy-rocksdb" }
 toy-pack-mp = { path = "../../../shared/toy-pack-mp" }
 
 [dev-dependencies]
