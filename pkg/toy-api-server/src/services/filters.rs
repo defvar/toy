@@ -1,5 +1,6 @@
 use crate::authentication::Auth;
 use crate::common;
+use crate::common::validator::{OkValidator, Validator};
 use crate::store::kv::KvStore;
 use toy_api::services::{ServiceSpec, ServiceSpecList};
 use toy_h::HttpClient;
@@ -29,5 +30,20 @@ where
         common::constants::SERVICES_KEY_PREFIX,
         store.clone(),
         |v: Vec<ServiceSpec>| ServiceSpecList::new(v)
+    ))
+    .or(crate::put!(
+        warp::path("services"),
+        auth.clone(),
+        client.clone(),
+        common::constants::SERVICES_KEY_PREFIX,
+        store.clone(),
+        OkValidator::<ServiceSpec>::validate
+    ))
+    .or(crate::delete!(
+        warp::path("services"),
+        auth.clone(),
+        client.clone(),
+        common::constants::SERVICES_KEY_PREFIX,
+        store.clone()
     ))
 }
