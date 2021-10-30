@@ -1,3 +1,4 @@
+use std::net::SocketAddr;
 use toy::api_server::authentication::CommonAuths;
 use toy::api_server::task::btree_log_store::BTreeLogStore;
 use toy::api_server::ServerConfig;
@@ -47,6 +48,13 @@ fn main() {
     dotenv::dotenv().ok();
     let _ = toy_tracing::console();
 
+    let host = std::env::var("TOY_API_HOST").expect("env not found. TOY_API_HOST");
+    let port = std::env::var("TOY_API_PORT").expect("env not found. TOY_API_PORT");
+
+    let host = format!("{}:{}", host, port)
+        .parse::<SocketAddr>()
+        .expect("invalid IP Address.");
+
     let mut api_rt = toy_rt::RuntimeBuilder::new()
         .thread_name("api-server")
         .worker_threads(2)
@@ -57,6 +65,6 @@ fn main() {
     let server = toy::api_server::Server::new(ToyConfig).with_client(client);
 
     api_rt.block_on(async move {
-        let _ = server.run(([127, 0, 0, 1], 3030)).await;
+        let _ = server.run(host).await;
     });
 }

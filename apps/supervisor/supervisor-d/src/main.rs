@@ -2,7 +2,7 @@
 
 use crate::error::Error;
 use crate::opts::*;
-use clap::Clap;
+use clap::Parser;
 use std::fs::File;
 use std::io::Read;
 use std::path::PathBuf;
@@ -23,9 +23,9 @@ fn main() {
 }
 
 fn go() -> Result<(), Error> {
-    let opts: Opts = Opts::parse();
-
     dotenv::dotenv().ok();
+
+    let opts: Opts = Opts::parse();
 
     let app = app(toy_plugin_commons::map::all()).build();
 

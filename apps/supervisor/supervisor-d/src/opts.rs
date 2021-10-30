@@ -1,16 +1,22 @@
-use clap::{Clap, ValueHint};
+use clap::{Parser, ValueHint};
 use std::path::PathBuf;
 
-#[derive(Clap, Debug)]
+#[derive(Parser, Debug)]
 pub struct LogOption {
     #[clap(short, long, value_hint = ValueHint::FilePath)]
     pub log: Option<PathBuf>,
 }
 
-#[derive(Clap, Debug)]
+#[derive(Parser, Debug)]
 pub struct Subscribe {
+    #[clap(short, long, env = "TOY_SUPERVISOR_NAME")]
     pub name: String,
-    #[clap(short, long, default_value = "https://localhost:3030")]
+    #[clap(
+        short,
+        long,
+        env = "TOY_API_ROOT",
+        default_value = "https://localhost:3030"
+    )]
     pub api_root: String,
     #[clap(short, long, env = "TOY_API_CLIENT_USER")]
     pub user: String,
@@ -22,7 +28,7 @@ pub struct Subscribe {
     pub log: LogOption,
 }
 
-#[derive(Clap, Debug)]
+#[derive(Parser, Debug)]
 pub struct Local {
     #[clap(short, long, value_hint = ValueHint::FilePath)]
     pub graph: PathBuf,
@@ -30,13 +36,13 @@ pub struct Local {
     pub log: LogOption,
 }
 
-#[derive(Clap, Debug)]
+#[derive(Parser, Debug)]
 pub enum Command {
     Local(Local),
     Subscribe(Subscribe),
 }
 
-#[derive(Clap, Debug)]
+#[derive(Parser, Debug)]
 pub struct Opts {
     #[clap(subcommand)]
     pub c: Command,
