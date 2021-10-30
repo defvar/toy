@@ -18,9 +18,10 @@ pub enum EventType {
 #[derive(Debug, Deserialize)]
 pub struct Event {
     #[serde(rename = "type")]
+    #[serde(default)]
     tp: EventType,
     kv: Kv,
-    prev_kv: Kv,
+    prev_kv: Option<Kv>,
 }
 
 #[derive(Debug, Serialize)]
@@ -53,10 +54,14 @@ pub struct WatchResponse {
 #[derive(Debug, Deserialize)]
 struct WatchResponseInner {
     header: ResponseHeader,
-    watch_id: u64,
+    watch_id: Option<u64>,
+    #[serde(default)]
     created: bool,
+    #[serde(default)]
     canceled: bool,
+    #[serde(default)]
     compact_revision: u64,
+    #[serde(default)]
     events: Vec<Event>,
 }
 

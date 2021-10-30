@@ -13,19 +13,19 @@ pub struct Versioning {
 #[allow(dead_code)]
 #[derive(Debug, Deserialize, Default)]
 pub struct ResponseHeader {
-    cluster_id: String,
-    member_id: String,
+    cluster_id: Option<String>,
+    member_id: Option<String>,
     revision: String,
-    raft_term: String,
+    raft_term: Option<String>,
 }
 
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub struct Kv {
     key: String,
-    create_revision: String,
+    create_revision: Option<String>,
     mod_revision: String,
-    version: String,
-    value: String,
+    version: Option<String>,
+    value: Option<String>,
 }
 
 ///////////////////////////////
@@ -42,8 +42,9 @@ pub struct RangeRequest {
 #[derive(Debug, Deserialize)]
 pub struct RangeResponse {
     header: ResponseHeader,
+    #[serde(default)]
     kvs: Vec<Kv>,
-    count: String,
+    count: Option<String>,
 }
 
 /// convert only from `RangeResponse'
@@ -52,7 +53,7 @@ pub struct RangeResponse {
 pub struct SingleResponse {
     header: ResponseHeader,
     kv: Option<Kv>,
-    count: String,
+    count: Option<String>,
 }
 
 ///////////////////////////////
@@ -86,6 +87,7 @@ pub struct DeleteRangeRequest {
 pub struct DeleteRangeResponse {
     header: ResponseHeader,
     deleted: String,
+    #[serde(default)]
     prev_kvs: Vec<Kv>,
 }
 
@@ -128,8 +130,8 @@ impl Kv {
         &self.key
     }
 
-    pub fn value(&self) -> &str {
-        &self.value
+    pub fn value(&self) -> Option<&str> {
+        self.value.as_ref().map(|x| x.as_str())
     }
 
     pub fn mod_revision(&self) -> &str {
@@ -137,7 +139,14 @@ impl Kv {
     }
 
     pub fn to_versioning(&self) -> Result<Versioning, EtcdError> {
-        match (decode(&self.key), decode(&self.value)) {
+        let key = decode(&self.key);
+        let val = if self.value.is_some() {
+            decode(self.value().unwrap())
+        } else {
+            Ok(Vec::with_capacity(0))
+        };
+
+        match (key, val) {
             (Ok(k), Ok(v)) => {
                 let version = self.mod_revision.parse::<u64>()?;
                 Ok(Versioning::from(k, v, version))
@@ -204,13 +213,13 @@ impl RangeResponse {
             Ok(SingleResponse {
                 header: self.header,
                 kv: None,
-                count: "0".to_string(),
+                count: Some("0".to_string()),
             })
         } else if self.kvs.len() == 1 {
             Ok(SingleResponse {
                 header: self.header,
                 kv: Some(self.kvs.pop().unwrap()),
-                count: "1".to_string(),
+                count: Some("1".to_string()),
             })
         } else {
             let one = self.kvs.pop().unwrap();

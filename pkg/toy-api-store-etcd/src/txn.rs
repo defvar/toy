@@ -61,7 +61,8 @@ pub struct TxnRequest {
 #[derive(Debug, Deserialize)]
 pub struct TxnResponse {
     header: ResponseHeader,
-    succeeded: bool,
+    succeeded: Option<bool>,
+    #[serde(default)]
     responses: Vec<ResponseOp>,
 }
 
@@ -137,7 +138,7 @@ impl TxnRequest {
 
 impl TxnResponse {
     pub fn is_success(&self) -> bool {
-        self.succeeded
+        self.succeeded.is_some() && self.succeeded.unwrap()
     }
 }
 
