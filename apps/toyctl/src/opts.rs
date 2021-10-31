@@ -1,7 +1,7 @@
-use clap::{Clap, ValueHint};
+use clap::{Parser, ValueHint};
 use std::path::PathBuf;
 
-#[derive(Clap, Debug)]
+#[derive(Parser, Debug)]
 pub struct Config {
     #[clap(short, long, default_value = "https://localhost:3030")]
     pub api_root: String,
@@ -13,7 +13,7 @@ pub struct Config {
     pub kid: String,
 }
 
-#[derive(Clap, Debug)]
+#[derive(Parser, Debug)]
 pub struct ListCommand {
     pub resource: String,
     #[clap(short, long)]
@@ -22,7 +22,7 @@ pub struct ListCommand {
     pub pretty: Option<bool>,
 }
 
-#[derive(Clap, Debug)]
+#[derive(Parser, Debug)]
 pub struct PutCommand {
     pub resource: String,
     #[clap(short, long)]
@@ -31,13 +31,13 @@ pub struct PutCommand {
     pub file: PathBuf,
 }
 
-#[derive(Clap, Debug)]
+#[derive(Parser, Debug)]
 pub enum Command {
     List(ListCommand),
     Put(PutCommand),
 }
 
-#[derive(Clap, Debug)]
+#[derive(Parser, Debug)]
 pub struct Opts {
     #[clap(subcommand)]
     pub c: Command,

@@ -1,7 +1,7 @@
 use crate::error::Error;
 use crate::opts::*;
 
-use clap::Clap;
+use clap::Parser;
 use std::fs::File;
 use std::io::{Read, Write};
 use toy::api_client::http::HttpApiClient;
