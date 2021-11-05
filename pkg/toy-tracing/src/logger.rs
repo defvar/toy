@@ -18,13 +18,16 @@ pub struct LogGuard {
 }
 
 pub fn console() -> Result<LogGuard, std::io::Error> {
-    let time = tracing_subscriber::fmt::time::ChronoUtc::rfc3339();
+    let time = tracing_subscriber::fmt::time::UtcTime::rfc_3339();
     let builder = tracing_subscriber::fmt()
+        .json()
         .with_span_events(FmtSpan::CLOSE)
         .with_thread_ids(true)
         .with_thread_names(true)
         .with_env_filter(EnvFilter::from_default_env())
-        .with_timer(time);
+        .with_timer(time)
+        .with_ansi(false);
+
     builder.init();
     Ok(LogGuard { _g: None })
 }
@@ -34,7 +37,7 @@ pub fn file(
     prefix: impl AsRef<Path>,
     rotaion: LogRotation,
 ) -> Result<LogGuard, std::io::Error> {
-    let time = tracing_subscriber::fmt::time::ChronoUtc::rfc3339();
+    let time = tracing_subscriber::fmt::time::UtcTime::rfc_3339();
     let file_appender = match rotaion {
         LogRotation::Minutely => tracing_appender::rolling::minutely(dir, prefix),
         LogRotation::Hourly => tracing_appender::rolling::hourly(dir, prefix),
@@ -43,6 +46,7 @@ pub fn file(
     };
     let (non_blocking, guard) = tracing_appender::non_blocking(file_appender);
     let builder = tracing_subscriber::fmt()
+        .json()
         .with_span_events(FmtSpan::CLOSE)
         .with_thread_ids(true)
         .with_thread_names(true)
@@ -56,10 +60,11 @@ pub fn file(
 }
 
 pub fn tcp<A: ToSocketAddrs>(addr: A) -> Result<LogGuard, std::io::Error> {
-    let time = tracing_subscriber::fmt::time::ChronoUtc::rfc3339();
+    let time = tracing_subscriber::fmt::time::UtcTime::rfc_3339();
     let tcp = TcpLogger::new(addr)?;
     let (non_blocking, guard) = tracing_appender::non_blocking(tcp);
     let builder = tracing_subscriber::fmt()
+        .json()
         .with_span_events(FmtSpan::CLOSE)
         .with_thread_ids(true)
         .with_thread_names(true)

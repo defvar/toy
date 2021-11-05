@@ -27,10 +27,10 @@ impl std::io::Write for TcpLogger {
     }
 }
 
-impl MakeWriter for TcpLogger {
+impl<'a> MakeWriter<'a> for TcpLogger {
     type Writer = TcpLogger;
 
-    fn make_writer(&self) -> Self::Writer {
+    fn make_writer(&'a self) -> Self::Writer {
         match TcpStream::connect(self.addr.as_slice()) {
             Ok(st) => TcpLogger {
                 tcp: Some(st),
