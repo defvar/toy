@@ -6,16 +6,17 @@ use crate::store::kv::KvStore;
 use toy_api::role::{Role, RoleList};
 use toy_api::role_binding::{RoleBinding, RoleBindingList};
 use toy_h::HttpClient;
+use warp::filters::BoxedFilter;
 use warp::Filter;
 
 /// warp filter for rbac api.
 pub fn rbac<T>(
-    auth: impl Auth<T> + Clone,
+    auth: impl Auth<T> + Clone + 'static,
     client: T,
-    store: impl KvStore<T>,
-) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone
+    store: impl KvStore<T> + 'static,
+) -> BoxedFilter<(impl warp::Reply,)>
 where
-    T: HttpClient,
+    T: HttpClient + 'static,
 {
     role(
         auth.clone(),
@@ -33,18 +34,19 @@ where
         common::constants::ROLE_BINDING_KEY_PREFIX,
         store.clone(),
     ))
+    .boxed()
 }
 
 fn role<T>(
-    auth: impl Auth<T> + Clone,
+    auth: impl Auth<T> + Clone + 'static,
     client: T,
     path: &'static str,
     path2: &'static str,
     key_prefix: &'static str,
-    store: impl KvStore<T>,
-) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone
+    store: impl KvStore<T> + 'static,
+) -> BoxedFilter<(impl warp::Reply,)>
 where
-    T: HttpClient,
+    T: HttpClient + 'static,
 {
     crate::find!(
         warp::path(path).and(warp::path(path2)),
@@ -77,18 +79,19 @@ where
         key_prefix,
         store.clone()
     ))
+    .boxed()
 }
 
 fn role_binding<T>(
-    auth: impl Auth<T> + Clone,
+    auth: impl Auth<T> + Clone + 'static,
     client: T,
     path: &'static str,
     path2: &'static str,
     key_prefix: &'static str,
-    store: impl KvStore<T>,
-) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone
+    store: impl KvStore<T> + 'static,
+) -> BoxedFilter<(impl warp::Reply,)>
 where
-    T: HttpClient,
+    T: HttpClient + 'static,
 {
     crate::find!(
         warp::path(path).and(warp::path(path2)),
@@ -121,4 +124,5 @@ where
         key_prefix,
         store.clone()
     ))
+    .boxed()
 }

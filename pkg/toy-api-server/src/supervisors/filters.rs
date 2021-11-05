@@ -2,18 +2,19 @@ use crate::authentication::Auth;
 use crate::common;
 use crate::common::validator::{OkValidator, Validator};
 use crate::store::kv::KvStore;
+use crate::warp::filters::BoxedFilter;
 use toy_api::supervisors::{Supervisor, SupervisorList};
 use toy_h::HttpClient;
 use warp::Filter;
 
 /// warp filter for supervisors api.
 pub fn supervisors<T>(
-    auth: impl Auth<T> + Clone,
+    auth: impl Auth<T> + Clone + 'static,
     client: T,
-    store: impl KvStore<T>,
-) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone
+    store: impl KvStore<T> + 'static,
+) -> BoxedFilter<(impl warp::Reply,)>
 where
-    T: HttpClient,
+    T: HttpClient + 'static,
 {
     crate::find!(
         warp::path("supervisors"),
@@ -46,4 +47,5 @@ where
         common::constants::SUPERVISORS_KEY_PREFIX,
         store.clone()
     ))
+    .boxed()
 }

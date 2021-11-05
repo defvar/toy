@@ -2,18 +2,19 @@ use crate::authentication::Auth;
 use crate::common;
 use crate::common::validator::{OkValidator, Validator};
 use crate::store::kv::KvStore;
+use crate::warp::filters::BoxedFilter;
 use toy_api::graph::{Graph, GraphList};
 use toy_h::HttpClient;
 use warp::Filter;
 
 /// warp filter for graphs api.
 pub fn graphs<T>(
-    auth: impl Auth<T> + Clone,
+    auth: impl Auth<T> + Clone + 'static,
     client: T,
-    store: impl KvStore<T>,
-) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone
+    store: impl KvStore<T> + 'static,
+) -> BoxedFilter<(impl warp::Reply,)>
 where
-    T: HttpClient,
+    T: HttpClient + 'static,
 {
     crate::find!(
         warp::path("graphs"),
@@ -46,4 +47,5 @@ where
         common::constants::GRAPHS_KEY_PREFIX,
         store.clone()
     ))
+    .boxed()
 }
