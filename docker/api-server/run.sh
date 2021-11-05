@@ -5,12 +5,14 @@ if [ $# != 2 ]; then
     exit 1
 fi
 
-sudo docker container rm -f console-backend
+sudo docker container rm -f api-server
 
 sudo docker run -d \
 --network toy \
+--log-driver=fluentd \
+--log-opt fluentd-address=localhost:24224 \
 -p 127.0.0.1:3030:3030 \
 --mount type=bind,source=/"$2",destination=/.keys \
 --env-file "$1" \
---name console-backend \
+--name api-server \
 toy/console-backend

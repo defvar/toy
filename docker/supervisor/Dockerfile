@@ -11,7 +11,6 @@ COPY docker/supervisor/ docker/supervisor/
 WORKDIR /toy/apps/supervisor/supervisor-d
 
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
-    --mount=type=cache,target=/toy/apps/supervisor/target \
     cargo install --path .
 
 FROM ghcr.io/rust-lang/rust:nightly-buster-slim
@@ -24,6 +23,5 @@ RUN chmod 775 /var/log/toy
 WORKDIR /toy
 
 COPY --from=cargo-build /toy/docker/supervisor/ ./
-#RUN chmod +x ./entrypoint.sh
 
 ENTRYPOINT ["./entrypoint.sh"]
