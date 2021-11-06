@@ -27,3 +27,7 @@ pub mod tcp {
 pub mod timer {
     pub use toy_plugin_timer::*;
 }
+
+pub mod sort {
+    pub use toy_plugin_sort::*;
+}
