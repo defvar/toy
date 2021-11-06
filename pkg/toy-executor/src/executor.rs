@@ -69,18 +69,24 @@ impl Executor {
         while let Some(x) = self.awaiter.next().await {
             match x {
                 Err(e) => {
-                    tracing::error!(parent: &span, "an error occured, awaiter. {:?}", e);
+                    tracing::error!(parent: &span, ?uri, err=?e, "an error occured.");
                 }
                 Ok(req) => {
                     if req.is_stop() {
-                        tracing::info!(parent: &span, "receive stop signal. awaiter.");
+                        tracing::info!(parent: &span, ?uri, "receive stop signal.");
                         break;
                     }
                     if req.is_upstream_finish() {
                         finish_count += 1;
-                        tracing::info!(parent: &span, "receive upstream finish signal. awaiter, finish_count:{:?}, upstream_count:{:?}", finish_count, self.awaiter.upstream_count());
+                        tracing::info!(
+                            parent: &span,
+                            ?uri,
+                            finish_count,
+                            upstream_count= ?self.awaiter.upstream_count(),
+                            "receive upstream finish signal."
+                        );
                         if finish_count >= self.awaiter.upstream_count() {
-                            tracing::info!(parent: &span, "all upstream finish. awaiter.");
+                            tracing::info!(parent: &span, ?uri, "all upstream finish.");
                             break;
                         }
                     }
@@ -116,7 +122,7 @@ impl ServiceExecutor for Executor {
 
         let config_value = self.graph.by_uri(&uri);
         if config_value.is_none() {
-            tracing::error!("not found service. uri:{:?}", uri);
+            tracing::error!(?uri, "not found service.");
             return;
         }
 
@@ -132,13 +138,13 @@ impl ServiceExecutor for Executor {
                             if let Err(e) =
                                 process(task_ctx, rx, upstream_count, tx, service, ctx).await
                             {
-                                tracing::error!("an error occured; uri:{:?}, error:{:?}", uri, e);
+                                tracing::error!(?uri, err=?e, "an error occured;");
                             }
                         }
                         (s, c) => {
                             let e1 = s.err();
                             let e2 = c.err();
-                            tracing::error!("an error occured; uri:{:?}, service initialize error:{:?}. context initialize error:{:?}.", uri, e1, e2);
+                            tracing::error!(?uri, err1 = ?e1, err2 = ?e2, "an error occured;");
                         }
                     }
                 });
@@ -166,7 +172,7 @@ impl TaskExecutor for Executor {
 
         for (stype, uri) in &nodes {
             if let Err(e) = app.delegate(stype, uri, &mut self) {
-                tracing::error!(parent: &span, "an error occured; {:?}", e);
+                tracing::error!(parent: &span, err=?e, "an error occured;");
                 return Err(e);
             }
         }
@@ -202,6 +208,7 @@ where
     task_ctx.set_span(info_span.clone());
 
     sc = service.started(task_ctx.clone(), sc.into());
+    let uri = task_ctx.uri().unwrap();
 
     //main loop, receive on message
     loop {
@@ -213,13 +220,14 @@ where
 
         match item {
             Some(Ok(req)) if req.is_stop() => {
-                tracing::info!(parent: &info_span, "receive stop signal.");
+                tracing::info!(parent: &info_span, ?uri, "receive stop signal.");
                 break;
             }
             Some(Ok(req)) if req.is_upstream_finish() => {
                 finish_count += 1;
                 tracing::info!(
                     parent: &info_span,
+                    ?uri,
                     finish_count,
                     upstream_count,
                     "receive upstream finish signal."
@@ -232,7 +240,7 @@ where
                         .await?;
                 }
                 if finish_count >= upstream_count {
-                    tracing::info!(parent: &info_span, "all upstream finish.");
+                    tracing::info!(parent: &info_span, ?uri, "all upstream finish.");
                     let tx = tx.clone();
                     let task_ctx = task_ctx.clone();
                     sc = service.upstream_finish_all(task_ctx, sc.into(), tx).await?;
@@ -244,7 +252,7 @@ where
                 sc = service.handle(task_ctx, sc.into(), req, tx).await?;
             }
             Some(Err(e)) => {
-                tracing::error!(parent: &info_span, err=?e, "node receive message error");
+                tracing::error!(parent: &info_span, ?uri, err=?e, "node receive message error");
                 return Err(e);
             }
             None => {
@@ -255,7 +263,7 @@ where
     }
 
     service.completed(task_ctx.clone(), sc.into());
-    tracing::info!(parent: &info_span, "end node.");
+    tracing::info!(parent: &info_span, ?uri, "end node.");
     Ok(())
 }
 
@@ -266,10 +274,6 @@ async fn on_finish(mut tx: Outgoing<Frame, ServiceError>, uri: Uri) {
         .filter_map(|x| x.as_ref().err())
         .collect::<Vec<&ServiceError>>();
     if results.len() > 0 {
-        tracing::error!(
-            "send upstream finish signal. uri:{:?}, ret:{:?}.",
-            uri,
-            results
-        );
+        tracing::error!(?uri, ?results, "send upstream finish signal.",);
     }
 }

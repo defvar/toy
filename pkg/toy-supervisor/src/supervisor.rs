@@ -106,7 +106,7 @@ where
     }
 
     pub async fn oneshot(self, g: Graph) -> Result<RunTaskResponse, ServiceError> {
-        tracing::info!("oneshot supervisor");
+        tracing::info!(name=?self.name, "oneshot supervisor");
 
         let id = TaskId::new();
         let ctx = TaskContext::new(id, g);
@@ -117,7 +117,7 @@ where
     }
 
     pub async fn run(mut self) -> Result<(), ()> {
-        tracing::info!("start supervisor");
+        tracing::info!(name=?self.name, "start supervisor");
 
         self.started_at = Some(Utc::now());
         if let Err(_) = self.register(self.app.schemas()).await {
@@ -131,6 +131,8 @@ where
             match r {
                 Ok(m) => match m {
                     Request::RunTask(id, g, tx) => {
+                        tracing::info!(name=?self.name, "receive run task request.");
+
                         let tasks = Arc::clone(&self.tasks);
                         let ctx = TaskContext::new(id, g);
                         let app = Arc::clone(&self.app);
@@ -176,7 +178,7 @@ where
                         let _ = tx.send_ok(m).await;
                     }
                     Request::Shutdown => {
-                        tracing::info!("receive shutdown request.");
+                        tracing::info!(name=?self.name, "receive shutdown request.");
                         {
                             let tasks = Arc::clone(&self.tasks);
                             let mut tasks = tasks.lock().await;
@@ -184,21 +186,23 @@ where
                                 send_stop_signal(t).await;
                             }
                         }
-                        tracing::info!("waiting all task stop....");
+                        tracing::info!(name=?self.name, "waiting all task stop....");
                         let sd = Shutdown {
                             tasks: Arc::clone(&self.tasks),
                         };
                         sd.await;
-                        tracing::info!("all task stopped.");
+                        tracing::info!(name=?self.name, "all task stopped.");
                         break;
                     }
                 },
-                Err(e) => tracing::error!(err = ?e, "an error occured; supervisor."),
+                Err(e) => {
+                    tracing::error!(name=?self.name, err = ?e, "an error occured; supervisor.")
+                }
             }
         }
-        tracing::info!("shutdown supervisor");
+        tracing::info!(name=?self.name, "shutdown supervisor");
         if let Err(e) = self.tx.send_ok(()).await {
-            tracing::error!(err = ?e, "an error occured; supervisor when shutdown.")
+            tracing::error!(name=?self.name, err = ?e, "an error occured; supervisor when shutdown.")
         }
 
         Ok(())
@@ -214,11 +218,11 @@ where
         let name = self.name.clone();
 
         toy_rt::spawn(async move {
-            tracing::info!("start watch task.");
-            if let Err(e) = super::watcher::watch(name, c, tx).await {
-                tracing::error!(err = ?e, "an error occured; supervisor when watch task.");
+            tracing::info!(?name, "start watch task.");
+            if let Err(e) = super::watcher::watch(name.clone(), c, tx).await {
+                tracing::error!(?name, err = ?e, "an error occured; supervisor when watch task.");
             }
-            tracing::info!("shutdown watcher.");
+            tracing::info!(?name, "shutdown watcher.");
         });
     }
 
@@ -236,7 +240,7 @@ where
             .put(self.name.clone(), sv, PutOption::new())
             .await
         {
-            tracing::error!(err = ?e, "an error occured; supervisor when start up.");
+            tracing::error!(name=?self.name, err = ?e, "an error occured; supervisor when start up.");
             return Err(());
         }
 
@@ -262,7 +266,7 @@ where
                 )
                 .await
             {
-                tracing::error!(err = ?e, spec = ?key, "an error occured; supervisor when register service.");
+                tracing::error!(name=?self.name, err = ?e, spec = ?key, "an error occured; supervisor when register service.");
                 return Err(());
             }
         }

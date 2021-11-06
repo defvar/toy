@@ -41,11 +41,11 @@ where
             }
             Err(e) => {
                 if retry_count >= RETRY_MAX {
-                    tracing::error!("Retry limit is exceeded. Send shutdown request.");
+                    tracing::error!(?name, "Retry limit is exceeded. Send shutdown request.");
                     let _ = tx.send_ok(Request::Shutdown).await;
                     return Err(ServiceError::error(e));
                 }
-                tracing::error!(err = ?e, "an error occured; supervisor when watch task. rerun watcher.");
+                tracing::error!(?name, err = ?e, "an error occured; supervisor when watch task. rerun watcher.");
                 retry_count += 1;
                 std::thread::sleep(Duration::from_secs((RETRY_WAIT_SECS * retry_count) as u64));
             }
@@ -62,14 +62,14 @@ async fn request<C>(
 where
     C: ApiClient + Clone,
 {
-    tracing::debug!("watch result :{:?}", pending);
+    tracing::debug!(?name, "watch result :{:?}", pending);
     match pending.graph() {
         Some(graph) => {
             let r = c
                 .task()
                 .allocate(
                     pending.task_id().to_string(),
-                    AllocateRequest::new(name),
+                    AllocateRequest::new(&name),
                     AllocateOption::new(),
                 )
                 .await
@@ -83,7 +83,7 @@ where
                 let req = Request::RunTask(pending.task_id(), g, o_tx);
                 tx.send_ok(req).await
             } else {
-                tracing::info!("not found task...running by another supervisor...?");
+                tracing::info!(?name, "not found task...running by another supervisor...?");
                 Ok(())
             }
         }
