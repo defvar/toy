@@ -7,7 +7,6 @@ use std::io::{Read, Write};
 use toy::api_client::http::HttpApiClient;
 use toy::api_client::toy_api::authentication::Claims;
 use toy_jwt::Algorithm;
-use tracing_subscriber::fmt::format::FmtSpan;
 
 mod commands;
 mod error;
@@ -15,16 +14,11 @@ mod opts;
 mod output;
 
 fn main() {
+    dotenv::dotenv().ok();
+
     let opts: Opts = Opts::parse();
 
-    let time = tracing_subscriber::fmt::time::ChronoUtc::rfc3339();
-    tracing_subscriber::fmt()
-        .with_max_level(tracing::Level::DEBUG)
-        .with_span_events(FmtSpan::CLOSE)
-        .with_thread_ids(true)
-        .with_thread_names(true)
-        .with_timer(time)
-        .init();
+    let _w = toy_tracing::console().unwrap();
 
     let mut rt = toy_rt::RuntimeBuilder::new()
         .thread_name("toyctl")
@@ -57,6 +51,7 @@ where
     match c {
         Command::List(c) => commands::list::execute(c, client, writer).await,
         Command::Put(c) => commands::put::execute(c, client, writer).await,
+        Command::Post(c) => commands::post::execute(c, client, writer).await,
     }
 }
 

@@ -19,6 +19,7 @@ pub struct GraphNode {
     #[serde(rename = "type")]
     tp: String,
     uri: String,
+    #[serde(default)]
     position: Position,
     port_type: Option<PortType>,
     config: Value,

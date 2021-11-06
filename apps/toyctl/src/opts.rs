@@ -3,7 +3,12 @@ use std::path::PathBuf;
 
 #[derive(Parser, Debug)]
 pub struct Config {
-    #[clap(short, long, default_value = "https://localhost:3030")]
+    #[clap(
+        short,
+        long,
+        env = "TOY_API_ROOT",
+        default_value = "https://localhost:3030"
+    )]
     pub api_root: String,
     #[clap(short, long, env = "TOY_API_CLIENT_USER")]
     pub user: String,
@@ -32,9 +37,17 @@ pub struct PutCommand {
 }
 
 #[derive(Parser, Debug)]
+pub struct PostCommand {
+    pub resource: String,
+    #[clap(short, long, value_hint = ValueHint::FilePath)]
+    pub file: PathBuf,
+}
+
+#[derive(Parser, Debug)]
 pub enum Command {
     List(ListCommand),
     Put(PutCommand),
+    Post(PostCommand),
 }
 
 #[derive(Parser, Debug)]
