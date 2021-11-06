@@ -21,7 +21,7 @@ pub fn console() -> Result<LogGuard, std::io::Error> {
     let time = tracing_subscriber::fmt::time::UtcTime::rfc_3339();
     let builder = tracing_subscriber::fmt()
         .json()
-        .with_span_events(FmtSpan::CLOSE)
+        .with_span_events(FmtSpan::NEW | FmtSpan::CLOSE)
         .with_thread_ids(true)
         .with_thread_names(true)
         .with_env_filter(EnvFilter::from_default_env())
@@ -47,7 +47,7 @@ pub fn file(
     let (non_blocking, guard) = tracing_appender::non_blocking(file_appender);
     let builder = tracing_subscriber::fmt()
         .json()
-        .with_span_events(FmtSpan::CLOSE)
+        .with_span_events(FmtSpan::NEW | FmtSpan::CLOSE)
         .with_thread_ids(true)
         .with_thread_names(true)
         .with_env_filter(EnvFilter::from_default_env())
@@ -65,7 +65,7 @@ pub fn tcp<A: ToSocketAddrs>(addr: A) -> Result<LogGuard, std::io::Error> {
     let (non_blocking, guard) = tracing_appender::non_blocking(tcp);
     let builder = tracing_subscriber::fmt()
         .json()
-        .with_span_events(FmtSpan::CLOSE)
+        .with_span_events(FmtSpan::NEW | FmtSpan::CLOSE)
         .with_thread_ids(true)
         .with_thread_names(true)
         .with_env_filter(EnvFilter::from_default_env())
