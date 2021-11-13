@@ -1,4 +1,4 @@
-use std::time::Duration;
+use std::time::SystemTime;
 use toy_core::graph::Graph;
 use toy_core::node_channel::SignalOutgoings;
 use toy_core::task::{TaskContext, TaskId};
@@ -8,7 +8,7 @@ use toy_core::task::{TaskContext, TaskId};
 #[derive(Debug)]
 pub struct RunningTask {
     id: TaskId,
-    started_at: Duration,
+    started_at: SystemTime,
     graph: Graph,
 
     /// use running task.
@@ -29,7 +29,7 @@ impl RunningTask {
         self.id
     }
 
-    pub fn started_at(&self) -> Duration {
+    pub fn started_at(&self) -> SystemTime {
         self.started_at
     }
 

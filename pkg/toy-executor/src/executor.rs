@@ -1,5 +1,6 @@
 use async_trait::async_trait;
 use serde::de::DeserializeOwned;
+use std::time::SystemTime;
 use toy_core::data::{self, Frame};
 use toy_core::error::ServiceError;
 use toy_core::executor::{ServiceExecutor, TaskExecutor, TaskExecutorFactory};
@@ -11,6 +12,26 @@ use toy_core::service::{Service, ServiceContext, ServiceFactory};
 use toy_core::task::TaskContext;
 use toy_core::ServiceType;
 use toy_core::Uri;
+use tracing::Span;
+
+#[derive(Debug, Clone, Copy)]
+pub enum Operation {
+    StartService,
+    FinishService,
+    StartTask,
+    FinishTask,
+}
+
+impl Operation {
+    pub fn as_message(&self) -> &str {
+        match self {
+            Operation::StartService => "start service.",
+            Operation::FinishService => "finish service.",
+            Operation::StartTask => "start task.",
+            Operation::FinishTask => "finish task.",
+        }
+    }
+}
 
 /// Common implementation `TaskExecutor` and `ServiceExecutor`.
 pub struct Executor {
@@ -93,7 +114,6 @@ impl Executor {
                 }
             }
         }
-
         Ok(())
     }
 }
@@ -135,8 +155,16 @@ impl ServiceExecutor for Executor {
                     let new_ctx = factory.new_context(service_type.clone(), config).await;
                     match (new_service, new_ctx) {
                         (Ok(service), Ok(ctx)) => {
-                            if let Err(e) =
-                                process(task_ctx, rx, upstream_count, tx, service, ctx).await
+                            if let Err(e) = process(
+                                task_ctx,
+                                rx,
+                                upstream_count,
+                                tx,
+                                service,
+                                service_type,
+                                ctx,
+                            )
+                            .await
                             {
                                 tracing::error!(?uri, err=?e, "an error occured;");
                             }
@@ -161,7 +189,14 @@ impl TaskExecutor for Executor {
         T: Registry,
     {
         let span = self.ctx.info_span();
+        let started_at = self.ctx.started_at();
 
+        tracing::info!(
+            parent: &span,
+            operation=?Operation::StartTask,
+            "{}",
+            Operation::StartTask.as_message()
+        );
         // need to reverse ....
         let nodes = self
             .graph
@@ -177,7 +212,9 @@ impl TaskExecutor for Executor {
             }
         }
 
-        self.run_0(start_frame).await
+        let r = self.run_0(start_frame).await;
+        log_total_time(started_at, &span, None, Operation::FinishTask);
+        r
     }
 }
 
@@ -195,11 +232,13 @@ async fn process<S, Ctx>(
     upstream_count: u32,
     tx: Outgoing<Frame, ServiceError>,
     mut service: S,
+    service_type: ServiceType,
     context: Ctx,
 ) -> Result<(), ServiceError>
 where
     S: Service<Request = Frame, Error = ServiceError, Context = Ctx>,
 {
+    let service_starded_at = SystemTime::now();
     let tx_signal = tx.clone();
     let mut finish_count = 0;
     let mut sc = ServiceContext::Ready(context);
@@ -207,8 +246,18 @@ where
     let info_span = task_ctx.info_span();
     task_ctx.set_span(info_span.clone());
 
-    sc = service.started(task_ctx.clone(), sc.into());
     let uri = task_ctx.uri().unwrap();
+
+    tracing::info!(
+        parent: &info_span,
+        ?uri,
+        service=?service_type,
+        operation=?Operation::StartService,
+        "{}",
+        Operation::StartService.as_message()
+    );
+
+    sc = service.started(task_ctx.clone(), sc.into());
 
     //main loop, receive on message
     loop {
@@ -263,7 +312,12 @@ where
     }
 
     service.completed(task_ctx.clone(), sc.into());
-    tracing::info!(parent: &info_span, ?uri, "end node.");
+    log_total_time(
+        service_starded_at,
+        &info_span,
+        Some((&uri, service_type)),
+        Operation::FinishService,
+    );
     Ok(())
 }
 
@@ -275,5 +329,29 @@ async fn on_finish(mut tx: Outgoing<Frame, ServiceError>, uri: Uri) {
         .collect::<Vec<&ServiceError>>();
     if results.len() > 0 {
         tracing::error!(?uri, ?results, "send upstream finish signal.",);
+    }
+}
+
+fn log_total_time(
+    started_at: SystemTime,
+    parent: &Span,
+    uri: Option<(&Uri, ServiceType)>,
+    operation: Operation,
+) {
+    let now = SystemTime::now();
+    let ended = now.duration_since(started_at);
+    if ended.is_ok() {
+        let duration = ended.unwrap();
+        let total = duration.as_secs() as f64 + duration.subsec_nanos() as f64 * 1e-9;
+        match uri {
+            Some((u, st)) => {
+                tracing::info!(parent: parent, uri=?u, service=?st, total=?total, ?operation, "{}", operation.as_message());
+            }
+            None => {
+                tracing::info!(parent: parent, total=?total, ?operation, "{}", operation.as_message());
+            }
+        };
+    } else {
+        tracing::error!(parent: parent, ?operation, "error, calc total time.");
     }
 }

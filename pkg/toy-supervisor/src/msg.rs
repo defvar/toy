@@ -1,4 +1,4 @@
-use std::time::Duration;
+use std::time::SystemTime;
 use toy_core::mpsc::OutgoingMessage;
 use toy_core::oneshot;
 use toy_core::prelude::{Graph, ServiceError, TaskId};
@@ -34,7 +34,7 @@ impl RunTaskResponse {
 #[derive(Debug, Clone)]
 pub struct TaskResponse {
     pub(crate) id: TaskId,
-    pub(crate) started_at: Duration,
+    pub(crate) started_at: SystemTime,
     pub(crate) graph: Graph,
 }
 
@@ -43,7 +43,7 @@ impl TaskResponse {
         self.id
     }
 
-    pub fn started_at(&self) -> Duration {
+    pub fn started_at(&self) -> SystemTime {
         self.started_at
     }
 

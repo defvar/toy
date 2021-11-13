@@ -7,7 +7,7 @@ use serde::{de::Visitor, Deserialize, Deserializer, Serialize, Serializer};
 use std::fmt;
 use std::fmt::Formatter;
 use std::sync::Arc;
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use std::time::SystemTime;
 use uuid::Uuid;
 
 /// Task Identifier
@@ -28,7 +28,7 @@ pub struct TaskContext {
 
 struct Inner {
     id: TaskId,
-    started_at: Duration,
+    started_at: SystemTime,
     graph: Graph,
 }
 
@@ -86,9 +86,7 @@ impl TaskContext {
         Self {
             inner: Arc::new(Inner {
                 id,
-                started_at: SystemTime::now()
-                    .duration_since(UNIX_EPOCH)
-                    .expect("Time went backwards"),
+                started_at: SystemTime::now(),
                 graph,
             }),
             uri: None,
@@ -108,7 +106,7 @@ impl TaskContext {
         self.inner.id
     }
 
-    pub fn started_at(&self) -> Duration {
+    pub fn started_at(&self) -> SystemTime {
         self.inner.started_at
     }
 
