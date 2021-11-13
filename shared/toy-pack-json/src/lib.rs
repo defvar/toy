@@ -16,6 +16,7 @@ mod decode;
 mod deser_ops;
 mod deserializer;
 mod encode;
+pub mod jvalue;
 mod ser;
 mod ser_ops;
 mod serializer;

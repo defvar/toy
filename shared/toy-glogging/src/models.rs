@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use toy_pack_json::jvalue::JValue;
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 pub enum Severity {
@@ -23,7 +24,7 @@ pub struct Entry {
     labels: Option<HashMap<String, String>>,
     operation: Option<Operation>,
     #[serde(rename = "jsonPayload")]
-    json_payload: Option<HashMap<String, String>>,
+    json_payload: Option<JValue>,
 }
 
 pub struct EntryBuilder {
@@ -92,6 +93,7 @@ pub struct ListRequest {
 
 #[derive(Clone, Debug, Deserialize)]
 pub struct ListResponse {
+    #[serde(default)]
     entries: Vec<Entry>,
     #[serde(rename = "nextPageToken")]
     next_page_token: Option<String>,
@@ -260,7 +262,7 @@ impl Entry {
     }
 
     /// Get json payload.
-    pub fn json_payload(&self) -> Option<&HashMap<String, String>> {
+    pub fn json_payload(&self) -> Option<&JValue> {
         self.json_payload.as_ref()
     }
 
@@ -317,7 +319,7 @@ impl EntryBuilder {
     /// replace json payload.
     /// clear builing 'kv'.
     pub fn json_payload(mut self, json: HashMap<String, String>) -> EntryBuilder {
-        self.e.json_payload = Some(json);
+        self.e.json_payload = Some(json.into());
         self.json_payload.clear();
         self
     }
@@ -374,7 +376,7 @@ impl EntryBuilder {
     /// build `Entry`
     pub fn build(mut self) -> Entry {
         if !self.json_payload.is_empty() {
-            self.e.json_payload = Some(self.json_payload.clone());
+            self.e.json_payload = Some(self.json_payload.into());
         }
         self.e
     }
@@ -463,6 +465,13 @@ impl TailRequest {
             resource_names: vec![r.into()],
             filter: None,
             buffer_window: None,
+        }
+    }
+
+    pub fn with_filter<T: Into<String>>(self, filter: T) -> TailRequest {
+        Self {
+            filter: Some(filter.into()),
+            ..self
         }
     }
 }

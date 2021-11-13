@@ -98,7 +98,7 @@ where
             let req = ListRequest::from_resource_name(log_name)
                 .with_filter(format!("labels.task_id={}", task_id));
 
-            let r = con.client.list(token, req).await?;
+            let r = con.client.list(&token, req).await?;
 
             if r.entries().len() == 0 {
                 Ok(None)
@@ -147,7 +147,7 @@ where
             let req = ListRequest::from_resource_name(log_name)
                 .with_filter("operation.last = true OR operation.first = true");
 
-            let r = con.client.list(token, req).await?;
+            let r = con.client.list(&token, req).await?;
 
             let tasks = r.entries().iter().fold(HashMap::new(), |mut map, x| {
                 match (x.label("task_id"), x.operation(), x.timestamp()) {

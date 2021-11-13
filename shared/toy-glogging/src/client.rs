@@ -30,7 +30,7 @@ where
 
     pub async fn list(
         &self,
-        token: GToken,
+        token: &GToken,
         req: ListRequest,
     ) -> Result<ListResponse, GLoggingError> {
         tracing::debug!(req= ?req, "list");
@@ -49,7 +49,7 @@ where
 
     pub async fn write(
         &self,
-        token: GToken,
+        token: &GToken,
         req: WriteRequest,
     ) -> Result<WriteResponse, GLoggingError> {
         tracing::debug!("write");
@@ -68,7 +68,7 @@ where
 
     pub async fn tail(
         &self,
-        token: GToken,
+        token: &GToken,
         req: TailRequest,
     ) -> Result<TailResponse, GLoggingError> {
         tracing::debug!(req= ?req, "tail");
@@ -101,7 +101,7 @@ where
     async fn request<U: Into<Uri>, B: Into<Bytes>>(
         &self,
         url: U,
-        token: GToken,
+        token: &GToken,
         body: B,
     ) -> Result<(StatusCode, Bytes), GLoggingError> {
         let auth = HeaderValue::from_str(&format!("Bearer {}", token.access_token()))
