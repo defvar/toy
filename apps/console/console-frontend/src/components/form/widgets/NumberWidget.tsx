@@ -1,8 +1,8 @@
 import * as React from "react";
 import { WidgetProps } from "./WidgetProps";
-import FormControl from "@material-ui/core/FormControl";
-import Input from "@material-ui/core/Input";
-import InputLabel from "@material-ui/core/InputLabel";
+import FormControl from "@mui/material/FormControl";
+import Input from "@mui/material/Input";
+import InputLabel from "@mui/material/InputLabel";
 
 export const NumberWidget = React.memo((props: WidgetProps) => {
     const { id, label, value, required, onChange, isError } = props;

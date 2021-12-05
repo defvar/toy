@@ -1,8 +1,8 @@
 import * as React from "react";
-import FormControl from "@material-ui/core/FormControl";
-import MenuItem from "@material-ui/core/MenuItem";
-import Select from "@material-ui/core/Select";
-import InputLabel from "@material-ui/core/InputLabel";
+import FormControl from "@mui/material/FormControl";
+import MenuItem from "@mui/material/MenuItem";
+import Select, { SelectChangeEvent } from "@mui/material/Select";
+import InputLabel from "@mui/material/InputLabel";
 import { WidgetProps } from "./WidgetProps";
 
 export const SelectWidget = React.memo(
@@ -16,7 +16,8 @@ export const SelectWidget = React.memo(
         selectOptions,
     }: WidgetProps) => {
         const handleChange = (
-            e: React.ChangeEvent<{ value: unknown }>
+            e: SelectChangeEvent<{ value: unknown }>,
+            _: React.ReactNode
         ): void => {
             onChange(e.target.value as string);
         };

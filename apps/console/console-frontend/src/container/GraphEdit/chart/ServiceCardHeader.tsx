@@ -1,9 +1,11 @@
 import * as React from "react";
-import { makeStyles, Theme, createStyles } from "@material-ui/core/styles";
-import FunctionsIcon from "@material-ui/icons/Functions";
-import AllOutIcon from "@material-ui/icons/AllOut";
-import CheckBoxOutlineBlankIcon from "@material-ui/icons/CheckBoxOutlineBlank";
-import CardHeader from "@material-ui/core/CardHeader";
+import { Theme } from "@mui/material/styles";
+import makeStyles from '@mui/styles/makeStyles';
+import createStyles from '@mui/styles/createStyles';
+import FunctionsIcon from "@mui/icons-material/Functions";
+import AllOutIcon from "@mui/icons-material/AllOut";
+import CheckBoxOutlineBlankIcon from "@mui/icons-material/CheckBoxOutlineBlank";
+import CardHeader from "@mui/material/CardHeader";
 import { PortType } from "../../../modules/graphEdit/types";
 
 const useStyles = makeStyles((theme: Theme) =>

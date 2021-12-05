@@ -1,7 +1,7 @@
 import * as React from "react";
 import { WidgetProps } from "./WidgetProps";
-import FormControl from "@material-ui/core/FormControl";
-import TextField from "@material-ui/core/TextField";
+import FormControl from "@mui/material/FormControl";
+import TextField from "@mui/material/TextField";
 
 export const TextWidget = React.memo((props: WidgetProps) => {
     const { id, label, value, required, onChange, isError } = props;

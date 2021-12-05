@@ -1,10 +1,12 @@
 import * as React from "react";
-import { makeStyles, createStyles, Theme } from "@material-ui/core/styles";
-import Card from "@material-ui/core/Card";
+import { Theme } from "@mui/material/styles";
+import makeStyles from '@mui/styles/makeStyles';
+import createStyles from '@mui/styles/createStyles';
+import Card from "@mui/material/Card";
 import { INodeInnerDefaultProps, INode } from "@mrblenny/react-flow-chart";
 import { ServiceCardHeader } from "./ServiceCardHeader";
-import IconButton from "@material-ui/core/IconButton";
-import EditIcon from "@material-ui/icons/Edit";
+import IconButton from "@mui/material/IconButton";
+import EditIcon from "@mui/icons-material/Edit";
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const useStyles = makeStyles((_: Theme) =>
@@ -49,7 +51,7 @@ export const Node = React.memo((props: NodeProps) => {
         <Card className={classes.card}>
             <div className={classes.row}>
                 <ServiceCardHeader {...getProperties(props.node)} />
-                <IconButton aria-label="edit" onClick={onEdit}>
+                <IconButton aria-label="edit" onClick={onEdit} size="large">
                     <EditIcon fontSize="small" />
                 </IconButton>
             </div>

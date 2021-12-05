@@ -1,8 +1,8 @@
 import * as React from "react";
 import { WidgetProps } from "./WidgetProps";
-import FormControl from "@material-ui/core/FormControl";
-import FormControlLabel from "@material-ui/core/FormControlLabel";
-import Checkbox from "@material-ui/core/Checkbox";
+import FormControl from "@mui/material/FormControl";
+import FormControlLabel from "@mui/material/FormControlLabel";
+import Checkbox from "@mui/material/Checkbox";
 
 export const CheckboxWidget = React.memo((props: WidgetProps) => {
     const { id, label, value, required, onChange, isError } = props;

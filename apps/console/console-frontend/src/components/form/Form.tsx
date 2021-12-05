@@ -2,7 +2,9 @@ import * as React from "react";
 import { ValidationResult } from "./types";
 import { parse } from "./util";
 import { ObjectFields } from "./ObjectFields";
-import { createStyles, makeStyles, Theme } from "@material-ui/core/styles";
+import { Theme } from "@mui/material/styles";
+import createStyles from '@mui/styles/createStyles';
+import makeStyles from '@mui/styles/makeStyles';
 import { JsonSchema } from "../../modules/common";
 
 export interface FormProps<T> {

@@ -1,8 +1,10 @@
 import * as React from "react";
 import { Field } from "./types";
-import { createStyles, makeStyles, Theme } from "@material-ui/core/styles";
-import Divider from "@material-ui/core/Divider";
-import Typography from "@material-ui/core/Typography";
+import { Theme } from "@mui/material/styles";
+import createStyles from '@mui/styles/createStyles';
+import makeStyles from '@mui/styles/makeStyles';
+import Divider from "@mui/material/Divider";
+import Typography from "@mui/material/Typography";
 import { isObject } from "../../utils/types";
 import { CommonField } from "./CommonField";
 import { ValidationResult } from "./types";

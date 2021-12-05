@@ -1,18 +1,15 @@
 import * as React from "react";
 import { useParams } from "react-router-dom";
-import {
-    createStyles,
-    Theme,
-    makeStyles,
-    useTheme,
-} from "@material-ui/core/styles";
-import Typography from "@material-ui/core/Typography";
-import RefreshIcon from "@material-ui/icons/Refresh";
-import IconButton from "@material-ui/core/IconButton";
+import { Theme, useTheme } from "@mui/material/styles";
+import createStyles from '@mui/styles/createStyles';
+import makeStyles from '@mui/styles/makeStyles';
+import Typography from "@mui/material/Typography";
+import RefreshIcon from "@mui/icons-material/Refresh";
+import IconButton from "@mui/material/IconButton";
 import { Sidebar, Chart } from "./chart";
-import ZoomInIcon from "@material-ui/icons/ZoomIn";
-import ZoomOutIcon from "@material-ui/icons/ZoomOut";
-import CircularProgress from "@material-ui/core/CircularProgress";
+import ZoomInIcon from "@mui/icons-material/ZoomIn";
+import ZoomOutIcon from "@mui/icons-material/ZoomOut";
+import CircularProgress from "@mui/material/CircularProgress";
 import { Resource } from "../../modules/common";
 import {
     GraphEditState,
@@ -21,9 +18,9 @@ import {
     initialState,
 } from "../../modules/graphEdit";
 import { Resizable } from "react-resizable";
-import AppBar from "@material-ui/core/AppBar";
-import Tabs from "@material-ui/core/Tabs";
-import Tab from "@material-ui/core/Tab";
+import AppBar from "@mui/material/AppBar";
+import Tabs from "@mui/material/Tabs";
+import Tab from "@mui/material/Tab";
 import {
     ServiceResponse,
     fetchServices,
@@ -146,7 +143,7 @@ export const GraphEdit = () => {
     }, []);
 
     const [size, setSize] = React.useState(() => {
-        return { width: theme.breakpoints.width("md") };
+        return { width: theme.breakpoints.values.md };
     });
 
     const onResize = (_event, { size }) => {
@@ -176,16 +173,13 @@ export const GraphEdit = () => {
                     }}
                 >
                     <Typography className={classes.heading}>{name}</Typography>
-                    <IconButton
-                        aria-label="refresh"
-                        onClick={onChartRefleshClick}
-                    >
+                    <IconButton aria-label="refresh" onClick={onChartRefleshClick} size="large">
                         <RefreshIcon />
                     </IconButton>
-                    <IconButton aria-label="zoom-in" onClick={handleZoomIn}>
+                    <IconButton aria-label="zoom-in" onClick={handleZoomIn} size="large">
                         <ZoomInIcon />
                     </IconButton>
-                    <IconButton aria-label="zoom-out" onClick={handleZoomOut}>
+                    <IconButton aria-label="zoom-out" onClick={handleZoomOut} size="large">
                         <ZoomOutIcon />
                     </IconButton>
                     <div
@@ -225,10 +219,7 @@ export const GraphEdit = () => {
                     </Tabs>
                 </AppBar>
                 <div hidden={tabNumber !== 0}>
-                    <IconButton
-                        aria-label="refresh"
-                        onClick={onSidebarRefleshClick}
-                    >
+                    <IconButton aria-label="refresh" onClick={onSidebarRefleshClick} size="large">
                         <RefreshIcon />
                     </IconButton>
                     <React.Suspense

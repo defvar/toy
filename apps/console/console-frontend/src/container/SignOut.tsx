@@ -1,6 +1,7 @@
 import * as React from "react";
-import { createStyles, makeStyles } from "@material-ui/core/styles";
-import CircularProgress from "@material-ui/core/CircularProgress";
+import createStyles from '@mui/styles/createStyles';
+import makeStyles from '@mui/styles/makeStyles';
+import CircularProgress from "@mui/material/CircularProgress";
 import * as auth from "../modules/auth";
 import { Redirect } from "react-router-dom";
 

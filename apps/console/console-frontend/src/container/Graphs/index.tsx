@@ -1,6 +1,8 @@
 import * as React from "react";
 import { GraphList } from "./GraphList";
-import { makeStyles, Theme, createStyles } from "@material-ui/core/styles";
+import { Theme } from "@mui/material/styles";
+import makeStyles from '@mui/styles/makeStyles';
+import createStyles from '@mui/styles/createStyles';
 import {
     reducer,
     GraphListState,
@@ -9,9 +11,9 @@ import {
     Actions,
 } from "../../modules/graphs";
 import { toResource, Resource } from "../../modules/common";
-import CircularProgress from "@material-ui/core/CircularProgress";
-import RefreshIcon from "@material-ui/icons/Refresh";
-import IconButton from "@material-ui/core/IconButton";
+import CircularProgress from "@mui/material/CircularProgress";
+import RefreshIcon from "@mui/icons-material/Refresh";
+import IconButton from "@mui/material/IconButton";
 
 const items: { [key: string]: GraphListItemState } = {
     aaaa: {
@@ -97,29 +99,27 @@ export const Graphs = () => {
     const onClick = React.useCallback(() => {
         setResource(() => fetch(1));
     }, []);
-    return (
-        <>
-            <IconButton aria-label="refresh" onClick={onClick}>
-                <RefreshIcon />
-            </IconButton>
-            <React.Suspense
-                fallback={
-                    <div className={classes.loader}>
-                        <CircularProgress
-                            size={68}
-                            className={classes.progress}
-                        />
-                    </div>
-                }
-            >
-                <GraphListSuspense
-                    state={state}
-                    dispatch={dispatch}
-                    resource={resource}
-                />
-            </React.Suspense>
-        </>
-    );
+    return <>
+        <IconButton aria-label="refresh" onClick={onClick} size="large">
+            <RefreshIcon />
+        </IconButton>
+        <React.Suspense
+            fallback={
+                <div className={classes.loader}>
+                    <CircularProgress
+                        size={68}
+                        className={classes.progress}
+                    />
+                </div>
+            }
+        >
+            <GraphListSuspense
+                state={state}
+                dispatch={dispatch}
+                resource={resource}
+            />
+        </React.Suspense>
+    </>;
 };
 
 export default Graphs;

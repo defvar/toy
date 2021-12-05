@@ -1,7 +1,9 @@
 import * as React from "react";
-import { createStyles, makeStyles, Theme } from "@material-ui/core/styles";
-import Chip from "@material-ui/core/Chip";
-import Paper from "@material-ui/core/Paper";
+import { Theme } from "@mui/material/styles";
+import createStyles from '@mui/styles/createStyles';
+import makeStyles from '@mui/styles/makeStyles';
+import Chip from "@mui/material/Chip";
+import Paper from "@mui/material/Paper";
 
 export interface LabelsProps {
     labels: { key: string; display: string }[];

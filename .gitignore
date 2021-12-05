@@ -3,3 +3,7 @@ target/
 Cargo.lock
 .idea/
 **/.env
+
+# System Files
+.DS_Store
+Thumbs.db

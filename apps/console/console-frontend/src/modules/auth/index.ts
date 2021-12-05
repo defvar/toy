@@ -1,4 +1,4 @@
-import { app, googleAuthProvider } from "../firebase";
+import { auth, signInWithPopup } from "../firebase";
 
 export type AuthUser = {
     email: string;
@@ -9,7 +9,7 @@ export const getIdToken = () => {
     if (process.env.DEV_AUTH == "none") {
         return Promise.resolve("");
     } else {
-        return app.auth().currentUser.getIdToken();
+        return auth().currentUser.getIdToken();
     }
 };
 
@@ -22,7 +22,7 @@ export const onAuthStateChanged = (fn: (user: AuthUser) => void): void => {
         return;
     }
 
-    app.auth().onAuthStateChanged((fireBaseUser) => {
+    auth().onAuthStateChanged((fireBaseUser) => {
         if (fireBaseUser) {
             fn({
                 email: fireBaseUser.email,
@@ -42,11 +42,8 @@ export const signinWithPopupToGoogle = async (): Promise<AuthUser> => {
         });
     }
 
-    const r = await app.auth().signInWithPopup(googleAuthProvider());
-    return {
-        email: r.user.email,
-        name: r.user.displayName,
-    };
+    const r = await signInWithPopup();
+    return r;
 };
 
 export const signOut = async (): Promise<void> => {
@@ -54,5 +51,5 @@ export const signOut = async (): Promise<void> => {
         return Promise.resolve();
     }
 
-    return app.auth().signOut();
+    return auth().signOut();
 };

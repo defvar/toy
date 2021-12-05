@@ -1,10 +1,10 @@
 import * as React from "react";
-import * as MatAccountCircle from "@material-ui/icons/AccountCircle";
-import IconButton from "@material-ui/core/IconButton";
-import MenuItem from "@material-ui/core/MenuItem";
-import Menu from "@material-ui/core/Menu";
-import ListItemIcon from "@material-ui/core/ListItemIcon";
-import ListItemText from "@material-ui/core/ListItemText";
+import * as MatAccountCircle from "@mui/icons-material/AccountCircle";
+import IconButton from "@mui/material/IconButton";
+import MenuItem from "@mui/material/MenuItem";
+import Menu from "@mui/material/Menu";
+import ListItemIcon from "@mui/material/ListItemIcon";
+import ListItemText from "@mui/material/ListItemText";
 
 export interface AccountCircleProps {
     options: {
@@ -43,13 +43,12 @@ export const AccountCircle = ({
                 aria-haspopup="true"
                 onClick={handleCircle}
                 color="inherit"
-            >
+                size="large">
                 <MatAccountCircle.default />
             </IconButton>
             <Menu
                 id="menu-appbar"
                 anchorEl={anchorEl}
-                getContentAnchorEl={null}
                 anchorOrigin={{
                     vertical: "bottom",
                     horizontal: "left",

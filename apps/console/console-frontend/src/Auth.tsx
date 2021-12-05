@@ -1,8 +1,9 @@
 import * as React from "react";
 import { Redirect, useLocation } from "react-router-dom";
 import { AuthContext } from "./context";
-import { makeStyles, createStyles } from "@material-ui/core/styles";
-import CircularProgress from "@material-ui/core/CircularProgress";
+import makeStyles from '@mui/styles/makeStyles';
+import createStyles from '@mui/styles/createStyles';
+import CircularProgress from "@mui/material/CircularProgress";
 
 export interface AuthProps {
     children: React.ReactNode;

@@ -1,13 +1,14 @@
 import * as React from "react";
-import { Theme, makeStyles, useTheme } from "@material-ui/core/styles";
-import Drawer from "@material-ui/core/Drawer";
-import List from "@material-ui/core/List";
-import ListItem from "@material-ui/core/ListItem";
-import ListItemIcon from "@material-ui/core/ListItemIcon";
-import ListItemText from "@material-ui/core/ListItemText";
-import IconButton from "@material-ui/core/IconButton";
-import ChevronLeftIcon from "@material-ui/icons/ChevronLeft";
-import ChevronRightIcon from "@material-ui/icons/ChevronRight";
+import { Theme, useTheme } from "@mui/material/styles";
+import makeStyles from '@mui/styles/makeStyles';
+import Drawer from "@mui/material/Drawer";
+import List from "@mui/material/List";
+import ListItem from "@mui/material/ListItem";
+import ListItemIcon from "@mui/material/ListItemIcon";
+import ListItemText from "@mui/material/ListItemText";
+import IconButton from "@mui/material/IconButton";
+import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
+import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 
 const useStyles = makeStyles<Theme, SideMenuProps>((theme: Theme) => ({
     drawer: (props) => ({
@@ -67,7 +68,7 @@ export const SideMenu = (props: SideMenuProps): JSX.Element => {
             }}
         >
             <div className={classes.drawerHeader}>
-                <IconButton onClick={props.onDrawerClose}>
+                <IconButton onClick={props.onDrawerClose} size="large">
                     {theme.direction === "ltr" ? (
                         <ChevronLeftIcon />
                     ) : (

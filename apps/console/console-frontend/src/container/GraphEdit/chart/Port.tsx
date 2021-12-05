@@ -1,7 +1,9 @@
 import * as React from "react";
 import { IPortDefaultProps } from "@mrblenny/react-flow-chart";
-import StopRoundedIcon from "@material-ui/icons/StopRounded";
-import { createStyles, Theme, makeStyles } from "@material-ui/core/styles";
+import StopRoundedIcon from "@mui/icons-material/StopRounded";
+import { Theme } from "@mui/material/styles";
+import createStyles from '@mui/styles/createStyles';
+import makeStyles from '@mui/styles/makeStyles';
 import clsx from "clsx";
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -21,7 +23,7 @@ export const CustomPort = React.memo(
         return (
             <div className={clsx(classes.root)}>
                 {!config.readonly && (isLinkSelected || isLinkHovered) ? (
-                    <StopRoundedIcon fontSize={"default"} />
+                    <StopRoundedIcon fontSize={"medium"} />
                 ) : (
                     <StopRoundedIcon fontSize={"small"} />
                 )}

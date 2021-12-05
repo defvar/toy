@@ -1,17 +1,19 @@
 import * as React from "react";
 import clsx from "clsx";
-import { createStyles, Theme, makeStyles } from "@material-ui/core/styles";
+import { Theme } from "@mui/material/styles";
+import createStyles from '@mui/styles/createStyles';
+import makeStyles from '@mui/styles/makeStyles';
 import { SideMenu } from "../components/SideMenu";
-import AppBar from "@material-ui/core/AppBar";
-import Toolbar from "@material-ui/core/Toolbar";
-import Typography from "@material-ui/core/Typography";
-import IconButton from "@material-ui/core/IconButton";
-import MenuIcon from "@material-ui/icons/Menu";
+import AppBar from "@mui/material/AppBar";
+import Toolbar from "@mui/material/Toolbar";
+import Typography from "@mui/material/Typography";
+import IconButton from "@mui/material/IconButton";
+import MenuIcon from "@mui/icons-material/Menu";
 import { useHistory } from "react-router-dom";
-import TimelineIcon from "@material-ui/icons/Timeline";
-import WidgetsIcon from "@material-ui/icons/Widgets";
-import DesktopWindowsIcon from "@material-ui/icons/DesktopWindows";
-import ExitToAppIcon from "@material-ui/icons/ExitToApp";
+import TimelineIcon from "@mui/icons-material/Timeline";
+import WidgetsIcon from "@mui/icons-material/Widgets";
+import DesktopWindowsIcon from "@mui/icons-material/DesktopWindows";
+import ExitToAppIcon from "@mui/icons-material/ExitToApp";
 import AccountCircle from "../components/AccountCircle";
 
 const drawerWidth = 240;
@@ -149,7 +151,7 @@ const AppDrawer = (props: AppDrawerProps): JSX.Element => {
                             classes.menuButton,
                             open && classes.hide
                         )}
-                    >
+                        size="large">
                         <MenuIcon />
                     </IconButton>
                     <Typography variant="h6" noWrap style={{ flexGrow: 1 }}>

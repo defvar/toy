@@ -1,10 +1,12 @@
 import * as React from "react";
 import { Widgets } from "./widgets";
 import { Field, FieldError } from "./types";
-import { createStyles, makeStyles, Theme } from "@material-ui/core/styles";
-import FormHelperText from "@material-ui/core/FormHelperText";
-import List from "@material-ui/core/List";
-import ListItem from "@material-ui/core/ListItem";
+import { Theme } from "@mui/material/styles";
+import createStyles from '@mui/styles/createStyles';
+import makeStyles from '@mui/styles/makeStyles';
+import FormHelperText from "@mui/material/FormHelperText";
+import List from "@mui/material/List";
+import ListItem from "@mui/material/ListItem";
 
 export interface CommonFieldProps<T> {
     path: string;
