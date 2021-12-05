@@ -1,3 +1,5 @@
+//! Model for graph api.
+
 use crate::common::{ListOption, ListOptionLike, SelectionCandidate};
 use crate::selection::candidate::CandidateMap;
 use crate::selection::field::Selection;

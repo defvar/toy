@@ -1,3 +1,5 @@
+//! Model for task api.
+
 use crate::common::{Format, ListOption, ListOptionLike};
 use crate::graph::Graph;
 use crate::selection::field::Selection;

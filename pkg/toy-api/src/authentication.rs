@@ -1,3 +1,5 @@
+//! Model for authentication api.
+
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Eq, PartialEq, Clone, Serialize, Deserialize)]

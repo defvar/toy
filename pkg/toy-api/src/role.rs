@@ -1,3 +1,5 @@
+//! Model for rbac/role api.
+
 use serde::{Deserialize, Serialize};
 
 pub const RESOURCE_ALL: &'static str = "*";

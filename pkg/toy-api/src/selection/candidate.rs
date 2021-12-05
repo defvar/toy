@@ -1,3 +1,6 @@
+//!　Candidate values to apply the condition to.
+//!　Struct to build candidate values from api's data model in order to exclude data that does not match the predicate.
+
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::hash::{Hash, Hasher};

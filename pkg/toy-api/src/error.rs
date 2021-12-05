@@ -1,3 +1,5 @@
+//! Error returned from the toy-api.
+
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]

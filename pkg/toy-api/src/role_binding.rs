@@ -1,3 +1,5 @@
+//! Model for rbac/roleBinding api.
+
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]

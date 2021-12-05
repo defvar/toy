@@ -1,3 +1,5 @@
+//! Model for supervisor api.
+
 use crate::common::format;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};

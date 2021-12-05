@@ -1,9 +1,12 @@
+//! Apply the predicate to the struct's field to selection the necessary data.
+
 use crate::common::SelectionCandidate;
 use crate::selection::candidate::Candidate;
 use crate::selection::Operator;
 use serde::{Deserialize, Serialize};
 use toy_core::data::Value;
 
+/// Selection infomation.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Selection {
     selectors: Vec<Selector>,
@@ -15,6 +18,7 @@ pub struct Selector {
     fields: Vec<String>,
 }
 
+/// A single predicate to be selection. It consists of a field name, an operator, and a value.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Predicate {
     field: String,

@@ -2,6 +2,8 @@ use crate::selection::candidate::CandidateMap;
 use crate::selection::field::Selection;
 use serde::{Deserialize, Serialize};
 
+/// Data format of the api.
+/// Can be specified as an option when making a request.
 #[derive(Debug, Eq, PartialEq, Clone, Copy, Serialize, Deserialize)]
 pub enum Format {
     #[serde(rename = "json")]
@@ -18,20 +20,28 @@ impl Default for Format {
     }
 }
 
+/// Traits that should be implemented by structs that are used as options for find-based api.
 pub trait FindOptionLike {
+    /// Returns the common option items.
     fn common(&self) -> &FindOption;
 }
 
+/// Traits that should be implemented by structs that are used as options for list-based api.
 pub trait ListOptionLike {
+    /// Returns the common option items.
     fn common(&self) -> &ListOption;
 
+    /// Create `Selection`.
     fn selection(&self) -> Selection;
 }
 
+/// This trait is used to select data based on the specified conditions when calling api.
 pub trait SelectionCandidate {
+    /// Creates and returns the field information needed to make a selection.
     fn candidate_map(&self) -> CandidateMap;
 }
 
+/// Common option items for find-based api.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct FindOption {
     format: Option<Format>,
@@ -62,6 +72,7 @@ impl FindOption {
     }
 }
 
+/// Common option items for list-based api.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ListOption {
     format: Option<Format>,
@@ -92,6 +103,7 @@ impl ListOption {
     }
 }
 
+/// Common option items for put-based api.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct PutOption {
     format: Option<Format>,
@@ -122,6 +134,7 @@ impl PutOption {
     }
 }
 
+/// Common option items for delete-based api.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct DeleteOption {
     format: Option<Format>,
