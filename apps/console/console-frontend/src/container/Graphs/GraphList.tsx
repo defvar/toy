@@ -82,12 +82,12 @@ export const GraphList = (props: GraphListProps) => {
         async (event: React.ChangeEvent<HTMLInputElement>) => {
             const { name, checked: isActive } = event.target;
             setLoadingItems((prev) => ({ ...prev, [name]: true }));
-            const promise = new Promise((resolve) => {
-                setTimeout(() => {
-                    resolve();
-                }, 2000);
-            });
-            await promise;
+            // const promise = new Promise((resolve) => {
+            //     setTimeout(() => {
+            //         resolve();
+            //     }, 2000);
+            // });
+            // await promise;
             if (ref.current) {
                 props.dispatch({
                     type: "ToggleActive",

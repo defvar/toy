@@ -107,7 +107,7 @@ const ChartSuspense = (props: GraphEditSuspenseProps) => {
 };
 
 export const GraphEdit = () => {
-    const { name } = useParams();
+    const { name } = useParams<{name: string}>();
     const classes = useStyles();
     const theme = useTheme();
 
