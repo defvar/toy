@@ -1,11 +1,11 @@
 use crate::data::error::DeserializeError;
-use crate::data::map::Map;
 use crate::data::Value;
 use serde::de::{
     Deserialize, DeserializeSeed, Deserializer, EnumAccess, Error, MapAccess, SeqAccess,
     VariantAccess, Visitor,
 };
 use std::fmt::Formatter;
+use toy_map::Map;
 
 /// Deserialize from `Value`
 ///

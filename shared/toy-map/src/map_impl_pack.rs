@@ -1,4 +1,4 @@
-use crate::data::Map;
+use crate::Map;
 use serde::{Serialize, Serializer};
 use std::hash::Hash;
 

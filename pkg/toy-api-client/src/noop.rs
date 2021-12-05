@@ -8,8 +8,8 @@ use futures_core::Stream;
 use toy_api::common::{DeleteOption, FindOption, ListOption, PutOption};
 use toy_api::role::{Role, RoleList};
 use toy_api::role_binding::{RoleBinding, RoleBindingList};
-use toy_api::services::{ServiceSpec, ServiceSpecList};
-use toy_api::task::{AllocateOption, AllocateRequest, AllocateResponse};
+use toy_api::services::{ServiceSpec, ServiceSpecList, ServiceSpecListOption};
+use toy_api::task::{AllocateOption, AllocateRequest, AllocateResponse, TaskListOption};
 
 #[derive(Clone)]
 pub struct NoopApiClient;
@@ -121,10 +121,7 @@ impl TaskClient for NoopApiClient {
         unimplemented!()
     }
 
-    async fn list(
-        &self,
-        _opt: toy_api::task::ListOption,
-    ) -> Result<toy_api::task::Tasks, ApiClientError> {
+    async fn list(&self, _opt: TaskListOption) -> Result<toy_api::task::Tasks, ApiClientError> {
         unimplemented!()
     }
 
@@ -174,10 +171,7 @@ impl SupervisorClient for NoopApiClient {
 
 #[async_trait]
 impl ServiceClient for NoopApiClient {
-    async fn list(
-        &self,
-        _opt: toy_api::common::ListOption,
-    ) -> Result<ServiceSpecList, ApiClientError> {
+    async fn list(&self, _opt: ServiceSpecListOption) -> Result<ServiceSpecList, ApiClientError> {
         unimplemented!()
     }
 

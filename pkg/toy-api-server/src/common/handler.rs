@@ -6,7 +6,10 @@ use crate::{common, ApiError};
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use std::convert::Infallible;
-use toy_api::common::{DeleteOption, FindOption, ListOption, PutOption};
+use std::fmt::Debug;
+use toy_api::common::{
+    DeleteOption, FindOption, ListOption, ListOptionLike, PutOption, SelectionCandidate,
+};
 use toy_h::{Bytes, HttpClient};
 use warp::http::StatusCode;
 use warp::reply::Reply;
@@ -73,6 +76,59 @@ where
             let format = api_opt.as_ref().map(|x| x.format()).unwrap_or(None);
             let pretty = api_opt.as_ref().map(|x| x.pretty()).unwrap_or(None);
             let r = f(v);
+            Ok(common::reply::into_response(&r, format, pretty))
+        }
+        Err(e) => {
+            tracing::error!("error:{:?}", e);
+            Ok(StatusCode::INTERNAL_SERVER_ERROR.into_response())
+        }
+    }
+}
+
+pub async fn list_with_opt<H, Store, V, R, Opt, StoreOptF, F>(
+    ctx: Context,
+    store: Store,
+    prefix: &str,
+    api_opt: Option<Opt>,
+    store_opt_f: StoreOptF,
+    f: F,
+) -> Result<impl warp::Reply, warp::Rejection>
+where
+    H: HttpClient,
+    Store: KvStore<H>,
+    V: DeserializeOwned + SelectionCandidate,
+    R: Serialize,
+    Opt: ListOptionLike + Debug,
+    StoreOptF: FnOnce(Option<&Opt>) -> kv::ListOption,
+    F: FnOnce(Vec<V>) -> R,
+{
+    tracing::trace!("handle: ctx:{:?}, opt:{:?}", ctx, api_opt);
+
+    match store
+        .ops()
+        .list::<V>(
+            store.con().unwrap(),
+            prefix.to_owned(),
+            store_opt_f(api_opt.as_ref()),
+        )
+        .await
+    {
+        Ok(mut vec) => {
+            let selection = api_opt.as_ref().map(|x| x.selection());
+            let (format, pretty) = api_opt
+                .as_ref()
+                .map(|x| (x.common().format(), x.common().pretty()))
+                .unwrap_or((None, None));
+
+            match selection {
+                Some(s) if !s.preds().is_empty() => {
+                    // filter
+                    vec = vec.into_iter().filter(|item| s.is_match(item)).collect();
+                }
+                _ => {}
+            };
+
+            let r = f(vec);
             Ok(common::reply::into_response(&r, format, pretty))
         }
         Err(e) => {

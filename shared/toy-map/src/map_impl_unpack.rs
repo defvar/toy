@@ -1,4 +1,4 @@
-use crate::data::Map;
+use crate::Map;
 use core::marker::PhantomData;
 use serde::de::{MapAccess, Visitor};
 use serde::{Deserialize, Deserializer};

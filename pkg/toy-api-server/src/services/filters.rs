@@ -1,9 +1,9 @@
 use crate::authentication::Auth;
 use crate::common;
 use crate::common::validator::{OkValidator, Validator};
-use crate::store::kv::KvStore;
+use crate::store::kv::{KvStore, ListOption};
 use crate::warp::filters::BoxedFilter;
-use toy_api::services::{ServiceSpec, ServiceSpecList};
+use toy_api::services::{ServiceSpec, ServiceSpecList, ServiceSpecListOption};
 use toy_h::HttpClient;
 use warp::Filter;
 
@@ -24,12 +24,14 @@ where
         store.clone(),
         |v: ServiceSpec| v
     )
-    .or(crate::list!(
+    .or(crate::list_with_opt!(
         warp::path("services"),
         auth.clone(),
         client.clone(),
         common::constants::SERVICES_KEY_PREFIX,
         store.clone(),
+        ServiceSpecListOption,
+        |_: Option<&ServiceSpecListOption>| ListOption::new(),
         |v: Vec<ServiceSpec>| ServiceSpecList::new(v)
     ))
     .or(crate::put!(

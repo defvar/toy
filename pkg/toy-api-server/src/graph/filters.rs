@@ -1,9 +1,9 @@
 use crate::authentication::Auth;
 use crate::common;
 use crate::common::validator::{OkValidator, Validator};
-use crate::store::kv::KvStore;
+use crate::store::kv::{KvStore, ListOption};
 use crate::warp::filters::BoxedFilter;
-use toy_api::graph::{Graph, GraphList};
+use toy_api::graph::{Graph, GraphList, GraphListOption};
 use toy_h::HttpClient;
 use warp::Filter;
 
@@ -24,12 +24,14 @@ where
         store.clone(),
         |v: Graph| v
     )
-    .or(crate::list!(
+    .or(crate::list_with_opt!(
         warp::path("graphs"),
         auth.clone(),
         client.clone(),
         common::constants::GRAPHS_KEY_PREFIX,
         store.clone(),
+        GraphListOption,
+        |_: Option<&GraphListOption>| ListOption::new(),
         |v: Vec<Graph>| GraphList::new(v)
     ))
     .or(crate::put!(

@@ -1,9 +1,10 @@
 use crate::data::error::SerializeError;
-use crate::data::{Map, Value};
+use crate::data::Value;
 use serde::ser::{
     Serialize, SerializeMap, SerializeSeq, SerializeStruct, SerializeStructVariant, SerializeTuple,
     SerializeTupleStruct, SerializeTupleVariant, Serializer,
 };
+use toy_map::Map;
 
 /// Serialize to `Value`
 ///

@@ -1,14 +1,17 @@
+use crate::common::format;
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Supervisor {
     name: String,
-    start_time: String,
+    #[serde(with = "format::rfc3399")]
+    start_time: DateTime<Utc>,
     labels: Vec<String>,
 }
 
 impl Supervisor {
-    pub fn new(name: String, start_time: String, labels: Vec<String>) -> Self {
+    pub fn new(name: String, start_time: DateTime<Utc>, labels: Vec<String>) -> Self {
         Self {
             name,
             start_time,

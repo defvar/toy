@@ -10,10 +10,12 @@ use toy_api::common::Format;
 use toy_api::error::ErrorMessage;
 use toy_api::graph::Graph;
 use toy_api::task::{
-    AllocateOption, AllocateRequest, AllocateResponse, ListOption, LogOption, PendingTaskList,
-    PostOption, TaskLog, Tasks, WatchOption,
+    AllocateOption, AllocateRequest, AllocateResponse, LogOption, PendingTaskList, PostOption,
+    TaskListOption, TaskLog, Tasks, WatchOption,
 };
 use toy_h::{HttpClient, RequestBuilder, Response, Uri};
+
+static PATH: &'static str = "tasks";
 
 #[derive(Debug, Clone)]
 pub struct HttpTaskClient<T> {
@@ -84,12 +86,8 @@ where
         common::no_response(r, opt.format()).await
     }
 
-    async fn list(&self, opt: ListOption) -> Result<Tasks, ApiClientError> {
-        let query = prepare_query(&opt)?;
-        let uri = format!("{}/tasks?{}", self.root, query).parse::<Uri>()?;
-        let h = common_headers(opt.format(), &self.auth);
-        let r = self.inner.get(uri).headers(h).send().await?;
-        common::response(r, opt.format()).await
+    async fn list(&self, opt: TaskListOption) -> Result<Tasks, ApiClientError> {
+        crate::http::list_with_opt(&self.inner, &self.auth, &self.root, PATH, opt).await
     }
 
     async fn log(&self, key: String, opt: LogOption) -> Result<TaskLog, ApiClientError> {

@@ -1,3 +1,4 @@
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use toy_pack_json::jvalue::JValue;
@@ -15,9 +16,9 @@ pub struct Entry {
     #[serde(rename = "logName")]
     log_name: String,
     resource: Resource,
-    timestamp: Option<String>,
+    timestamp: Option<DateTime<Utc>>,
     #[serde(rename = "receiveTimestamp")]
-    receive_timestamp: Option<String>,
+    receive_timestamp: Option<DateTime<Utc>>,
     severity: Option<Severity>,
     #[serde(rename = "insertId")]
     insert_id: Option<String>,
@@ -257,7 +258,7 @@ impl FieldViolation {
 
 impl Entry {
     /// Get timestamp.
-    pub fn timestamp(&self) -> Option<&String> {
+    pub fn timestamp(&self) -> Option<&DateTime<Utc>> {
         self.timestamp.as_ref()
     }
 
@@ -306,7 +307,7 @@ impl EntryBuilder {
         }
     }
 
-    pub fn timestamp<T: Into<String>>(mut self, timestamp: T) -> EntryBuilder {
+    pub fn timestamp<T: Into<DateTime<Utc>>>(mut self, timestamp: T) -> EntryBuilder {
         self.e.timestamp = Some(timestamp.into());
         self
     }
@@ -400,9 +401,14 @@ impl ListRequest {
     }
 
     pub fn with_filter<T: Into<String>>(self, filter: T) -> ListRequest {
-        Self {
-            filter: Some(filter.into()),
-            ..self
+        let filter = filter.into();
+        if filter.is_empty() {
+            self
+        } else {
+            Self {
+                filter: Some(filter),
+                ..self
+            }
         }
     }
 

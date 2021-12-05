@@ -1,8 +1,7 @@
-//! A map of String to data::Value.
+//! A map of preserve order.
 //!
-//! By default the map is backed by a [`IndexMap`].
+//! By the map is backed by a [`IndexMap`].
 
-use crate::data::Value;
 use core::fmt::Formatter;
 use core::iter::FromIterator;
 use indexmap::IndexMap;
@@ -12,7 +11,7 @@ use std::fmt;
 use std::hash::Hash;
 
 /// A map which preserves insertion order.
-/// By default the map is backed by a [`IndexMap`].
+/// By the map is backed by a [`IndexMap`].
 #[derive(Clone)]
 pub struct Map<K, V> {
     map: IndexMap<K, V>,
@@ -293,10 +292,13 @@ where
     }
 }
 
-impl FromIterator<(String, Value)> for Map<String, Value> {
+impl<K, V> FromIterator<(K, V)> for Map<K, V>
+where
+    K: Eq + Hash + std::cmp::Ord + PartialEq,
+{
     fn from_iter<T>(iter: T) -> Self
     where
-        T: IntoIterator<Item = (String, Value)>,
+        T: IntoIterator<Item = (K, V)>,
     {
         Map {
             map: FromIterator::from_iter(iter),
@@ -304,10 +306,13 @@ impl FromIterator<(String, Value)> for Map<String, Value> {
     }
 }
 
-impl Extend<(String, Value)> for Map<String, Value> {
+impl<K, V> Extend<(K, V)> for Map<K, V>
+where
+    K: Eq + Hash + std::cmp::Ord + PartialEq,
+{
     fn extend<T>(&mut self, iter: T)
     where
-        T: IntoIterator<Item = (String, Value)>,
+        T: IntoIterator<Item = (K, V)>,
     {
         self.map.extend(iter);
     }

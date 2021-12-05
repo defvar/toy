@@ -1,9 +1,9 @@
 use super::value::Value;
-use crate::data::map::Map;
 use crate::mpsc::OutgoingMessage;
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
 use std::fmt;
+use toy_map::Map;
 
 /// A Value with header information added, which is used when transferring between channels.
 #[derive(Debug, Clone, Serialize, Deserialize)]

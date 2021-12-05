@@ -19,10 +19,17 @@ pub struct Config {
 }
 
 #[derive(Parser, Debug)]
-pub struct ListCommand {
+pub struct FindCommand {
     pub resource: String,
     #[clap(short, long)]
-    pub name: Option<String>,
+    pub name: String,
+    #[clap(short, long)]
+    pub pretty: Option<bool>,
+}
+
+#[derive(Parser, Debug)]
+pub struct ListCommand {
+    pub resource: String,
     #[clap(short, long)]
     pub pretty: Option<bool>,
 }
@@ -45,6 +52,7 @@ pub struct PostCommand {
 
 #[derive(Parser, Debug)]
 pub enum Command {
+    Find(FindCommand),
     List(ListCommand),
     Put(PutCommand),
     Post(PostCommand),

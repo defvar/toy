@@ -49,6 +49,7 @@ where
     W: Write,
 {
     match c {
+        Command::Find(c) => commands::find::execute(c, client, writer).await,
         Command::List(c) => commands::list::execute(c, client, writer).await,
         Command::Put(c) => commands::put::execute(c, client, writer).await,
         Command::Post(c) => commands::post::execute(c, client, writer).await,

@@ -1,5 +1,5 @@
 use toy_glogging::error::GLoggingError;
-use toy_glogging::models::{ListRequest, TailRequest};
+use toy_glogging::models::ListRequest;
 use toy_glogging::Client;
 use toy_h::impl_reqwest::ReqwestClient;
 use tracing_subscriber::fmt::format::FmtSpan;
@@ -28,8 +28,7 @@ async fn main() -> Result<(), GLoggingError> {
     //
     // list
     //
-    let req = ListRequest::from_resource_name(&resouce)
-        .with_filter("(labels.operation = \"last\" OR labels.operation = \"first\") AND timestamp >= \"2021-11-01\"");
+    let req = ListRequest::from_resource_name(&resouce).with_filter("timestamp >= \"2021-11-20\"");
     let r = c.list(&token, req).await;
     println!("{:?}", r);
 

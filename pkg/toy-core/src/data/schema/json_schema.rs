@@ -1,6 +1,6 @@
-use crate::data::Map;
 use serde::{de::Error, de::Visitor, Deserialize, Deserializer, Serialize, Serializer};
 use std::fmt::Formatter;
+use toy_map::Map;
 
 /// JsonSchema Object Type.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]

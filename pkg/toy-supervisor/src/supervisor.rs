@@ -231,8 +231,7 @@ where
             return Ok(());
         }
 
-        let start_time = self.started_at.unwrap().to_rfc3339();
-        let sv = toy_api::supervisors::Supervisor::new(self.name.clone(), start_time, Vec::new());
+        let sv = toy_api::supervisors::Supervisor::new(self.name.clone(), Utc::now(), Vec::new());
 
         let c = self.client.as_ref().unwrap();
         if let Err(e) = c

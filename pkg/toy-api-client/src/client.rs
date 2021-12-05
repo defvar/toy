@@ -7,7 +7,7 @@ use toy_api::common;
 use toy_api::graph::{Graph, GraphList};
 use toy_api::role::{Role, RoleList};
 use toy_api::role_binding::{RoleBinding, RoleBindingList};
-use toy_api::services::{ServiceSpec, ServiceSpecList};
+use toy_api::services::{ServiceSpec, ServiceSpecList, ServiceSpecListOption};
 use toy_api::supervisors::{Supervisor, SupervisorList};
 use toy_api::task::{self, AllocateRequest, AllocateResponse, PendingTaskList, TaskLog, Tasks};
 
@@ -75,7 +75,7 @@ pub trait TaskClient: Send + Sync {
 
     async fn post(&self, v: Graph, opt: task::PostOption) -> Result<(), ApiClientError>;
 
-    async fn list(&self, opt: task::ListOption) -> Result<Tasks, ApiClientError>;
+    async fn list(&self, opt: task::TaskListOption) -> Result<Tasks, ApiClientError>;
 
     async fn log(&self, key: String, opt: task::LogOption) -> Result<TaskLog, ApiClientError>;
 }
@@ -102,7 +102,7 @@ pub trait SupervisorClient: Send + Sync {
 
 #[async_trait]
 pub trait ServiceClient: Send + Sync {
-    async fn list(&self, opt: common::ListOption) -> Result<ServiceSpecList, ApiClientError>;
+    async fn list(&self, opt: ServiceSpecListOption) -> Result<ServiceSpecList, ApiClientError>;
 
     async fn find(
         &self,

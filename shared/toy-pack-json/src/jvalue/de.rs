@@ -1,8 +1,8 @@
 use crate::jvalue::JValue;
-use indexmap::IndexMap;
 use serde::de::{MapAccess, SeqAccess, Visitor};
 use serde::{Deserialize, Deserializer};
 use std::fmt::{self};
+use toy_map::Map;
 
 impl<'de> Deserialize<'de> for JValue {
     #[inline]
@@ -87,7 +87,7 @@ impl<'de> Deserialize<'de> for JValue {
             where
                 V: MapAccess<'de>,
             {
-                let mut values: IndexMap<String, JValue> = IndexMap::new();
+                let mut values: Map<String, JValue> = Map::new();
                 while let Some((key, value)) = visitor.next_entry()? {
                     values.insert(key, value);
                 }

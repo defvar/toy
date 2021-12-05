@@ -1,5 +1,7 @@
-use crate::common::Format;
+use crate::common::{Format, ListOption, ListOptionLike};
 use crate::graph::Graph;
+use crate::selection::field::Selection;
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use toy_core::prelude::TaskId;
 
@@ -59,8 +61,7 @@ pub struct TaskLogInner {
     target: String,
     graph: String,
     uri: Option<String>,
-    busy: Option<String>,
-    idle: Option<String>,
+    level: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -72,8 +73,10 @@ pub struct Tasks {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct TasksInner {
     task_id: TaskId,
-    started_at: Option<String>,
-    ended_at: Option<String>,
+    graph: String,
+    operation: String,
+    operation_at: DateTime<Utc>,
+    supervisor: String,
 }
 
 impl Default for PendingStatus {
@@ -185,6 +188,18 @@ impl TaskLog {
     }
 }
 
+impl TaskLogInner {
+    pub fn new<S: Into<String>>(message: S, target: S, graph: S, uri: Option<S>, level: S) -> Self {
+        Self {
+            message: message.into(),
+            target: target.into(),
+            graph: graph.into(),
+            uri: uri.map(Into::into),
+            level: level.into(),
+        }
+    }
+}
+
 impl Tasks {
     pub fn new(tasks: Vec<TasksInner>) -> Self {
         let count = tasks.len() as u32;
@@ -193,30 +208,24 @@ impl Tasks {
 }
 
 impl TasksInner {
-    pub fn new<T: AsRef<str>>(task_id: T) -> Result<Self, ()> {
+    pub fn new<T: AsRef<str>, S: Into<String>>(
+        task_id: T,
+        operation: S,
+        operation_at: DateTime<Utc>,
+        graph: S,
+        supervisor: S,
+    ) -> Result<Self, ()> {
         let id = match TaskId::parse_str(task_id.as_ref()) {
             Ok(id) => id,
             Err(_) => return Err(()),
         };
         Ok(Self {
             task_id: id,
-            started_at: None,
-            ended_at: None,
+            operation: operation.into(),
+            operation_at,
+            graph: graph.into(),
+            supervisor: supervisor.into(),
         })
-    }
-
-    pub fn with_started_at<T: AsRef<str>>(self, started_at: T) -> Self {
-        Self {
-            started_at: Some(started_at.as_ref().to_owned()),
-            ..self
-        }
-    }
-
-    pub fn with_ended_at<T: AsRef<str>>(self, ended_at: T) -> Self {
-        Self {
-            ended_at: Some(ended_at.as_ref().to_owned()),
-            ..self
-        }
     }
 }
 
@@ -227,22 +236,6 @@ pub struct WatchOption {
 }
 
 impl WatchOption {
-    pub fn new() -> Self {
-        Self { format: None }
-    }
-
-    pub fn format(&self) -> Option<Format> {
-        self.format
-    }
-}
-
-/// List api option.
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct ListOption {
-    format: Option<Format>,
-}
-
-impl ListOption {
     pub fn new() -> Self {
         Self { format: None }
     }
@@ -297,5 +290,37 @@ impl LogOption {
 
     pub fn format(&self) -> Option<Format> {
         self.format
+    }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct TaskListOption {
+    #[serde(flatten)]
+    common: ListOption,
+
+    #[serde(with = "crate::common::format::rfc3399_option")]
+    timestamp: Option<DateTime<Utc>>,
+}
+
+impl TaskListOption {
+    pub fn new() -> Self {
+        Self {
+            common: ListOption::new(),
+            timestamp: None,
+        }
+    }
+
+    pub fn timestamp(&self) -> Option<&DateTime<Utc>> {
+        self.timestamp.as_ref()
+    }
+}
+
+impl ListOptionLike for TaskListOption {
+    fn common(&self) -> &ListOption {
+        &self.common
+    }
+
+    fn selection(&self) -> Selection {
+        Selection::empty()
     }
 }

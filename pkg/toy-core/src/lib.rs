@@ -30,7 +30,7 @@ pub mod prelude {
     //! use toy_core::prelude::*;
     //! ```
 
-    pub use super::data::{self, Frame, Map, Value};
+    pub use super::data::{self, Frame, Value};
     pub use super::error::ServiceError;
     pub use super::graph::Graph;
     pub use super::mpsc::{Incoming, Outgoing};
@@ -42,6 +42,8 @@ pub mod prelude {
     pub use super::service_uri::Uri;
     pub use super::task::{TaskContext, TaskId};
     pub use super::{factory, map_value, seq_value};
+    #[doc(hidden)]
+    pub use toy_map::Map;
     #[doc(hidden)]
     pub use toy_pack::FromPrimitive;
 }

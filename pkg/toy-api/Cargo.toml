@@ -9,3 +9,4 @@ edition = "2018"
 [dependencies]
 serde = { version = "1.0", features = ["derive"] }
 toy-core = { path = "../toy-core" }
+chrono = { version = "0.4", features = ["serde"] }

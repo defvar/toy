@@ -1,6 +1,6 @@
-use indexmap::IndexMap;
 use std::collections::HashMap;
 use std::fmt::{self, Debug};
+use toy_map::Map;
 
 mod de;
 mod ser;
@@ -13,7 +13,7 @@ pub enum JValue {
     Integer(i64),
     Number(f64),
     Array(Vec<JValue>),
-    Object(IndexMap<String, JValue>),
+    Object(Map<String, JValue>),
 }
 
 impl JValue {
@@ -39,6 +39,39 @@ impl JValue {
         }
     }
 
+    pub fn is_str(&self) -> bool {
+        self.as_str().is_some()
+    }
+
+    pub fn as_str(&self) -> Option<&str> {
+        match self {
+            JValue::String(v) => Some(v),
+            _ => None,
+        }
+    }
+
+    pub fn is_integer(&self) -> bool {
+        self.as_integer().is_some()
+    }
+
+    pub fn as_integer(&self) -> Option<i64> {
+        match *self {
+            JValue::Integer(v) => Some(v),
+            _ => None,
+        }
+    }
+
+    pub fn is_number(&self) -> bool {
+        self.as_number().is_some()
+    }
+
+    pub fn as_number(&self) -> Option<f64> {
+        match *self {
+            JValue::Number(v) => Some(v),
+            _ => None,
+        }
+    }
+
     pub fn is_array(&self) -> bool {
         self.as_object().is_some()
     }
@@ -54,7 +87,7 @@ impl JValue {
         self.as_object().is_some()
     }
 
-    pub fn as_object(&self) -> Option<&IndexMap<String, JValue>> {
+    pub fn as_object(&self) -> Option<&Map<String, JValue>> {
         match *self {
             JValue::Object(ref map) => Some(map),
             _ => None,
@@ -64,7 +97,7 @@ impl JValue {
 
 impl From<HashMap<String, String>> for JValue {
     fn from(v: HashMap<String, String>) -> Self {
-        let mut map = IndexMap::with_capacity(v.len());
+        let mut map = Map::with_capacity(v.len());
         for (k, v) in v {
             map.insert(k, JValue::String(v));
         }

@@ -1,8 +1,8 @@
 use crate::constants;
 use crate::error::StoreGLoggingError;
-use std::collections::HashMap;
 use std::future::Future;
 use std::marker::PhantomData;
+use toy_api::selection::Operator;
 use toy_api::task::{TaskLog, TaskLogInner, Tasks, TasksInner};
 use toy_api_server::store::error::StoreError;
 use toy_api_server::store::StoreConnection;
@@ -15,9 +15,15 @@ use toy_h::HttpClient;
 use tracing::{Instrument, Level};
 
 #[derive(Clone, Debug)]
+struct Views {
+    task_detail: String,
+    task_list: String,
+}
+
+#[derive(Clone, Debug)]
 pub struct GLoggingStore<T> {
     con: Option<GloggingStoreConnection<T>>,
-    log_name: String,
+    views: Views,
 }
 
 #[derive(Clone, Debug)]
@@ -27,7 +33,7 @@ pub struct GloggingStoreConnection<T> {
 
 #[derive(Clone, Debug)]
 pub struct GLoggingStoreOps<T> {
-    log_name: String,
+    views: Views,
     _t: PhantomData<T>,
 }
 
@@ -36,14 +42,14 @@ where
     T: HttpClient,
 {
     pub fn new() -> Self {
-        let log_name =
-            std::env::var(constants::ENV_KEY_TOY_API_STORE_GLOGGING_LOG_NAME).expect(&format!(
-                "not found log name. please set env {}",
-                constants::ENV_KEY_TOY_API_STORE_GLOGGING_LOG_NAME
-            ));
+        let task_detail = view_name(constants::ENV_KEY_TOY_API_STORE_GLOGGING_VIEW_TASK_DETAIL);
+        let task_list = view_name(constants::ENV_KEY_TOY_API_STORE_GLOGGING_VIEW_TASK_LIST);
         Self {
             con: None,
-            log_name,
+            views: Views {
+                task_detail,
+                task_list,
+            },
         }
     }
 }
@@ -61,7 +67,7 @@ where
 
     fn ops(&self) -> Self::Ops {
         GLoggingStoreOps {
-            log_name: self.log_name.to_owned(),
+            views: self.views.clone(),
             _t: PhantomData,
         }
     }
@@ -87,7 +93,7 @@ where
 
     fn find(&self, con: Self::Con, task_id: TaskId, _opt: FindOption) -> Self::T {
         let span = tracing::span!(Level::DEBUG, "find", task_id = %task_id);
-        let log_name = self.log_name.to_owned();
+        let log_name = self.views.task_detail.to_owned();
         async move {
             let token = toy_glogging::auth::request_token(
                 con.client.raw(),
@@ -96,7 +102,7 @@ where
             .await?;
 
             let req = ListRequest::from_resource_name(log_name)
-                .with_filter(format!("labels.task_id={}", task_id));
+                .with_filter(format!("labels.task={}", task_id));
 
             let r = con.client.list(&token, req).await?;
 
@@ -105,18 +111,27 @@ where
             } else {
                 r.entries()
                     .iter()
-                    .try_fold(Vec::new(), |mut vec, x| {
-                        match x
-                            .json_payload_raw()
-                            .map(|x| toy_pack_json::unpack::<TaskLogInner>(x.as_bytes()))
-                        {
-                            Some(Ok(v)) => {
-                                vec.push(v);
-                                Ok(vec)
+                    .try_fold(Vec::new(), |mut vec, x| match x.json_payload() {
+                        Some(jv) => {
+                            let r = jv.as_object().and_then(|x| {
+                                let msg = x.get("message").map(|j| j.as_str()).unwrap_or(None);
+                                let t = x.get("target").map(|j| j.as_str()).unwrap_or(None);
+                                let g = x.get("graph").map(|j| j.as_str()).unwrap_or(None);
+                                let uri = x.get("uri").map(|j| j.as_str()).unwrap_or(None);
+                                let level = x.get("level").map(|j| j.as_str()).unwrap_or(None);
+                                match (msg, t, g, uri, level) {
+                                    (Some(msg), Some(t), Some(g), uri, Some(level)) => {
+                                        Some(TaskLogInner::new(msg, t, g, uri, level))
+                                    }
+                                    _ => None,
+                                }
+                            });
+                            if r.is_some() {
+                                vec.push(r.unwrap());
                             }
-                            Some(Err(e)) => Err(e.into()),
-                            None => Ok(vec),
+                            Ok(vec)
                         }
+                        None => Ok(vec),
                     })
                     .map(|v| Some(TaskLog::new(task_id, v)))
             }
@@ -133,9 +148,9 @@ where
     type T = impl Future<Output = Result<Tasks, Self::Err>> + Send;
     type Err = StoreGLoggingError;
 
-    fn list(&self, con: Self::Con, _opt: ListOption) -> Self::T {
+    fn list(&self, con: Self::Con, opt: ListOption) -> Self::T {
         let span = tracing::span!(Level::DEBUG, "list");
-        let log_name = self.log_name.to_owned();
+        let log_name = self.views.task_list.to_owned();
 
         async move {
             let token = toy_glogging::auth::request_token(
@@ -144,33 +159,47 @@ where
             )
             .await?;
 
-            let req = ListRequest::from_resource_name(log_name)
-                .with_filter("operation.last = true OR operation.first = true");
+            let req = ListRequest::from_resource_name(log_name);
 
+            let mut preds = Vec::new();
+            for p in opt.selection().preds() {
+                let op = match p.op() {
+                    Operator::Eq => "=",
+                    Operator::NotEq => "!=",
+                    Operator::GreaterThan => ">",
+                    Operator::LessThan => "<",
+                    Operator::Contains => ":",
+                };
+                preds.push(format!("{} {} \"{}\"", p.field(), op, p.value()));
+            }
+            let req = req.with_filter(preds.join(" AND "));
             let r = con.client.list(&token, req).await?;
 
-            let tasks = r.entries().iter().fold(HashMap::new(), |mut map, x| {
-                match (x.label("task_id"), x.operation(), x.timestamp()) {
-                    (Some(id), Some(op), Some(timestamp)) => {
-                        let e = TasksInner::new(id);
-                        if e.is_err() {
-                            map
-                        } else {
-                            let old = map.remove(id).unwrap_or_else(|| e.unwrap());
-                            let new_entry = if op.is_last() {
-                                old.with_ended_at(timestamp)
-                            } else {
-                                old.with_started_at(timestamp)
-                            };
-                            map.insert(id, new_entry);
-                            map
+            let tasks = r
+                .entries()
+                .iter()
+                .filter_map(|x| {
+                    match (
+                        x.label("task"),
+                        x.label("operation"),
+                        x.label("graph"),
+                        x.label("container_name"),
+                        x.timestamp(),
+                    ) {
+                        (Some(id), Some(op), Some(g), Some(cn), Some(timestamp)) => {
+                            let r = TasksInner::new(id, op, timestamp.clone(), g, cn);
+                            r.ok()
                         }
+                        _ => None,
                     }
-                    _ => map,
-                }
-            });
-            Ok(Tasks::new(tasks.into_iter().map(|(_, v)| v).collect()))
+                })
+                .collect();
+            Ok(Tasks::new(tasks))
         }
         .instrument(span)
     }
+}
+
+fn view_name(key: &str) -> String {
+    std::env::var(key).expect(&format!("not found view name. please set env {}", key))
 }

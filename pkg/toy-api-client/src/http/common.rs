@@ -2,7 +2,7 @@ use crate::auth::Auth;
 use crate::error::ApiClientError;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
-use toy_api::common::{DeleteOption, FindOption, Format, ListOption, PutOption};
+use toy_api::common::{DeleteOption, FindOption, Format, ListOption, ListOptionLike, PutOption};
 use toy_h::{HeaderMap, HttpClient, RequestBuilder, Uri};
 use toy_pack_urlencoded::QueryParseError;
 
@@ -41,6 +41,25 @@ where
     let h = common_headers(opt.format(), auth);
     let r = client.get(uri).headers(h).send().await?;
     crate::common::response(r, opt.format()).await
+}
+
+pub(crate) async fn list_with_opt<T, V, O>(
+    client: &T,
+    auth: &Auth,
+    root: &str,
+    path: &str,
+    opt: O,
+) -> Result<V, ApiClientError>
+where
+    T: HttpClient,
+    V: DeserializeOwned,
+    O: Serialize + ListOptionLike,
+{
+    let query = prepare_query(&opt)?;
+    let uri = format!("{}/{}?{}", root, path, query).parse::<Uri>()?;
+    let h = common_headers(opt.common().format(), auth);
+    let r = client.get(uri).headers(h).send().await?;
+    crate::common::response(r, opt.common().format()).await
 }
 
 pub(crate) async fn put<T, V>(

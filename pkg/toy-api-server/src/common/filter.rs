@@ -51,6 +51,21 @@ macro_rules! list {
 }
 
 #[macro_export]
+macro_rules! list_with_opt {
+    ($path: expr, $auth: expr, $client: expr, $key_prefix: expr, $store: expr, $api_opt: ident, $store_opt: expr, $f: expr) => {
+        $path
+            .and(warp::path::end())
+            .and(warp::get())
+            .and($crate::authentication::authenticate($auth, $client))
+            .and($crate::common::filter::with_store($store))
+            .and($crate::common::query::query_opt::<$api_opt>())
+            .and_then(move |ctx, store, opt| {
+                $crate::common::handler::list_with_opt(ctx, store, $key_prefix, opt, $store_opt, $f)
+            })
+    };
+}
+
+#[macro_export]
 macro_rules! put {
     ($path: expr, $auth: expr, $client: expr, $key_prefix: expr, $store: expr, $f: expr) => {
         $path

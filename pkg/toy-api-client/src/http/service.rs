@@ -3,8 +3,8 @@ use crate::error::ApiClientError;
 use crate::Auth;
 use async_trait::async_trait;
 use std::sync::Arc;
-use toy_api::common::{DeleteOption, FindOption, ListOption, PutOption};
-use toy_api::services::{ServiceSpec, ServiceSpecList};
+use toy_api::common::{DeleteOption, FindOption, PutOption};
+use toy_api::services::{ServiceSpec, ServiceSpecList, ServiceSpecListOption};
 use toy_h::HttpClient;
 
 static PATH: &'static str = "services";
@@ -34,8 +34,8 @@ impl<T> ServiceClient for HttpServiceClient<T>
 where
     T: HttpClient,
 {
-    async fn list(&self, opt: ListOption) -> Result<ServiceSpecList, ApiClientError> {
-        crate::http::list(&self.inner, &self.auth, &self.root, PATH, opt).await
+    async fn list(&self, opt: ServiceSpecListOption) -> Result<ServiceSpecList, ApiClientError> {
+        crate::http::list_with_opt(&self.inner, &self.auth, &self.root, PATH, opt).await
     }
 
     async fn find(

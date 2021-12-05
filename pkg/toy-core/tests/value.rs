@@ -223,3 +223,24 @@ fn partial_eq_string() {
     assert_eq!(v, other);
     assert_eq!(other, v);
 }
+
+#[test]
+fn ord_integer() {
+    let small = Value::Integer(1);
+    let big = Value::Integer(2);
+    assert_eq!(small < big, true);
+}
+
+#[test]
+fn ord_integer_number() {
+    let small = Value::Integer(1);
+    let big = Value::Number(1.1f64);
+    assert_eq!(small < big, true);
+}
+
+#[test]
+fn ord_integer_string() {
+    let small = Value::Integer(2);
+    let big = Value::String("1".to_string());
+    assert_eq!(small < big, true);
+}

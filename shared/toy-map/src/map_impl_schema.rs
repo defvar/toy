@@ -1,4 +1,4 @@
-use crate::data::Map;
+use crate::Map;
 use toy_pack::schema::{Schema, SchemaVisitor};
 
 impl<K, Val> Schema for Map<K, Val>

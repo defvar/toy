@@ -3,7 +3,7 @@ use crate::common::{self, body};
 use crate::task::handlers;
 use crate::task::store::{TaskLogStore, TaskStore};
 use crate::warp::filters::BoxedFilter;
-use toy_api::task::{AllocateOption, ListOption, LogOption, PostOption, WatchOption};
+use toy_api::task::{AllocateOption, LogOption, PostOption, TaskListOption, WatchOption};
 use toy_h::HttpClient;
 use warp::Filter;
 
@@ -96,7 +96,7 @@ where
     warp::path!("tasks")
         .and(warp::get())
         .and(authenticate(auth, client))
-        .and(common::query::query_opt::<ListOption>())
+        .and(common::query::query_opt::<TaskListOption>())
         .and(with_log_store(log_store))
         .and_then(handlers::tasks)
 }

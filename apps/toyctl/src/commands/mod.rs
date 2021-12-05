@@ -4,6 +4,7 @@ use std::fs::File;
 use std::io::Read;
 use std::path::PathBuf;
 
+pub mod find;
 pub mod list;
 pub mod post;
 pub mod put;

@@ -1,8 +1,8 @@
-use crate::data::map::Map;
 use core::time::Duration;
 use std::cmp::Ordering;
 use std::fmt;
 use std::str::FromStr;
+use toy_map::Map;
 use toy_pack::FromPrimitive;
 
 /// The value itself is represented by a scalar, key-value pair, array, etc.

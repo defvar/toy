@@ -13,7 +13,7 @@ pub use service::HttpServiceClient;
 pub use supervisor::HttpSupervisorClient;
 pub use task::HttpTaskClient;
 
-pub(crate) use common::{delete, find, list, put};
+pub(crate) use common::{delete, find, list, list_with_opt, put};
 
 use crate::client::{ApiClient, Rbaclient};
 use crate::error::ApiClientError;

@@ -2,12 +2,15 @@ use crate::context::Context;
 use crate::store::kv::{Find, FindOption, Put, PutOption, PutResult};
 use crate::task::store::{List, ListOption, Pending, TaskLogStore, TaskStore, WatchPending};
 use crate::{common, ApiError};
+use chrono::{Duration, Utc};
 use futures_util::StreamExt;
 use std::convert::Infallible;
+use toy_api::common::ListOptionLike;
 use toy_api::graph::Graph;
+use toy_api::selection::field::Selection;
 use toy_api::task::{
-    AllocateOption, AllocateRequest, AllocateResponse, ListOption as ApiListOption, LogOption,
-    PendingResult, PendingStatus, PendingTask, PendingTaskList, PostOption, WatchOption,
+    AllocateOption, AllocateRequest, AllocateResponse, LogOption, PendingResult, PendingStatus,
+    PendingTask, PendingTaskList, PostOption, TaskListOption, WatchOption,
 };
 use toy_core::task::TaskId;
 use toy_h::HttpClient;
@@ -156,7 +159,7 @@ where
 
 pub async fn tasks<T>(
     ctx: Context,
-    opt: Option<ApiListOption>,
+    opt: Option<TaskListOption>,
     log_store: impl TaskLogStore<T>,
 ) -> Result<impl warp::Reply, Infallible>
 where
@@ -164,10 +167,21 @@ where
 {
     tracing::trace!("handle: {:?}", ctx);
 
-    let format = opt.map(|x| x.format()).unwrap_or(None);
+    let dt = match opt {
+        Some(ref o) => o
+            .timestamp()
+            .map(|x| x.clone())
+            .unwrap_or(Utc::now() - Duration::days(1)),
+        None => Utc::now() - Duration::days(1),
+    };
+
+    let store_opt = ListOption::new()
+        .with_field_selection(Selection::default().greater_than("timestamp", dt.to_rfc3339()));
+
+    let format = opt.map(|x| x.common().format()).unwrap_or(None);
     match log_store
         .ops()
-        .list(log_store.con().unwrap(), ListOption::new())
+        .list(log_store.con().unwrap(), store_opt)
         .await
     {
         Ok(v) => Ok(common::reply::into_response(&v, format, None)),

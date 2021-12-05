@@ -6,6 +6,7 @@ use crate::store::StoreConnection;
 use async_trait::async_trait;
 use std::fmt;
 use std::future::Future;
+use toy_api::selection::field::Selection;
 use toy_api::task::{PendingTask, TaskLog, Tasks};
 use toy_core::task::TaskId;
 
@@ -108,7 +109,9 @@ pub trait List {
 pub struct FindOption {}
 
 #[derive(Clone, Debug)]
-pub struct ListOption {}
+pub struct ListOption {
+    selection: Selection,
+}
 
 impl FindOption {
     pub fn new() -> Self {
@@ -118,6 +121,16 @@ impl FindOption {
 
 impl ListOption {
     pub fn new() -> Self {
-        Self {}
+        Self {
+            selection: Selection::default(),
+        }
+    }
+
+    pub fn with_field_selection(self, selection: Selection) -> Self {
+        Self { selection, ..self }
+    }
+
+    pub fn selection(&self) -> &Selection {
+        &self.selection
     }
 }

@@ -1,17 +1,17 @@
 use std::net::SocketAddr;
 use toy::api_server::authentication::CommonAuths;
-use toy::api_server::task::btree_log_store::BTreeLogStore;
 use toy::api_server::ServerConfig;
 use toy_api_auth_firebase::FireAuth;
 use toy_api_auth_jwt::ServiceAccountAuth;
 use toy_api_store_etcd::EtcdStore;
+use toy_api_store_glogging::GLoggingStore;
 use toy_h::impl_reqwest::ReqwestClient;
 
 struct ToyConfig;
 
 impl ServerConfig<ReqwestClient> for ToyConfig {
     type Auth = CommonAuths<FireAuth, ServiceAccountAuth>;
-    type TaskLogStore = BTreeLogStore<ReqwestClient>;
+    type TaskLogStore = GLoggingStore<ReqwestClient>;
     type TaskStore = EtcdStore<ReqwestClient>;
     type KvStore = EtcdStore<ReqwestClient>;
 
@@ -24,7 +24,7 @@ impl ServerConfig<ReqwestClient> for ToyConfig {
     }
 
     fn task_log_store(&self) -> Self::TaskLogStore {
-        BTreeLogStore::new()
+        GLoggingStore::new()
     }
 
     fn kv_store(&self) -> Self::KvStore {
