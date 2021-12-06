@@ -1,8 +1,8 @@
 import * as React from "react";
 import { REACT_FLOW_CHART } from "@mrblenny/react-flow-chart";
 import { Theme } from "@mui/material/styles";
-import createStyles from '@mui/styles/createStyles';
-import makeStyles from '@mui/styles/makeStyles';
+import createStyles from "@mui/styles/createStyles";
+import makeStyles from "@mui/styles/makeStyles";
 import Card from "@mui/material/Card";
 import { ServiceCardHeader } from "./ServiceCardHeader";
 import { toPorts } from "./util";

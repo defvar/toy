@@ -1,6 +1,6 @@
 import * as React from "react";
-import { Theme, useTheme } from "@mui/material/styles";
-import makeStyles from '@mui/styles/makeStyles';
+import { Theme, useTheme, styled } from "@mui/material/styles";
+import makeStyles from "@mui/styles/makeStyles";
 import Drawer from "@mui/material/Drawer";
 import List from "@mui/material/List";
 import ListItem from "@mui/material/ListItem";
@@ -10,7 +10,7 @@ import IconButton from "@mui/material/IconButton";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 
-const useStyles = makeStyles<Theme, SideMenuProps>((theme: Theme) => ({
+const useStyles = makeStyles<Theme, SideMenuProps>(() => ({
     drawer: (props) => ({
         width: props.width,
         flexShrink: 0,
@@ -18,17 +18,15 @@ const useStyles = makeStyles<Theme, SideMenuProps>((theme: Theme) => ({
     drawerPaper: (props) => ({
         width: props.width,
     }),
-    drawerContainer: {
-        overflow: "auto",
-    },
-    drawerHeader: {
-        display: "flex",
-        alignItems: "center",
-        padding: theme.spacing(0, 1),
-        // necessary for content to be below app bar
-        ...theme.mixins.toolbar,
-        justifyContent: "flex-end",
-    },
+}));
+
+const DrawerHeader = styled("div")(({ theme }) => ({
+    display: "flex",
+    alignItems: "center",
+    padding: theme.spacing(0, 1),
+    // necessary for content to be below app bar
+    ...theme.mixins.toolbar,
+    justifyContent: "flex-end",
 }));
 
 export interface SideMenuProps {
@@ -67,7 +65,7 @@ export const SideMenu = (props: SideMenuProps): JSX.Element => {
                 paper: classes.drawerPaper,
             }}
         >
-            <div className={classes.drawerHeader}>
+            <DrawerHeader>
                 <IconButton onClick={props.onDrawerClose} size="large">
                     {theme.direction === "ltr" ? (
                         <ChevronLeftIcon />
@@ -75,26 +73,24 @@ export const SideMenu = (props: SideMenuProps): JSX.Element => {
                         <ChevronRightIcon />
                     )}
                 </IconButton>
-            </div>
-            <div className={classes.drawerContainer}>
-                <List>
-                    {props.options.map((option) => {
-                        return (
-                            <ListItem
-                                button
-                                key={option.key}
-                                selected={selectedIndex === option.key}
-                                onClick={(): void =>
-                                    handleListItemClick(option.key)
-                                }
-                            >
-                                <ListItemIcon>{option.icon}</ListItemIcon>
-                                <ListItemText primary={option.display} />
-                            </ListItem>
-                        );
-                    })}
-                </List>
-            </div>
+            </DrawerHeader>
+            <List>
+                {props.options.map((option) => {
+                    return (
+                        <ListItem
+                            button
+                            key={option.key}
+                            selected={selectedIndex === option.key}
+                            onClick={(): void =>
+                                handleListItemClick(option.key)
+                            }
+                        >
+                            <ListItemIcon>{option.icon}</ListItemIcon>
+                            <ListItemText primary={option.display} />
+                        </ListItem>
+                    );
+                })}
+            </List>
         </Drawer>
     );
 };

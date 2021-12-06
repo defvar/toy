@@ -1,8 +1,8 @@
 import * as React from "react";
 import clsx from "clsx";
 import { Theme } from "@mui/material/styles";
-import createStyles from '@mui/styles/createStyles';
-import makeStyles from '@mui/styles/makeStyles';
+import createStyles from "@mui/styles/createStyles";
+import makeStyles from "@mui/styles/makeStyles";
 import { SideMenu } from "../components/SideMenu";
 import AppBar from "@mui/material/AppBar";
 import Toolbar from "@mui/material/Toolbar";
@@ -151,7 +151,8 @@ const AppDrawer = (props: AppDrawerProps): JSX.Element => {
                             classes.menuButton,
                             open && classes.hide
                         )}
-                        size="large">
+                        size="large"
+                    >
                         <MenuIcon />
                     </IconButton>
                     <Typography variant="h6" noWrap style={{ flexGrow: 1 }}>
