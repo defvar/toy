@@ -5,6 +5,7 @@ import {
     LinkData,
     NodeData,
     PortType,
+    ChartElements,
 } from "./types";
 import { Actions } from "./actions";
 import { ServiceResponseItem, GraphNode } from "../api/toy-api";
@@ -13,16 +14,9 @@ import { nextState } from "../../utils/immutable";
 export const initialState: GraphEditState = {
     services: {},
     namespaces: {},
-    graph: {
-        offset: {
-            x: 0,
-            y: 0,
-        },
-        nodes: {},
-        links: {},
-        scale: 1,
-        selected: {},
-        hovered: {},
+    nodes: {},
+    chart: {
+        elements: [],
     },
     edit: {
         config: {},
@@ -58,102 +52,65 @@ const toServiceState = (item: ServiceResponseItem): ServiceState => {
     };
 };
 
-export const toPorts = (way: "in" | "out", count: number) => {
-    const r = {};
-    if (count != 0) {
-        const k = `port-${way}-0`;
-        r[k] = {
-            id: `port-${way}-0`,
-            type: way === "in" ? "top" : "bottom",
-            properties: {
-                max: count,
-            },
-        };
-    }
-    return r;
-};
-
-const toLinks = (graph: {
-    [uri: string]: GraphNode;
-}): { [id: string]: LinkData } => {
+const toLinks = (graph: { [uri: string]: GraphNode }): LinkData[] => {
     return Object.entries(graph).reduce((r, [k, v]) => {
         v.wires.map((x) => {
             const link = {
                 id: `link-${k}-${x}`,
-                from: {
-                    nodeId: k,
-                    portId: "port-out-0",
-                },
-                to: {
-                    nodeId: x,
-                    portId: "port-in-0",
-                },
+                source: k,
+                target: x,
             };
-            r[link.id] = link;
+            r.push(link);
         });
         return r;
-    }, {});
+    }, []);
 };
 
-const toNodes = (graph: {
-    [uri: string]: GraphNode;
-}): { [id: string]: NodeData } => {
+const toNodes = (graph: { [uri: string]: GraphNode }): [{ [id: string]: any }, NodeData[]] => {
     return Object.entries(graph).reduce((r, [, node]) => {
-        let inPort = 0;
-        let outPort = 0;
+        let type = "default";
         let portType: PortType = "Flow";
 
         if (node.port_type) {
             if (node.port_type.Source) {
-                outPort = node.port_type.Source;
+                type = "input";
                 portType = "Source";
             } else if (node.port_type.Flow) {
-                inPort = node.port_type.Flow[0];
-                outPort = node.port_type.Flow[1];
+                type = "default";
                 portType = "Flow";
             } else if (node.port_type.Sink) {
-                inPort = node.port_type.Sink;
+                type = "output";
                 portType = "Sink";
             }
         }
-        const inPorts = toPorts("in", inPort);
-        const outPorts = toPorts("out", outPort);
-        const allPorts = {
-            ...inPorts,
-            ...outPorts,
-        };
 
         const n: NodeData = {
             id: node.uri,
-            type: "top/bottom",
+            type,
             position: node.position,
-            ports: allPorts,
-            properties: {
-                config: node.config,
+            data: {
                 name: node.type.split(".").slice(-1)[0],
+                label: node.type.split(".").slice(-1)[0],
                 fullName: node.type,
                 dirty: false,
                 portType,
             },
         };
 
-        r[n.id] = n;
+        r[0][node.uri] = { fullName: node.type, config: node.config };
+        r[1].push(n);
         return r;
-    }, {});
+    }, [{}, []]);
 };
 
-const toChartData = (graph: { [uri: string]: GraphNode }): ChartData => {
-    const nodes = toNodes(graph);
+const toChartData = (graph: { [uri: string]: GraphNode }): [{ [id: string]: { fullName: string, config:any }}, ChartData] => {
+    const [configs, nodes] = toNodes(graph);
     const links = toLinks(graph);
-    const d = {
-        offset: { x: 0, y: 0 },
-        nodes,
-        links,
-        scale: 1,
-        selected: {},
-        hovered: {},
-    };
-    return d;
+    const elements: ChartElements = [...nodes, ...links];
+    return [
+        configs,
+        {elements,}
+    ];
 };
 
 export const reducer = nextState(
@@ -186,42 +143,30 @@ export const reducer = nextState(
                     },
                     { nodes: {} }
                 );
-                const r = toChartData(g.nodes);
-                state.graph = r;
-                return;
-            }
-            case "ChangeChart": {
-                const r = action.payload(state.graph);
-                state.graph = {
-                    ...r,
-                    properties: state.graph.properties,
-                };
-                return;
-            }
-            case "ZoomChart": {
-                const scale = state.graph.scale + action.payload;
-                state.graph.scale = scale;
+                const [nodes, r] = toChartData(g.nodes);
+                state.chart = r;
+                state.nodes = nodes;
                 return;
             }
             case "StartEditNode": {
                 console.debug(`StartEditNode:${action.payload}`);
                 const currentEditId = state.edit.id;
                 if (currentEditId && action.payload != currentEditId) {
-                    const n = state.graph.nodes[currentEditId];
+                    const n = state.nodes[currentEditId];
                     if (n) {
-                        n.properties.config = { ...state.edit.config };
+                        n.config = { ...state.edit.config };
                     }
                 }
 
-                const n = state.graph.nodes[action.payload];
+                const n = state.nodes[action.payload];
                 let config = {};
-                if (n && n.properties.config) {
-                    config = { ...n.properties.config };
+                if (n && n.config) {
+                    config = { ...n.config };
                 }
                 let configSchema = {};
-                if (n && state.services[n.properties.fullName]) {
+                if (n && state.services[n.fullName]) {
                     configSchema = {
-                        ...state.services[n.properties.fullName].configSchema,
+                        ...state.services[n.fullName].configSchema,
                     };
                 }
                 state.edit = {
@@ -233,8 +178,8 @@ export const reducer = nextState(
             }
             case "ChangeEditNode": {
                 const id = state.edit.id;
-                const n = state.graph.nodes[id];
-                n.properties.dirty = true;
+                const n = state.nodes[id];
+                // n.data.dirty = true;
                 state.edit.config = { ...action.payload };
                 return;
             }
@@ -249,15 +194,16 @@ export const reducer = nextState(
                 console.debug(`SubmitEditNode:${state.edit.id}`);
                 const currentEditId = state.edit.id;
                 if (currentEditId) {
-                    const n = state.graph.nodes[currentEditId];
+                    const n = state.nodes[currentEditId];
                     if (n) {
-                        n.properties.config = { ...state.edit.config };
+                        n.config = { ...state.edit.config };
                     }
                     state.edit = {
                         config: {},
                         configSchema: {},
                     };
                 }
+                return;
             }
         }
     },

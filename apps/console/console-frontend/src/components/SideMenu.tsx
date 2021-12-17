@@ -1,7 +1,6 @@
 import * as React from "react";
-import { Theme, useTheme, styled } from "@mui/material/styles";
-import makeStyles from "@mui/styles/makeStyles";
-import Drawer from "@mui/material/Drawer";
+import { Theme, useTheme, styled, CSSObject } from "@mui/material/styles";
+import MuiDrawer from "@mui/material/Drawer";
 import List from "@mui/material/List";
 import ListItem from "@mui/material/ListItem";
 import ListItemIcon from "@mui/material/ListItemIcon";
@@ -9,24 +8,45 @@ import ListItemText from "@mui/material/ListItemText";
 import IconButton from "@mui/material/IconButton";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
+import DrawerHeader from "./DrawerHeader";
+import { Divider } from "@mui/material";
 
-const useStyles = makeStyles<Theme, SideMenuProps>(() => ({
-    drawer: (props) => ({
-        width: props.width,
-        flexShrink: 0,
+const openedMixin = (theme: Theme): CSSObject => ({
+    width: 240,
+    transition: theme.transitions.create("width", {
+        easing: theme.transitions.easing.sharp,
+        duration: theme.transitions.duration.enteringScreen,
     }),
-    drawerPaper: (props) => ({
-        width: props.width,
-    }),
-}));
+    overflowX: "hidden",
+});
 
-const DrawerHeader = styled("div")(({ theme }) => ({
-    display: "flex",
-    alignItems: "center",
-    padding: theme.spacing(0, 1),
-    // necessary for content to be below app bar
-    ...theme.mixins.toolbar,
-    justifyContent: "flex-end",
+const closedMixin = (theme: Theme): CSSObject => ({
+    transition: theme.transitions.create("width", {
+        easing: theme.transitions.easing.sharp,
+        duration: theme.transitions.duration.leavingScreen,
+    }),
+    overflowX: "hidden",
+    width: `calc(${theme.spacing(7)} + 1px)`,
+    [theme.breakpoints.up("sm")]: {
+        width: `calc(${theme.spacing(9)} + 1px)`,
+    },
+});
+
+const Drawer = styled(MuiDrawer, {
+    shouldForwardProp: (prop) => prop !== "open",
+})(({ theme, open }) => ({
+    width: 240,
+    flexShrink: 0,
+    whiteSpace: "nowrap",
+    boxSizing: "border-box",
+    ...(open && {
+        ...openedMixin(theme),
+        "& .MuiDrawer-paper": openedMixin(theme),
+    }),
+    ...(!open && {
+        ...closedMixin(theme),
+        "& .MuiDrawer-paper": closedMixin(theme),
+    }),
 }));
 
 export interface SideMenuProps {
@@ -42,7 +62,6 @@ export interface SideMenuProps {
 }
 
 export const SideMenu = (props: SideMenuProps): JSX.Element => {
-    const classes = useStyles(props);
     const theme = useTheme();
 
     const [selectedIndex, setSelectedIndex] = React.useState("");
@@ -56,15 +75,7 @@ export const SideMenu = (props: SideMenuProps): JSX.Element => {
     };
 
     return (
-        <Drawer
-            className={classes.drawer}
-            variant="persistent"
-            anchor="left"
-            open={props.open}
-            classes={{
-                paper: classes.drawerPaper,
-            }}
-        >
+        <Drawer variant="permanent" anchor="left" open={props.open}>
             <DrawerHeader>
                 <IconButton onClick={props.onDrawerClose} size="large">
                     {theme.direction === "ltr" ? (
@@ -74,6 +85,7 @@ export const SideMenu = (props: SideMenuProps): JSX.Element => {
                     )}
                 </IconButton>
             </DrawerHeader>
+            <Divider />
             <List>
                 {props.options.map((option) => {
                     return (

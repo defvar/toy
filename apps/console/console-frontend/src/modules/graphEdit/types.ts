@@ -1,35 +1,14 @@
 import { JsonSchema } from "../common";
 
 export type PortType = "Source" | "Flow" | "Sink";
+export type ChartElements = Array<NodeData | LinkData>;
 
 export const initialChartData: ChartData = {
-    offset: {
-        x: 0,
-        y: 0,
-    },
-    nodes: {},
-    links: {},
-    scale: 1,
-    selected: {},
-    hovered: {},
+    elements: [],
 };
 
 export interface ChartData {
-    offset: {
-        x: number;
-        y: number;
-    };
-    nodes: {
-        [id: string]: NodeData;
-    };
-    links: {
-        [id: string]: LinkData;
-    };
-    scale: number;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    properties?: any;
-    selected: {};
-    hovered: {};
+    elements: ChartElements;
 }
 
 export interface Port {
@@ -48,15 +27,10 @@ export interface NodeData {
         x: number;
         y: number;
     };
-    orientation?: number;
-    ports: {
-        [id: string]: Port;
-    };
-    properties: {
+    data: {
         name: string;
+        label: string;
         fullName: string;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        config: any;
         dirty: boolean;
         portType: PortType;
     };
@@ -64,22 +38,22 @@ export interface NodeData {
 
 export interface LinkData {
     id: string;
-    from: {
-        nodeId: string;
-        portId: string;
-    };
-    to: {
-        nodeId?: string;
-        portId?: string;
-    };
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    properties?: any;
+    type?: string;
+    source: string;
+    target: string;
 }
 
 export interface GraphEditState {
     services: { [fullName: string]: ServiceState };
     namespaces: { [namespace: string]: string[] };
-    graph: ChartData;
+    chart: ChartData;
+    nodes: {
+        [id: string]: {
+            fullName: string;
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            config: any;
+        };
+    };
     edit: {
         /**
          * current edit node id.

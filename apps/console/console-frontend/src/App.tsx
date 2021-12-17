@@ -1,5 +1,5 @@
 import * as React from "react";
-import { HashRouter as Router, Route, Switch } from "react-router-dom";
+import { HashRouter as Router, Route, Routes, Outlet } from "react-router-dom";
 import AppDrawer from "./container/AppDrawer";
 import { Hello } from "./components/Hello";
 import { GraphEdit } from "./container/GraphEdit";
@@ -27,32 +27,52 @@ const App = (): JSX.Element => {
             <AppContextProvider>
                 <StyledEngineProvider injectFirst>
                     <ThemeProvider theme={theme}>
+                        <CssBaseline />
                         <Router>
-                            <CssBaseline />
                             <Auth redirectByReject="/login">
                                 <AppDrawer>
-                                    <Switch>
-                                        <Route path="/" exact>
-                                            <Hello
-                                                compiler="TypeScript"
-                                                framework="React"
-                                            />
-                                        </Route>
-                                        <Route path="/graphs" exact>
-                                            <Graphs />
-                                        </Route>
-                                        <Route path="/graphs/:name/edit" exact>
-                                            <GraphEdit />
-                                        </Route>
-                                        <Route path="/signout" exact>
-                                            <SignOut />
-                                        </Route>
-                                    </Switch>
+                                    <Routes>
+                                        <Route
+                                            path="/"
+                                            element={
+                                                <Hello
+                                                    compiler="TypeScript"
+                                                    framework="React"
+                                                />
+                                            }
+                                        />
+                                        <Route
+                                            path="/graphs"
+                                            element={<Graphs />}
+                                        />
+                                        <Route
+                                            path="/graphs/:name/edit"
+                                            element={<GraphEdit />}
+                                        />
+
+                                        <Route
+                                            path="/signout"
+                                            element={<SignOut />}
+                                        />
+                                        <Route
+                                            path="/login"
+                                            element={<Login redirectTo="/" />}
+                                        />
+                                        <Route
+                                            index
+                                            element={
+                                                <div>
+                                                    <Hello
+                                                        compiler="TypeScript"
+                                                        framework="React"
+                                                    />
+                                                    <Outlet />
+                                                </div>
+                                            }
+                                        />
+                                    </Routes>
                                 </AppDrawer>
                             </Auth>
-                            <Route path="/login" exact>
-                                <Login redirectTo="/" />
-                            </Route>
                         </Router>
                     </ThemeProvider>
                 </StyledEngineProvider>

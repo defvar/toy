@@ -1,9 +1,9 @@
 import * as React from "react";
-import createStyles from '@mui/styles/createStyles';
-import makeStyles from '@mui/styles/makeStyles';
+import createStyles from "@mui/styles/createStyles";
+import makeStyles from "@mui/styles/makeStyles";
 import CircularProgress from "@mui/material/CircularProgress";
 import * as auth from "../modules/auth";
-import { Redirect } from "react-router-dom";
+import { Navigate } from "react-router-dom";
 
 const useStyles = makeStyles(() =>
     createStyles({
@@ -46,7 +46,7 @@ export const SignOut = () => {
                     <CircularProgress size={68} className={classes.progress} />
                 </div>
             ) : (
-                <Redirect to={"/"} />
+                <Navigate to={"/"} />
             )}
         </>
     );

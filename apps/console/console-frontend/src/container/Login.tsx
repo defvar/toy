@@ -1,15 +1,14 @@
 import * as React from "react";
 import { Theme } from "@mui/material/styles";
-import createStyles from '@mui/styles/createStyles';
-import makeStyles from '@mui/styles/makeStyles';
+import createStyles from "@mui/styles/createStyles";
+import makeStyles from "@mui/styles/makeStyles";
 import Container from "@mui/material/Container";
 import Paper from "@mui/material/Paper";
 import TextField from "@mui/material/TextField";
 import Button from "@mui/material/Button";
 import CircularProgress from "@mui/material/CircularProgress";
 import { AuthContext } from "../context";
-import { useHistory } from "react-router-dom";
-import { Redirect } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
 
 const useStyles = makeStyles((theme: Theme) =>
     createStyles({
@@ -37,32 +36,28 @@ export interface LoginProps {
 }
 
 export const Login = ({ redirectTo }: LoginProps) => {
-    const {
-        login,
-        signinWithGoogle,
-        isProgress,
-        currentUser,
-    } = React.useContext(AuthContext);
+    const { login, signinWithGoogle, isProgress, currentUser } =
+        React.useContext(AuthContext);
     const classes = useStyles();
-    const history = useHistory();
+    const navigate = useNavigate();
 
     const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         login();
         // sueccess ?
-        history.push(redirectTo);
+        navigate(redirectTo);
     };
 
     const handleSigninWithGoogle = () => {
         signinWithGoogle();
-        history.push(redirectTo);
+        navigate(redirectTo);
     };
 
     if (isProgress) {
         return <CircularProgress size={68} />;
     } else {
         if (!isProgress && currentUser) {
-            return <Redirect to={redirectTo} />;
+            return <Navigate to={redirectTo} />;
         }
     }
 

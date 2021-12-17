@@ -1,8 +1,8 @@
 import * as React from "react";
-import { Redirect, useLocation } from "react-router-dom";
+import { Navigate, useLocation } from "react-router-dom";
 import { AuthContext } from "./context";
-import makeStyles from '@mui/styles/makeStyles';
-import createStyles from '@mui/styles/createStyles';
+import makeStyles from "@mui/styles/makeStyles";
+import createStyles from "@mui/styles/createStyles";
 import CircularProgress from "@mui/material/CircularProgress";
 
 export interface AuthProps {
@@ -43,13 +43,13 @@ export const Auth = ({ children, redirectByReject }: AuthProps) => {
             console.debug("auth ok");
             return (
                 <>
-                    <Redirect to={location.pathname} />
+                    {/* <Navigate to={location.pathname} replace /> */}
                     {children}
                 </>
             );
         } else {
             console.debug("auth ng");
-            return <Redirect to={redirectByReject} />;
+            return <Navigate to={redirectByReject} replace />;
         }
     }
 };

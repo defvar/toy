@@ -4,17 +4,15 @@
         "plugin:@typescript-eslint/recommended",
         "plugin:@typescript-eslint/eslint-recommended",
         "plugin:react/recommended",
-        "plugin:prettier/recommended",
+        "prettier",
         "prettier/@typescript-eslint",
         "prettier/react"
     ],
-    "plugins": [
-        "@typescript-eslint", "react", "jest"
-    ],
+    "plugins": ["@typescript-eslint", "react", "jest"],
     "parser": "@typescript-eslint/parser",
     "env": {
         "browser": true,
-        "es6": true,
+        "es2021": true,
         "jest/globals": true
     },
     "parserOptions": {

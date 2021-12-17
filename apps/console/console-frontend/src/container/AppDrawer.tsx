@@ -9,40 +9,21 @@ import Toolbar from "@mui/material/Toolbar";
 import Typography from "@mui/material/Typography";
 import IconButton from "@mui/material/IconButton";
 import MenuIcon from "@mui/icons-material/Menu";
-import { useHistory } from "react-router-dom";
+import { NavigateFunction, useNavigate } from "react-router-dom";
 import TimelineIcon from "@mui/icons-material/Timeline";
 import WidgetsIcon from "@mui/icons-material/Widgets";
 import DesktopWindowsIcon from "@mui/icons-material/DesktopWindows";
 import ExitToAppIcon from "@mui/icons-material/ExitToApp";
 import AccountCircle from "../components/AccountCircle";
+import Box from "@mui/material/Box";
+import DrawerHeader from "../components/DrawerHeader";
 
 const drawerWidth = 240;
 
 const useStyles = makeStyles((theme: Theme) =>
     createStyles({
-        root: {
-            flexGrow: 1,
-            display: "flex",
-        },
-        content: {
-            flexGrow: 1,
-            backgroundColor: theme.palette.background.default,
-            // paddingTop: theme.spacing(2),
-            padding: theme.spacing(3),
-            transition: theme.transitions.create("margin", {
-                easing: theme.transitions.easing.sharp,
-                duration: theme.transitions.duration.leavingScreen,
-            }),
-            marginLeft: -drawerWidth,
-        },
-        contentShift: {
-            transition: theme.transitions.create("margin", {
-                easing: theme.transitions.easing.easeOut,
-                duration: theme.transitions.duration.enteringScreen,
-            }),
-            marginLeft: 0,
-        },
         appBar: {
+            zIndex: theme.zIndex.drawer + 1,
             transition: theme.transitions.create(["margin", "width"], {
                 easing: theme.transitions.easing.sharp,
                 duration: theme.transitions.duration.leavingScreen,
@@ -52,23 +33,9 @@ const useStyles = makeStyles((theme: Theme) =>
             width: `calc(100% - ${drawerWidth}px)`,
             marginLeft: drawerWidth,
             transition: theme.transitions.create(["margin", "width"], {
-                easing: theme.transitions.easing.easeOut,
+                easing: theme.transitions.easing.sharp,
                 duration: theme.transitions.duration.enteringScreen,
             }),
-        },
-        menuButton: {
-            marginRight: theme.spacing(2),
-        },
-        hide: {
-            display: "none",
-        },
-        drawerHeader: {
-            display: "flex",
-            alignItems: "center",
-            padding: theme.spacing(0, 1),
-            // necessary for content to be below app bar
-            ...theme.mixins.toolbar,
-            justifyContent: "flex-end",
         },
     })
 );
@@ -77,7 +44,7 @@ export interface AppDrawerProps {
     children: React.ReactNode;
 }
 
-const menuOptions = (history) => {
+const menuOptions = (navigate: NavigateFunction) => {
     return {
         width: drawerWidth,
         options: [
@@ -88,13 +55,13 @@ const menuOptions = (history) => {
         onMenuItemChange: (key: string): void => {
             switch (key) {
                 case "top":
-                    history.push("/");
+                    navigate("/");
                     break;
                 case "timeline":
-                    history.push("/timeline");
+                    navigate("/timeline");
                     break;
                 case "graphs":
-                    history.push("/graphs");
+                    navigate("/graphs");
                     break;
                 default:
                     break;
@@ -103,7 +70,7 @@ const menuOptions = (history) => {
     };
 };
 
-const accountCircleProps = (history) => {
+const accountCircleProps = (navigate: NavigateFunction) => {
     return {
         options: [
             { key: "signOut", display: "sign out", icon: <ExitToAppIcon /> },
@@ -111,7 +78,7 @@ const accountCircleProps = (history) => {
         onMenuItemClick: (key: string): void => {
             switch (key) {
                 case "signOut":
-                    history.push("/signOut");
+                    navigate("/signOut");
                     break;
                 default:
                     break;
@@ -122,7 +89,7 @@ const accountCircleProps = (history) => {
 
 const AppDrawer = (props: AppDrawerProps): JSX.Element => {
     const classes = useStyles();
-    const history = useHistory();
+    const navigate = useNavigate();
     const [open, setOpen] = React.useState(true);
 
     const handleDrawerOpen = (): void => {
@@ -134,7 +101,7 @@ const AppDrawer = (props: AppDrawerProps): JSX.Element => {
     };
 
     return (
-        <div className={classes.root}>
+        <Box sx={{ display: "flex", flexGrow: 1 }}>
             <AppBar
                 position="fixed"
                 className={clsx(classes.appBar, {
@@ -147,34 +114,29 @@ const AppDrawer = (props: AppDrawerProps): JSX.Element => {
                         aria-label="open drawer"
                         onClick={handleDrawerOpen}
                         edge="start"
-                        className={clsx(
-                            classes.menuButton,
-                            open && classes.hide
-                        )}
-                        size="large"
+                        sx={{
+                            marginRight: "36px",
+                            ...(open && { display: "none" }),
+                        }}
                     >
                         <MenuIcon />
                     </IconButton>
                     <Typography variant="h6" noWrap style={{ flexGrow: 1 }}>
                         graph system
                     </Typography>
-                    <AccountCircle {...accountCircleProps(history)} />
+                    <AccountCircle {...accountCircleProps(navigate)} />
                 </Toolbar>
             </AppBar>
             <SideMenu
                 open={open}
                 onDrawerClose={handleDrawerClose}
-                {...menuOptions(history)}
+                {...menuOptions(navigate)}
             />
-            <main
-                className={clsx(classes.content, {
-                    [classes.contentShift]: open,
-                })}
-            >
-                <div className={classes.drawerHeader} />
+            <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
+                <DrawerHeader />
                 {props.children}
-            </main>
-        </div>
+            </Box>
+        </Box>
     );
 };
 

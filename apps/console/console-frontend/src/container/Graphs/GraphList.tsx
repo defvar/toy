@@ -15,7 +15,8 @@ import LinearProgress from "@mui/material/LinearProgress";
 import { SimpleMenu, SimpleMenuProps } from "../../components/SimpleMenu";
 import { LabelChips } from "../../components/LabelChips";
 import { GraphListItemState, Actions } from "../../modules/graphs";
-import { useHistory } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import { NavigateFunction } from "react-router";
 
 export interface GraphListProps {
     items: { [key: string]: GraphListItemState };
@@ -35,13 +36,13 @@ const useStyles = makeStyles((theme: Theme) =>
     })
 );
 
-const menuOptions = (history, name): SimpleMenuProps => {
+const menuOptions = (navigate: NavigateFunction, name): SimpleMenuProps => {
     return {
         options: [
             {
                 display: "Edit",
                 onClick: () => {
-                    history.push(`/graphs/${name}/edit`);
+                    navigate(`/graphs/${name}/edit`, { replace: true });
                 },
             },
             {
@@ -56,7 +57,7 @@ const menuOptions = (history, name): SimpleMenuProps => {
 
 export const GraphList = (props: GraphListProps) => {
     const classes = useStyles();
-    const history = useHistory();
+    const navigate = useNavigate();
 
     const [page, setPage] = React.useState(0);
     const [rowsPerPage, setRowsPerPage] = React.useState(10);
@@ -194,7 +195,7 @@ export const GraphList = (props: GraphListProps) => {
                                         <TableCell key="menu" align="center">
                                             <SimpleMenu
                                                 {...menuOptions(
-                                                    history,
+                                                    navigate,
                                                     item.name
                                                 )}
                                             />

@@ -1,7 +1,7 @@
 import * as React from "react";
 import { Theme } from "@mui/material/styles";
-import createStyles from '@mui/styles/createStyles';
-import makeStyles from '@mui/styles/makeStyles';
+import createStyles from "@mui/styles/createStyles";
+import makeStyles from "@mui/styles/makeStyles";
 import List from "@mui/material/List";
 import ListSubheader from "@mui/material/ListSubheader";
 import ListItem from "@mui/material/ListItem";
@@ -56,16 +56,7 @@ export const Sidebar = (props: SidebarProps) => {
     };
 
     return (
-        <List
-            className={classes.root}
-            component="nav"
-            aria-labelledby="nested-list-subheader"
-            subheader={
-                <ListSubheader component="div" id="nested-list-subheader">
-                    Services
-                </ListSubheader>
-            }
-        >
+        <List>
             {Object.entries(props.namespaces).map(([namespace, entry]) => {
                 return (
                     <React.Fragment key={namespace}>

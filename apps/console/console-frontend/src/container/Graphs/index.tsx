@@ -16,8 +16,8 @@ import RefreshIcon from "@mui/icons-material/Refresh";
 import IconButton from "@mui/material/IconButton";
 
 const items: { [key: string]: GraphListItemState } = {
-    aaaa: {
-        name: "aaaa",
+    "example-tick": {
+        name: "example-tick",
         labels: ["one", "a1", "two"],
         isActive: false,
         isLoading: false,

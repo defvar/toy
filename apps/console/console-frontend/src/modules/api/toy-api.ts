@@ -20,6 +20,7 @@ export interface ServiceResponseItem {
 }
 
 export interface ServiceResponse {
+    readonly count: number;
     readonly items: ServiceResponseItem[];
 }
 
@@ -58,9 +59,7 @@ export const ToyApi = {
                 throw new Error("response was not ok.");
             })
             .then((json) => {
-                return {
-                    items: json,
-                } as ServiceResponse;
+                return json as ServiceResponse;
             })
             .catch((error) => {
                 console.log(
@@ -68,12 +67,15 @@ export const ToyApi = {
                     error.message
                 );
                 return {
+                    count: 0,
                     items: [],
                 };
             });
     },
 
     getGraph: async (name: string): Promise<GraphResponse> => {
+        await new Promise((resolve) => setTimeout(resolve, 3000));
+
         const key = await getIdToken();
         return fetch(`${config.root}/graphs/${name}`, {
             method: "GET",
