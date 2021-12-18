@@ -12,7 +12,6 @@ import Drawer from "@mui/material/Drawer";
 import Toolbar from "@mui/material/Toolbar";
 import Divider from "@mui/material/Divider";
 import { Sidebar, Chart } from "./chart";
-import CircularProgress from "@mui/material/CircularProgress";
 import { Resource } from "../../modules/common";
 import {
     GraphEditState,
@@ -30,7 +29,9 @@ import {
 import { NodeEditor } from "./NodeEditor";
 import { ChartData } from "../../modules/graphEdit/types";
 import DrawerHeader from "../../components/DrawerHeader";
+import CircularProgress from "../../components/progress/CircularProgress";
 import Paper from "@mui/material/Paper";
+import Stack from "@mui/material/Stack";
 
 const useStyles = makeStyles((theme: Theme) =>
     createStyles({
@@ -222,10 +223,6 @@ export const GraphEdit = () => {
         setServiceResource(() => fetchServices());
     }, []);
 
-    const [size, setSize] = React.useState(() => {
-        return { width: theme.breakpoints.values.md };
-    });
-
     return (
         <Box>
             <Grid container spacing={2}>
@@ -237,32 +234,29 @@ export const GraphEdit = () => {
                     >
                         {name}
                     </Typography>
-                    <Paper elevation={2}>
-                        <IconButton
-                            aria-label="refresh"
-                            onClick={onChartRefleshClick}
-                            size="large"
-                        >
-                            <RefreshIcon />
-                        </IconButton>
-                        <React.Suspense
-                            fallback={
-                                <div className={classes.loader}>
-                                    <CircularProgress
-                                        size={68}
-                                        className={classes.progress}
+                    <Stack spacing={1}>
+                        <Stack direction="row" spacing={2}>
+                            <IconButton
+                                aria-label="refresh"
+                                onClick={onChartRefleshClick}
+                                size="large"
+                            >
+                                <RefreshIcon />
+                            </IconButton>
+                        </Stack>
+                        <Paper elevation={2}>
+                            <Box p={2}>
+                                <React.Suspense fallback={<CircularProgress />}>
+                                    <ChartSuspense
+                                        state={state}
+                                        dispatch={dispatch}
+                                        serviceResource={serviceResource}
+                                        graphResource={graphResource}
                                     />
-                                </div>
-                            }
-                        >
-                            <ChartSuspense
-                                state={state}
-                                dispatch={dispatch}
-                                serviceResource={serviceResource}
-                                graphResource={graphResource}
-                            />
-                        </React.Suspense>
-                    </Paper>
+                                </React.Suspense>
+                            </Box>
+                        </Paper>
+                    </Stack>
                 </Grid>
                 <Grid item xs={2}>
                     <Drawer variant="permanent" anchor={"right"} open={true}>
@@ -277,16 +271,7 @@ export const GraphEdit = () => {
                                 <RefreshIcon />
                             </IconButton>
                         </DrawerHeader>
-                        <React.Suspense
-                            fallback={
-                                <div className={classes.loader}>
-                                    <CircularProgress
-                                        size={68}
-                                        className={classes.progress}
-                                    />
-                                </div>
-                            }
-                        >
+                        <React.Suspense fallback={<CircularProgress />}>
                             <SidebarSuspense
                                 state={state}
                                 dispatch={dispatch}

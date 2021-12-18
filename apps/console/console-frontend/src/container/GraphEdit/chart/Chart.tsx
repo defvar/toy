@@ -29,14 +29,13 @@ export interface DragProps {
 const FlowArea = styled("div")(({ theme }) => ({
     flexDirection: "column",
     display: "flex",
-    height: "100%",
+    height: "70vh",
     width: "100%",
     flexGrow: 1,
 }));
 
 const FlowWrapper = styled("div")(({ theme }) => ({
     flexGrow: 1,
-    height: "70vh",
 }));
 
 const onDragOver = (event: DragEvent) => {
