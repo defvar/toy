@@ -13,7 +13,7 @@ WORKDIR /toy/apps/supervisor/supervisor-d
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
     cargo install --path .
 
-FROM ghcr.io/rust-lang/rust:nightly-buster-slim
+FROM rust:slim-buster
 
 COPY --from=cargo-build /usr/local/cargo/bin/supervisor-d /usr/local/bin/supervisor-d
 
