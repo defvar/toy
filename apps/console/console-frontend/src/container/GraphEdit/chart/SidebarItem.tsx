@@ -1,21 +1,11 @@
 import * as React from "react";
-import { Theme } from "@mui/material/styles";
-import createStyles from "@mui/styles/createStyles";
-import makeStyles from "@mui/styles/makeStyles";
+import { styled } from "@mui/material/styles";
 import Card from "@mui/material/Card";
-import { ServiceCardHeader } from "./ServiceCardHeader";
 import { PortType } from "../../../modules/graphEdit/types";
-
-const useStyles = makeStyles((theme: Theme) =>
-    createStyles({
-        sideBarItem: {
-            cursor: "move",
-            margin: theme.spacing(0, 0),
-            flex: 1,
-            maxWidth: 300,
-        },
-    })
-);
+import FunctionsIcon from "@mui/icons-material/Functions";
+import AllOutIcon from "@mui/icons-material/AllOut";
+import CheckBoxOutlineBlankIcon from "@mui/icons-material/CheckBoxOutlineBlank";
+import CardHeader from "@mui/material/CardHeader";
 
 export interface SidebarItemProps {
     fullName: string;
@@ -25,31 +15,45 @@ export interface SidebarItemProps {
     portType: PortType;
 }
 
+const getIcon = (portType: PortType) => {
+    switch (portType) {
+        case "Source":
+            return <AllOutIcon />;
+        case "Flow":
+            return <FunctionsIcon />;
+        case "Sink":
+            return <CheckBoxOutlineBlankIcon />;
+        default:
+            return <CheckBoxOutlineBlankIcon />;
+    }
+};
+
+const Wrapper = styled("div")(({ theme }) => ({
+    cursor: "move",
+    margin: theme.spacing(0, 0),
+    flex: 1,
+    maxWidth: 300,
+}));
+
 export const SidebarItem = ({
     fullName,
     name,
     portType,
 }: SidebarItemProps): JSX.Element => {
-    const classes = useStyles();
     return (
-        <div
-            className={classes.sideBarItem}
+        <Wrapper
             draggable
             onDragStart={(event): void => {
                 event.dataTransfer.setData(
                     "application/reactflow",
-                    JSON.stringify({ type: "default", fullName })
-                    );
+                    JSON.stringify({ type: "default", fullName, name })
+                );
                 event.dataTransfer.effectAllowed = "move";
             }}
         >
             <Card>
-                <ServiceCardHeader
-                    title={name}
-                    dirty={false}
-                    portType={portType}
-                />
+                <CardHeader avatar={getIcon(portType)} title={name} />
             </Card>
-        </div>
+        </Wrapper>
     );
 };

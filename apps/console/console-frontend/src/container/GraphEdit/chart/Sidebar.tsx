@@ -3,7 +3,6 @@ import { Theme } from "@mui/material/styles";
 import createStyles from "@mui/styles/createStyles";
 import makeStyles from "@mui/styles/makeStyles";
 import List from "@mui/material/List";
-import ListSubheader from "@mui/material/ListSubheader";
 import ListItem from "@mui/material/ListItem";
 import ListItemText from "@mui/material/ListItemText";
 import Collapse from "@mui/material/Collapse";
@@ -14,12 +13,8 @@ import { PortType } from "../../../modules/graphEdit/types";
 
 const useStyles = makeStyles((theme: Theme) =>
     createStyles({
-        root: {
-            padding: theme.spacing(0),
-            backgroundColor: theme.palette.background.paper,
-        },
         nested: {
-            paddingLeft: theme.spacing(4),
+            paddingLeft: theme.spacing(3),
         },
     })
 );
@@ -39,6 +34,7 @@ export interface SidebarProps {
     namespaces: {
         [namespace: string]: string[];
     };
+    height?: number | string;
 }
 
 export const Sidebar = (props: SidebarProps) => {
@@ -55,9 +51,12 @@ export const Sidebar = (props: SidebarProps) => {
         }));
     };
 
+    const { height } = props;
+
     return (
-        <List>
+        <List sx={{ height, overflowY: "auto" }}>
             {Object.entries(props.namespaces).map(([namespace, entry]) => {
+                let displayNameSpace = namespace.replace("plugin.", "");
                 return (
                     <React.Fragment key={namespace}>
                         <ListItem
@@ -66,7 +65,10 @@ export const Sidebar = (props: SidebarProps) => {
                             button
                             onClick={handleClick}
                         >
-                            <ListItemText primary={namespace} />
+                            <ListItemText
+                                primary={displayNameSpace}
+                                primaryTypographyProps={{ variant: "body2" }}
+                            />
                             {open[namespace] ? <ExpandLess /> : <ExpandMore />}
                         </ListItem>
                         <Collapse

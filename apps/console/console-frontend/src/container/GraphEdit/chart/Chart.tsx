@@ -19,22 +19,24 @@ import ReactFlow, {
 export interface ChartProps {
     data: ChartData;
     dispatch: React.Dispatch<Actions>;
+    height?: string | number;
 }
 
 export interface DragProps {
     type: string;
+    name: string;
     fullName: string;
 }
 
 const FlowArea = styled("div")(({ theme }) => ({
-    flexDirection: "column",
     display: "flex",
-    height: "70vh",
     width: "100%",
+    height: "100%",
     flexGrow: 1,
 }));
 
 const FlowWrapper = styled("div")(({ theme }) => ({
+    height: "100%",
     flexGrow: 1,
 }));
 
@@ -47,7 +49,7 @@ let id = 0;
 const getId = (): ElementId => `dndnode_${id++}`;
 
 export const Chart = React.memo((props: ChartProps) => {
-    const { data, dispatch } = props;
+    const { data, dispatch, height } = props;
 
     const [reactFlowInstance, setReactFlowInstance] = useState<OnLoadParams>();
     const [elements, setElements] = useState<Elements>(data.elements);
@@ -67,13 +69,13 @@ export const Chart = React.memo((props: ChartProps) => {
             const obj: DragProps = JSON.parse(json);
             const position = reactFlowInstance.project({
                 x: event.clientX,
-                y: event.clientY - 40,
+                y: event.clientY,
             });
             const newNode: Node = {
                 id: getId(),
                 type: obj.type,
                 position,
-                data: { label: obj.fullName },
+                data: { label: obj.name },
             };
 
             setElements((es) => es.concat(newNode));
@@ -93,9 +95,9 @@ export const Chart = React.memo((props: ChartProps) => {
     console.log(data.elements);
 
     return (
-        <FlowArea>
+        <FlowArea sx={{ height }}>
             <ReactFlowProvider>
-                <FlowWrapper>
+                <FlowWrapper sx={{ height }}>
                     <ReactFlow
                         elements={elements}
                         onConnect={onConnect}

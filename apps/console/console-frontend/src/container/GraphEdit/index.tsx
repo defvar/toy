@@ -6,11 +6,9 @@ import makeStyles from "@mui/styles/makeStyles";
 import Typography from "@mui/material/Typography";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import IconButton from "@mui/material/IconButton";
-import Grid from "@mui/material/Grid";
 import Box from "@mui/material/Box";
-import Drawer from "@mui/material/Drawer";
-import Toolbar from "@mui/material/Toolbar";
-import Divider from "@mui/material/Divider";
+import Tab from "@mui/material/Tab";
+import Tabs from "@mui/material/Tabs";
 import { Sidebar, Chart } from "./chart";
 import { Resource } from "../../modules/common";
 import {
@@ -28,19 +26,32 @@ import {
 } from "../../modules/api/toy-api";
 import { NodeEditor } from "./NodeEditor";
 import { ChartData } from "../../modules/graphEdit/types";
-import DrawerHeader from "../../components/DrawerHeader";
 import CircularProgress from "../../components/progress/CircularProgress";
 import Paper from "@mui/material/Paper";
 import Stack from "@mui/material/Stack";
+import { Resizable } from "react-resizable";
 
 const useStyles = makeStyles((theme: Theme) =>
     createStyles({
-        loader: {
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
+        resizeHandle: {
+            position: "absolute",
+            width: "1px",
+            height: "100%",
+            backgroundColor: theme.palette.divider,
+            opacity: "0.75",
+            top: "0",
+            cursor: "ew-resize",
         },
-        progress: {},
+        resizeHandleBottom: {
+            position: "absolute",
+            width: "100%",
+            height: "1px",
+            backgroundColor: theme.palette.divider,
+            opacity: "0.75",
+            bottom: "0",
+            cursor: "ns-resize",
+            zIndex: 11000,
+        },
     })
 );
 
@@ -49,6 +60,7 @@ interface GraphEditSuspenseProps {
     dispatch: React.Dispatch<Actions>;
     serviceResource: Resource<ServiceResponse>;
     graphResource: Resource<GraphResponse>;
+    height?: string | number;
 }
 
 const _testServices = {
@@ -180,6 +192,7 @@ const SidebarSuspense = (props: GraphEditSuspenseProps) => {
         <Sidebar
             services={props.state.services}
             namespaces={props.state.namespaces}
+            height={props.height}
         />
     );
 };
@@ -197,9 +210,35 @@ const ChartSuspense = (props: GraphEditSuspenseProps) => {
         <Chart
             data={_testChartData /*props.state.chart*/}
             dispatch={props.dispatch}
+            height={props.height}
         />
     );
 };
+
+const LeftPane = styled(Box)(({ theme }) => ({
+    flexGrow: 1,
+    zIndex: 990,
+    marginRight: theme.spacing(3),
+    height: "100%",
+}));
+
+const OuterResizable = styled(Resizable)(({ theme }) => ({
+    position: "relative",
+    display: "flex",
+    flexGrow: 1,
+}));
+
+const RightResizable = styled(Resizable)(({ theme }) => ({
+    position: "relative",
+}));
+
+const BottomPane = styled(Box)(({ theme }) => ({
+    bottom: 0,
+    left: 0,
+    width: "100%",
+    backgroundColor: theme.palette.background.default,
+    zIndex: 10000,
+}));
 
 export const GraphEdit = () => {
     const { name } = useParams<{ name: string }>();
@@ -223,71 +262,128 @@ export const GraphEdit = () => {
         setServiceResource(() => fetchServices());
     }, []);
 
+    const [rightPaneSize, setRightPaneSize] = React.useState(() => {
+        return { width: 240 };
+    });
+
+    const [contentSize, setContentSize] = React.useState(() => {
+        return { content: 600, bottom: 180 };
+    });
+
+    const onRightPaneResize = (_event, { size }) => {
+        setRightPaneSize({ width: size.width });
+    };
+
+    const onBottomResize = (_event, { size }) => {
+        setContentSize((prev) => {
+            const delta = prev.content - size.height;
+            return {
+                content: size.height,
+                bottom: prev.bottom + delta,
+            };
+        });
+    };
+
+    const onTabChange = React.useCallback(
+        (_event: React.ChangeEvent<{}>, newValue: number) => {
+            setTabNumber(newValue);
+        },
+        [state.services]
+    );
+
     return (
-        <Box>
-            <Grid container spacing={2}>
-                <Grid item xs={10}>
-                    <Typography
-                        sx={{ marginBottom: 2 }}
-                        variant="h6"
-                        component="div"
-                    >
-                        {name}
-                    </Typography>
-                    <Stack spacing={1}>
-                        <Stack direction="row" spacing={2}>
-                            <IconButton
-                                aria-label="refresh"
-                                onClick={onChartRefleshClick}
-                                size="large"
-                            >
-                                <RefreshIcon />
-                            </IconButton>
+        <Stack>
+            <OuterResizable
+                width={Infinity}
+                height={contentSize.content}
+                onResize={onBottomResize}
+                handle={<span className={classes.resizeHandleBottom} />}
+                resizeHandles={["s"]}
+            >
+                <Box
+                    sx={{
+                        display: "flex",
+                        height: contentSize.content,
+                        zIndex: 1200,
+                    }}
+                >
+                    <LeftPane>
+                        <Typography
+                            sx={{ marginBottom: 2 }}
+                            variant="h6"
+                            component="div"
+                        >
+                            {name}
+                        </Typography>
+                        <Stack spacing={1} sx={{ height: "100%" }}>
+                            <Stack direction="row" spacing={2}>
+                                <IconButton
+                                    aria-label="refresh"
+                                    onClick={onChartRefleshClick}
+                                    size="large"
+                                >
+                                    <RefreshIcon />
+                                </IconButton>
+                            </Stack>
+                            <Paper elevation={2} sx={{ height: "100%" }}>
+                                <Box
+                                    p={2}
+                                    sx={{ height: "100%", display: "flex" }}
+                                >
+                                    <React.Suspense
+                                        fallback={<CircularProgress />}
+                                    >
+                                        <ChartSuspense
+                                            state={state}
+                                            dispatch={dispatch}
+                                            serviceResource={serviceResource}
+                                            graphResource={graphResource}
+                                        />
+                                    </React.Suspense>
+                                </Box>
+                            </Paper>
                         </Stack>
-                        <Paper elevation={2}>
-                            <Box p={2}>
-                                <React.Suspense fallback={<CircularProgress />}>
-                                    <ChartSuspense
-                                        state={state}
-                                        dispatch={dispatch}
-                                        serviceResource={serviceResource}
-                                        graphResource={graphResource}
-                                    />
-                                </React.Suspense>
-                            </Box>
-                        </Paper>
-                    </Stack>
-                </Grid>
-                <Grid item xs={2}>
-                    <Drawer variant="permanent" anchor={"right"} open={true}>
-                        <Toolbar />
-                        <Divider />
-                        <DrawerHeader>
-                            <IconButton
-                                aria-label="refresh"
-                                onClick={onSidebarRefleshClick}
-                                size="large"
+                    </LeftPane>
+                    <RightResizable
+                        width={rightPaneSize.width}
+                        height={Infinity}
+                        onResize={onRightPaneResize}
+                        handle={<span className={classes.resizeHandle} />}
+                        resizeHandles={["w"]}
+                    >
+                        <Box
+                            sx={{ width: rightPaneSize.width, height: "100%" }}
+                        >
+                            <Tabs
+                                value={tabNumber}
+                                onChange={onTabChange}
+                                aria-label="tabs"
+                                variant="scrollable"
+                                scrollButtons="auto"
                             >
-                                <RefreshIcon />
-                            </IconButton>
-                        </DrawerHeader>
-                        <React.Suspense fallback={<CircularProgress />}>
-                            <SidebarSuspense
-                                state={state}
-                                dispatch={dispatch}
-                                serviceResource={serviceResource}
-                                graphResource={graphResource}
-                            />
-                        </React.Suspense>
-                    </Drawer>
-                </Grid>
-            </Grid>
+                                <Tab label="Services" />
+                            </Tabs>
+                            <React.Suspense fallback={<CircularProgress />}>
+                                <SidebarSuspense
+                                    state={state}
+                                    dispatch={dispatch}
+                                    serviceResource={serviceResource}
+                                    graphResource={graphResource}
+                                />
+                            </React.Suspense>
+                        </Box>
+                    </RightResizable>
+                </Box>
+            </OuterResizable>
+            <BottomPane sx={{ height: contentSize.bottom }}>
+                <span>aiueo</span>
+            </BottomPane>
             <NodeEditor
                 state={state}
                 dispatch={dispatch}
                 open={!!state.edit.id}
             />
-        </Box>
+        </Stack>
     );
 };
 
