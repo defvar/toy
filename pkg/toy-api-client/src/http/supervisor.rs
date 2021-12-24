@@ -3,8 +3,8 @@ use crate::error::ApiClientError;
 use crate::Auth;
 use async_trait::async_trait;
 use std::sync::Arc;
-use toy_api::common::{DeleteOption, FindOption, ListOption, PutOption};
-use toy_api::supervisors::{Supervisor, SupervisorList};
+use toy_api::common::{DeleteOption, FindOption, PutOption};
+use toy_api::supervisors::{Supervisor, SupervisorList, SupervisorListOption};
 use toy_h::HttpClient;
 
 static PATH: &'static str = "supervisors";
@@ -34,8 +34,8 @@ impl<T> SupervisorClient for HttpSupervisorClient<T>
 where
     T: HttpClient,
 {
-    async fn list(&self, opt: ListOption) -> Result<SupervisorList, ApiClientError> {
-        crate::http::list(&self.inner, &self.auth, &self.root, PATH, opt).await
+    async fn list(&self, opt: SupervisorListOption) -> Result<SupervisorList, ApiClientError> {
+        crate::http::list_with_opt(&self.inner, &self.auth, &self.root, PATH, opt).await
     }
 
     async fn find(

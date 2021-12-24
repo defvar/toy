@@ -1,9 +1,9 @@
 use crate::authentication::Auth;
 use crate::common;
 use crate::common::validator::{OkValidator, Validator};
-use crate::store::kv::KvStore;
+use crate::store::kv::{KvStore, ListOption};
 use crate::warp::filters::BoxedFilter;
-use toy_api::supervisors::{Supervisor, SupervisorList};
+use toy_api::supervisors::{Supervisor, SupervisorList, SupervisorListOption};
 use toy_h::HttpClient;
 use warp::Filter;
 
@@ -24,12 +24,14 @@ where
         store.clone(),
         |v: Supervisor| v
     )
-    .or(crate::list!(
+    .or(crate::list_with_opt!(
         warp::path("supervisors"),
         auth.clone(),
         client.clone(),
         common::constants::SUPERVISORS_KEY_PREFIX,
         store.clone(),
+        SupervisorListOption,
+        |_: Option<&SupervisorListOption>| ListOption::new(),
         |v: Vec<Supervisor>| SupervisorList::new(v)
     ))
     .or(crate::put!(

@@ -8,6 +8,7 @@ use toy::api_client::client::{
 use toy::api_client::http::HttpApiClient;
 use toy::api_client::toy_api::common::ListOption;
 use toy::api_client::toy_api::services::ServiceSpecListOption;
+use toy::api_client::toy_api::supervisors::SupervisorListOption;
 use toy::api_client::toy_api::task::TaskListOption;
 use toy::api_client::ApiClient;
 
@@ -21,7 +22,11 @@ where
     let pretty = pretty.is_some() && pretty.unwrap();
 
     match resource.as_str() {
-        "supervisors" => client.supervisor().list(opt).await?.write(writer, pretty),
+        "supervisors" => client
+            .supervisor()
+            .list(SupervisorListOption::new())
+            .await?
+            .write(writer, pretty),
         "services" => client
             .service()
             .list(ServiceSpecListOption::new())

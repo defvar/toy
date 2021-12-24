@@ -7,8 +7,6 @@ use futures_util::stream::BoxStream;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use std::fmt::Debug;
-use toy_api::selection::field;
-use toy_api::selection::field::Selection;
 
 /// Trait Composit store operations.
 #[async_trait]
@@ -52,13 +50,13 @@ impl FindOption {
 
 #[derive(Clone, Debug)]
 pub struct ListOption {
-    selection: field::Selection,
+    // selection: field::Selection,
 }
 
 impl ListOption {
     pub fn new() -> Self {
         Self {
-            selection: Selection::default(),
+            // selection: Selection::default(),
         }
     }
 }

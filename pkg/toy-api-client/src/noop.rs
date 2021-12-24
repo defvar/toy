@@ -9,6 +9,7 @@ use toy_api::common::{DeleteOption, FindOption, ListOption, PutOption};
 use toy_api::role::{Role, RoleList};
 use toy_api::role_binding::{RoleBinding, RoleBindingList};
 use toy_api::services::{ServiceSpec, ServiceSpecList, ServiceSpecListOption};
+use toy_api::supervisors::SupervisorListOption;
 use toy_api::task::{AllocateOption, AllocateRequest, AllocateResponse, TaskListOption};
 
 #[derive(Clone)]
@@ -138,7 +139,7 @@ impl TaskClient for NoopApiClient {
 impl SupervisorClient for NoopApiClient {
     async fn list(
         &self,
-        _opt: toy_api::common::ListOption,
+        _opt: SupervisorListOption,
     ) -> Result<toy_api::supervisors::SupervisorList, ApiClientError> {
         unimplemented!()
     }
