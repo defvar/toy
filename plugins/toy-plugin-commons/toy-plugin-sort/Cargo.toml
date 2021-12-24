@@ -9,7 +9,7 @@ edition = "2021"
 serde = { version = "1.0", features = ["derive"] }
 tracing = "0.1"
 bytes = "1"
-tokio = { version = "1.11", features = ["fs"] }
+tokio = { version = "1.15", features = ["fs"] }
 tokio-util = { version = "0.6.7", features = ["codec"] }
 tokio-stream = { version = "0.1" }
 futures-util = { version = "0.3", features = ["sink"] }
@@ -21,5 +21,5 @@ toy-pack-mp = { path = "../../../shared/toy-pack-mp" }
 
 [dev-dependencies]
 toy-plugin-test = { path = "../../toy-plugin-test" }
-tokio = { version = "1.11.0", features = ["full", "test-util"] }
+tokio = { version = "1.15", features = ["full", "test-util"] }
 tokio-test = "0.4.2"

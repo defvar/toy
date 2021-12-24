@@ -12,4 +12,4 @@ tracing = "0.1"
 
 toy-core = { path = "../../../pkg/toy-core" }
 toy-pack = { path = "../../../shared/toy-pack", features = ["derive"] }
-tokio = { version = "1", features = ["time"] }
+tokio = { version = "1.15", features = ["time"] }

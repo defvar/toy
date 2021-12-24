@@ -12,7 +12,7 @@ chrono = "0.4"
 futures-core = { version = "0.3" }
 futures-util = { version = "0.3", default-features = false }
 
-tokio = { version = "1.11", features = ["sync"] }
+tokio = { version = "1.15", features = ["sync"] }
 toy-core = {path="../toy-core"}
 toy-rt = { path = "../toy-rt"}
 toy-api = { path = "../toy-api" }
