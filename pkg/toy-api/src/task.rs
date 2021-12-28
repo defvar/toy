@@ -3,6 +3,7 @@
 use crate::common::{Format, ListOption, ListOptionLike};
 use crate::graph::Graph;
 use crate::selection::field::Selection;
+use crate::supervisors::SupervisorName;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use toy_core::prelude::TaskId;
@@ -17,8 +18,8 @@ pub enum PendingStatus {
 pub struct PendingTask {
     task_id: TaskId,
     status: PendingStatus,
-    allocated_supervisor: Option<String>,
-    allocated_at: Option<String>,
+    allocated_supervisor: Option<SupervisorName>,
+    allocated_at: Option<DateTime<Utc>>,
     graph: Option<Graph>,
 }
 
@@ -35,7 +36,7 @@ pub struct PendingResult {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AllocateRequest {
-    supervisor: String,
+    supervisor: SupervisorName,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -110,13 +111,13 @@ impl PendingTask {
         self.graph.as_ref()
     }
 
-    pub fn allocate<S: Into<String>, T: Into<String>>(self, name: S, allocated_at: T) -> Self {
+    pub fn allocate<S: Into<String>>(self, name: S, allocated_at: DateTime<Utc>) -> Self {
         Self {
             task_id: self.task_id,
             graph: self.graph,
             status: PendingStatus::Allocated,
             allocated_supervisor: Some(name.into()),
-            allocated_at: Some(allocated_at.into()),
+            allocated_at: Some(allocated_at),
         }
     }
 }

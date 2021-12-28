@@ -23,7 +23,7 @@ pub mod constants {
         format!("{}/{}", PENDINGS_KEY_PREFIX, id)
     }
 
-    pub(crate) fn generate_key<P: Into<String>>(prefix: P, key: String) -> String {
-        format!("{}/{}", prefix.into(), key)
+    pub(crate) fn generate_key(prefix: impl AsRef<str>, key: impl AsRef<str>) -> String {
+        format!("{}/{}", prefix.as_ref(), key.as_ref())
     }
 }

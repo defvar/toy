@@ -31,7 +31,7 @@ where
     tracing::info!("initialize builtin role.");
 
     for r in builtin_roles() {
-        let key = constants::generate_key(constants::ROLE_KEY_PREFIX, r.name().to_owned());
+        let key = constants::generate_key(constants::ROLE_KEY_PREFIX, r.name());
         match store
             .ops()
             .put(store.con().unwrap(), key, r, PutOption::new())
@@ -45,7 +45,7 @@ where
     tracing::info!("initialize builtin role binding.");
 
     for r in builtin_bindings() {
-        let key = constants::generate_key(constants::ROLE_BINDING_KEY_PREFIX, r.name().to_owned());
+        let key = constants::generate_key(constants::ROLE_BINDING_KEY_PREFIX, r.name());
         match store
             .ops()
             .put(store.con().unwrap(), key, r, PutOption::new())

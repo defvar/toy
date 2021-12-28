@@ -1,5 +1,6 @@
 use std::backtrace::Backtrace;
 use std::fmt::Display;
+use std::net::AddrParseError;
 use thiserror::Error;
 use toy_jwt::error::JWTError;
 
@@ -47,6 +48,13 @@ pub enum Error {
 
     #[error("error: invalid log path")]
     InvalidLogPath,
+
+    #[error("error: {:?}", source)]
+    AddrParseError {
+        #[from]
+        source: AddrParseError,
+        backtrace: Backtrace,
+    },
 }
 
 impl Error {

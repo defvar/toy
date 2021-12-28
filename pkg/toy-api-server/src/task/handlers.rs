@@ -128,7 +128,7 @@ where
                 }
                 _ => (),
             }
-            let allocated = v.allocate(request.supervisor(), chrono::Utc::now().to_rfc3339());
+            let allocated = v.allocate(request.supervisor(), chrono::Utc::now());
             match store
                 .ops()
                 .put(

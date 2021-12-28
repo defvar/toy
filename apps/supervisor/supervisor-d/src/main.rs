@@ -5,6 +5,7 @@ use crate::opts::*;
 use clap::Parser;
 use std::fs::File;
 use std::io::Read;
+use std::net::SocketAddr;
 use std::path::PathBuf;
 use toy::api_client::http::HttpApiClient;
 use toy::core::prelude::*;
@@ -70,8 +71,15 @@ fn go() -> Result<(), Error> {
                 .map_err(|e| Error::read_credential_error(e))?;
             let auth = toy::api_client::auth::Auth::with_bearer_token(&c.user, &token);
 
+            let addr = c.serve.parse::<SocketAddr>();
+            let addr = match addr {
+                Ok(v) => v,
+                Err(e) => return Err(e.into()),
+            };
+
             let client = HttpApiClient::new(&c.api_root, auth).unwrap();
-            let (sv, _, _) = toy::supervisor::subscribe(&c.name, ExecutorFactory, app, client);
+            let (sv, _, _) =
+                toy::supervisor::subscribe(&c.name, ExecutorFactory, app, client, addr);
 
             rt.block_on(async {
                 let _ = sv.run().await;

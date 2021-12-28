@@ -14,6 +14,13 @@ pub struct Subscribe {
     #[clap(
         short,
         long,
+        env = "TOY_SUPERVISOR_SERVE_ADDR",
+        default_value = "127.0.0.1:3031"
+    )]
+    pub serve: String,
+    #[clap(
+        short,
+        long,
         env = "TOY_API_ROOT",
         default_value = "https://localhost:3030"
     )]

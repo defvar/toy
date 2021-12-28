@@ -20,7 +20,7 @@ where
 
     let key = constants::generate_key(
         constants::SECRET_KEY_PREFIX,
-        toy_api::authentication::TLS_SECRET_KID.to_string(),
+        toy_api::authentication::TLS_SECRET_KID,
     );
 
     let private_key = from_file(&config.key_path())?;
