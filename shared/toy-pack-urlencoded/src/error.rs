@@ -11,7 +11,7 @@ pub struct QueryParseError {
 
 impl std::fmt::Display for QueryParseError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}", self.err)
+        write!(f, "{}", self.err)
     }
 }
 

@@ -64,7 +64,7 @@ pub struct Supervisor<TF, P, C> {
     /// receive any request.
     rx: Incoming<Request, ServiceError>,
     /// send shutdown.
-    tx: Outgoing<(), ServiceError>,
+    tx_shutdown: Outgoing<(), ServiceError>,
     /// use watcher.
     tx_watcher: Outgoing<Request, ServiceError>,
     ctx: SupervisorContext<C>,
@@ -99,13 +99,13 @@ where
         Incoming<(), ServiceError>,
     ) {
         let (tx_req, rx_req) = mpsc::channel::<Request, ServiceError>(1024);
-        let (tx_sys, rx_sys) = mpsc::channel::<(), ServiceError>(16);
+        let (tx_shutdown, rx_shutdown) = mpsc::channel::<(), ServiceError>(16);
         (
             Supervisor {
                 _factory: factory,
                 app: Arc::new(app),
                 rx: rx_req,
-                tx: tx_sys,
+                tx_shutdown,
                 tx_watcher: tx_req.clone(),
                 ctx: SupervisorContext {
                     name: name.into(),
@@ -117,7 +117,7 @@ where
                 addr,
             },
             tx_req,
-            rx_sys,
+            rx_shutdown,
         )
     }
 
@@ -213,13 +213,16 @@ where
                     }
                 },
                 Err(e) => {
-                    tracing::error!(name=?self.ctx.name, err = ?e, "an error occured; supervisor.")
+                    tracing::error!(name=?self.ctx.name, err = %e, "an error occured; supervisor.")
                 }
             }
         }
-        tracing::info!(name=?self.ctx.name, "shutdown supervisor");
-        if let Err(e) = self.tx.send_ok(()).await {
-            tracing::error!(name=?self.ctx.name, err = ?e, "an error occured; supervisor when shutdown.")
+        tracing::info!(name=?self.ctx.name, "shutdown supervisor.");
+        if !self.tx_shutdown.is_closed() {
+            tracing::info!(name=?self.ctx.name, "send shutdown message.");
+            if let Err(e) = self.tx_shutdown.send_ok(()).await {
+                tracing::error!(name=?self.ctx.name, err = %e, "an error occured; supervisor when shutdown.")
+            }
         }
 
         Ok(())
@@ -272,7 +275,7 @@ where
             .put(self.ctx.name.clone(), sv, PutOption::new())
             .await
         {
-            tracing::error!(name=?self.ctx.name, err = ?e, "an error occured; supervisor when start up.");
+            tracing::error!(name=?self.ctx.name, err = %e, "an error occured; supervisor when start up.");
             return Err(());
         }
 
@@ -298,7 +301,7 @@ where
                 )
                 .await
             {
-                tracing::error!(name=?self.ctx.name, err = ?e, spec = ?key, "an error occured; supervisor when register service.");
+                tracing::error!(name=?self.ctx.name, err = %e, service_type = %key, "an error occured; supervisor when register service.");
                 return Err(());
             }
         }

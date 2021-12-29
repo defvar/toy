@@ -52,7 +52,7 @@ where
     match toy_pack_json::pack_to_string(&st) {
         Ok(v) => Ok(v.into_response()),
         Err(e) => {
-            tracing::error!("{:?}", e);
+            tracing::error!(err = %e);
             Ok(StatusCode::INTERNAL_SERVER_ERROR.into_response())
         }
     }
@@ -67,7 +67,7 @@ where
     match ctx.tx_mut().send_ok(Request::Shutdown).await {
         Ok(_) => Ok(StatusCode::OK),
         Err(e) => {
-            tracing::error!("{:?}", e);
+            tracing::error!(err = %e);
             Ok(StatusCode::INTERNAL_SERVER_ERROR)
         }
     }

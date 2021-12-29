@@ -3,7 +3,7 @@
 
 use crate::error::ConfigError;
 use serde::{Deserialize, Serialize};
-use std::fmt::{Debug, Error, Formatter};
+use std::fmt::{Debug, Display, Error, Formatter};
 
 /// The type of service.
 #[derive(Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -91,6 +91,12 @@ impl From<&ServiceType> for ServiceType {
 }
 
 impl Debug for ServiceType {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), Error> {
+        write!(f, "{}", self.full_name.to_string())
+    }
+}
+
+impl Display for ServiceType {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), Error> {
         write!(f, "{}", self.full_name.to_string())
     }

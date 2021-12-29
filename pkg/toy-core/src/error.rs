@@ -79,24 +79,24 @@ impl Error for ServiceError {
 
 #[derive(Debug, ThisError)]
 pub enum ConfigError {
-    #[error("config validation failed. error:{:?}", inner)]
+    #[error("config validation failed. error:{}", inner)]
     ValidationError { inner: String },
 
-    #[error("invalid config. {:?}", source)]
+    #[error("invalid config. {}", source)]
     Utf8Error {
         #[from]
         source: Utf8Error,
         backtrace: Backtrace,
     },
 
-    #[error("config load failed. {:?}", source)]
+    #[error("config load failed. {}", source)]
     IOError {
         #[from]
         source: io::Error,
         backtrace: Backtrace,
     },
 
-    #[error("invalid config. not found key:{:?}", inner)]
+    #[error("invalid config. not found key:{}", inner)]
     NotFoundKey { inner: String },
 
     #[error("invalid config key type. {:?} must be {:?}", key, expected)]

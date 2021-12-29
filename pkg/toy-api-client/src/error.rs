@@ -1,4 +1,3 @@
-use std::backtrace::Backtrace;
 use std::fmt::Display;
 use thiserror::Error;
 
@@ -12,60 +11,55 @@ use toy_pack_urlencoded::QueryParseError;
 
 #[derive(Debug, Error)]
 pub enum ApiClientError {
-    #[error("authentication failed. {:?}", inner)]
+    #[error("authentication failed. {}", inner)]
     AuthenticationFailed { inner: String },
 
-    #[error("error: {:?}", source)]
+    #[error(transparent)]
     DeserializeJsonValue {
         #[from]
         source: toy_pack_json::DecodeError,
-        backtrace: Backtrace,
     },
 
-    #[error("error: {:?}", source)]
+    #[error(transparent)]
     SerializeJsonValue {
         #[from]
         source: toy_pack_json::EncodeError,
-        backtrace: Backtrace,
     },
 
-    #[error("error: {:?}", source)]
+    #[error(transparent)]
     DeserializeMessagePackValue {
         #[from]
         source: toy_pack_mp::DecodeError,
-        backtrace: Backtrace,
     },
 
-    #[error("error: {:?}", source)]
+    #[error(transparent)]
     SerializeMessagePackValue {
         #[from]
         source: toy_pack_mp::EncodeError,
-        backtrace: Backtrace,
     },
 
     #[cfg(feature = "http")]
-    #[error("invalid uri: {:?}", source)]
+    #[error(transparent)]
     InvalidUri {
         #[from]
         source: InvalidUri,
-        backtrace: Backtrace,
     },
 
     #[cfg(feature = "http")]
-    #[error("failed http request: {:?}", source)]
+    #[error(transparent)]
     HError {
         #[from]
         source: HError,
     },
 
     #[cfg(feature = "http")]
-    #[error("error: {:?}", source)]
+    #[error(transparent)]
     QueryParse {
         #[from]
         source: QueryParseError,
     },
 
-    #[error("error: {:?}", inner)]
+    #[error("error: {}", inner)]
     Error { inner: String },
 }
 

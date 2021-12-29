@@ -70,6 +70,10 @@ impl<T, Err> Outgoing<T, Err> {
     fn target_input_port(&self, output_port: u8) -> u8 {
         *self.port_map.get(&output_port).unwrap_or_else(|| &0)
     }
+
+    pub fn is_closed(&self) -> bool {
+        self.inner[0].is_closed()
+    }
 }
 
 impl<T, Err> Outgoing<T, Err>
@@ -128,6 +132,13 @@ where
     pub fn ports(&self) -> OutgoingPortIter {
         let ports = self.port_map.keys().into_iter().map(|x| *x).collect();
         OutgoingPortIter { ports, idx: 0 }
+    }
+
+    pub fn is_closed_at(&self, port: u8) -> Result<bool, Err> {
+        if (port as usize) >= self.inner.len() {
+            return Result::Err(Error::custom(format!("not found output port:{}", port)));
+        }
+        Ok(self.inner[port as usize].is_closed())
     }
 }
 

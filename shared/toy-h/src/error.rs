@@ -4,13 +4,13 @@ use thiserror::Error as ThisError;
 
 #[derive(Debug, ThisError)]
 pub enum HError {
-    #[error("invalid uri: {:?}", source)]
+    #[error(transparent)]
     InvalidUri {
         #[from]
         source: InvalidUri,
     },
 
-    #[error("error: {:?}", inner)]
+    #[error("{}", inner)]
     Error { inner: String },
 }
 
