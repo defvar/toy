@@ -3,12 +3,16 @@ import { useParams } from "react-router-dom";
 import { Theme, useTheme, styled } from "@mui/material/styles";
 import createStyles from "@mui/styles/createStyles";
 import makeStyles from "@mui/styles/makeStyles";
-import Typography from "@mui/material/Typography";
 import RefreshIcon from "@mui/icons-material/Refresh";
-import IconButton from "@mui/material/IconButton";
-import Box from "@mui/material/Box";
-import Tab from "@mui/material/Tab";
-import Tabs from "@mui/material/Tabs";
+import {
+    Box,
+    Tab,
+    Tabs,
+    IconButton,
+    Paper,
+    Stack,
+    Typography,
+} from "@mui/material";
 import { Sidebar, Chart } from "./chart";
 import { Resource } from "../../modules/common";
 import {
@@ -22,13 +26,10 @@ import {
     ServiceResponse,
     fetchServices,
     fetchGraph,
-    GraphResponse,
 } from "../../modules/api/toy-api";
 import { NodeEditor } from "./NodeEditor";
 import { ChartData } from "../../modules/graphEdit/types";
 import CircularProgress from "../../components/progress/CircularProgress";
-import Paper from "@mui/material/Paper";
-import Stack from "@mui/material/Stack";
 import { Resizable } from "react-resizable";
 
 const useStyles = makeStyles((theme: Theme) =>
@@ -59,8 +60,6 @@ interface GraphEditSuspenseProps {
     state: GraphEditState;
     dispatch: React.Dispatch<Actions>;
     serviceResource: Resource<ServiceResponse>;
-    graphResource: Resource<GraphResponse>;
-    height?: string | number;
 }
 
 const _testServices = {
@@ -192,25 +191,6 @@ const SidebarSuspense = (props: GraphEditSuspenseProps) => {
         <Sidebar
             services={props.state.services}
             namespaces={props.state.namespaces}
-            height={props.height}
-        />
-    );
-};
-
-const ChartSuspense = (props: GraphEditSuspenseProps) => {
-    const graph = props.graphResource.read();
-    React.useEffect(() => {
-        props.dispatch({
-            type: "GetGraph",
-            payload: graph,
-        });
-    }, [graph]);
-
-    return (
-        <Chart
-            data={_testChartData /*props.state.chart*/}
-            dispatch={props.dispatch}
-            height={props.height}
         />
     );
 };
@@ -333,11 +313,12 @@ export const GraphEdit = () => {
                                     <React.Suspense
                                         fallback={<CircularProgress />}
                                     >
-                                        <ChartSuspense
-                                            state={state}
-                                            dispatch={dispatch}
-                                            serviceResource={serviceResource}
+                                        <Chart
+                                            data={
+                                                /*_testChartData*/ state.chart
+                                            }
                                             graphResource={graphResource}
+                                            dispatch={dispatch}
                                         />
                                     </React.Suspense>
                                 </Box>
@@ -368,7 +349,6 @@ export const GraphEdit = () => {
                                     state={state}
                                     dispatch={dispatch}
                                     serviceResource={serviceResource}
-                                    graphResource={graphResource}
                                 />
                             </React.Suspense>
                         </Box>

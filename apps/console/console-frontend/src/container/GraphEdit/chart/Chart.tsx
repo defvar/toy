@@ -13,11 +13,13 @@ import ReactFlow, {
     Edge,
     ElementId,
     Node,
-    Controls,
 } from "react-flow-renderer";
+import { Resource } from "../../../modules/common";
+import { GraphResponse } from "../../../modules/api/toy-api";
 
 export interface ChartProps {
     data: ChartData;
+    graphResource: Resource<GraphResponse>;
     dispatch: React.Dispatch<Actions>;
     height?: string | number;
 }
@@ -48,39 +50,67 @@ const onDragOver = (event: DragEvent) => {
 let id = 0;
 const getId = (): ElementId => `dndnode_${id++}`;
 
-export const Chart = React.memo((props: ChartProps) => {
-    const { data, dispatch, height } = props;
+export const Chart = (props: ChartProps) => {
+    const { data, graphResource, dispatch, height } = props;
+
+    const graph = graphResource.read();
+    React.useEffect(() => {
+        dispatch({
+            type: "GetGraph",
+            payload: graph,
+        });
+    }, [graph]);
 
     const [reactFlowInstance, setReactFlowInstance] = useState<OnLoadParams>();
-    const [elements, setElements] = useState<Elements>(data.elements);
 
-    const onConnect = (params: Connection | Edge) =>
-        setElements((els) => addEdge(params, els));
-    const onElementsRemove = (elementsToRemove: Elements) =>
-        setElements((els) => removeElements(elementsToRemove, els));
+    const onConnect = React.useCallback(
+        (params: Connection | Edge) => {
+            dispatch({
+                type: "ChangeChart",
+                payload: (elm) => addEdge(params, elm),
+            });
+        },
+        [dispatch]
+    );
+    const onElementsRemove = React.useCallback(
+        (elementsToRemove: Elements) => {
+            dispatch({
+                type: "ChangeChart",
+                payload: (elm) => removeElements(elementsToRemove, elm),
+            });
+        },
+        [dispatch]
+    );
     const onLoad = (_reactFlowInstance: OnLoadParams) =>
         setReactFlowInstance(_reactFlowInstance);
 
-    const onDrop = (event: DragEvent) => {
-        event.preventDefault();
+    const onDrop = React.useCallback(
+        (event: DragEvent) => {
+            event.preventDefault();
 
-        if (reactFlowInstance) {
-            const json = event.dataTransfer.getData("application/reactflow");
-            const obj: DragProps = JSON.parse(json);
-            const position = reactFlowInstance.project({
-                x: event.clientX,
-                y: event.clientY,
-            });
-            const newNode: Node = {
-                id: getId(),
-                type: obj.type,
-                position,
-                data: { label: obj.name },
-            };
-
-            setElements((es) => es.concat(newNode));
-        }
-    };
+            if (reactFlowInstance) {
+                const json = event.dataTransfer.getData(
+                    "application/reactflow"
+                );
+                const obj: DragProps = JSON.parse(json);
+                const position = reactFlowInstance.project({
+                    x: event.clientX,
+                    y: event.clientY,
+                });
+                const newNode: Node = {
+                    id: getId(),
+                    type: obj.type,
+                    position,
+                    data: { label: obj.name },
+                };
+                dispatch({
+                    type: "ChangeChart",
+                    payload: (elm) => elm.concat(newNode),
+                });
+            }
+        },
+        [dispatch, reactFlowInstance]
+    );
 
     const onNodeDoubleClick = React.useCallback(
         (_event: MouseEvent, node: Node) => {
@@ -92,14 +122,12 @@ export const Chart = React.memo((props: ChartProps) => {
         [dispatch]
     );
 
-    console.log(data.elements);
-
     return (
         <FlowArea sx={{ height }}>
             <ReactFlowProvider>
                 <FlowWrapper sx={{ height }}>
                     <ReactFlow
-                        elements={elements}
+                        elements={data.elements}
                         onConnect={onConnect}
                         onElementsRemove={onElementsRemove}
                         onLoad={onLoad}
@@ -111,4 +139,4 @@ export const Chart = React.memo((props: ChartProps) => {
             </ReactFlowProvider>
         </FlowArea>
     );
-});
+};

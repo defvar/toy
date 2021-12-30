@@ -66,51 +66,55 @@ const toLinks = (graph: { [uri: string]: GraphNode }): LinkData[] => {
     }, []);
 };
 
-const toNodes = (graph: { [uri: string]: GraphNode }): [{ [id: string]: any }, NodeData[]] => {
-    return Object.entries(graph).reduce((r, [, node]) => {
-        let type = "default";
-        let portType: PortType = "Flow";
+const toNodes = (graph: {
+    [uri: string]: GraphNode;
+}): [{ [id: string]: any }, NodeData[]] => {
+    return Object.entries(graph).reduce(
+        (r, [, node]) => {
+            let type = "default";
+            let portType: PortType = "Flow";
 
-        if (node.port_type) {
-            if (node.port_type.Source) {
-                type = "input";
-                portType = "Source";
-            } else if (node.port_type.Flow) {
-                type = "default";
-                portType = "Flow";
-            } else if (node.port_type.Sink) {
-                type = "output";
-                portType = "Sink";
+            if (node.port_type) {
+                if (node.port_type.Source) {
+                    type = "input";
+                    portType = "Source";
+                } else if (node.port_type.Flow) {
+                    type = "default";
+                    portType = "Flow";
+                } else if (node.port_type.Sink) {
+                    type = "output";
+                    portType = "Sink";
+                }
             }
-        }
 
-        const n: NodeData = {
-            id: node.uri,
-            type,
-            position: node.position,
-            data: {
-                name: node.type.split(".").slice(-1)[0],
-                label: node.type.split(".").slice(-1)[0],
-                fullName: node.type,
-                dirty: false,
-                portType,
-            },
-        };
+            const n: NodeData = {
+                id: node.uri,
+                type,
+                position: node.position,
+                data: {
+                    name: node.type.split(".").slice(-1)[0],
+                    label: node.type.split(".").slice(-1)[0],
+                    fullName: node.type,
+                    dirty: false,
+                    portType,
+                },
+            };
 
-        r[0][node.uri] = { fullName: node.type, config: node.config };
-        r[1].push(n);
-        return r;
-    }, [{}, []]);
+            r[0][node.uri] = { fullName: node.type, config: node.config };
+            r[1].push(n);
+            return r;
+        },
+        [{}, []]
+    );
 };
 
-const toChartData = (graph: { [uri: string]: GraphNode }): [{ [id: string]: { fullName: string, config:any }}, ChartData] => {
+const toChartData = (graph: {
+    [uri: string]: GraphNode;
+}): [{ [id: string]: { fullName: string; config: any } }, ChartData] => {
     const [configs, nodes] = toNodes(graph);
     const links = toLinks(graph);
     const elements: ChartElements = [...nodes, ...links];
-    return [
-        configs,
-        {elements,}
-    ];
+    return [configs, { elements }];
 };
 
 export const reducer = nextState(
@@ -146,6 +150,11 @@ export const reducer = nextState(
                 const [nodes, r] = toChartData(g.nodes);
                 state.chart = r;
                 state.nodes = nodes;
+                return;
+            }
+            case "ChangeChart": {
+                const elm = action.payload(state.chart.elements);
+                state.chart.elements = elm;
                 return;
             }
             case "StartEditNode": {

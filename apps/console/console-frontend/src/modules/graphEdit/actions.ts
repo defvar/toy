@@ -1,4 +1,5 @@
 import { ServiceResponse, GraphResponse } from "../api/toy-api";
+import { ChartElements } from "./types";
 
 export interface GetServices {
     type: "GetServices";
@@ -12,8 +13,7 @@ export interface GetGraph {
 
 export interface ChangeChart {
     type: "ChangeChart";
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    payload: (prev: any) => any;
+    payload: (prev: ChartElements) => ChartElements;
 }
 
 export interface ZoomChart {

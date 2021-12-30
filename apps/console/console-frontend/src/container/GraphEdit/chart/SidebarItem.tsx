@@ -1,11 +1,10 @@
 import * as React from "react";
 import { styled } from "@mui/material/styles";
-import Card from "@mui/material/Card";
 import { PortType } from "../../../modules/graphEdit/types";
 import FunctionsIcon from "@mui/icons-material/Functions";
 import AllOutIcon from "@mui/icons-material/AllOut";
 import CheckBoxOutlineBlankIcon from "@mui/icons-material/CheckBoxOutlineBlank";
-import CardHeader from "@mui/material/CardHeader";
+import { Card, CardContent, CardHeader, Typography } from "@mui/material";
 
 export interface SidebarItemProps {
     fullName: string;
@@ -28,32 +27,39 @@ const getIcon = (portType: PortType) => {
     }
 };
 
-const Wrapper = styled("div")(({ theme }) => ({
+const Draggable = styled("div")(({ theme }) => ({
     cursor: "move",
-    margin: theme.spacing(0, 0),
-    flex: 1,
-    maxWidth: 300,
 }));
 
 export const SidebarItem = ({
     fullName,
     name,
     portType,
+    description,
 }: SidebarItemProps): JSX.Element => {
     return (
-        <Wrapper
-            draggable
-            onDragStart={(event): void => {
-                event.dataTransfer.setData(
-                    "application/reactflow",
-                    JSON.stringify({ type: "default", fullName, name })
-                );
-                event.dataTransfer.effectAllowed = "move";
-            }}
-        >
-            <Card>
+        <Card sx={{ flex: 1, maxWidth: 300 }}>
+            <Draggable
+                draggable
+                onDragStart={(event): void => {
+                    event.dataTransfer.setData(
+                        "application/reactflow",
+                        JSON.stringify({ type: "default", fullName, name })
+                    );
+                    event.dataTransfer.effectAllowed = "move";
+                }}
+            >
                 <CardHeader avatar={getIcon(portType)} title={name} />
-            </Card>
-        </Wrapper>
+            </Draggable>
+            <CardContent>
+                <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    component="div"
+                >
+                    {description ? description : "no description..."}
+                </Typography>
+            </CardContent>
+        </Card>
     );
 };

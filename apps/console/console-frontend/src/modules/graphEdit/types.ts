@@ -22,12 +22,12 @@ export interface Port {
 
 export interface NodeData {
     id: string;
-    type: string;
+    type?: string;
     position: {
         x: number;
         y: number;
     };
-    data: {
+    data?: {
         name: string;
         label: string;
         fullName: string;
