@@ -1,7 +1,11 @@
 import { useState, DragEvent, MouseEvent } from "react";
 import * as React from "react";
 import { styled } from "@mui/material/styles";
-import { ChartData } from "../../../modules/graphEdit/types";
+import {
+    ChartData,
+    NodeData,
+    PortType,
+} from "../../../modules/graphEdit/types";
 import { Actions } from "../../../modules/graphEdit";
 import ReactFlow, {
     ReactFlowProvider,
@@ -28,6 +32,7 @@ export interface DragProps {
     type: string;
     name: string;
     fullName: string;
+    portType: PortType;
 }
 
 const FlowArea = styled("div")(({ theme }) => ({
@@ -101,11 +106,20 @@ export const Chart = (props: ChartProps) => {
                     id: getId(),
                     type: obj.type,
                     position,
-                    data: { label: obj.name },
+                    data: {
+                        name: obj.name,
+                        label: obj.name,
+                        fullName: obj.fullName,
+                        dirty: false,
+                        portType: obj.portType,
+                    },
                 };
                 dispatch({
-                    type: "ChangeChart",
-                    payload: (elm) => elm.concat(newNode),
+                    type: "AddNodeOnChart",
+                    payload: {
+                        node: newNode,
+                        f: (elm) => elm.concat(newNode),
+                    },
                 });
             }
         },

@@ -157,8 +157,30 @@ export const reducer = nextState(
                 state.chart.elements = elm;
                 return;
             }
+            case "AddNodeOnChart": {
+                const { f, node } = action.payload;
+                if (!state.nodes[node.id]) {
+                    state.nodes[node.id] = {
+                        fullName: node.data.fullName,
+                        config: {},
+                    };
+                }
+
+                const elm = f(state.chart.elements);
+                state.chart.elements = elm;
+                return;
+            }
+            case "RemoveNodeOnChart": {
+                const { f, removeNodeId } = action.payload;
+                if (state.nodes[removeNodeId]) {
+                    delete state.nodes[removeNodeId];
+                }
+
+                const elm = f(state.chart.elements);
+                state.chart.elements = elm;
+                return;
+            }
             case "StartEditNode": {
-                console.debug(`StartEditNode:${action.payload}`);
                 const currentEditId = state.edit.id;
                 if (currentEditId && action.payload != currentEditId) {
                     const n = state.nodes[currentEditId];

@@ -44,7 +44,12 @@ export const SidebarItem = ({
                 onDragStart={(event): void => {
                     event.dataTransfer.setData(
                         "application/reactflow",
-                        JSON.stringify({ type: "default", fullName, name })
+                        JSON.stringify({
+                            type: "default",
+                            fullName,
+                            name,
+                            portType,
+                        })
                     );
                     event.dataTransfer.effectAllowed = "move";
                 }}
