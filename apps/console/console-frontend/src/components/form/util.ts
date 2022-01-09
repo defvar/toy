@@ -25,6 +25,7 @@ const parseSelectOptions = (oneOf: JsonSchema[]): SelectOptionItem[] => {
     if (!oneOf) {
         return [];
     }
+    console.log(oneOf);
     const r = oneOf
         .filter((x) => x.const)
         .map((x) => {
@@ -49,6 +50,7 @@ const parseProps = (schema: JsonSchema, key: string, root?: string): Field => {
         selectOptions: parseSelectOptions(schema.oneOf),
         required: targetNode.required ? true : false,
     };
+
     if (!targetNode.type || (targetNode.type && targetNode.type !== "object")) {
         return result;
     }

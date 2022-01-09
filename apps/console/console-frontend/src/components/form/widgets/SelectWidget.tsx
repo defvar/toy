@@ -23,7 +23,7 @@ export const SelectWidget = React.memo(
         };
 
         return (
-            <FormControl fullWidth={true} required={required} error={isError}>
+            <FormControl fullWidth required={required} error={isError}>
                 <InputLabel>{label}</InputLabel>
                 <Select
                     id={id}

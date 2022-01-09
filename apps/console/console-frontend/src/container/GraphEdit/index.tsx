@@ -36,7 +36,7 @@ const useStyles = makeStyles((theme: Theme) =>
     createStyles({
         resizeHandle: {
             position: "absolute",
-            width: "1px",
+            width: "1.5px",
             height: "100%",
             backgroundColor: theme.palette.divider,
             opacity: "0.75",
@@ -46,7 +46,7 @@ const useStyles = makeStyles((theme: Theme) =>
         resizeHandleBottom: {
             position: "absolute",
             width: "100%",
-            height: "1px",
+            height: "1.5px",
             backgroundColor: theme.palette.divider,
             opacity: "0.75",
             bottom: "0",
@@ -223,7 +223,6 @@ const BottomPane = styled(Box)(({ theme }) => ({
 export const GraphEdit = () => {
     const { name } = useParams<{ name: string }>();
     const classes = useStyles();
-    const theme = useTheme();
 
     const [serviceResource, setServiceResource] = React.useState(() =>
         fetchServices()
@@ -233,6 +232,7 @@ export const GraphEdit = () => {
     );
     const [state, dispatch] = React.useReducer(reducer, initialState);
     const [tabNumber, setTabNumber] = React.useState(0);
+    const [bottomTabNumber, setBottomTabNumber] = React.useState(0);
 
     const onChartRefleshClick = React.useCallback(() => {
         setGraphResource(() => fetchGraph(name));
@@ -247,7 +247,7 @@ export const GraphEdit = () => {
     });
 
     const [contentSize, setContentSize] = React.useState(() => {
-        return { content: 600, bottom: 180 };
+        return { content: 600, bottom: 150 };
     });
 
     const onRightPaneResize = (_event, { size }) => {
@@ -269,6 +269,13 @@ export const GraphEdit = () => {
             setTabNumber(newValue);
         },
         [state.services]
+    );
+
+    const onBottomTabChange = React.useCallback(
+        (_event: React.ChangeEvent<{}>, newValue: number) => {
+            setBottomTabNumber(newValue);
+        },
+        []
     );
 
     return (
@@ -333,7 +340,11 @@ export const GraphEdit = () => {
                         resizeHandles={["w"]}
                     >
                         <Box
-                            sx={{ width: rightPaneSize.width, height: "100%" }}
+                            sx={{
+                                width: rightPaneSize.width,
+                                height: "100%",
+                                overflowY: "auto",
+                            }}
                         >
                             <Tabs
                                 value={tabNumber}
@@ -356,7 +367,16 @@ export const GraphEdit = () => {
                 </Box>
             </OuterResizable>
             <BottomPane sx={{ height: contentSize.bottom }}>
-                <span>aiueo</span>
+                <Tabs
+                    value={bottomTabNumber}
+                    onChange={onBottomTabChange}
+                    aria-label="tabs"
+                    variant="scrollable"
+                    scrollButtons="auto"
+                >
+                    <Tab label="CONSOLE" />
+                    <Tab label="????" />
+                </Tabs>
             </BottomPane>
             <NodeEditor
                 state={state}

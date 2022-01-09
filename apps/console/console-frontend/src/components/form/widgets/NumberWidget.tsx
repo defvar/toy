@@ -10,7 +10,7 @@ export const NumberWidget = React.memo((props: WidgetProps) => {
         onChange(e.target.value);
     };
     return (
-        <FormControl fullWidth={true} required={required} error={isError}>
+        <FormControl required={required} error={isError}>
             <InputLabel>{label}</InputLabel>
             <Input
                 id={id}

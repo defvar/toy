@@ -48,22 +48,16 @@ export const NodeEditor = (props: NodeEditorPorps) => {
                 aria-labelledby="form-dialog-title"
                 maxWidth={"md"}
                 fullWidth={true}
+                sx={{ zIndex: 20000 }}
             >
                 <DialogTitle id="form-dialog-title">
                     {state.edit.id}
                 </DialogTitle>
                 <DialogActions>
-                    <Button variant="contained" onClick={handleClose}>
-                        Cancel
-                    </Button>
-                    <Button
-                        variant="contained"
-                        onClick={handleSubmit}
-                        color="primary"
-                        startIcon={<SaveIcon />}
-                    >
+                    <Button onClick={handleSubmit} startIcon={<SaveIcon />}>
                         Save
                     </Button>
+                    <Button onClick={handleClose}>Cancel</Button>
                 </DialogActions>
                 <DialogContent dividers={true}>
                     <Form

@@ -9,7 +9,7 @@ export const TextWidget = React.memo((props: WidgetProps) => {
         onChange(e.target.value);
     };
     return (
-        <FormControl fullWidth={true} required={required} error={isError}>
+        <FormControl /*fullWidth={true}*/ required={required} error={isError}>
             <TextField
                 id={id}
                 error={isError}
@@ -17,6 +17,7 @@ export const TextWidget = React.memo((props: WidgetProps) => {
                 required={required}
                 value={value ? value : ""}
                 onChange={handleChange}
+                variant="standard"
             />
         </FormControl>
     );

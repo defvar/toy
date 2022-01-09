@@ -2,10 +2,8 @@ import * as React from "react";
 import { ValidationResult } from "./types";
 import { parse } from "./util";
 import { ObjectFields } from "./ObjectFields";
-import { Theme } from "@mui/material/styles";
-import createStyles from '@mui/styles/createStyles';
-import makeStyles from '@mui/styles/makeStyles';
 import { JsonSchema } from "../../modules/common";
+import { Box } from "@mui/material";
 
 export interface FormProps<T> {
     schema: JsonSchema;
@@ -15,15 +13,6 @@ export interface FormProps<T> {
     liveValidation?: boolean;
 }
 
-const useStyles = makeStyles((theme: Theme) =>
-    createStyles({
-        root: {
-            backgroundColor: theme.palette.background.paper,
-            margin: theme.spacing(4),
-        },
-    })
-);
-
 export const Form = <T extends {}>({
     schema,
     data,
@@ -31,8 +20,6 @@ export const Form = <T extends {}>({
     validate,
     liveValidation,
 }: FormProps<T>) => {
-    const classes = useStyles();
-
     const [validationState, setValidationState] = React.useState(() => ({
         name: "root",
         errors: [],
@@ -51,7 +38,20 @@ export const Form = <T extends {}>({
     };
 
     return (
-        <form className={classes.root} noValidate autoComplete="off">
+        <Box
+            component="form"
+            sx={{
+                m: 1,
+                width: "50ch",
+                "& .MuiTextField-root": {
+                    m: 1,
+                    width: "50ch",
+                    minWidth: "25ch",
+                },
+            }}
+            noValidate
+            autoComplete="off"
+        >
             <ObjectFields
                 key={"Root-ObjectFields"}
                 name={"root"}
@@ -62,6 +62,6 @@ export const Form = <T extends {}>({
                 onChange={handleOnChange}
                 validation={validationState}
             />
-        </form>
+        </Box>
     );
 };
