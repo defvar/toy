@@ -1,3 +1,4 @@
+use crate::common::validator::Validator;
 use crate::context::Context;
 use crate::store::error::StoreError;
 use crate::store::kv;
@@ -138,26 +139,25 @@ where
     }
 }
 
-pub async fn put<H, Store, Req, V, F>(
+pub async fn put<H, Store, Req, T>(
     ctx: Context,
     store: Store,
     key: String,
     opt: Option<PutOption>,
     store_opt: kv::PutOption,
     request: Bytes,
-    f: F,
-) -> Result<impl warp::Reply, warp::Rejection>
+    validator: T,
+) -> Result<impl warp::Reply, ApiError>
 where
     Store: KvStore<H>,
     H: HttpClient,
-    Req: DeserializeOwned + Send,
-    V: Serialize + Send,
-    F: FnOnce(&Context, &Store, Req) -> Result<V, ApiError>,
+    Req: DeserializeOwned + Serialize + Send,
+    T: Validator<H, Store, Req>,
 {
     tracing::trace!("handle: {:?}", ctx);
     let format = opt.map(|x| x.format()).unwrap_or(None);
     let v = common::body::decode::<_, Req>(request, format)?;
-    let v = f(&ctx, &store, v)?;
+    let v = validator.validate(&ctx, &store, v).await?;
     match store
         .ops()
         .put(store.con().unwrap(), key, v, store_opt)
@@ -168,7 +168,7 @@ where
             StoreError::AllreadyExists { .. } => Ok(StatusCode::CONFLICT),
             _ => {
                 tracing::error!("error:{:?}", e);
-                Ok(StatusCode::INTERNAL_SERVER_ERROR)
+                Err(ApiError::store_operation_failed("internal error..."))
             }
         },
     }

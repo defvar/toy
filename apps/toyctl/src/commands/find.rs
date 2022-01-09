@@ -23,13 +23,9 @@ where
         "supervisors" => client
             .supervisor()
             .find(name, opt)
-            .await?
+            .await
             .write(writer, pretty),
-        "services" => client
-            .service()
-            .find(name, opt)
-            .await?
-            .write(writer, pretty),
+        "services" => client.service().find(name, opt).await.write(writer, pretty),
         _ => return Err(Error::unknwon_resource(resource)),
     }
 }

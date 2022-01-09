@@ -1,18 +1,34 @@
 use crate::error::Error;
 use serde::Serialize;
 use std::io::Write;
+use toy::api_client::error::ApiClientError;
+use toy::api_client::toy_api::error::ErrorMessage;
 
 pub trait Output<W> {
     fn write(self, writer: W, pretty: bool) -> Result<(), Error>;
 }
 
-impl<T, W> Output<W> for T
+impl<T, W> Output<W> for Result<T, ApiClientError>
 where
     T: Serialize,
     W: Write,
 {
     fn write(self, writer: W, pretty: bool) -> Result<(), Error> {
-        JsonFormatter { data: self, pretty }.format(writer)
+        match self {
+            Ok(v) => JsonFormatter { data: v, pretty }.format(writer),
+            Err(e) => match e {
+                ApiClientError::ApiError { inner } => JsonFormatter {
+                    data: inner,
+                    pretty,
+                }
+                .format(writer),
+                _ => JsonFormatter {
+                    data: ErrorMessage::new(65535, e.to_string()),
+                    pretty,
+                }
+                .format(writer),
+            },
+        }
     }
 }
 

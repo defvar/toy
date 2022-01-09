@@ -1,6 +1,6 @@
 use crate::authentication::{authenticate, Auth};
 use crate::common;
-use crate::common::validator::{OkValidator, Validator};
+use crate::common::validator::OkValidator;
 use crate::store::kv::{KvStore, ListOption};
 use crate::supervisors::handlers;
 use crate::warp::filters::BoxedFilter;
@@ -51,7 +51,7 @@ where
         client.clone(),
         common::constants::SUPERVISORS_KEY_PREFIX,
         store.clone(),
-        OkValidator::<Supervisor>::validate
+        OkValidator::<Supervisor>::new()
     ))
     .or(crate::delete!(
         warp::path("supervisors"),

@@ -43,6 +43,16 @@ impl SelectionCandidate for Graph {
     }
 }
 
+impl Graph {
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
+    pub fn services(&self) -> &[GraphNode] {
+        &self.services
+    }
+}
+
 impl GraphList {
     pub fn new(graphs: Vec<Graph>) -> Self {
         let count = graphs.len() as u32;

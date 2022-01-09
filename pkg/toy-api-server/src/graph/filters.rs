@@ -1,6 +1,6 @@
 use crate::authentication::Auth;
 use crate::common;
-use crate::common::validator::{OkValidator, Validator};
+use crate::graph::validator::GraphPutValidator;
 use crate::store::kv::{KvStore, ListOption};
 use crate::warp::filters::BoxedFilter;
 use toy_api::graph::{Graph, GraphList, GraphListOption};
@@ -40,7 +40,7 @@ where
         client.clone(),
         common::constants::GRAPHS_KEY_PREFIX,
         store.clone(),
-        OkValidator::<Graph>::validate
+        GraphPutValidator
     ))
     .or(crate::delete!(
         warp::path("graphs"),

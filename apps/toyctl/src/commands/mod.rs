@@ -17,6 +17,6 @@ where
     let mut buffer = Vec::new();
     f.read_to_end(&mut buffer)?;
 
-    let v = toy_pack_json::unpack(&buffer)?;
+    let v = toy_pack_json::unpack(&buffer).map_err(|e| Error::invalid_file_format(e))?;
     Ok(v)
 }

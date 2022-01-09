@@ -13,12 +13,12 @@ pub async fn handle_rejection(err: Rejection) -> Result<impl Reply, Infallible> 
     if err.is_not_found() {
         code = StatusCode::NOT_FOUND;
         message = StatusCode::NOT_FOUND.to_string();
-    } else if let Some(_) = err.find::<warp::reject::MethodNotAllowed>() {
-        code = StatusCode::NOT_FOUND;
-        message = StatusCode::NOT_FOUND.to_string();
     } else if let Some(e) = err.find::<ApiError>() {
         code = e.status_code();
         message = e.error_message();
+    } else if let Some(_) = err.find::<warp::reject::MethodNotAllowed>() {
+        code = StatusCode::NOT_FOUND;
+        message = StatusCode::NOT_FOUND.to_string();
     } else if let Some(e) = err.find::<warp::reject::MissingHeader>() {
         code = StatusCode::BAD_REQUEST;
         message = format!("{}", e);

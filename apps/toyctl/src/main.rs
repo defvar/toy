@@ -7,6 +7,7 @@ use std::io::{Read, Write};
 use toy::api_client::http::HttpApiClient;
 use toy::api_client::toy_api::authentication::Claims;
 use toy_jwt::Algorithm;
+use toy_tracing::LogGuard;
 
 mod commands;
 mod error;
@@ -18,7 +19,12 @@ fn main() {
 
     let opts: Opts = Opts::parse();
 
-    let _w = toy_tracing::console().unwrap();
+    let guard = initialize_log(&opts.config.log);
+    if let Err(e) = guard {
+        eprintln!("{:?}", e);
+        return;
+    }
+    let _guard = guard.unwrap();
 
     let mut rt = toy_rt::RuntimeBuilder::new()
         .thread_name("toyctl")
@@ -28,7 +34,8 @@ fn main() {
 
     let token = get_credential(&opts.config.user, &opts.config.kid, &opts.config.credential);
     if let Err(e) = token {
-        tracing::error!("{:?}", e);
+        tracing::error!(err = %e);
+        eprintln!("{}", e.to_string());
         return;
     }
 
@@ -39,7 +46,8 @@ fn main() {
         let w = std::io::BufWriter::new(std::io::stdout());
         let r = go(opts.c, client, w).await;
         if let Err(e) = r {
-            tracing::error!("{:?}", e);
+            tracing::error!(err = %e);
+            eprintln!("{}", e.to_string());
         }
     })
 }
@@ -56,15 +64,40 @@ where
     }
 }
 
+fn initialize_log(opt: &LogOption) -> Result<LogGuard, Error> {
+    let path = match &opt.log {
+        Some(v) => v.clone(),
+        None => dirs::home_dir()
+            .map(|h| h.join("toy").join("toyctl.log"))
+            .unwrap(),
+    };
+
+    match (path.as_path().parent(), path.as_path().file_name()) {
+        (Some(dir), Some(prefix)) => {
+            toy_tracing::file(dir, prefix, toy_tracing::LogRotation::Never).map_err(|x| x.into())
+        }
+        _ => Err(Error::invalid_log_path()),
+    }
+}
+
 fn get_credential(user: &str, kid: &str, path_string: &str) -> Result<String, Error> {
-    let mut f = File::open(path_string)?;
-    let mut buffer = Vec::new();
-    f.read_to_end(&mut buffer)?;
+    fn get_credential0(user: &str, kid: &str, path_string: &str) -> Result<String, Error> {
+        let mut f = File::open(path_string)?;
+        let mut buffer = Vec::new();
+        f.read_to_end(&mut buffer)?;
 
-    let claims = Claims::new(user);
+        let claims = Claims::new(user);
 
-    let token =
-        toy_jwt::encode::from_rsa_pem(&claims, Algorithm::RS256, Some(kid.to_owned()), &buffer)?;
+        let token = toy_jwt::encode::from_rsa_pem(
+            &claims,
+            Algorithm::RS256,
+            Some(kid.to_owned()),
+            &buffer,
+        )?;
 
-    Ok(token)
+        Ok(token)
+    }
+
+    get_credential0(user, kid, path_string)
+        .map_err(|e| Error::read_credential_error(path_string, e.into()))
 }

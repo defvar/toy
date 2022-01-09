@@ -8,8 +8,20 @@ use warp::http::StatusCode;
 
 #[derive(Debug, Error)]
 pub enum ApiError {
+    #[error(transparent)]
+    SerializeValue {
+        #[from]
+        source: toy_core::data::error::SerializeError,
+    },
+
+    #[error(transparent)]
+    DeserializeValue {
+        #[from]
+        source: toy_core::data::error::DeserializeError,
+    },
+
     #[error("{:?}", inner)]
-    DeserializeValue { inner: YamlError },
+    DeserializeYamlValue { inner: YamlError },
 
     #[error("{:?}", inner)]
     DeserializeJsonValue { inner: DecodeError },
@@ -23,8 +35,11 @@ pub enum ApiError {
     #[error("{:?}", inner)]
     SerializeMessagePackValue { inner: toy_pack_mp::EncodeError },
 
-    #[error("{:?}", inner)]
-    DeserializeConfig { inner: ConfigError },
+    #[error(transparent)]
+    ParseGraphConfigFailed {
+        #[from]
+        source: ConfigError,
+    },
 
     #[error("authentication failed. {:?}", inner)]
     AuthenticationFailed { inner: String },
@@ -56,6 +71,9 @@ pub enum ApiError {
     #[error("server initialize failed. {:?}", inner)]
     ServerInitializeFailed { inner: String },
 
+    #[error("validation failed. {}", inner)]
+    ValidationFailed { inner: String },
+
     #[error("{:?}", inner)]
     Error { inner: String },
 }
@@ -73,6 +91,7 @@ impl ApiError {
     pub fn status_code(&self) -> StatusCode {
         match self {
             //TODO: error code....
+            ApiError::ValidationFailed { .. } => StatusCode::BAD_REQUEST,
             ApiError::QueryParse { .. } => StatusCode::BAD_REQUEST,
             ApiError::AuthorizationFailed { .. } => StatusCode::FORBIDDEN,
             _ => StatusCode::INTERNAL_SERVER_ERROR,
@@ -129,11 +148,20 @@ impl ApiError {
             inner: msg.to_string(),
         }
     }
+
+    pub fn validation_failed<T>(msg: T) -> ApiError
+    where
+        T: Display,
+    {
+        ApiError::ValidationFailed {
+            inner: msg.to_string(),
+        }
+    }
 }
 
 impl From<YamlError> for ApiError {
     fn from(e: YamlError) -> ApiError {
-        ApiError::DeserializeValue { inner: e }
+        ApiError::DeserializeYamlValue { inner: e }
     }
 }
 
@@ -158,12 +186,6 @@ impl From<toy_pack_mp::DecodeError> for ApiError {
 impl From<toy_pack_mp::EncodeError> for ApiError {
     fn from(e: toy_pack_mp::EncodeError) -> ApiError {
         ApiError::SerializeMessagePackValue { inner: e }
-    }
-}
-
-impl From<ConfigError> for ApiError {
-    fn from(e: ConfigError) -> ApiError {
-        ApiError::DeserializeConfig { inner: e }
     }
 }
 

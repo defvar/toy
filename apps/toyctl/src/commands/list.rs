@@ -19,30 +19,29 @@ where
     let ListCommand { resource, pretty } = c;
 
     let opt = ListOption::new();
-    let pretty = pretty.is_some() && pretty.unwrap();
 
     match resource.as_str() {
         "supervisors" => client
             .supervisor()
             .list(SupervisorListOption::new())
-            .await?
+            .await
             .write(writer, pretty),
         "services" => client
             .service()
             .list(ServiceSpecListOption::new())
-            .await?
+            .await
             .write(writer, pretty),
-        "roles" => client.rbac().role().list(opt).await?.write(writer, pretty),
+        "roles" => client.rbac().role().list(opt).await.write(writer, pretty),
         "roleBindings" => client
             .rbac()
             .role_binding()
             .list(opt)
-            .await?
+            .await
             .write(writer, pretty),
         "tasks" => client
             .task()
             .list(TaskListOption::new())
-            .await?
+            .await
             .write(writer, pretty),
         _ => return Err(Error::unknwon_resource(resource)),
     }

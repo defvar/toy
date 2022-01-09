@@ -1,6 +1,6 @@
 use crate::authentication::Auth;
 use crate::common;
-use crate::common::validator::{OkValidator, Validator};
+use crate::common::validator::OkValidator;
 use crate::store::kv::{KvStore, ListOption};
 use crate::warp::filters::BoxedFilter;
 use toy_api::services::{ServiceSpec, ServiceSpecList, ServiceSpecListOption};
@@ -40,7 +40,7 @@ where
         client.clone(),
         common::constants::SERVICES_KEY_PREFIX,
         store.clone(),
-        OkValidator::<ServiceSpec>::validate
+        OkValidator::<ServiceSpec>::new()
     ))
     .or(crate::delete!(
         warp::path("services"),

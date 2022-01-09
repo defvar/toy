@@ -1,5 +1,5 @@
 use crate::authentication::Auth;
-use crate::common::validator::{OkValidator, Validator};
+use crate::common::validator::OkValidator;
 use crate::common::{self};
 use crate::rbac::validator::RoleValidator;
 use crate::store::kv::KvStore;
@@ -70,7 +70,7 @@ where
         client.clone(),
         key_prefix,
         store.clone(),
-        RoleValidator::validate
+        RoleValidator
     ))
     .or(crate::delete!(
         warp::path(path).and(warp::path(path2)),
@@ -115,7 +115,7 @@ where
         client.clone(),
         key_prefix,
         store.clone(),
-        OkValidator::<RoleBinding>::validate
+        OkValidator::<RoleBinding>::new()
     ))
     .or(crate::delete!(
         warp::path(path).and(warp::path(path2)),

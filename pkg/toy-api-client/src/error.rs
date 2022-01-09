@@ -1,4 +1,3 @@
-use std::fmt::Display;
 use thiserror::Error;
 
 use toy_api::error::ErrorMessage;
@@ -59,20 +58,11 @@ pub enum ApiClientError {
         source: QueryParseError,
     },
 
-    #[error("error: {}", inner)]
-    Error { inner: String },
+    #[error("code: {}, message: {}", inner.code(), inner.message())]
+    ApiError { inner: ErrorMessage },
 }
 
 impl ApiClientError {
-    pub fn error<T>(msg: T) -> ApiClientError
-    where
-        T: Display,
-    {
-        ApiClientError::Error {
-            inner: msg.to_string(),
-        }
-    }
-
     #[cfg(feature = "http")]
     pub fn query_parse(e: QueryParseError) -> ApiClientError {
         ApiClientError::QueryParse { source: e }
@@ -81,6 +71,6 @@ impl ApiClientError {
 
 impl From<ErrorMessage> for ApiClientError {
     fn from(e: ErrorMessage) -> Self {
-        ApiClientError::error(format!("code:{}, message:{}", e.code(), e.message()))
+        ApiClientError::ApiError { inner: e }
     }
 }

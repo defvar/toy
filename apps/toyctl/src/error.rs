@@ -4,47 +4,57 @@ use toy_jwt::error::JWTError;
 
 #[derive(Debug, Error)]
 pub enum Error {
-    #[error("can not read credential file. {:?}", inner)]
-    ReadCredentialError { inner: String },
+    #[error("can not read credential file {}. Caused by:{}", path, cause)]
+    ReadCredentialError { path: String, cause: String },
 
-    #[error("generate token failed. {:?}", source)]
+    #[error("generate token failed. {}", source)]
     GenerateTokenFailed {
         #[from]
         source: JWTError,
     },
 
-    #[error("{:?}", source)]
+    #[error(transparent)]
     ApiClientError {
         #[from]
         source: toy::api_client::error::ApiClientError,
     },
 
-    #[error("{:?}", source)]
+    #[error(transparent)]
     JsonSerializeError {
         #[from]
         source: toy_pack_json::EncodeError,
     },
 
-    #[error("{:?}", source)]
+    #[error(transparent)]
     JsonDeserializeError {
         #[from]
         source: toy_pack_json::DecodeError,
     },
 
-    #[error("not found env. {:?}", inner)]
+    #[error("error: invalid file format. cause: {}", source)]
+    InvalidJsonFormatError { source: toy_pack_json::DecodeError },
+
+    #[error("not found env. {}", inner)]
     NotFoundEnv { inner: String },
 
-    #[error("unknwon resource. name: {:?}", name)]
+    #[error("unknwon resource. name: {}", name)]
     UnknwonResource { name: String },
+
+    #[error(transparent)]
+    IOError {
+        #[from]
+        source: std::io::Error,
+    },
+
+    #[error("error: invalid log path.")]
+    InvalidLogPath,
 }
 
 impl Error {
-    pub fn read_credential_error<T>(msg: T) -> Error
-    where
-        T: Display,
-    {
+    pub fn read_credential_error(path: impl Into<String>, cause: Error) -> Error {
         Error::ReadCredentialError {
-            inner: msg.to_string(),
+            path: path.into(),
+            cause: cause.to_string(),
         }
     }
 
@@ -65,11 +75,13 @@ impl Error {
             name: name.to_string(),
         }
     }
-}
 
-impl From<std::io::Error> for Error {
-    fn from(e: std::io::Error) -> Self {
-        Error::read_credential_error(e)
+    pub fn invalid_log_path() -> Error {
+        Error::InvalidLogPath
+    }
+
+    pub fn invalid_file_format(err: toy_pack_json::DecodeError) -> Error {
+        Error::InvalidJsonFormatError { source: err }
     }
 }
 

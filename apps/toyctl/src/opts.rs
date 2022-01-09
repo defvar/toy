@@ -2,6 +2,12 @@ use clap::{Parser, ValueHint};
 use std::path::PathBuf;
 
 #[derive(Parser, Debug)]
+pub struct LogOption {
+    #[clap(short, long, env = "TOY_CTL_LOG_PATH", value_hint = ValueHint::FilePath)]
+    pub log: Option<PathBuf>,
+}
+
+#[derive(Parser, Debug)]
 pub struct Config {
     #[clap(
         short,
@@ -16,6 +22,8 @@ pub struct Config {
     pub credential: String,
     #[clap(short, long, env = "TOY_API_CLIENT_KID")]
     pub kid: String,
+    #[clap(flatten)]
+    pub log: LogOption,
 }
 
 #[derive(Parser, Debug)]
@@ -31,7 +39,7 @@ pub struct FindCommand {
 pub struct ListCommand {
     pub resource: String,
     #[clap(short, long)]
-    pub pretty: Option<bool>,
+    pub pretty: bool,
 }
 
 #[derive(Parser, Debug)]
@@ -41,6 +49,8 @@ pub struct PutCommand {
     pub name: String,
     #[clap(short, long, value_hint = ValueHint::FilePath)]
     pub file: PathBuf,
+    #[clap(short, long)]
+    pub pretty: Option<bool>,
 }
 
 #[derive(Parser, Debug)]

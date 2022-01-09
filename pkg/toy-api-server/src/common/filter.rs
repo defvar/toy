@@ -67,7 +67,7 @@ macro_rules! list_with_opt {
 
 #[macro_export]
 macro_rules! put {
-    ($path: expr, $auth: expr, $client: expr, $key_prefix: expr, $store: expr, $f: expr) => {
+    ($path: expr, $auth: expr, $client: expr, $key_prefix: expr, $store: expr, $validator: expr) => {
         $path
             .and(warp::path::param::<String>())
             .and(warp::put())
@@ -75,16 +75,21 @@ macro_rules! put {
             .and($crate::common::query::query_opt::<toy_api::common::PutOption>())
             .and($crate::common::body::bytes())
             .and($crate::common::filter::with_store($store))
-            .and_then(move |key, ctx, opt, req, store| {
-                $crate::common::handler::put(
+            .and_then(move |key, ctx, opt, req, store| async move {
+                match $crate::common::handler::put(
                     ctx,
                     store,
                     $crate::common::constants::generate_key($key_prefix, key),
                     opt,
                     $crate::store::kv::PutOption::new(),
                     req,
-                    $f,
+                    $validator,
                 )
+                .await
+                {
+                    Ok(v) => Ok(v),
+                    Err(e) => Err(warp::reject::custom(e)),
+                }
             })
     };
 }

@@ -12,6 +12,7 @@ clap = { version = "3.0.0-rc.7", features = ["derive", "env"] }
 dotenv = "0.15.0"
 thiserror = "1.0"
 serde = { version = "1.0", features = ["derive"] }
+dirs = "4.0"
 
 toy = { path = "../../pkg/toy", features = ["api-client"] }
 toy-tracing = { path = "../../pkg/toy-tracing" }
