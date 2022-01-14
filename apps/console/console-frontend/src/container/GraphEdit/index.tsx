@@ -1,6 +1,6 @@
 import * as React from "react";
 import { useParams } from "react-router-dom";
-import { Theme, useTheme, styled } from "@mui/material/styles";
+import { Theme, styled } from "@mui/material/styles";
 import createStyles from "@mui/styles/createStyles";
 import makeStyles from "@mui/styles/makeStyles";
 import RefreshIcon from "@mui/icons-material/Refresh";
@@ -12,31 +12,21 @@ import {
     Paper,
     Stack,
     Typography,
+    Divider,
 } from "@mui/material";
-import { Sidebar, Chart } from "./chart";
-import { Resource } from "../../modules/common";
-import {
-    GraphEditState,
-    Actions,
-    reducer,
-    initialState,
-    ServiceState,
-} from "../../modules/graphEdit";
-import {
-    ServiceResponse,
-    fetchServices,
-    fetchGraph,
-} from "../../modules/api/toy-api";
-import { NodeEditor } from "./NodeEditor";
+import { Chart } from "./chart";
+import { reducer, initialState, ServiceState } from "../../modules/graphEdit";
+import { fetchServices, fetchGraph } from "../../modules/api/toy-api";
 import { ChartData } from "../../modules/graphEdit/types";
 import CircularProgress from "../../components/progress/CircularProgress";
 import { Resizable } from "react-resizable";
+import { NodeEditor } from "./NodeEditor";
 
 const useStyles = makeStyles((theme: Theme) =>
     createStyles({
         resizeHandle: {
             position: "absolute",
-            width: "1.5px",
+            width: "2px",
             height: "100%",
             backgroundColor: theme.palette.divider,
             opacity: "0.75",
@@ -46,7 +36,7 @@ const useStyles = makeStyles((theme: Theme) =>
         resizeHandleBottom: {
             position: "absolute",
             width: "100%",
-            height: "1.5px",
+            height: "2px",
             backgroundColor: theme.palette.divider,
             opacity: "0.75",
             bottom: "0",
@@ -55,12 +45,6 @@ const useStyles = makeStyles((theme: Theme) =>
         },
     })
 );
-
-interface GraphEditSuspenseProps {
-    state: GraphEditState;
-    dispatch: React.Dispatch<Actions>;
-    serviceResource: Resource<ServiceResponse>;
-}
 
 const _testServices = {
     "a.b.c": {
@@ -179,22 +163,6 @@ const _testChartData = {
     ],
 } as ChartData;
 
-const SidebarSuspense = (props: GraphEditSuspenseProps) => {
-    const r = props.serviceResource.read();
-    React.useEffect(() => {
-        props.dispatch({
-            type: "GetServices",
-            payload: r,
-        });
-    }, [r]);
-    return (
-        <Sidebar
-            services={props.state.services}
-            namespaces={props.state.namespaces}
-        />
-    );
-};
-
 const LeftPane = styled(Box)(({ theme }) => ({
     flexGrow: 1,
     zIndex: 990,
@@ -238,16 +206,12 @@ export const GraphEdit = () => {
         setGraphResource(() => fetchGraph(name));
     }, []);
 
-    const onSidebarRefleshClick = React.useCallback(() => {
-        setServiceResource(() => fetchServices());
-    }, []);
-
     const [rightPaneSize, setRightPaneSize] = React.useState(() => {
         return { width: 240 };
     });
 
     const [contentSize, setContentSize] = React.useState(() => {
-        return { content: 600, bottom: 150 };
+        return { content: 500, bottom: 250 };
     });
 
     const onRightPaneResize = (_event, { size }) => {
@@ -279,7 +243,7 @@ export const GraphEdit = () => {
     );
 
     return (
-        <Stack>
+        <Stack spacing={0}>
             <OuterResizable
                 width={Infinity}
                 height={contentSize.content}
@@ -295,24 +259,22 @@ export const GraphEdit = () => {
                     }}
                 >
                     <LeftPane>
-                        <Typography
-                            sx={{ marginBottom: 2 }}
-                            variant="h6"
-                            component="div"
-                        >
-                            {name}
-                        </Typography>
-                        <Stack spacing={1} sx={{ height: "100%" }}>
-                            <Stack direction="row" spacing={2}>
-                                <IconButton
-                                    aria-label="refresh"
-                                    onClick={onChartRefleshClick}
-                                    size="large"
-                                >
-                                    <RefreshIcon />
-                                </IconButton>
-                            </Stack>
-                            <Paper elevation={2} sx={{ height: "100%" }}>
+                        <Stack spacing={0} sx={{ height: "100%" }}>
+                            <Paper sx={{ height: "100%", width: "100%", p: 1 }}>
+                                <Box sx={{ paddingLeft: 1, paddingBottom: 1 }}>
+                                    <Typography variant="h6">{name}</Typography>
+                                </Box>
+                                <Divider />
+                                <Box sx={{ width: "100%" }}>
+                                    <IconButton
+                                        aria-label="refresh"
+                                        onClick={onChartRefleshClick}
+                                        size="large"
+                                    >
+                                        <RefreshIcon />
+                                    </IconButton>
+                                </Box>
+                                <Divider />
                                 <Box
                                     p={2}
                                     sx={{ height: "100%", display: "flex" }}
@@ -325,6 +287,7 @@ export const GraphEdit = () => {
                                                 /*_testChartData*/ state.chart
                                             }
                                             graphResource={graphResource}
+                                            serviceResource={serviceResource}
                                             dispatch={dispatch}
                                         />
                                     </React.Suspense>
@@ -353,36 +316,30 @@ export const GraphEdit = () => {
                                 variant="scrollable"
                                 scrollButtons="auto"
                             >
-                                <Tab label="Services" />
+                                <Tab label="config" />
                             </Tabs>
-                            <React.Suspense fallback={<CircularProgress />}>
-                                <SidebarSuspense
-                                    state={state}
-                                    dispatch={dispatch}
-                                    serviceResource={serviceResource}
-                                />
-                            </React.Suspense>
+                            <NodeEditor state={state} dispatch={dispatch} />
                         </Box>
                     </RightResizable>
                 </Box>
             </OuterResizable>
             <BottomPane sx={{ height: contentSize.bottom }}>
-                <Tabs
-                    value={bottomTabNumber}
-                    onChange={onBottomTabChange}
-                    aria-label="tabs"
-                    variant="scrollable"
-                    scrollButtons="auto"
+                <Paper
+                    variant="outlined"
+                    sx={{ height: "100%", width: "100%", p: 1 }}
                 >
-                    <Tab label="CONSOLE" />
-                    <Tab label="????" />
-                </Tabs>
+                    <Tabs
+                        value={bottomTabNumber}
+                        onChange={onBottomTabChange}
+                        aria-label="tabs"
+                        variant="scrollable"
+                        scrollButtons="auto"
+                    >
+                        <Tab label="CONSOLE" />
+                        <Tab label="????" />
+                    </Tabs>
+                </Paper>
             </BottomPane>
-            <NodeEditor
-                state={state}
-                dispatch={dispatch}
-                open={!!state.edit.id}
-            />
         </Stack>
     );
 };

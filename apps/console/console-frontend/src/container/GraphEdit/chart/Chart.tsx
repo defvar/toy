@@ -19,11 +19,12 @@ import ReactFlow, {
     Node,
 } from "react-flow-renderer";
 import { Resource } from "../../../modules/common";
-import { GraphResponse } from "../../../modules/api/toy-api";
+import { GraphResponse, ServiceResponse } from "../../../modules/api/toy-api";
 
 export interface ChartProps {
     data: ChartData;
     graphResource: Resource<GraphResponse>;
+    serviceResource: Resource<ServiceResponse>;
     dispatch: React.Dispatch<Actions>;
     height?: string | number;
 }
@@ -65,6 +66,14 @@ export const Chart = (props: ChartProps) => {
             payload: graph,
         });
     }, [graph]);
+
+    const services = props.serviceResource.read();
+    React.useEffect(() => {
+        props.dispatch({
+            type: "GetServices",
+            payload: services,
+        });
+    }, [services]);
 
     const [reactFlowInstance, setReactFlowInstance] = useState<OnLoadParams>();
 
