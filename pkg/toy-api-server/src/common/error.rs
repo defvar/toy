@@ -157,6 +157,12 @@ impl ApiError {
             inner: msg.to_string(),
         }
     }
+
+    pub fn difference_key(specified_key: &str, key_of_data: &str) -> ApiError {
+        ApiError::ValidationFailed {
+            inner: format!("There is a difference between the specified key and the key of the object to be registered. specified:{}, data:{}", specified_key, key_of_data),
+        }
+    }
 }
 
 impl From<YamlError> for ApiError {

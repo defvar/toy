@@ -1,5 +1,6 @@
 //! Model for rbac/role api.
 
+use crate::common::KVObject;
 use serde::{Deserialize, Serialize};
 
 pub const RESOURCE_ALL: &'static str = "*";
@@ -53,6 +54,12 @@ impl Role {
 
     pub fn rules(&self) -> &Vec<Rule> {
         &self.rules
+    }
+}
+
+impl KVObject for Role {
+    fn key(&self) -> &str {
+        &self.name
     }
 }
 

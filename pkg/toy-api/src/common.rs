@@ -20,6 +20,11 @@ impl Default for Format {
     }
 }
 
+/// Traits that should be implemented by Key-Value object.
+pub trait KVObject {
+    fn key(&self) -> &str;
+}
+
 /// Traits that should be implemented by structs that are used as options for find-based api.
 pub trait FindOptionLike {
     /// Returns the common option items.

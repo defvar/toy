@@ -1,6 +1,6 @@
 //! Model for supervisor api.
 
-use crate::common::{format, ListOption, ListOptionLike, SelectionCandidate};
+use crate::common::{format, KVObject, ListOption, ListOptionLike, SelectionCandidate};
 use crate::selection::candidate::CandidateMap;
 use crate::selection::field::Selection;
 use crate::supervisors::SupervisorStatus::Ready;
@@ -81,6 +81,12 @@ impl Supervisor {
             last_transition_time: v,
             ..self
         }
+    }
+}
+
+impl KVObject for Supervisor {
+    fn key(&self) -> &str {
+        &self.name
     }
 }
 

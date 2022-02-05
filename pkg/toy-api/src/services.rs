@@ -1,6 +1,6 @@
 //! Model for services api.
 
-use crate::common::{ListOption, ListOptionLike, SelectionCandidate};
+use crate::common::{KVObject, ListOption, ListOptionLike, SelectionCandidate};
 use crate::selection::candidate::CandidateMap;
 use crate::selection::field::Selection;
 use serde::{Deserialize, Serialize};
@@ -19,6 +19,12 @@ pub struct ServiceSpec {
     service_type: ServiceType,
     port_type: PortType,
     schema: Option<JsonSchema>,
+}
+
+impl KVObject for ServiceSpec {
+    fn key(&self) -> &str {
+        self.service_type.full_name()
+    }
 }
 
 impl ServiceSpec {

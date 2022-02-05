@@ -79,7 +79,8 @@ macro_rules! put {
                 match $crate::common::handler::put(
                     ctx,
                     store,
-                    $crate::common::constants::generate_key($key_prefix, key),
+                    $key_prefix,
+                    key,
                     opt,
                     $crate::store::kv::PutOption::new(),
                     req,

@@ -1,5 +1,6 @@
 //! Model for rbac/roleBinding api.
 
+use crate::common::KVObject;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
@@ -62,6 +63,12 @@ impl RoleBinding {
 
     pub fn subjects(&self) -> &Vec<Subject> {
         &self.subjects
+    }
+}
+
+impl KVObject for RoleBinding {
+    fn key(&self) -> &str {
+        &self.name
     }
 }
 

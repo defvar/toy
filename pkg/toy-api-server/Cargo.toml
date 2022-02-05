@@ -23,3 +23,7 @@ toy-pack-mp = {path = "../../shared/toy-pack-mp"}
 toy-pack-urlencoded = {path = "../../shared/toy-pack-urlencoded"}
 toy-h = {path = "../../shared/toy-h"}
 toy-rt = { path = "../toy-rt"}
+
+[dev-dependencies]
+tokio = { version = "1.15", features = ["full", "test-util"] }
+tokio-test = "0.4.2"

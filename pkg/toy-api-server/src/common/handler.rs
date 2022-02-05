@@ -9,7 +9,7 @@ use serde::Serialize;
 use std::convert::Infallible;
 use std::fmt::Debug;
 use toy_api::common::{
-    DeleteOption, FindOption, ListOption, ListOptionLike, PutOption, SelectionCandidate,
+    DeleteOption, FindOption, KVObject, ListOption, ListOptionLike, PutOption, SelectionCandidate,
 };
 use toy_h::{Bytes, HttpClient};
 use warp::http::StatusCode;
@@ -142,6 +142,7 @@ where
 pub async fn put<H, Store, Req, T>(
     ctx: Context,
     store: Store,
+    prefix: &'static str,
     key: String,
     opt: Option<PutOption>,
     store_opt: kv::PutOption,
@@ -151,16 +152,27 @@ pub async fn put<H, Store, Req, T>(
 where
     Store: KvStore<H>,
     H: HttpClient,
-    Req: DeserializeOwned + Serialize + Send,
+    Req: DeserializeOwned + Serialize + KVObject + Send,
     T: Validator<H, Store, Req>,
 {
     tracing::trace!("handle: {:?}", ctx);
     let format = opt.map(|x| x.format()).unwrap_or(None);
     let v = common::body::decode::<_, Req>(request, format)?;
+    let key_of_data = KVObject::key(&v).to_owned();
+
+    if key_of_data != key {
+        return Err(ApiError::difference_key(&key, &key_of_data));
+    }
+
     let v = validator.validate(&ctx, &store, v).await?;
     match store
         .ops()
-        .put(store.con().unwrap(), key, v, store_opt)
+        .put(
+            store.con().unwrap(),
+            common::constants::generate_key(prefix, key),
+            v,
+            store_opt,
+        )
         .await
     {
         Ok(_) => Ok(StatusCode::CREATED),

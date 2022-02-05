@@ -1,6 +1,6 @@
 //! Model for graph api.
 
-use crate::common::{ListOption, ListOptionLike, SelectionCandidate};
+use crate::common::{KVObject, ListOption, ListOptionLike, SelectionCandidate};
 use crate::selection::candidate::CandidateMap;
 use crate::selection::field::Selection;
 use serde::{Deserialize, Serialize};
@@ -43,13 +43,46 @@ impl SelectionCandidate for Graph {
     }
 }
 
+impl KVObject for Graph {
+    fn key(&self) -> &str {
+        &self.name
+    }
+}
+
 impl Graph {
+    pub fn new(name: impl Into<String>, services: Vec<GraphNode>) -> Self {
+        Self {
+            name: name.into(),
+            services,
+        }
+    }
+
     pub fn name(&self) -> &str {
         &self.name
     }
 
     pub fn services(&self) -> &[GraphNode] {
         &self.services
+    }
+}
+
+impl GraphNode {
+    pub fn new(
+        tp: impl Into<String>,
+        uri: impl Into<String>,
+        position: Position,
+        port_type: Option<PortType>,
+        config: Value,
+        wires: Vec<String>,
+    ) -> Self {
+        Self {
+            tp: tp.into(),
+            uri: uri.into(),
+            position,
+            port_type,
+            config,
+            wires,
+        }
     }
 }
 

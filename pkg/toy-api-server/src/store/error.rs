@@ -34,6 +34,18 @@ pub enum StoreError {
         source: EncodeError,
     },
 
+    #[error("deserialize error: {:?}", source)]
+    DeserializeValue {
+        #[from]
+        source: toy_core::data::error::DeserializeError,
+    },
+
+    #[error("serialize error: {:?}", source)]
+    SerializeValue {
+        #[from]
+        source: toy_core::data::error::SerializeError,
+    },
+
     #[error("expected one result, but multiple. key:{:?}", key)]
     MultipleResult { key: String },
 
