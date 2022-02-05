@@ -4,6 +4,7 @@ import { Theme, styled } from "@mui/material/styles";
 import createStyles from "@mui/styles/createStyles";
 import makeStyles from "@mui/styles/makeStyles";
 import RefreshIcon from "@mui/icons-material/Refresh";
+import AddIcon from "@mui/icons-material/Add";
 import {
     Box,
     Tab,
@@ -21,6 +22,7 @@ import { ChartData } from "../../modules/graphEdit/types";
 import CircularProgress from "../../components/progress/CircularProgress";
 import { Resizable } from "react-resizable";
 import { NodeEditor } from "./NodeEditor";
+import ServiceSelector from "./ServiceList";
 
 const useStyles = makeStyles((theme: Theme) =>
     createStyles({
@@ -201,9 +203,18 @@ export const GraphEdit = () => {
     const [state, dispatch] = React.useReducer(reducer, initialState);
     const [tabNumber, setTabNumber] = React.useState(0);
     const [bottomTabNumber, setBottomTabNumber] = React.useState(0);
+    const [serviceListOpen, setServiceListOpen] = React.useState(false);
 
     const onChartRefleshClick = React.useCallback(() => {
         setGraphResource(() => fetchGraph(name));
+    }, []);
+
+    const onAddClick = React.useCallback(() => {
+        setServiceListOpen(true);
+    }, []);
+
+    const onServiceListClose = React.useCallback(() => {
+        setServiceListOpen(false);
     }, []);
 
     const [rightPaneSize, setRightPaneSize] = React.useState(() => {
@@ -273,6 +284,13 @@ export const GraphEdit = () => {
                                     >
                                         <RefreshIcon />
                                     </IconButton>
+                                    <IconButton
+                                        aria-label="add"
+                                        onClick={onAddClick}
+                                        size="large"
+                                    >
+                                        <AddIcon />
+                                    </IconButton>
                                 </Box>
                                 <Divider />
                                 <Box
@@ -291,6 +309,10 @@ export const GraphEdit = () => {
                                             dispatch={dispatch}
                                         />
                                     </React.Suspense>
+                                    <ServiceSelector
+                                        open={serviceListOpen}
+                                        onClose={onServiceListClose}
+                                    />
                                 </Box>
                             </Paper>
                         </Stack>
