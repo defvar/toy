@@ -43,8 +43,14 @@ impl ServiceSpec {
 
 impl SelectionCandidate for ServiceSpec {
     fn candidate_map(&self) -> CandidateMap {
+        let p = match self.port_type {
+            PortType::Source(_) => "Source",
+            PortType::Flow(_, _) => "Flow",
+            PortType::Sink(_) => "Sink",
+        };
         CandidateMap::default()
             .with_candidate("name_space", Value::from(self.service_type.name_space()))
+            .with_candidate("port_type", Value::from(p))
     }
 }
 
@@ -66,6 +72,7 @@ pub struct ServiceSpecListOption {
     #[serde(flatten)]
     common: ListOption,
     name_space: Option<String>,
+    port_type: Option<String>,
 }
 
 impl ServiceSpecListOption {
@@ -73,11 +80,16 @@ impl ServiceSpecListOption {
         Self {
             common: ListOption::new(),
             name_space: None,
+            port_type: None,
         }
     }
 
     pub fn name_space(&self) -> Option<&str> {
         self.name_space.as_ref().map(|x| x.as_str())
+    }
+
+    pub fn port_type(&self) -> Option<&str> {
+        self.port_type.as_ref().map(|x| x.as_str())
     }
 }
 
@@ -87,6 +99,8 @@ impl ListOptionLike for ServiceSpecListOption {
     }
 
     fn selection(&self) -> Selection {
-        Selection::default().contains_if_some("name_space", self.name_space())
+        Selection::default()
+            .contains("name_space", self.name_space())
+            .contains("port_type", self.port_type())
     }
 }

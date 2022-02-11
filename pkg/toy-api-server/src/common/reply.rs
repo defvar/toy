@@ -2,20 +2,20 @@ use crate::ApiError;
 use futures_util::stream::Stream;
 use serde::Serialize;
 use std::marker::PhantomData;
-use toy_api::common::Format;
+use toy_api::common::{Format, Indent};
 use warp::http::header::{HeaderValue, CACHE_CONTROL, CONTENT_TYPE, TRANSFER_ENCODING};
 use warp::http::StatusCode;
 use warp::hyper::body::Bytes;
 use warp::reply::Reply;
 use warp::reply::Response;
 
-pub fn into_response<T>(v: &T, format: Option<Format>, pretty: Option<bool>) -> Response
+pub fn into_response<T>(v: &T, format: Option<Format>, indent: Option<Indent>) -> Response
 where
     T: Serialize,
 {
     let format = format.unwrap_or(Format::default());
     match format {
-        Format::Json => json(v, pretty).into_response(),
+        Format::Json => json(v, indent).into_response(),
         Format::Yaml => yaml(v).into_response(),
         Format::MessagePack => mp(v).into_response(),
     }
@@ -75,11 +75,11 @@ where
     }
 }
 
-fn json<T>(v: &T, pretty: Option<bool>) -> Json
+fn json<T>(v: &T, indent: Option<Indent>) -> Json
 where
     T: Serialize,
 {
-    if pretty.is_some() && pretty.unwrap() {
+    if indent.is_some() && indent.unwrap() == Indent::Pretty {
         Json {
             inner: toy_pack_json::pack_to_string_pretty(v)
                 .map_err(|e| tracing::error!("reply::json error: {:?}", e)),

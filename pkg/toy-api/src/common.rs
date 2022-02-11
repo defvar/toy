@@ -20,6 +20,20 @@ impl Default for Format {
     }
 }
 
+#[derive(Debug, Eq, PartialEq, Clone, Copy, Serialize, Deserialize)]
+pub enum Indent {
+    #[serde(rename = "default")]
+    Default,
+    #[serde(rename = "pretty")]
+    Pretty,
+}
+
+impl Default for Indent {
+    fn default() -> Self {
+        Indent::Pretty
+    }
+}
+
 /// Traits that should be implemented by Key-Value object.
 pub trait KVObject {
     fn key(&self) -> &str;
@@ -50,14 +64,14 @@ pub trait SelectionCandidate {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct FindOption {
     format: Option<Format>,
-    pretty: Option<bool>,
+    indent: Option<Indent>,
 }
 
 impl FindOption {
     pub fn new() -> Self {
         Self {
             format: None,
-            pretty: None,
+            indent: None,
         }
     }
 
@@ -65,13 +79,13 @@ impl FindOption {
         self.format
     }
 
-    pub fn pretty(&self) -> Option<bool> {
-        self.pretty
+    pub fn indent(&self) -> Option<Indent> {
+        self.indent
     }
 
     pub fn with_pretty(self) -> Self {
         Self {
-            pretty: Some(true),
+            indent: Some(Indent::Pretty),
             ..self
         }
     }
@@ -81,14 +95,14 @@ impl FindOption {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ListOption {
     format: Option<Format>,
-    pretty: Option<bool>,
+    indent: Option<Indent>,
 }
 
 impl ListOption {
     pub fn new() -> Self {
         Self {
             format: None,
-            pretty: None,
+            indent: None,
         }
     }
 
@@ -96,13 +110,13 @@ impl ListOption {
         self.format
     }
 
-    pub fn pretty(&self) -> Option<bool> {
-        self.pretty
+    pub fn indent(&self) -> Option<Indent> {
+        self.indent
     }
 
     pub fn with_pretty(self) -> Self {
         Self {
-            pretty: Some(true),
+            indent: Some(Indent::Pretty),
             ..self
         }
     }
@@ -112,14 +126,14 @@ impl ListOption {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct PutOption {
     format: Option<Format>,
-    pretty: Option<bool>,
+    indent: Option<Indent>,
 }
 
 impl PutOption {
     pub fn new() -> Self {
         Self {
             format: None,
-            pretty: None,
+            indent: None,
         }
     }
 
@@ -127,13 +141,13 @@ impl PutOption {
         self.format
     }
 
-    pub fn pretty(&self) -> Option<bool> {
-        self.pretty
+    pub fn indent(&self) -> Option<Indent> {
+        self.indent
     }
 
     pub fn with_pretty(self) -> Self {
         Self {
-            pretty: Some(true),
+            indent: Some(Indent::Pretty),
             ..self
         }
     }
@@ -143,14 +157,14 @@ impl PutOption {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct DeleteOption {
     format: Option<Format>,
-    pretty: Option<bool>,
+    indent: Option<Indent>,
 }
 
 impl DeleteOption {
     pub fn new() -> Self {
         Self {
             format: None,
-            pretty: None,
+            indent: None,
         }
     }
 
@@ -158,13 +172,13 @@ impl DeleteOption {
         self.format
     }
 
-    pub fn pretty(&self) -> Option<bool> {
-        self.pretty
+    pub fn pretty(&self) -> Option<Indent> {
+        self.indent
     }
 
     pub fn with_pretty(self) -> Self {
         Self {
-            pretty: Some(true),
+            indent: Some(Indent::Pretty),
             ..self
         }
     }

@@ -9,13 +9,7 @@ use toy_core::data::Value;
 /// Selection infomation.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Selection {
-    selectors: Vec<Selector>,
     preds: Vec<Predicate>,
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct Selector {
-    fields: Vec<String>,
 }
 
 /// A single predicate to be selection. It consists of a field name, an operator, and a value.
@@ -27,13 +21,12 @@ pub struct Predicate {
 }
 
 impl Selection {
-    pub fn new(selectors: Vec<Selector>, preds: Vec<Predicate>) -> Self {
-        Self { selectors, preds }
+    pub fn new(preds: Vec<Predicate>) -> Self {
+        Self { preds }
     }
 
     pub fn empty() -> Self {
         Self {
-            selectors: Vec::with_capacity(0),
             preds: Vec::with_capacity(0),
         }
     }
@@ -76,17 +69,7 @@ impl Selection {
         self
     }
 
-    pub fn contains(mut self, field: impl Into<String>, value: impl Into<Value>) -> Self {
-        self.preds
-            .push(Predicate::new(field, Operator::Contains, value));
-        self
-    }
-
-    pub fn contains_if_some(
-        mut self,
-        field: impl Into<String>,
-        value: Option<impl Into<Value>>,
-    ) -> Self {
+    pub fn contains(mut self, field: impl Into<String>, value: Option<impl Into<Value>>) -> Self {
         if value.is_some() {
             self.preds
                 .push(Predicate::new(field, Operator::Contains, value.unwrap()));
@@ -97,13 +80,7 @@ impl Selection {
 
 impl Default for Selection {
     fn default() -> Self {
-        Selection::new(vec![], vec![])
-    }
-}
-
-impl Selector {
-    pub fn new(fields: Vec<String>) -> Self {
-        Self { fields }
+        Selection::new(vec![])
     }
 }
 

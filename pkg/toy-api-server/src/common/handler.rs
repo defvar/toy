@@ -30,7 +30,7 @@ where
     V: DeserializeOwned,
     R: Serialize,
 {
-    tracing::trace!("handle: {:?}", ctx);
+    tracing::debug!("handle: {:?}", ctx);
     match store
         .ops()
         .find::<V>(store.con().unwrap(), key, store_opt)
@@ -39,9 +39,9 @@ where
         Ok(v) => match v {
             Some(v) => {
                 let format = api_opt.as_ref().map(|x| x.format()).unwrap_or(None);
-                let pretty = api_opt.as_ref().map(|x| x.pretty()).unwrap_or(None);
+                let indent = api_opt.as_ref().map(|x| x.indent()).unwrap_or(None);
                 let r = f(v.into_value());
-                Ok(common::reply::into_response(&r, format, pretty))
+                Ok(common::reply::into_response(&r, format, indent))
             }
             None => Err(warp::reject::not_found()),
         },
@@ -67,7 +67,7 @@ where
     V: DeserializeOwned,
     R: Serialize,
 {
-    tracing::trace!("handle: {:?}", ctx);
+    tracing::debug!("handle: {:?}", ctx);
     match store
         .ops()
         .list::<V>(store.con().unwrap(), prefix.to_owned(), store_opt)
@@ -75,9 +75,9 @@ where
     {
         Ok(v) => {
             let format = api_opt.as_ref().map(|x| x.format()).unwrap_or(None);
-            let pretty = api_opt.as_ref().map(|x| x.pretty()).unwrap_or(None);
+            let indent = api_opt.as_ref().map(|x| x.indent()).unwrap_or(None);
             let r = f(v);
-            Ok(common::reply::into_response(&r, format, pretty))
+            Ok(common::reply::into_response(&r, format, indent))
         }
         Err(e) => {
             tracing::error!("error:{:?}", e);
@@ -103,7 +103,7 @@ where
     StoreOptF: FnOnce(Option<&Opt>) -> kv::ListOption,
     F: FnOnce(Vec<V>) -> R,
 {
-    tracing::trace!("handle: ctx:{:?}, opt:{:?}", ctx, api_opt);
+    tracing::debug!("handle: ctx:{:?}, opt:{:?}", ctx, api_opt);
 
     match store
         .ops()
@@ -116,13 +116,13 @@ where
     {
         Ok(mut vec) => {
             let selection = api_opt.as_ref().map(|x| x.selection());
-            let (format, pretty) = api_opt
+            let (format, indent) = api_opt
                 .as_ref()
-                .map(|x| (x.common().format(), x.common().pretty()))
+                .map(|x| (x.common().format(), x.common().indent()))
                 .unwrap_or((None, None));
 
             match selection {
-                Some(s) if !s.preds().is_empty() => {
+                Some(ref s) if !s.preds().is_empty() => {
                     // filter
                     vec = vec.into_iter().filter(|item| s.is_match(item)).collect();
                 }
@@ -130,7 +130,8 @@ where
             };
 
             let r = f(vec);
-            Ok(common::reply::into_response(&r, format, pretty))
+
+            Ok(common::reply::into_response(&r, format, indent))
         }
         Err(e) => {
             tracing::error!("error:{:?}", e);
@@ -155,7 +156,7 @@ where
     Req: DeserializeOwned + Serialize + KVObject + Send,
     T: Validator<H, Store, Req>,
 {
-    tracing::trace!("handle: {:?}", ctx);
+    tracing::debug!("handle: {:?}", ctx);
     let format = opt.map(|x| x.format()).unwrap_or(None);
     let v = common::body::decode::<_, Req>(request, format)?;
     let key_of_data = KVObject::key(&v).to_owned();
@@ -197,7 +198,7 @@ where
     Store: KvStore<H>,
     H: HttpClient,
 {
-    tracing::trace!("handle: {:?}", ctx);
+    tracing::debug!("handle: {:?}", ctx);
     match store
         .ops()
         .delete(store.con().unwrap(), key, store_opt)
