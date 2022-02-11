@@ -25,28 +25,40 @@ pub enum SchemaTypes {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct JsonSchema {
     #[serde(rename = "$id")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) title: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) properties: Option<Map<String, JsonSchema>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) items: Option<Vec<JsonSchema>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) required: Option<Vec<String>>,
     #[serde(rename = "type")]
     pub(crate) tp: Option<SchemaTypes>,
 
     #[serde(rename = "oneOf")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) one_of: Option<Vec<JsonSchema>>,
     #[serde(rename = "const")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) const_: Option<String>,
 
     #[serde(rename = "additionalProperties")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) additional_properties: Option<Box<JsonSchema>>,
 
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) minimum: Option<RangeValue>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) maximum: Option<RangeValue>,
 
     #[serde(rename = "minLength")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) min_length: Option<u64>,
     #[serde(rename = "maxLength")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) max_length: Option<u64>,
 
     #[serde(skip)]
