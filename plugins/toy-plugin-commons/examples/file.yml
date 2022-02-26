@@ -3,8 +3,7 @@ services:
   - type: plugin.common.file.read
     uri: "reader"
     config:
-        kind: File
-        path: "./examples/file.csv"
+        path: "./examples/file*.csv"
     wires: mapper
   - type: plugin.common.map.mapping
     uri: "mapper"

@@ -28,8 +28,7 @@ pub fn char_to_u8(v: char) -> u8 {
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize, Schema)]
 pub struct ReadConfig {
-    pub(crate) kind: SourceType,
-    pub(crate) path: Option<PathBuf>,
+    pub(crate) path: String,
     #[serde(default)]
     pub(crate) option: ReadOption,
 }
@@ -52,6 +51,15 @@ pub struct ReadOption {
     pub(crate) capacity: usize,
 }
 
+impl ReadConfig {
+    pub fn new(path: String) -> ReadConfig {
+        ReadConfig {
+            path,
+            option: ReadOption::default(),
+        }
+    }
+}
+
 impl Default for ReadOption {
     fn default() -> ReadOption {
         ReadOption {
@@ -70,13 +78,7 @@ impl Default for ReadOption {
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize, Schema)]
-pub struct Column {
-    pub(crate) name: String,
-}
-
-#[derive(Debug, Clone, Default, Serialize, Deserialize, Schema)]
 pub struct WriteConfig {
-    pub(crate) kind: SinkType,
     pub(crate) path: Option<PathBuf>,
     #[serde(default)]
     pub(crate) option: WriteOption,
@@ -110,29 +112,5 @@ impl Default for WriteOption {
             escape: b'\\',
             double_quote: true,
         }
-    }
-}
-
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize, Schema)]
-pub enum SourceType {
-    File,
-    Stdin,
-}
-
-impl Default for SourceType {
-    fn default() -> Self {
-        SourceType::Stdin
-    }
-}
-
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize, Schema)]
-pub enum SinkType {
-    File,
-    Stdout,
-}
-
-impl Default for SinkType {
-    fn default() -> Self {
-        SinkType::Stdout
     }
 }

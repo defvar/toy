@@ -1,12 +1,14 @@
-use std::io::{BufRead, BufReader, Error, Read};
+use std::fs::File;
+use std::io::{BufRead, BufReader, Error};
+use std::path::PathBuf;
 
 use toy_text_parser::dfa::{ByteParser, ParseResult};
 use toy_text_parser::Line;
 
 #[derive(Debug)]
-pub struct FileReader<R> {
+pub struct FileReader {
     reader: ByteParser,
-    src: BufReader<R>,
+    src: BufReader<File>,
     state: FileReaderState,
 }
 
@@ -14,41 +16,49 @@ pub struct FileReader<R> {
 pub struct FileReaderState {
     has_headers: bool,
     headers: Option<Line>,
-    flexible: bool,
-
+    current_path_index: usize,
+    paths: Vec<PathBuf>,
     eof: bool,
     has_read: bool,
 }
 
 impl FileReaderState {
-    pub fn new(has_headers: bool, flexible: bool) -> FileReaderState {
+    pub fn new(has_headers: bool, paths: Vec<PathBuf>) -> FileReaderState {
         FileReaderState {
             has_headers,
             headers: None,
-            flexible,
-
+            current_path_index: 0,
+            paths,
             eof: false,
             has_read: false,
         }
     }
+
+    pub fn prepare_next_file(&mut self) -> Option<&PathBuf> {
+        self.eof = false;
+        self.has_read = false;
+        self.current_path_index += 1;
+        self.headers = None;
+        self.paths.get(self.current_path_index)
+    }
 }
 
-impl<R: Read> FileReader<R> {
+impl FileReader {
     /// Create a new Source given a built `ByteReader` and a source underlying IO reader.
     ///
-    pub fn new(reader: ByteParser, src: BufReader<R>, state: FileReaderState) -> FileReader<R> {
+    pub fn new(reader: ByteParser, src: BufReader<File>, state: FileReaderState) -> FileReader {
         FileReader { reader, src, state }
     }
 
     /// Returns Iterator all Row.
     ///
-    pub fn rows(&mut self) -> RowIterator<R> {
+    pub fn rows(&mut self) -> RowIterator {
         RowIterator::new(self)
     }
 
     /// Returns IntoIterator all Row.
     ///
-    pub fn into_rows(self) -> RowIntoIterator<R> {
+    pub fn into_rows(self) -> RowIntoIterator {
         RowIntoIterator::new(self)
     }
 
@@ -75,6 +85,22 @@ impl<R: Read> FileReader<R> {
     /// Returns false when no more records could be read.
     ///
     pub fn read(&mut self, line: &mut Line) -> Result<bool, Error> {
+        let r = self.read_current_path(line)?;
+
+        // next file
+        if !r && (self.state.current_path_index + 1) < self.state.paths.len() {
+            self.reader.reset();
+            let cp = self.src.capacity();
+            let next_path = self.state.prepare_next_file().unwrap();
+            tracing::info!("read next file. path: {}", next_path.display());
+            let next = File::open(next_path)?;
+            self.src = BufReader::with_capacity(cp, next);
+            return self.read_current_path(line);
+        }
+        Ok(r)
+    }
+
+    fn read_current_path(&mut self, line: &mut Line) -> Result<bool, Error> {
         let r = self.read_core(line)?;
 
         // skip header, once more read.
@@ -132,13 +158,13 @@ impl<R: Read> FileReader<R> {
     }
 }
 
-pub struct RowIterator<'a, R: 'a> {
-    src: &'a mut FileReader<R>,
+pub struct RowIterator<'a> {
+    src: &'a mut FileReader,
     line: Line,
 }
 
-impl<'a, R: Read> RowIterator<'a, R> {
-    fn new(src: &'a mut FileReader<R>) -> RowIterator<'a, R> {
+impl<'a> RowIterator<'a> {
+    fn new(src: &'a mut FileReader) -> RowIterator<'a> {
         RowIterator {
             src,
             line: Line::new(),
@@ -146,7 +172,7 @@ impl<'a, R: Read> RowIterator<'a, R> {
     }
 }
 
-impl<'a, R: Read> Iterator for RowIterator<'a, R> {
+impl<'a> Iterator for RowIterator<'a> {
     type Item = Result<Line, Error>;
 
     fn next(&mut self) -> Option<Result<Line, Error>> {
@@ -158,13 +184,13 @@ impl<'a, R: Read> Iterator for RowIterator<'a, R> {
     }
 }
 
-pub struct RowIntoIterator<R> {
-    src: FileReader<R>,
+pub struct RowIntoIterator {
+    src: FileReader,
     line: Line,
 }
 
-impl<R: Read> RowIntoIterator<R> {
-    fn new(src: FileReader<R>) -> RowIntoIterator<R> {
+impl RowIntoIterator {
+    fn new(src: FileReader) -> RowIntoIterator {
         RowIntoIterator {
             src,
             line: Line::new(),
@@ -172,7 +198,7 @@ impl<R: Read> RowIntoIterator<R> {
     }
 }
 
-impl<R: Read> Iterator for RowIntoIterator<R> {
+impl Iterator for RowIntoIterator {
     type Item = Result<Line, Error>;
 
     fn next(&mut self) -> Option<Result<Line, Error>> {

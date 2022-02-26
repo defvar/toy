@@ -1,27 +1,34 @@
-use super::config::{char_to_u8, default_capacity, ReadConfig, SourceType};
+use super::config::{char_to_u8, default_capacity, ReadConfig};
 use super::file_reader::{FileReader, FileReaderState};
+use std::cmp::Ordering;
 use std::fs::File;
-use std::io::{self, BufReader, Error, ErrorKind};
-use std::path::Path;
+use std::io::{BufReader, Error, ErrorKind};
+use std::path::PathBuf;
 use toy_text_parser::dfa::ByteParserBuilder;
 use toy_text_parser::Terminator;
 
 #[derive(Clone)]
 pub struct FileReaderBuilder {
-    reader_builder: ByteParserBuilder,
+    parser_builder: ByteParserBuilder,
     capacity: usize,
     has_headers: bool,
-    flexible: bool,
 }
 
 impl FileReaderBuilder {
-    pub fn configure(config: &ReadConfig) -> Result<FileReader<Box<dyn io::Read + Send>>, Error> {
-        if config.kind == SourceType::File && config.path.is_none() {
+    pub fn configure(config: &ReadConfig) -> Result<FileReader, Error> {
+        let mut paths: Vec<PathBuf> = match glob::glob(&config.path) {
+            Ok(p) => p.map(|x| x.unwrap()).collect(),
+            Err(e) => return Err(Error::new(ErrorKind::InvalidInput, e.msg)),
+        };
+
+        if paths.len() == 0 {
             return Err(Error::new(
-                ErrorKind::InvalidInput,
-                "type: file, path must be set of config.yml",
+                ErrorKind::NotFound,
+                format!("file not found. path: {}", &config.path),
             ));
         }
+
+        paths.sort_by(|a, b| a.partial_cmp(b).unwrap_or(Ordering::Equal));
 
         let b = FileReaderBuilder::default()
             .delimiter(char_to_u8(config.option.delimiter))
@@ -32,14 +39,10 @@ impl FileReaderBuilder {
             .double_quote(config.option.double_quote)
             .comment(config.option.comment)
             .has_headers(config.option.has_headers)
-            .flexible(config.option.flexible)
             .capacity(config.option.capacity)
             .clone();
 
-        Ok(b.from_reader(match config.kind {
-            SourceType::Stdin => Box::new(io::stdin()),
-            SourceType::File => Box::new(File::open(config.path.as_ref().unwrap().as_path())?),
-        }))
+        Ok(b.from_file(File::open(paths.get(0).unwrap())?, paths))
     }
 
     pub fn capacity(&mut self, cap: usize) -> &mut Self {
@@ -52,57 +55,48 @@ impl FileReaderBuilder {
         self
     }
 
-    pub fn flexible(&mut self, yes: bool) -> &mut Self {
-        self.flexible = yes;
-        self
-    }
-
-    pub fn from_reader<R: io::Read>(&self, r: R) -> FileReader<R> {
+    pub fn from_file(&self, f: File, paths: Vec<PathBuf>) -> FileReader {
         FileReader::new(
-            self.reader_builder.build(),
-            BufReader::with_capacity(self.capacity, r),
-            FileReaderState::new(self.has_headers, self.flexible),
+            self.parser_builder.build(),
+            BufReader::with_capacity(self.capacity, f),
+            FileReaderState::new(self.has_headers, paths),
         )
     }
 
-    pub fn from_path<P: AsRef<Path>>(&self, path: P) -> Result<FileReader<File>, Error> {
-        Ok(self.from_reader(File::open(path)?))
-    }
-
-    // wrap reader builder //
+    // wrap parser builder //
 
     pub fn delimiter(&mut self, c: u8) -> &mut Self {
-        self.reader_builder.delimiter(c);
+        self.parser_builder.delimiter(c);
         self
     }
 
     pub fn quote(&mut self, c: u8) -> &mut Self {
-        self.reader_builder.quote(c);
+        self.parser_builder.quote(c);
         self
     }
 
     pub fn quoting(&mut self, yes: bool) -> &mut Self {
-        self.reader_builder.quoting(yes);
+        self.parser_builder.quoting(yes);
         self
     }
 
     pub fn terminator(&mut self, t: Terminator) -> &mut Self {
-        self.reader_builder.terminator(t);
+        self.parser_builder.terminator(t);
         self
     }
 
     pub fn escape(&mut self, c: Option<u8>) -> &mut Self {
-        self.reader_builder.escape(c);
+        self.parser_builder.escape(c);
         self
     }
 
     pub fn double_quote(&mut self, yes: bool) -> &mut Self {
-        self.reader_builder.double_quote(yes);
+        self.parser_builder.double_quote(yes);
         self
     }
 
     pub fn comment(&mut self, c: Option<u8>) -> &mut Self {
-        self.reader_builder.comment(c);
+        self.parser_builder.comment(c);
         self
     }
 }
@@ -110,10 +104,9 @@ impl FileReaderBuilder {
 impl Default for FileReaderBuilder {
     fn default() -> Self {
         Self {
-            reader_builder: ByteParserBuilder::default(),
+            parser_builder: ByteParserBuilder::default(),
             capacity: default_capacity(),
             has_headers: true,
-            flexible: false,
         }
     }
 }

@@ -11,7 +11,7 @@ use toy_text_parser::Line;
 
 pub struct ReadContext {
     line: u32,
-    reader: FileReader<Box<dyn io::Read + Send>>,
+    reader: FileReader,
     buf: Line,
 }
 

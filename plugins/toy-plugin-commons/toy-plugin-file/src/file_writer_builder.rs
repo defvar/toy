@@ -1,8 +1,8 @@
 use std::fs::File;
-use std::io::{self, BufWriter, Error, ErrorKind};
+use std::io::{self, BufWriter, Error};
 use std::path::Path;
 
-use super::config::{self, char_to_u8, SinkType, WriteConfig};
+use super::config::{self, char_to_u8, WriteConfig};
 use super::file_writer::FileWriter;
 use crate::QuoteStyle;
 use toy_text_parser::Terminator;
@@ -21,13 +21,6 @@ pub struct FileWriterBuilder {
 
 impl FileWriterBuilder {
     pub fn configure(config: &WriteConfig) -> Result<FileWriter<Box<dyn io::Write + Send>>, Error> {
-        if config.kind == SinkType::File && config.path.is_none() {
-            return Err(Error::new(
-                ErrorKind::InvalidInput,
-                "type: file, path must be set of config.yml",
-            ));
-        }
-
         let b = FileWriterBuilder::default()
             .has_headers(config.option.has_headers)
             .delimiter(char_to_u8(config.option.delimiter))
@@ -39,10 +32,9 @@ impl FileWriterBuilder {
             .capacity(config.option.capacity)
             .clone();
 
-        Ok(b.from_writer(match config.kind {
-            SinkType::Stdout => Box::new(io::stdout()),
-            SinkType::File => Box::new(File::create(config.path.as_ref().unwrap().as_path())?),
-        }))
+        Ok(b.from_writer(Box::new(File::create(
+            config.path.as_ref().unwrap().as_path(),
+        )?)))
     }
 
     pub fn capacity(&mut self, cap: usize) -> &mut Self {
