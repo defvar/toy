@@ -10,7 +10,7 @@ macro_rules! find {
             .and(warp::get())
             .and($crate::authentication::authenticate($auth, $client))
             .and($crate::common::filter::with_store($store))
-            .and($crate::common::query::query_opt::<
+            .and(toy_api_http_common::query::query_opt::<
                 toy_api::common::FindOption,
             >())
             .and_then(move |key, ctx, store, opt| {
@@ -34,7 +34,7 @@ macro_rules! list {
             .and(warp::get())
             .and($crate::authentication::authenticate($auth, $client))
             .and($crate::common::filter::with_store($store))
-            .and($crate::common::query::query_opt::<
+            .and(toy_api_http_common::query::query_opt::<
                 toy_api::common::ListOption,
             >())
             .and_then(move |ctx, store, opt| {
@@ -58,7 +58,7 @@ macro_rules! list_with_opt {
             .and(warp::get())
             .and($crate::authentication::authenticate($auth, $client))
             .and($crate::common::filter::with_store($store))
-            .and($crate::common::query::query_opt::<$api_opt>())
+            .and(toy_api_http_common::query::query_opt::<$api_opt>())
             .and_then(move |ctx, store, opt| {
                 $crate::common::handler::list_with_opt(ctx, store, $key_prefix, opt, $store_opt, $f)
             })
@@ -72,8 +72,10 @@ macro_rules! put {
             .and(warp::path::param::<String>())
             .and(warp::put())
             .and($crate::authentication::authenticate($auth, $client))
-            .and($crate::common::query::query_opt::<toy_api::common::PutOption>())
-            .and($crate::common::body::bytes())
+            .and(toy_api_http_common::query::query_opt::<
+                toy_api::common::PutOption,
+            >())
+            .and(toy_api_http_common::body::bytes())
             .and($crate::common::filter::with_store($store))
             .and_then(move |key, ctx, opt, req, store| async move {
                 match $crate::common::handler::put(
@@ -102,7 +104,7 @@ macro_rules! delete {
             .and(warp::path::param::<String>())
             .and(warp::delete())
             .and($crate::authentication::authenticate($auth, $client))
-            .and($crate::common::query::query_opt::<
+            .and(toy_api_http_common::query::query_opt::<
                 toy_api::common::DeleteOption,
             >())
             .and($crate::common::filter::with_store($store))

@@ -153,6 +153,44 @@ impl PutOption {
     }
 }
 
+/// Common option items for post-based api.
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct PostOption {
+    format: Option<Format>,
+    indent: Option<Indent>,
+}
+
+impl PostOption {
+    pub fn new() -> Self {
+        Self {
+            format: None,
+            indent: None,
+        }
+    }
+
+    pub fn format(&self) -> Option<Format> {
+        self.format
+    }
+
+    pub fn indent(&self) -> Option<Indent> {
+        self.indent
+    }
+
+    pub fn with_format(self, format: Format) -> Self {
+        Self {
+            format: Some(format),
+            ..self
+        }
+    }
+
+    pub fn with_pretty(self) -> Self {
+        Self {
+            indent: Some(Indent::Pretty),
+            ..self
+        }
+    }
+}
+
 /// Common option items for delete-based api.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct DeleteOption {

@@ -11,6 +11,7 @@ use std::fmt::Debug;
 use toy_api::common::{
     DeleteOption, FindOption, KVObject, ListOption, ListOptionLike, PutOption, SelectionCandidate,
 };
+use toy_api_http_common::{codec, reply};
 use toy_h::{Bytes, HttpClient};
 use warp::http::StatusCode;
 use warp::reply::Reply;
@@ -41,7 +42,7 @@ where
                 let format = api_opt.as_ref().map(|x| x.format()).unwrap_or(None);
                 let indent = api_opt.as_ref().map(|x| x.indent()).unwrap_or(None);
                 let r = f(v.into_value());
-                Ok(common::reply::into_response(&r, format, indent))
+                Ok(reply::into_response(&r, format, indent))
             }
             None => Err(warp::reject::not_found()),
         },
@@ -77,7 +78,7 @@ where
             let format = api_opt.as_ref().map(|x| x.format()).unwrap_or(None);
             let indent = api_opt.as_ref().map(|x| x.indent()).unwrap_or(None);
             let r = f(v);
-            Ok(common::reply::into_response(&r, format, indent))
+            Ok(reply::into_response(&r, format, indent))
         }
         Err(e) => {
             tracing::error!("error:{:?}", e);
@@ -131,7 +132,7 @@ where
 
             let r = f(vec);
 
-            Ok(common::reply::into_response(&r, format, indent))
+            Ok(reply::into_response(&r, format, indent))
         }
         Err(e) => {
             tracing::error!("error:{:?}", e);
@@ -158,7 +159,7 @@ where
 {
     tracing::debug!("handle: {:?}", ctx);
     let format = opt.map(|x| x.format()).unwrap_or(None);
-    let v = common::body::decode::<_, Req>(request, format)?;
+    let v = codec::decode::<_, Req>(request, format)?;
     let key_of_data = KVObject::key(&v).to_owned();
 
     if key_of_data != key {

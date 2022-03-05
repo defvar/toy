@@ -65,8 +65,6 @@ pub struct Supervisor<TF, P, C> {
     rx: Incoming<Request, ServiceError>,
     /// send shutdown.
     tx_shutdown: Outgoing<(), ServiceError>,
-    /// use watcher.
-    tx_watcher: Outgoing<Request, ServiceError>,
     ctx: SupervisorContext<C>,
     addr: Option<SocketAddr>,
 }
@@ -79,6 +77,7 @@ pub struct SupervisorContext<C> {
     started_at: Option<DateTime<Utc>>,
     /// send any request.
     tx: Outgoing<Request, ServiceError>,
+    schemas: Vec<ServiceSchema>,
 }
 
 impl<TF, P, C> Supervisor<TF, P, C>
@@ -100,19 +99,20 @@ where
     ) {
         let (tx_req, rx_req) = mpsc::channel::<Request, ServiceError>(1024);
         let (tx_shutdown, rx_shutdown) = mpsc::channel::<(), ServiceError>(16);
+        let schemas = app.schemas();
         (
             Supervisor {
                 _factory: factory,
                 app: Arc::new(app),
                 rx: rx_req,
                 tx_shutdown,
-                tx_watcher: tx_req.clone(),
                 ctx: SupervisorContext {
                     name: name.into(),
                     client,
                     tasks: Arc::new(Mutex::new(HashMap::new())),
                     started_at: None,
                     tx: tx_req.clone(),
+                    schemas,
                 },
                 addr,
             },
@@ -140,7 +140,6 @@ where
             return Err(());
         }
 
-        self.spawn_watcher();
         self.spawn_server();
 
         // main
@@ -243,31 +242,17 @@ where
         });
     }
 
-    fn spawn_watcher(&self) {
-        if self.ctx.client.is_none() {
-            return;
-        }
-
-        let c = self.ctx.client.as_ref().map(|x| x.clone()).unwrap();
-        let tx = self.tx_watcher.clone();
-        let name = self.ctx.name.clone();
-
-        toy_rt::spawn(async move {
-            tracing::info!(?name, "start watch task.");
-            if let Err(e) = super::watcher::watch(name.clone(), c, tx).await {
-                tracing::error!(?name, err = ?e, "an error occured; supervisor when watch task.");
-            }
-            tracing::info!(?name, "shutdown watcher.");
-        });
-    }
-
     async fn register(&self, schemas: Vec<ServiceSchema>) -> Result<(), ()> {
         if self.ctx.client.is_none() {
             return Ok(());
         }
 
-        let sv =
-            toy_api::supervisors::Supervisor::new(self.ctx.name.clone(), Utc::now(), Vec::new());
+        let sv = toy_api::supervisors::Supervisor::new(
+            self.ctx.name.clone(),
+            Utc::now(),
+            Vec::new(),
+            self.addr.unwrap(),
+        );
 
         let c = self.ctx.client.as_ref().unwrap();
         if let Err(e) = c
@@ -362,6 +347,10 @@ impl<C> SupervisorContext<C> {
 
     pub fn tx_mut(&mut self) -> &mut Outgoing<Request, ServiceError> {
         &mut self.tx
+    }
+
+    pub fn schemas(&self) -> &[ServiceSchema] {
+        &self.schemas
     }
 }
 

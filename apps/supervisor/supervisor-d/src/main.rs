@@ -53,13 +53,12 @@ fn go() -> Result<(), Error> {
         .build()
         .unwrap();
 
-    tracing::info!("start supervisor for:{:?}", opts);
-
     match &opts.c {
         Command::Local(c) => {
             let _guard = initialize_log(&c.log)?;
             let g = get_graph(&c.graph)?;
             let (sv, _, _) = toy::supervisor::local(ExecutorFactory, app);
+            log_start(&opts);
 
             rt.block_on(async {
                 let _ = sv.oneshot(g).await;
@@ -80,6 +79,7 @@ fn go() -> Result<(), Error> {
             let client = HttpApiClient::new(&c.api_root, auth).unwrap();
             let (sv, _, _) =
                 toy::supervisor::subscribe(&c.name, ExecutorFactory, app, client, addr);
+            log_start(&opts);
 
             rt.block_on(async {
                 let _ = sv.run().await;
@@ -132,4 +132,8 @@ fn get_graph(file: &PathBuf) -> Result<Graph, Error> {
     let g = Graph::from(v)?;
 
     Ok(g)
+}
+
+fn log_start(opts: &Opts) {
+    tracing::info!("start supervisor for:{:?}", opts);
 }

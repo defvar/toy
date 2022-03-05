@@ -109,7 +109,8 @@ where
             .with(warp::trace::request())
             .recover(handle_rejection);
 
-        if let Err(e) = crate::initializer::initialize(&self.config, kv_store).await {
+        if let Err(e) = crate::initializer::initialize(&self.config, kv_store, client.clone()).await
+        {
             tracing::error!("{:?}", e);
             return;
         }

@@ -6,6 +6,7 @@ use crate::selection::field::Selection;
 use crate::supervisors::SupervisorStatus::Ready;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use std::net::SocketAddr;
 
 pub type SupervisorName = String;
 
@@ -27,6 +28,7 @@ pub struct Supervisor {
     status: SupervisorStatus,
     #[serde(with = "format::rfc3399")]
     last_transition_time: DateTime<Utc>,
+    addr: SocketAddr,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -42,7 +44,12 @@ pub struct SupervisorListOption {
 }
 
 impl Supervisor {
-    pub fn new(name: String, start_time: DateTime<Utc>, labels: Vec<String>) -> Self {
+    pub fn new(
+        name: String,
+        start_time: DateTime<Utc>,
+        labels: Vec<String>,
+        addr: SocketAddr,
+    ) -> Self {
         Self {
             name,
             start_time,
@@ -50,7 +57,12 @@ impl Supervisor {
             last_beat_time: None,
             status: Ready,
             last_transition_time: start_time,
+            addr,
         }
+    }
+
+    pub fn name(&self) -> &SupervisorName {
+        &self.name
     }
 
     pub fn last_beat_time(&self) -> Option<&DateTime<Utc>> {
@@ -63,6 +75,10 @@ impl Supervisor {
 
     pub fn last_transition_time(&self) -> &DateTime<Utc> {
         &self.last_transition_time
+    }
+
+    pub fn addr(&self) -> SocketAddr {
+        self.addr
     }
 
     pub fn with_last_beat_time(self, last_replied_on: DateTime<Utc>) -> Supervisor {
@@ -80,6 +96,13 @@ impl Supervisor {
         Self {
             last_transition_time: v,
             ..self
+        }
+    }
+
+    pub fn is_alive(&self) -> bool {
+        match self.status {
+            SupervisorStatus::Stop => false,
+            _ => true,
         }
     }
 }

@@ -1,22 +1,11 @@
-use crate::authentication::{authenticate, Auth};
+use crate::authentication::Auth;
 use crate::common;
 use crate::common::validator::OkValidator;
 use crate::store::kv::{KvStore, ListOption};
-use crate::supervisors::handlers;
 use crate::warp::filters::BoxedFilter;
-use toy_api::supervisors::{Supervisor, SupervisorList, SupervisorListOption, SupervisorStatus};
+use toy_api::supervisors::{Supervisor, SupervisorList, SupervisorListOption};
 use toy_h::HttpClient;
 use warp::Filter;
-
-macro_rules! transition_any {
-    ($status_path: expr, $auth: expr, $client: expr, $store: expr, $status: expr) => {
-        warp::path!("supervisors" / String / $status_path)
-            .and(warp::put())
-            .and(authenticate($auth, $client))
-            .and(with_store($store))
-            .and_then(|a, b, c| handlers::transition(a, b, c, $status))
-    };
-}
 
 /// warp filter for supervisors api.
 pub fn supervisors<T>(
@@ -60,21 +49,5 @@ where
         common::constants::SUPERVISORS_KEY_PREFIX,
         store.clone()
     ))
-    .or(transition_any!(
-        "stop",
-        auth.clone(),
-        client.clone(),
-        store.clone(),
-        SupervisorStatus::Stop
-    ))
     .boxed()
-}
-
-fn with_store<T>(
-    store: impl KvStore<T> + 'static,
-) -> impl Filter<Extract = (impl KvStore<T> + 'static,), Error = std::convert::Infallible> + Clone
-where
-    T: HttpClient,
-{
-    warp::any().map(move || store.clone())
 }

@@ -1,9 +1,8 @@
 use crate::authentication::{authenticate, Auth};
-use crate::common::{self, body};
 use crate::task::handlers;
 use crate::task::store::{TaskLogStore, TaskStore};
 use crate::warp::filters::BoxedFilter;
-use toy_api::task::{AllocateOption, LogOption, PostOption, TaskListOption, WatchOption};
+use toy_api::task::{LogOption, PostOption, TaskListOption};
 use toy_h::HttpClient;
 use warp::Filter;
 
@@ -20,16 +19,6 @@ where
     tasks_create(auth.clone(), client.clone(), task_store.clone())
         .or(tasks_list(auth.clone(), client.clone(), log_store.clone()))
         .or(tasks_log(auth.clone(), client.clone(), log_store))
-        .or(tasks_watch(
-            auth.clone(),
-            client.clone(),
-            task_store.clone(),
-        ))
-        .or(tasks_allocate(
-            auth.clone(),
-            client.clone(),
-            task_store.clone(),
-        ))
         .boxed()
 }
 
@@ -44,45 +33,11 @@ where
     warp::path!("tasks")
         .and(warp::post())
         .and(authenticate(auth, client))
-        .and(common::query::query_opt::<PostOption>())
-        .and(body::bytes())
+        .and(toy_api_http_common::query::query_opt::<PostOption>())
+        .and(toy_api_http_common::body::bytes())
         .and(with_task_store(task_store))
         .and_then(handlers::post)
         .boxed()
-}
-
-pub fn tasks_watch<T>(
-    auth: impl Auth<T> + Clone + 'static,
-    client: T,
-    task_store: impl TaskStore<T> + 'static,
-) -> BoxedFilter<(impl warp::Reply,)>
-where
-    T: HttpClient + 'static,
-{
-    warp::path!("tasks" / "watch")
-        .and(warp::get())
-        .and(authenticate(auth, client))
-        .and(common::query::query_opt::<WatchOption>())
-        .and(with_task_store(task_store))
-        .and_then(handlers::watch)
-        .boxed()
-}
-
-pub fn tasks_allocate<T>(
-    auth: impl Auth<T> + Clone,
-    client: T,
-    task_store: impl TaskStore<T>,
-) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone
-where
-    T: HttpClient,
-{
-    warp::path!("tasks" / String / "allocate")
-        .and(warp::post())
-        .and(authenticate(auth, client))
-        .and(common::query::query_opt::<AllocateOption>())
-        .and(body::bytes())
-        .and(with_task_store(task_store))
-        .and_then(handlers::allocate)
 }
 
 pub fn tasks_list<T>(
@@ -96,7 +51,7 @@ where
     warp::path!("tasks")
         .and(warp::get())
         .and(authenticate(auth, client))
-        .and(common::query::query_opt::<TaskListOption>())
+        .and(toy_api_http_common::query::query_opt::<TaskListOption>())
         .and(with_log_store(log_store))
         .and_then(handlers::tasks)
 }
@@ -112,7 +67,7 @@ where
     warp::path!("tasks" / String / "log")
         .and(warp::get())
         .and(authenticate(auth, client))
-        .and(common::query::query_opt::<LogOption>())
+        .and(toy_api_http_common::query::query_opt::<LogOption>())
         .and(with_log_store(log_store))
         .and_then(handlers::log)
 }

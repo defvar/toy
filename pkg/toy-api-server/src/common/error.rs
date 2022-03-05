@@ -1,9 +1,9 @@
 use std::fmt::{Debug, Display};
 use thiserror::Error;
+use toy_api_http_common::Error;
 use toy_core::error::ConfigError;
-use toy_pack_json::{DecodeError, EncodeError};
-use toy_pack_urlencoded::QueryParseError;
-use toy_pack_yaml::error::YamlError;
+use toy_h::error::HError;
+use toy_h::InvalidUri;
 use warp::http::StatusCode;
 
 #[derive(Debug, Error)]
@@ -19,21 +19,6 @@ pub enum ApiError {
         #[from]
         source: toy_core::data::error::DeserializeError,
     },
-
-    #[error("{:?}", inner)]
-    DeserializeYamlValue { inner: YamlError },
-
-    #[error("{:?}", inner)]
-    DeserializeJsonValue { inner: DecodeError },
-
-    #[error("{:?}", inner)]
-    SerializeJsonValue { inner: EncodeError },
-
-    #[error("{:?}", inner)]
-    DeserializeMessagePackValue { inner: toy_pack_mp::DecodeError },
-
-    #[error("{:?}", inner)]
-    SerializeMessagePackValue { inner: toy_pack_mp::EncodeError },
 
     #[error(transparent)]
     ParseGraphConfigFailed {
@@ -56,10 +41,22 @@ pub enum ApiError {
         verb: String,
     },
 
-    #[error("{:?}", source)]
-    QueryParse {
+    #[error(transparent)]
+    InvalidUri {
         #[from]
-        source: QueryParseError,
+        source: InvalidUri,
+    },
+
+    #[error(transparent)]
+    HError {
+        #[from]
+        source: HError,
+    },
+
+    #[error(transparent)]
+    ApiHttpCommonError {
+        #[from]
+        source: toy_api_http_common::Error,
     },
 
     #[error("store operation failed. {:?}", inner)]
@@ -90,9 +87,11 @@ impl ApiError {
 
     pub fn status_code(&self) -> StatusCode {
         match self {
-            //TODO: error code....
             ApiError::ValidationFailed { .. } => StatusCode::BAD_REQUEST,
-            ApiError::QueryParse { .. } => StatusCode::BAD_REQUEST,
+            ApiError::ApiHttpCommonError { source } => match source {
+                Error::QueryParse { .. } => StatusCode::BAD_REQUEST,
+                _ => StatusCode::INTERNAL_SERVER_ERROR,
+            },
             ApiError::AuthorizationFailed { .. } => StatusCode::FORBIDDEN,
             _ => StatusCode::INTERNAL_SERVER_ERROR,
         }
@@ -117,10 +116,6 @@ impl ApiError {
             resource: resource.into(),
             verb: verb.into(),
         }
-    }
-
-    pub fn query_parse(e: QueryParseError) -> ApiError {
-        ApiError::QueryParse { source: e }
     }
 
     pub fn into_rejection(self) -> warp::Rejection {
@@ -162,36 +157,6 @@ impl ApiError {
         ApiError::ValidationFailed {
             inner: format!("There is a difference between the specified key and the key of the object to be registered. specified:{}, data:{}", specified_key, key_of_data),
         }
-    }
-}
-
-impl From<YamlError> for ApiError {
-    fn from(e: YamlError) -> ApiError {
-        ApiError::DeserializeYamlValue { inner: e }
-    }
-}
-
-impl From<DecodeError> for ApiError {
-    fn from(e: DecodeError) -> ApiError {
-        ApiError::DeserializeJsonValue { inner: e }
-    }
-}
-
-impl From<EncodeError> for ApiError {
-    fn from(e: EncodeError) -> ApiError {
-        ApiError::SerializeJsonValue { inner: e }
-    }
-}
-
-impl From<toy_pack_mp::DecodeError> for ApiError {
-    fn from(e: toy_pack_mp::DecodeError) -> ApiError {
-        ApiError::DeserializeMessagePackValue { inner: e }
-    }
-}
-
-impl From<toy_pack_mp::EncodeError> for ApiError {
-    fn from(e: toy_pack_mp::EncodeError) -> ApiError {
-        ApiError::SerializeMessagePackValue { inner: e }
     }
 }
 

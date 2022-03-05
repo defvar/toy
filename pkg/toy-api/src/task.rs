@@ -8,7 +8,7 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use toy_core::prelude::TaskId;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
 pub enum PendingStatus {
     Created,
     Allocated,
@@ -19,8 +19,9 @@ pub struct PendingTask {
     task_id: TaskId,
     status: PendingStatus,
     allocated_supervisor: Option<SupervisorName>,
-    allocated_at: Option<DateTime<Utc>>,
+    allocated_on: Option<DateTime<Utc>>,
     graph: Option<Graph>,
+    created_on: DateTime<Utc>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -29,7 +30,7 @@ pub struct PendingTaskList {
     count: u32,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PendingResult {
     task_id: TaskId,
 }
@@ -94,8 +95,9 @@ impl PendingTask {
             task_id,
             status: PendingStatus::Created,
             allocated_supervisor: None,
-            allocated_at: None,
+            allocated_on: None,
             graph: Some(graph),
+            created_on: Utc::now(),
         }
     }
 
@@ -103,21 +105,20 @@ impl PendingTask {
         self.task_id
     }
 
-    pub fn status(&self) -> &PendingStatus {
-        &self.status
+    pub fn status(&self) -> PendingStatus {
+        self.status
     }
 
     pub fn graph(&self) -> Option<&Graph> {
         self.graph.as_ref()
     }
 
-    pub fn allocate<S: Into<String>>(self, name: S, allocated_at: DateTime<Utc>) -> Self {
+    pub fn allocate<S: Into<SupervisorName>>(self, name: S, allocated_at: DateTime<Utc>) -> Self {
         Self {
-            task_id: self.task_id,
-            graph: self.graph,
             status: PendingStatus::Allocated,
             allocated_supervisor: Some(name.into()),
-            allocated_at: Some(allocated_at),
+            allocated_on: Some(allocated_at),
+            ..self
         }
     }
 }

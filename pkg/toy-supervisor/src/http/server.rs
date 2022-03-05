@@ -2,6 +2,7 @@ use crate::http::filter::filters;
 use crate::supervisor::SupervisorContext;
 use std::net::SocketAddr;
 use toy_api_client::ApiClient;
+use toy_api_http_common::warp;
 
 pub struct Server<C> {
     ctx: SupervisorContext<C>,
@@ -18,7 +19,7 @@ where
     /// Run this `Server` forever on the current thread.
     pub async fn run(self, addr: impl Into<SocketAddr> + 'static) {
         let (addr, server) = warp::serve(filters(self.ctx)).bind_ephemeral(addr);
-        tracing::info!("listening on https://{}", addr);
+        tracing::info!("listening on http://{}", addr);
         server.await
     }
 }

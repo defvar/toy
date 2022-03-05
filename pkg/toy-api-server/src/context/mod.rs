@@ -1,5 +1,6 @@
 use crate::authentication::AuthUser;
 
+pub mod dispatcher;
 pub mod rbac;
 pub mod server;
 

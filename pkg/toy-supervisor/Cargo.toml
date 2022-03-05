@@ -10,9 +10,9 @@ edition = "2018"
 tracing = "0.1"
 chrono = "0.4"
 serde = { version = "1.0", features = ["derive"]  }
+thiserror = "1.0"
 futures-core = { version = "0.3" }
 futures-util = { version = "0.3", default-features = false }
-warp = { version = "0.3", features = ["tls"] }
 
 tokio = { version = "1.15", features = ["sync"] }
 toy-core = {path="../toy-core"}
@@ -20,3 +20,4 @@ toy-rt = { path = "../toy-rt"}
 toy-api = { path = "../toy-api" }
 toy-api-client = { path = "../toy-api-client"}
 toy-pack-json = {path = "../../shared/toy-pack-json"}
+toy-api-http-common = {path = "../toy-api-http-common", features = ["server"]}

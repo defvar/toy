@@ -1,4 +1,4 @@
-use crate::ApiError;
+use crate::error::Error;
 use futures_util::stream::Stream;
 use serde::Serialize;
 use std::marker::PhantomData;
@@ -23,7 +23,7 @@ where
 
 pub fn into_response_stream<St, B>(stream: St, format: Option<Format>) -> ReplyStream<St, B>
 where
-    St: Stream<Item = Result<B, ApiError>> + Send + 'static,
+    St: Stream<Item = Result<B, Error>> + Send + 'static,
     B: Into<Bytes> + Send + 'static,
 {
     let format = format.unwrap_or(Format::default());
@@ -34,7 +34,7 @@ where
     }
 }
 
-pub fn encode<T>(v: &T, format: Option<Format>, pretty: Option<bool>) -> Result<Bytes, ApiError>
+pub fn encode<T>(v: &T, format: Option<Format>, pretty: Option<bool>) -> Result<Bytes, Error>
 where
     T: Serialize,
 {
@@ -42,16 +42,16 @@ where
     match format {
         Format::Json if pretty.is_some() && pretty.unwrap() => toy_pack_json::pack_pretty(v)
             .map(Bytes::from)
-            .map_err(|e| ApiError::error(e)),
+            .map_err(|e| Error::error(e)),
         Format::Json => toy_pack_json::pack(v)
             .map(Bytes::from)
-            .map_err(|e| ApiError::error(e)),
+            .map_err(|e| Error::error(e)),
         Format::Yaml => toy_pack_yaml::pack_to_string(v)
             .map(Bytes::from)
-            .map_err(|e| ApiError::error(e)),
+            .map_err(|e| Error::error(e)),
         Format::MessagePack => toy_pack_mp::pack(v)
             .map(Bytes::from)
-            .map_err(|e| ApiError::error(e)),
+            .map_err(|e| Error::error(e)),
     }
 }
 
@@ -182,7 +182,7 @@ pub struct ReplyStream<St, B> {
 
 impl<St, B> warp::Reply for ReplyStream<St, B>
 where
-    St: Stream<Item = Result<B, ApiError>> + Send + 'static,
+    St: Stream<Item = Result<B, Error>> + Send + 'static,
     B: Into<Bytes> + Send + 'static,
 {
     #[inline]

@@ -318,7 +318,7 @@ where
 {
     type Con = EtcdStoreConnection<T>;
 
-    #[instrument(skip(self, con))]
+    #[instrument(skip(self, con, v))]
     async fn pending(&self, con: Self::Con, key: String, v: PendingTask) -> Result<(), StoreError> {
         let s = toy_pack_json::pack_to_string(&v)?;
         let create_res = con.client.create(&key, &s).await?;

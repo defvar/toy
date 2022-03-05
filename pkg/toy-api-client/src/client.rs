@@ -2,14 +2,13 @@
 
 use crate::error::ApiClientError;
 use async_trait::async_trait;
-use futures_core::Stream;
 use toy_api::common;
 use toy_api::graph::{Graph, GraphList};
 use toy_api::role::{Role, RoleList};
 use toy_api::role_binding::{RoleBinding, RoleBindingList};
 use toy_api::services::{ServiceSpec, ServiceSpecList, ServiceSpecListOption};
 use toy_api::supervisors::{Supervisor, SupervisorList, SupervisorListOption};
-use toy_api::task::{self, AllocateRequest, AllocateResponse, PendingTaskList, TaskLog, Tasks};
+use toy_api::task::{self, PendingResult, TaskLog, Tasks};
 
 /// Composit All Api Client
 pub trait ApiClient: Send + Sync {
@@ -62,18 +61,7 @@ pub trait GraphClient: Send + Sync {
 
 #[async_trait]
 pub trait TaskClient: Send + Sync {
-    type WatchStream: Stream<Item = Result<PendingTaskList, ApiClientError>> + Send;
-
-    async fn watch(&self, opt: task::WatchOption) -> Result<Self::WatchStream, ApiClientError>;
-
-    async fn allocate(
-        &self,
-        key: String,
-        req: AllocateRequest,
-        opt: task::AllocateOption,
-    ) -> Result<AllocateResponse, ApiClientError>;
-
-    async fn post(&self, v: Graph, opt: task::PostOption) -> Result<(), ApiClientError>;
+    async fn post(&self, v: Graph, opt: task::PostOption) -> Result<PendingResult, ApiClientError>;
 
     async fn list(&self, opt: task::TaskListOption) -> Result<Tasks, ApiClientError>;
 

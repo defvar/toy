@@ -1,11 +1,8 @@
 //! common module for api.
 
-pub mod body;
 pub mod error;
 pub mod filter;
 pub mod handler;
-pub mod query;
-pub mod reply;
 pub mod validator;
 
 pub mod constants {

@@ -67,10 +67,7 @@ where
         let param = toy_pack_json::pack(&WatchCreateRequest::range_from(prefix.as_ref())).unwrap();
         self.watch0(param).await.map(|byte_stream| {
             byte_stream.map(|x| match x {
-                Ok(v) => {
-                    tracing::trace!(watchResponse= ?std::str::from_utf8(&v));
-                    toy_pack_json::unpack::<WatchResponse>(&v).map_err(|e| e.into())
-                }
+                Ok(v) => toy_pack_json::unpack::<WatchResponse>(&v).map_err(|e| e.into()),
                 Err(e) => Err(e.into()),
             })
         })

@@ -4,13 +4,12 @@ use crate::client::{
 };
 use crate::error::ApiClientError;
 use async_trait::async_trait;
-use futures_core::Stream;
 use toy_api::common::{DeleteOption, FindOption, ListOption, PutOption};
 use toy_api::role::{Role, RoleList};
 use toy_api::role_binding::{RoleBinding, RoleBindingList};
 use toy_api::services::{ServiceSpec, ServiceSpecList, ServiceSpecListOption};
 use toy_api::supervisors::SupervisorListOption;
-use toy_api::task::{AllocateOption, AllocateRequest, AllocateResponse, TaskListOption};
+use toy_api::task::{PendingResult, TaskListOption};
 
 #[derive(Clone)]
 pub struct NoopApiClient;
@@ -96,29 +95,11 @@ impl GraphClient for NoopApiClient {
 
 #[async_trait]
 impl TaskClient for NoopApiClient {
-    type WatchStream = impl Stream<Item = Result<toy_api::task::PendingTaskList, ApiClientError>>;
-
-    async fn watch(
-        &self,
-        _opt: toy_api::task::WatchOption,
-    ) -> Result<Self::WatchStream, ApiClientError> {
-        Ok(futures_util::stream::empty())
-    }
-
-    async fn allocate(
-        &self,
-        _key: String,
-        _req: AllocateRequest,
-        _opt: AllocateOption,
-    ) -> Result<AllocateResponse, ApiClientError> {
-        unimplemented!()
-    }
-
     async fn post(
         &self,
         _v: toy_api::graph::Graph,
         _opt: toy_api::task::PostOption,
-    ) -> Result<(), ApiClientError> {
+    ) -> Result<PendingResult, ApiClientError> {
         unimplemented!()
     }
 

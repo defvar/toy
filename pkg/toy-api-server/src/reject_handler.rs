@@ -3,6 +3,7 @@ use common::error::ApiError;
 use std::convert::Infallible;
 use toy_api::common::Format;
 use toy_api::error::ErrorMessage;
+use toy_api_http_common::reply;
 use warp::http::StatusCode;
 use warp::{Rejection, Reply};
 
@@ -28,7 +29,7 @@ pub async fn handle_rejection(err: Rejection) -> Result<impl Reply, Infallible> 
         message = StatusCode::INTERNAL_SERVER_ERROR.to_string();
     }
 
-    let r = common::reply::into_response(
+    let r = reply::into_response(
         &ErrorMessage::new(code.as_u16(), message),
         Some(Format::Json),
         None,

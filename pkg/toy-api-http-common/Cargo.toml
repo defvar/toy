@@ -1,0 +1,25 @@
+[package]
+name = "toy-api-http-common"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[features]
+default = []
+server = ["warp"]
+
+[dependencies]
+tracing = "0.1"
+thiserror = "1.0"
+serde = { version = "1.0", features = ["derive"]  }
+futures-util = { version = "0.3", default-features = false }
+warp = { version = "0.3", features = ["tls"], optional = true }
+
+toy-h = {path = "../../shared/toy-h"}
+toy-core = { path = "../toy-core"}
+toy-api = { path = "../toy-api" }
+toy-pack-json = {path = "../../shared/toy-pack-json"}
+toy-pack-mp = {path = "../../shared/toy-pack-mp"}
+toy-pack-yaml = {path = "../../shared/toy-pack-yaml"}
+toy-pack-urlencoded = {path = "../../shared/toy-pack-urlencoded"}
