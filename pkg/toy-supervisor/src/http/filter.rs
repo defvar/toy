@@ -4,7 +4,7 @@ use crate::supervisor::SupervisorContext;
 use crate::{Request, RunTaskResponse};
 use toy_api::common::ListOptionLike;
 use toy_api::services::{ServiceSpec, ServiceSpecListOption};
-use toy_api::task::{PendingTask, PostOption};
+use toy_api::task::{AllocateResponse, PendingTask, PostOption};
 use toy_api_client::ApiClient;
 use toy_api_http_common::bytes::Bytes;
 use toy_api_http_common::warp;
@@ -133,19 +133,18 @@ where
     let format = opt.map(|x| x.format()).unwrap_or(None);
     let pending = toy_api_http_common::codec::decode::<_, PendingTask>(request, format)?;
 
-    match pending.graph() {
-        Some(graph) => {
-            let v = toy_core::data::pack(graph)
-                .map_err(|e| Into::<toy_api_http_common::Error>::into(e))?;
-            let g = Graph::from(v).map_err(|e| Into::<SupervisorError>::into(e))?;
-            tracing::debug!("{:?}", g);
-            let (o_tx, _) = toy_core::oneshot::channel::<RunTaskResponse, ServiceError>();
-            let req = Request::RunTask(pending.task_id(), g, o_tx);
-            let _ = ctx.tx_mut().send_ok(req).await;
-            Ok(StatusCode::CREATED)
-        }
-        None => Ok(StatusCode::NO_CONTENT),
-    }
+    let v = toy_core::data::pack(pending.graph())
+        .map_err(|e| Into::<toy_api_http_common::Error>::into(e))?;
+    let g = Graph::from(v).map_err(|e| Into::<SupervisorError>::into(e))?;
+    tracing::debug!("{:?}", g);
+    let (o_tx, _) = toy_core::oneshot::channel::<RunTaskResponse, ServiceError>();
+    let req = Request::RunTask(pending.task_id(), g, o_tx);
+    let _ = ctx.tx_mut().send_ok(req).await;
+    Ok(toy_api_http_common::reply::into_response(
+        &AllocateResponse::ok(pending.task_id()),
+        format,
+        None,
+    ))
 }
 
 async fn handle_shutdown<C>(

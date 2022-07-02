@@ -13,7 +13,7 @@ pub type SupervisorName = String;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum SupervisorStatus {
     Ready,
-    Running,
+    NoContact,
     Stop,
 }
 
@@ -101,7 +101,7 @@ impl Supervisor {
 
     pub fn is_alive(&self) -> bool {
         match self.status {
-            SupervisorStatus::Stop => false,
+            SupervisorStatus::Stop | SupervisorStatus::NoContact => false,
             _ => true,
         }
     }

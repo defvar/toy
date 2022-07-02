@@ -9,7 +9,7 @@ use toy_api::task::PendingTask;
 use toy_api_server::store::kv::{
     Delete, DeleteOption, DeleteResult, Find, FindOption, KvResponse, KvStore, KvStoreOps,
     KvWatchEventType, KvWatchResponse, List, ListOption, Put, PutOperation, PutOption, PutResult,
-    Watch, WatchOption,
+    Update, UpdateResult, Watch, WatchOption,
 };
 use toy_api_server::store::{error::StoreError, StoreConnection};
 use toy_api_server::task::store::{Pending, TaskStore, TaskStoreOps, WatchPending};
@@ -151,15 +151,19 @@ where
         con: Self::Con,
         prefix: String,
         _opt: ListOption,
-    ) -> Result<Vec<V>, StoreError>
+    ) -> Result<Vec<KvResponse<V>>, StoreError>
     where
         V: DeserializeOwned,
     {
         tracing::debug!("list prefix:{:?}", prefix);
-        con.client
-            .list(&prefix)
-            .await?
-            .unpack(|x| toy_pack_json::unpack::<V>(&x.into_data()).map_err(|e| e.into()))
+        con.client.list(&prefix).await?.unpack(|x| {
+            let version = x.version();
+            let v = toy_pack_json::unpack::<V>(&x.into_data()).map_err(|e| e.into());
+            match v {
+                Ok(data) => Ok(KvResponse::with_version(data, version)),
+                Err(e) => Err(e),
+            }
+        })
     }
 }
 
@@ -355,5 +359,50 @@ where
             }),
             Err(e) => Err(e),
         }))
+    }
+}
+
+#[toy_api_server::async_trait::async_trait]
+impl<T> Update for EtcdStoreOps<T>
+where
+    T: HttpClient,
+{
+    type Con = EtcdStoreConnection<T>;
+
+    #[instrument(skip(self, con, f))]
+    async fn update<V, F>(
+        &self,
+        con: Self::Con,
+        key: String,
+        f: F,
+    ) -> Result<UpdateResult, StoreError>
+    where
+        V: DeserializeOwned + Serialize + Send,
+        F: FnOnce(V) -> Option<V> + Send,
+    {
+        tracing::debug!("update key:{:?}", key);
+        let res = con.client.get(&key).await?.value()?;
+        match res {
+            Some(v) => {
+                let version = v.version();
+                let result = toy_pack_json::unpack::<V>(&v.into_data())?;
+                let result = f(result);
+                if result.is_some() {
+                    let json = toy_pack_json::pack_to_string(&result)?;
+                    let upd_res = con.client.update(&key, json, version).await?;
+                    if upd_res.is_success() {
+                        Ok(UpdateResult::Update)
+                    } else {
+                        Err(StoreError::failed_opration("update", key, ""))
+                    }
+                } else {
+                    Ok(UpdateResult::None)
+                }
+            }
+            None => {
+                tracing::debug!("[update] not found. key:{:?}", key);
+                Ok(UpdateResult::NotFound)
+            }
+        }
     }
 }

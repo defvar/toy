@@ -54,9 +54,9 @@ where
     {
         Ok(v) => {
             let map = v
-                .iter()
-                .map(|x| match x {
-                    Secret::KeyPair(v) => (v.kid().to_owned(), v.clone()),
+                .into_iter()
+                .map(|x| match x.into_value() {
+                    Secret::KeyPair(key_pair) => (key_pair.kid().to_owned(), key_pair.clone()),
                 })
                 .collect::<HashMap<_, _>>();
             crate::context::server::set_key_pairs(map);

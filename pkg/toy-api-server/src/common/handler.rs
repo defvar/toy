@@ -77,7 +77,7 @@ where
         Ok(v) => {
             let format = api_opt.as_ref().map(|x| x.format()).unwrap_or(None);
             let indent = api_opt.as_ref().map(|x| x.indent()).unwrap_or(None);
-            let r = f(v);
+            let r = f(v.into_iter().map(|x| x.into_value()).collect());
             Ok(reply::into_response(&r, format, indent))
         }
         Err(e) => {
@@ -125,12 +125,15 @@ where
             match selection {
                 Some(ref s) if !s.preds().is_empty() => {
                     // filter
-                    vec = vec.into_iter().filter(|item| s.is_match(item)).collect();
+                    vec = vec
+                        .into_iter()
+                        .filter(|item| s.is_match(item.value()))
+                        .collect();
                 }
                 _ => {}
             };
 
-            let r = f(vec);
+            let r = f(vec.into_iter().map(|x| x.into_value()).collect());
 
             Ok(reply::into_response(&r, format, indent))
         }

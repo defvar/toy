@@ -1,7 +1,8 @@
 use crate::store::error::StoreError;
 use crate::store::kv::{
     Delete, DeleteOption, DeleteResult, Find, FindOption, KvResponse, KvStore, KvStoreOps,
-    KvWatchResponse, List, ListOption, Put, PutOption, PutResult, Watch, WatchOption,
+    KvWatchResponse, List, ListOption, Put, PutOption, PutResult, Update, UpdateResult, Watch,
+    WatchOption,
 };
 use crate::store::StoreConnection;
 use futures_util::stream::BoxStream;
@@ -98,7 +99,7 @@ impl List for MemoryStoreOps {
         con: Self::Con,
         prefix: String,
         opt: ListOption,
-    ) -> Result<Vec<V>, StoreError>
+    ) -> Result<Vec<KvResponse<V>>, StoreError>
     where
         V: DeserializeOwned,
     {
@@ -109,7 +110,7 @@ impl List for MemoryStoreOps {
                 .filter(|(k, _)| k.starts_with(&prefix))
                 .try_fold(Vec::new(), |mut vec, (_, v)| {
                     let v = toy_core::data::unpack::<V>(&v)?;
-                    vec.push(v);
+                    vec.push(KvResponse::with_version(v, 0));
                     Ok(vec)
                 })
         };
@@ -178,5 +179,45 @@ impl Watch for MemoryStoreOps {
         V: DeserializeOwned,
     {
         unimplemented!()
+    }
+}
+
+#[async_trait::async_trait]
+impl Update for MemoryStoreOps {
+    type Con = MemoryStore;
+
+    #[instrument(skip(self, con, f))]
+    async fn update<V, F>(
+        &self,
+        con: Self::Con,
+        key: String,
+        f: F,
+    ) -> Result<UpdateResult, StoreError>
+    where
+        V: DeserializeOwned + Serialize + Send,
+        F: FnOnce(V) -> Option<V> + Send,
+    {
+        tracing::debug!("update key:{:?}", key);
+
+        let mut lock = con.map.lock().unwrap();
+        let r = lock.get(&key).map(|x| x.clone());
+
+        match r {
+            Some(v) => {
+                let v = toy_core::data::unpack::<V>(&v)?;
+                let v = f(v);
+                if v.is_some() {
+                    let v = toy_core::data::pack(&v)?;
+                    lock.insert(key, v);
+                    Ok(UpdateResult::Update)
+                } else {
+                    Ok(UpdateResult::None)
+                }
+            }
+            None => {
+                tracing::debug!("[update] not found. key:{:?}", key);
+                Ok(UpdateResult::NotFound)
+            }
+        }
     }
 }

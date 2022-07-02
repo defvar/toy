@@ -83,7 +83,8 @@ where
         .await
     {
         Ok(v) => {
-            v.iter().for_each(|x| ROLE_BINDINGS.insert_binding(x));
+            v.into_iter()
+                .for_each(|x| ROLE_BINDINGS.insert_binding(&x.into_value()));
         }
         Err(e) => return Err(ApiError::server_initialize_failed(e)),
     };
@@ -98,7 +99,8 @@ where
         .await
     {
         Ok(v) => {
-            ROLE_BINDINGS.insert_roles(&v);
+            let vec: Vec<_> = v.into_iter().map(|x| x.into_value()).collect();
+            ROLE_BINDINGS.insert_roles(&vec);
         }
         Err(e) => return Err(ApiError::server_initialize_failed(e)),
     };

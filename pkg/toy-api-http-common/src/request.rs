@@ -65,7 +65,7 @@ where
     response(r, opt.common().format()).await
 }
 
-pub async fn put<T, V>(
+pub async fn put<T, V, R>(
     client: &T,
     auth: Option<&Auth>,
     root: &str,
@@ -73,10 +73,11 @@ pub async fn put<T, V>(
     key: &str,
     v: &V,
     opt: PutOption,
-) -> Result<(), Error>
+) -> Result<R, Error>
 where
     T: HttpClient,
     V: Serialize,
+    R: DeserializeOwned,
 {
     let query = prepare_query(&opt)?;
     let uri = format!("{}/{}/{}?{}", root, path, key, query).parse::<Uri>()?;
@@ -107,16 +108,17 @@ where
     response(r, opt.format()).await
 }
 
-pub async fn delete<T>(
+pub async fn delete<T, R>(
     client: &T,
     auth: &Auth,
     root: &str,
     path: &str,
     key: &str,
     opt: DeleteOption,
-) -> Result<(), Error>
+) -> Result<R, Error>
 where
     T: HttpClient,
+    R: DeserializeOwned,
 {
     let query = prepare_query(&opt)?;
     let uri = format!("{}/{}/{}?{}", root, path, key, query).parse::<Uri>()?;

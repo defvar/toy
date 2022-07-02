@@ -20,7 +20,7 @@ pub struct PendingTask {
     status: PendingStatus,
     allocated_supervisor: Option<SupervisorName>,
     allocated_on: Option<DateTime<Utc>>,
-    graph: Option<Graph>,
+    graph: Graph,
     created_on: DateTime<Utc>,
 }
 
@@ -49,7 +49,7 @@ pub struct AllocateResponse {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum AllocateStatus {
     Ok,
-    NotFound,
+    None,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -96,7 +96,7 @@ impl PendingTask {
             status: PendingStatus::Created,
             allocated_supervisor: None,
             allocated_on: None,
-            graph: Some(graph),
+            graph,
             created_on: Utc::now(),
         }
     }
@@ -109,8 +109,8 @@ impl PendingTask {
         self.status
     }
 
-    pub fn graph(&self) -> Option<&Graph> {
-        self.graph.as_ref()
+    pub fn graph(&self) -> &Graph {
+        &self.graph
     }
 
     pub fn allocate<S: Into<SupervisorName>>(self, name: S, allocated_at: DateTime<Utc>) -> Self {
@@ -119,6 +119,13 @@ impl PendingTask {
             allocated_supervisor: Some(name.into()),
             allocated_on: Some(allocated_at),
             ..self
+        }
+    }
+
+    pub fn is_dispatchable(&self) -> bool {
+        match self.status {
+            PendingStatus::Allocated => false,
+            PendingStatus::Created => true,
         }
     }
 }
@@ -163,11 +170,8 @@ impl AllocateResponse {
         }
     }
 
-    pub fn not_found(id: TaskId) -> Self {
-        Self {
-            task_id: id,
-            status: AllocateStatus::NotFound,
-        }
+    pub fn task_id(&self) -> TaskId {
+        self.task_id
     }
 
     pub fn is_ok(&self) -> bool {
@@ -177,7 +181,7 @@ impl AllocateResponse {
 
 impl Default for AllocateStatus {
     fn default() -> Self {
-        AllocateStatus::NotFound
+        AllocateStatus::None
     }
 }
 

@@ -5,7 +5,7 @@ use crate::store::StoreConnection;
 use async_trait::async_trait;
 use futures_util::stream::BoxStream;
 use serde::de::DeserializeOwned;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
 
 /// Trait Composit store operations.
@@ -19,6 +19,7 @@ pub trait KvStoreOps<C>:
     + Put<Con = C>
     + Delete<Con = C>
     + Watch<Con = C>
+    + Update<Con = C>
 where
     C: StoreConnection,
 {
@@ -152,7 +153,14 @@ pub enum DeleteResult {
     NotFound,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Copy, Debug)]
+pub enum UpdateResult {
+    Update,
+    None,
+    NotFound,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct KvMeta {
     version: u64,
 }
@@ -163,7 +171,7 @@ impl KvMeta {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct KvResponse<T> {
     meta: KvMeta,
     value: T,
@@ -179,6 +187,10 @@ impl<T> KvResponse<T> {
             value,
             meta: KvMeta { version },
         }
+    }
+
+    pub fn value(&self) -> &T {
+        &self.value
     }
 
     pub fn version(&self) -> u64 {
@@ -262,7 +274,7 @@ pub trait List {
         con: Self::Con,
         prefix: String,
         opt: ListOption,
-    ) -> Result<Vec<V>, StoreError>
+    ) -> Result<Vec<KvResponse<V>>, StoreError>
     where
         V: DeserializeOwned;
 }
@@ -312,4 +324,21 @@ pub trait Watch {
     ) -> Result<BoxStream<Result<KvWatchResponse<V>, StoreError>>, StoreError>
     where
         V: DeserializeOwned;
+}
+
+/// Update entity by specified key.
+#[async_trait]
+pub trait Update {
+    type Con: StoreConnection;
+
+    /// Update entity by specified key.
+    async fn update<V, F>(
+        &self,
+        con: Self::Con,
+        key: String,
+        f: F,
+    ) -> Result<UpdateResult, StoreError>
+    where
+        V: DeserializeOwned + Serialize + Send,
+        F: FnOnce(V) -> Option<V> + Send;
 }
