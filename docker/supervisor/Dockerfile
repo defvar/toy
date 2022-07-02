@@ -13,17 +13,13 @@ WORKDIR /toy/apps/supervisor/supervisor-d
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
     cargo install --path .
 
-FROM rust:slim-buster
+FROM gcr.io/distroless/cc
 
 COPY --from=cargo-build /usr/local/cargo/bin/supervisor-d /usr/local/bin/supervisor-d
-
-RUN mkdir /var/log/toy
-RUN chmod 775 /var/log/toy
 
 WORKDIR /toy
 
 EXPOSE 3031
 
-COPY --from=cargo-build /toy/docker/supervisor/ ./
-
-ENTRYPOINT ["./entrypoint.sh"]
+CMD ["/usr/local/bin/supervisor-d", "subscribe"]
+#ENTRYPOINT ["./entrypoint.sh"]

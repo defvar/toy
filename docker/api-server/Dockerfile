@@ -11,7 +11,7 @@ WORKDIR /toy/apps/console/console-backend/
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
     cargo install --path .
 
-FROM rust:slim-buster
+FROM gcr.io/distroless/cc
 
 COPY --from=cargo-build /usr/local/cargo/bin/console-backend /usr/local/bin/console-backend
 
