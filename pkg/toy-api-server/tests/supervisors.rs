@@ -1,5 +1,6 @@
 use chrono::Utc;
 use std::collections::HashMap;
+use std::net::SocketAddr;
 use toy_api::supervisors::Supervisor;
 use toy_api_server::api::supervisors;
 use toy_api_server::authentication::NoAuth;
@@ -12,7 +13,12 @@ mod util;
 async fn find() {
     util::prepare();
 
-    let v = Supervisor::new("aiueo".to_string(), Utc::now(), Vec::new());
+    let v = Supervisor::new(
+        "aiueo".to_string(),
+        Utc::now(),
+        Vec::new(),
+        "127.0.0.1:3031".parse::<SocketAddr>().unwrap(),
+    );
 
     let init = {
         let mut map = HashMap::new();
@@ -34,7 +40,12 @@ async fn find() {
 async fn put() {
     util::prepare();
 
-    let v = Supervisor::new("aiueo".to_string(), Utc::now(), Vec::new());
+    let v = Supervisor::new(
+        "aiueo".to_string(),
+        Utc::now(),
+        Vec::new(),
+        "127.0.0.1:3031".parse::<SocketAddr>().unwrap(),
+    );
     let body = toy_pack_json::pack_to_string(&v).unwrap();
 
     let store = MemoryStore::with_map(HashMap::new());
