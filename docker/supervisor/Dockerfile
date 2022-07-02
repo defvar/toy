@@ -22,6 +22,8 @@ RUN chmod 775 /var/log/toy
 
 WORKDIR /toy
 
+EXPOSE 3031
+
 COPY --from=cargo-build /toy/docker/supervisor/ ./
 
 ENTRYPOINT ["./entrypoint.sh"]
