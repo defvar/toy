@@ -1,27 +1,21 @@
-//! # Auth Implementation for Service Account(JWT).
+//! # Auth Implementation JWT.
 
-use std::cell::RefCell;
-use std::collections::HashMap;
-use toy_api::authentication::{Claims, KeyPair};
+use toy_api::authentication::Claims;
 use toy_api_server::authentication::{Auth, AuthUser};
 use toy_api_server::toy_h::HttpClient;
 use toy_api_server::ApiError;
 use toy_jwt::{Algorithm, Validation};
 
-thread_local! {
-  static KEYS: RefCell<HashMap<String, KeyPair>> = RefCell::new(HashMap::new());
-}
-
 #[derive(Debug, Clone)]
-pub struct ServiceAccountAuth;
+pub struct JWTAuth;
 
-impl ServiceAccountAuth {
+impl JWTAuth {
     pub fn new() -> Self {
-        ServiceAccountAuth
+        JWTAuth
     }
 }
 
-impl<T> Auth<T> for ServiceAccountAuth
+impl<T> Auth<T> for JWTAuth
 where
     T: HttpClient,
 {
