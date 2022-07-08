@@ -86,6 +86,8 @@ pub trait SupervisorClient: Send + Sync {
     ) -> Result<(), ApiClientError>;
 
     async fn delete(&self, key: String, opt: common::DeleteOption) -> Result<(), ApiClientError>;
+
+    async fn beat(&self, key: &str) -> Result<(), ApiClientError>;
 }
 
 #[async_trait]

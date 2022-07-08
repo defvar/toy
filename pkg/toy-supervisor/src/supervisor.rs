@@ -1,6 +1,7 @@
+use crate::beat::beat;
 use crate::msg::Request;
 use crate::task::RunningTask;
-use crate::{Response, RunTaskResponse, TaskResponse};
+use crate::{Response, RunTaskResponse, SupervisorError, TaskResponse};
 use chrono::{DateTime, Utc};
 use core::future::Future;
 use core::pin::Pin;
@@ -78,6 +79,8 @@ pub struct SupervisorContext<C> {
     /// send any request.
     tx: Outgoing<Request, ServiceError>,
     schemas: Vec<ServiceSchema>,
+
+    tx_http_server_shutdown: Option<Outgoing<(), SupervisorError>>,
 }
 
 impl<TF, P, C> Supervisor<TF, P, C>
@@ -113,6 +116,7 @@ where
                     started_at: None,
                     tx: tx_req.clone(),
                     schemas,
+                    tx_http_server_shutdown: None,
                 },
                 addr,
             },
@@ -195,6 +199,13 @@ where
                     }
                     Request::Shutdown => {
                         tracing::info!(name=?self.ctx.name, "receive shutdown request.");
+
+                        tracing::info!(name=?self.ctx.name, "shutdown api server...");
+                        if let Some(mut tx) = self.ctx.tx_http_server_shutdown {
+                            let _ = tx.send_ok(()).await;
+                        }
+
+                        tracing::info!(name=?self.ctx.name, "send stop signal all tasks.");
                         {
                             let tasks = Arc::clone(&self.ctx.tasks);
                             let mut tasks = tasks.lock().await;
@@ -227,7 +238,7 @@ where
         Ok(())
     }
 
-    fn spawn_server(&self) {
+    fn spawn_server(&mut self) {
         if self.addr.is_none() {
             return;
         }
@@ -235,9 +246,17 @@ where
         let server = crate::http::Server::new(self.ctx.clone());
         let name = self.ctx.name.clone();
         let addr = self.addr.unwrap().clone();
+        let c = self.ctx.client.clone().unwrap();
+        let interval = 10;
+        let (tx, rx) = mpsc::channel::<(), SupervisorError>(10);
+        self.ctx.tx_http_server_shutdown = Some(tx);
         toy_rt::spawn(async move {
             tracing::info!(?name, "start server.");
-            server.run(addr).await;
+            let f1 = server.run(addr, rx);
+            let f2 = beat(c, name.clone(), interval);
+            futures_util::pin_mut!(f1);
+            futures_util::pin_mut!(f2);
+            futures_util::future::select(f1, f2).await;
             tracing::info!(?name, "shutdown server.");
         });
     }

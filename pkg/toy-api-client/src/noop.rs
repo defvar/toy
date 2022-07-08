@@ -60,17 +60,14 @@ impl Rbaclient for NoopRbacClient {
 
 #[async_trait]
 impl GraphClient for NoopApiClient {
-    async fn list(
-        &self,
-        _opt: toy_api::common::ListOption,
-    ) -> Result<toy_api::graph::GraphList, ApiClientError> {
+    async fn list(&self, _opt: ListOption) -> Result<toy_api::graph::GraphList, ApiClientError> {
         unimplemented!()
     }
 
     async fn find(
         &self,
         _key: String,
-        _opt: toy_api::common::FindOption,
+        _opt: FindOption,
     ) -> Result<Option<toy_api::graph::Graph>, ApiClientError> {
         unimplemented!()
     }
@@ -79,16 +76,12 @@ impl GraphClient for NoopApiClient {
         &self,
         _key: String,
         _v: toy_api::graph::Graph,
-        _opt: toy_api::common::PutOption,
+        _opt: PutOption,
     ) -> Result<(), ApiClientError> {
         unimplemented!()
     }
 
-    async fn delete(
-        &self,
-        _key: String,
-        _opt: toy_api::common::DeleteOption,
-    ) -> Result<(), ApiClientError> {
+    async fn delete(&self, _key: String, _opt: DeleteOption) -> Result<(), ApiClientError> {
         unimplemented!()
     }
 }
@@ -128,7 +121,7 @@ impl SupervisorClient for NoopApiClient {
     async fn find(
         &self,
         _key: String,
-        _opt: toy_api::common::FindOption,
+        _opt: FindOption,
     ) -> Result<Option<toy_api::supervisors::Supervisor>, ApiClientError> {
         unimplemented!()
     }
@@ -137,16 +130,16 @@ impl SupervisorClient for NoopApiClient {
         &self,
         _key: String,
         _v: toy_api::supervisors::Supervisor,
-        _opt: toy_api::common::PutOption,
+        _opt: PutOption,
     ) -> Result<(), ApiClientError> {
         unimplemented!()
     }
 
-    async fn delete(
-        &self,
-        _key: String,
-        _opt: toy_api::common::DeleteOption,
-    ) -> Result<(), ApiClientError> {
+    async fn delete(&self, _key: String, _opt: DeleteOption) -> Result<(), ApiClientError> {
+        unimplemented!()
+    }
+
+    async fn beat(&self, _key: &str) -> Result<(), ApiClientError> {
         unimplemented!()
     }
 }
@@ -160,7 +153,7 @@ impl ServiceClient for NoopApiClient {
     async fn find(
         &self,
         _key: String,
-        _opt: toy_api::common::FindOption,
+        _opt: FindOption,
     ) -> Result<Option<ServiceSpec>, ApiClientError> {
         unimplemented!()
     }
@@ -169,16 +162,12 @@ impl ServiceClient for NoopApiClient {
         &self,
         _key: String,
         _v: ServiceSpec,
-        _opt: toy_api::common::PutOption,
+        _opt: PutOption,
     ) -> Result<(), ApiClientError> {
         unimplemented!()
     }
 
-    async fn delete(
-        &self,
-        _key: String,
-        _opt: toy_api::common::DeleteOption,
-    ) -> Result<(), ApiClientError> {
+    async fn delete(&self, _key: String, _opt: DeleteOption) -> Result<(), ApiClientError> {
         unimplemented!()
     }
 }

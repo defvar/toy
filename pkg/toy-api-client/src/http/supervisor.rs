@@ -1,11 +1,12 @@
 use crate::client::SupervisorClient;
 use crate::error::ApiClientError;
-use crate::Auth;
+use crate::http::common::common_headers;
+use crate::{common, Auth};
 use async_trait::async_trait;
 use std::sync::Arc;
 use toy_api::common::{DeleteOption, FindOption, PutOption};
 use toy_api::supervisors::{Supervisor, SupervisorList, SupervisorListOption};
-use toy_h::HttpClient;
+use toy_h::{HttpClient, RequestBuilder, Uri};
 
 static PATH: &'static str = "supervisors";
 
@@ -52,5 +53,12 @@ where
 
     async fn delete(&self, key: String, opt: DeleteOption) -> Result<(), ApiClientError> {
         crate::http::delete(&self.inner, &self.auth, &self.root, PATH, &key, opt).await
+    }
+
+    async fn beat(&self, key: &str) -> Result<(), ApiClientError> {
+        let uri = format!("{}/{}/{}/beat", self.root, PATH, key).parse::<Uri>()?;
+        let h = common_headers(None, &self.auth);
+        let r = self.inner.post(uri).headers(h).send().await?;
+        common::no_response(r, None).await
     }
 }

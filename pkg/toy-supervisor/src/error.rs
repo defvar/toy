@@ -31,4 +31,15 @@ impl SupervisorError {
     }
 }
 
+impl toy_core::error::Error for SupervisorError {
+    fn custom<T>(msg: T) -> Self
+    where
+        T: Display,
+    {
+        SupervisorError::Error {
+            inner: msg.to_string(),
+        }
+    }
+}
+
 impl toy_api_http_common::warp::reject::Reject for SupervisorError {}

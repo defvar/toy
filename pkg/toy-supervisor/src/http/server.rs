@@ -1,8 +1,10 @@
 use crate::http::filter::filters;
 use crate::supervisor::SupervisorContext;
+use crate::SupervisorError;
 use std::net::SocketAddr;
 use toy_api_client::ApiClient;
 use toy_api_http_common::warp;
+use toy_core::mpsc::Incoming;
 
 pub struct Server<C> {
     ctx: SupervisorContext<C>,
@@ -17,8 +19,15 @@ where
     }
 
     /// Run this `Server` forever on the current thread.
-    pub async fn run(self, addr: impl Into<SocketAddr> + 'static) {
-        let (addr, server) = warp::serve(filters(self.ctx)).bind_ephemeral(addr);
+    pub async fn run(
+        self,
+        addr: impl Into<SocketAddr> + 'static,
+        mut shutdown_receiver: Incoming<(), SupervisorError>,
+    ) {
+        let (addr, server) =
+            warp::serve(filters(self.ctx)).bind_with_graceful_shutdown(addr, async move {
+                shutdown_receiver.next().await;
+            });
         tracing::info!("listening on http://{}", addr);
         server.await
     }

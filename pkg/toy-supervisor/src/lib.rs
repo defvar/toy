@@ -1,3 +1,4 @@
+mod beat;
 mod config;
 mod error;
 mod http;
