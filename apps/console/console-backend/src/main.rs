@@ -7,6 +7,7 @@ use toy_api_store_etcd::EtcdStore;
 use toy_api_store_glogging::GLoggingStore;
 use toy_h::impl_reqwest::ReqwestClient;
 
+#[derive(Clone)]
 struct ToyConfig;
 
 impl ServerConfig<ReqwestClient> for ToyConfig {

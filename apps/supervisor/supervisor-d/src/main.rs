@@ -10,12 +10,34 @@ use std::path::PathBuf;
 use toy::api_client::http::HttpApiClient;
 use toy::core::prelude::*;
 use toy::executor::ExecutorFactory;
+use toy::supervisor::SupervisorConfig;
 use toy_api::authentication::Claims;
 use toy_jwt::Algorithm;
 use toy_tracing::LogGuard;
 
 mod error;
 mod opts;
+
+#[derive(Clone)]
+struct Config;
+
+impl SupervisorConfig for Config {
+    fn heart_beat_interval_secs(&self) -> u64 {
+        10
+    }
+
+    fn cert_path(&self) -> String {
+        std::env::var("TOY_SUPERVISOR_API_TLS_CERT_PATH").expect("config not found.")
+    }
+
+    fn key_path(&self) -> String {
+        std::env::var("TOY_SUPERVISOR_API_TLS_KEY_PATH").expect("config not found.")
+    }
+
+    fn pub_path(&self) -> String {
+        std::env::var("TOY_SUPERVISOR_API_TLS_PUB_PATH").expect("config not found.")
+    }
+}
 
 fn main() {
     if let Err(e) = go() {
@@ -57,7 +79,7 @@ fn go() -> Result<(), Error> {
         Command::Local(c) => {
             let _guard = initialize_log(&c.log)?;
             let g = get_graph(&c.graph)?;
-            let (sv, _, _) = toy::supervisor::local(ExecutorFactory, app);
+            let (sv, _, _) = toy::supervisor::local(ExecutorFactory, app, Config);
             log_start(&opts);
 
             rt.block_on(async {
@@ -70,15 +92,13 @@ fn go() -> Result<(), Error> {
                 .map_err(|e| Error::read_credential_error(e))?;
             let auth = toy::api_client::auth::Auth::with_bearer_token(&c.user, &token);
 
-            let addr = c.serve.parse::<SocketAddr>();
-            let addr = match addr {
-                Ok(v) => v,
-                Err(e) => return Err(e.into()),
-            };
+            let addr = format!("{}:{}", c.host, c.port)
+                .parse::<SocketAddr>()
+                .expect("invalid IP Address.");
 
             let client = HttpApiClient::new(&c.api_root, auth).unwrap();
             let (sv, _, _) =
-                toy::supervisor::subscribe(&c.name, ExecutorFactory, app, client, addr);
+                toy::supervisor::subscribe(&c.name, ExecutorFactory, app, client, addr, Config);
             log_start(&opts);
 
             rt.block_on(async {

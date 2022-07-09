@@ -1,8 +1,30 @@
 use std::io::Read;
 use toy::core::prelude::*;
 use toy::executor::ExecutorFactory;
+use toy::supervisor::SupervisorConfig;
 
 static CONFIG: &'static str = "./examples/file.yml";
+
+#[derive(Clone)]
+struct SVConfig;
+
+impl SupervisorConfig for SVConfig {
+    fn heart_beat_interval_secs(&self) -> u64 {
+        todo!()
+    }
+
+    fn cert_path(&self) -> String {
+        todo!()
+    }
+
+    fn key_path(&self) -> String {
+        todo!()
+    }
+
+    fn pub_path(&self) -> String {
+        todo!()
+    }
+}
 
 fn main() {
     let _ = toy_tracing::console();
@@ -25,7 +47,7 @@ fn main() {
             .build()
             .unwrap();
 
-        let (sv, _, _) = toy::supervisor::local(ExecutorFactory, app);
+        let (sv, _, _) = toy::supervisor::local(ExecutorFactory, app, SVConfig);
 
         rt.block_on(async {
             let _ = sv.oneshot(g).await;

@@ -1,7 +1,7 @@
 use crate::beat::beat;
 use crate::msg::Request;
 use crate::task::RunningTask;
-use crate::{Response, RunTaskResponse, SupervisorError, TaskResponse};
+use crate::{Response, RunTaskResponse, SupervisorConfig, SupervisorError, TaskResponse};
 use chrono::{DateTime, Utc};
 use core::future::Future;
 use core::pin::Pin;
@@ -24,29 +24,32 @@ use toy_core::mpsc::{self, Incoming, Outgoing};
 use toy_core::registry::{App, Registry, ServiceSchema};
 use toy_core::task::{TaskContext, TaskId};
 
-pub fn local<TF, P>(
+pub fn local<TF, P, Config>(
     factory: TF,
     app: App<P>,
+    config: Config,
 ) -> (
-    Supervisor<TF, P, NoopApiClient>,
+    Supervisor<TF, P, NoopApiClient, Config>,
     Outgoing<Request, ServiceError>,
     Incoming<(), ServiceError>,
 )
 where
     TF: TaskExecutorFactory + Send + 'static,
     P: Registry + 'static,
+    Config: SupervisorConfig + Clone + Send + Sync + 'static,
 {
-    Supervisor::new("local-supervisor", factory, app, None, None)
+    Supervisor::new("local-supervisor", factory, app, None, None, config)
 }
 
-pub fn subscribe<S, TF, P, C>(
+pub fn subscribe<S, TF, P, C, Config>(
     name: S,
     factory: TF,
     app: App<P>,
     client: C,
     addr: impl Into<SocketAddr> + 'static,
+    config: Config,
 ) -> (
-    Supervisor<TF, P, C>,
+    Supervisor<TF, P, C, Config>,
     Outgoing<Request, ServiceError>,
     Incoming<(), ServiceError>,
 )
@@ -55,11 +58,12 @@ where
     TF: TaskExecutorFactory + Send + 'static,
     P: Registry + 'static,
     C: ApiClient + Clone + Send + Sync + 'static,
+    Config: SupervisorConfig + Clone + Send + Sync + 'static,
 {
-    Supervisor::new(name, factory, app, Some(client), Some(addr.into()))
+    Supervisor::new(name, factory, app, Some(client), Some(addr.into()), config)
 }
 
-pub struct Supervisor<TF, P, C> {
+pub struct Supervisor<TF, P, C, Config> {
     _factory: TF,
     app: Arc<App<P>>,
     /// receive any request.
@@ -68,6 +72,7 @@ pub struct Supervisor<TF, P, C> {
     tx_shutdown: Outgoing<(), ServiceError>,
     ctx: SupervisorContext<C>,
     addr: Option<SocketAddr>,
+    config: Config,
 }
 
 #[derive(Debug, Clone)]
@@ -79,15 +84,15 @@ pub struct SupervisorContext<C> {
     /// send any request.
     tx: Outgoing<Request, ServiceError>,
     schemas: Vec<ServiceSchema>,
-
     tx_http_server_shutdown: Option<Outgoing<(), SupervisorError>>,
 }
 
-impl<TF, P, C> Supervisor<TF, P, C>
+impl<TF, P, C, Config> Supervisor<TF, P, C, Config>
 where
     TF: TaskExecutorFactory + Send + 'static,
     P: Registry + 'static,
     C: ApiClient + Clone + Send + Sync + 'static,
+    Config: SupervisorConfig + Clone + Send + Sync + 'static,
 {
     fn new<S: Into<String>>(
         name: S,
@@ -95,8 +100,9 @@ where
         app: App<P>,
         client: Option<C>,
         addr: Option<SocketAddr>,
+        config: Config,
     ) -> (
-        Supervisor<TF, P, C>,
+        Supervisor<TF, P, C, Config>,
         Outgoing<Request, ServiceError>,
         Incoming<(), ServiceError>,
     ) {
@@ -119,6 +125,7 @@ where
                     tx_http_server_shutdown: None,
                 },
                 addr,
+                config,
             },
             tx_req,
             rx_shutdown,
@@ -200,8 +207,8 @@ where
                     Request::Shutdown => {
                         tracing::info!(name=?self.ctx.name, "receive shutdown request.");
 
-                        tracing::info!(name=?self.ctx.name, "shutdown api server...");
                         if let Some(mut tx) = self.ctx.tx_http_server_shutdown {
+                            tracing::info!(name=?self.ctx.name, "shutdown api server...");
                             let _ = tx.send_ok(()).await;
                         }
 
@@ -243,16 +250,19 @@ where
             return;
         }
 
-        let server = crate::http::Server::new(self.ctx.clone());
-        let name = self.ctx.name.clone();
+        let ctx = self.ctx.clone();
         let addr = self.addr.unwrap().clone();
-        let c = self.ctx.client.clone().unwrap();
-        let interval = 10;
+        let config = self.config.clone();
         let (tx, rx) = mpsc::channel::<(), SupervisorError>(10);
         self.ctx.tx_http_server_shutdown = Some(tx);
+
         toy_rt::spawn(async move {
+            let name = ctx.name.clone();
+            let c = ctx.client.clone().unwrap();
+            let interval = config.heart_beat_interval_secs();
             tracing::info!(?name, "start server.");
-            let f1 = server.run(addr, rx);
+            let server = crate::http::Server::new(ctx);
+            let f1 = server.run(addr, config, rx);
             let f2 = beat(c, name.clone(), interval);
             futures_util::pin_mut!(f1);
             futures_util::pin_mut!(f2);
@@ -329,7 +339,7 @@ async fn send_stop_signal(task: &mut RunningTask) {
     tracing::info!(uuid = ?task.id(), "send stop signal to task.");
 }
 
-impl<TF, P, C> std::fmt::Debug for Supervisor<TF, P, C> {
+impl<TF, P, C, Config> std::fmt::Debug for Supervisor<TF, P, C, Config> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let mode = if self.ctx.client.is_none() {
             "local"

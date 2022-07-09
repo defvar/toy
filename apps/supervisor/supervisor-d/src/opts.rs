@@ -12,12 +12,14 @@ pub struct Subscribe {
     #[clap(short, long, env = "TOY_SUPERVISOR_NAME")]
     pub name: String,
     #[clap(
-        short,
+        short = 'H',
         long,
-        env = "TOY_SUPERVISOR_SERVE_ADDR",
-        default_value = "127.0.0.1:3031"
+        env = "TOY_SUPERVISOR_API_HOST",
+        default_value = "127.0.0.1"
     )]
-    pub serve: String,
+    pub host: String,
+    #[clap(short, long, env = "TOY_SUPERVISOR_API_PORT", default_value = "3031")]
+    pub port: String,
     #[clap(
         short,
         long,
@@ -45,7 +47,9 @@ pub struct Local {
 
 #[derive(Parser, Debug)]
 pub enum Command {
+    /// Local and one shot execution.
     Local(Local),
+    /// Works in cooperation with the api server.
     Subscribe(Subscribe),
 }
 

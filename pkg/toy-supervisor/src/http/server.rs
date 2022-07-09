@@ -1,6 +1,6 @@
 use crate::http::filter::filters;
 use crate::supervisor::SupervisorContext;
-use crate::SupervisorError;
+use crate::{SupervisorConfig, SupervisorError};
 use std::net::SocketAddr;
 use toy_api_client::ApiClient;
 use toy_api_http_common::warp;
@@ -22,13 +22,17 @@ where
     pub async fn run(
         self,
         addr: impl Into<SocketAddr> + 'static,
+        config: impl SupervisorConfig,
         mut shutdown_receiver: Incoming<(), SupervisorError>,
     ) {
-        let (addr, server) =
-            warp::serve(filters(self.ctx)).bind_with_graceful_shutdown(addr, async move {
+        let (addr, server) = warp::serve(filters(self.ctx))
+            .tls()
+            .cert_path(config.cert_path())
+            .key_path(config.key_path())
+            .bind_with_graceful_shutdown(addr, async move {
                 shutdown_receiver.next().await;
             });
-        tracing::info!("listening on http://{}", addr);
+        tracing::info!("listening on https://{}", addr);
         server.await
     }
 }

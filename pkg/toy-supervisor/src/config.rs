@@ -1,32 +1,9 @@
-use serde::{Deserialize, Serialize};
+pub trait SupervisorConfig {
+    fn heart_beat_interval_secs(&self) -> u64;
 
-const fn default_heart_beat_interval_secs() -> u64 {
-    10
-}
+    fn cert_path(&self) -> String;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct SupervisorConfig {
-    #[serde(default = "default_heart_beat_interval_secs")]
-    heart_beat_interval_secs: u64,
-}
+    fn key_path(&self) -> String;
 
-impl SupervisorConfig {
-    pub fn heart_beat_interval_secs(&self) -> u64 {
-        self.heart_beat_interval_secs
-    }
-
-    pub fn with_heart_beat_interval_secs(self, secs: u64) -> Self {
-        Self {
-            heart_beat_interval_secs: secs,
-            ..self
-        }
-    }
-}
-
-impl Default for SupervisorConfig {
-    fn default() -> Self {
-        SupervisorConfig {
-            heart_beat_interval_secs: default_heart_beat_interval_secs(),
-        }
-    }
+    fn pub_path(&self) -> String;
 }
