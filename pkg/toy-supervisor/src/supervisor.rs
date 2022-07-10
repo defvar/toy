@@ -163,20 +163,23 @@ where
                         let tasks = Arc::clone(&self.ctx.tasks);
                         let ctx = TaskContext::new(id, g);
                         let app = Arc::clone(&self.app);
-                        let _ = toy_rt::spawn(async move {
-                            let (e, tx_signal) = TF::new(ctx.clone());
-                            let task = RunningTask::new(&ctx, tx_signal);
-                            {
-                                let mut tasks = tasks.lock().await;
-                                let _ = tasks.insert(ctx.id(), task);
-                            }
-                            let _ = e.run(&app, Frame::default()).await;
-                            {
-                                let mut tasks = tasks.lock().await;
-                                let _ = tasks.remove(&ctx.id());
-                            }
-                            ()
-                        });
+                        let _ = toy_rt::spawn_named(
+                            async move {
+                                let (e, tx_signal) = TF::new(ctx.clone());
+                                let task = RunningTask::new(&ctx, tx_signal);
+                                {
+                                    let mut tasks = tasks.lock().await;
+                                    let _ = tasks.insert(ctx.id(), task);
+                                }
+                                let _ = e.run(&app, Frame::default()).await;
+                                {
+                                    let mut tasks = tasks.lock().await;
+                                    let _ = tasks.remove(&ctx.id());
+                                }
+                                ()
+                            },
+                            "supervisor-runTask",
+                        );
                         let _ = tx.send_ok(RunTaskResponse(id)).await;
                     }
                     Request::Tasks(tx) => {
@@ -256,19 +259,22 @@ where
         let (tx, rx) = mpsc::channel::<(), SupervisorError>(10);
         self.ctx.tx_http_server_shutdown = Some(tx);
 
-        toy_rt::spawn(async move {
-            let name = ctx.name.clone();
-            let c = ctx.client.clone().unwrap();
-            let interval = config.heart_beat_interval_secs();
-            tracing::info!(?name, "start server.");
-            let server = crate::http::Server::new(ctx);
-            let f1 = server.run(addr, config, rx);
-            let f2 = beat(c, name.clone(), interval);
-            futures_util::pin_mut!(f1);
-            futures_util::pin_mut!(f2);
-            futures_util::future::select(f1, f2).await;
-            tracing::info!(?name, "shutdown server.");
-        });
+        toy_rt::spawn_named(
+            async move {
+                let name = ctx.name.clone();
+                let c = ctx.client.clone().unwrap();
+                let interval = config.heart_beat_interval_secs();
+                tracing::info!(?name, "start server.");
+                let server = crate::http::Server::new(ctx);
+                let f1 = server.run(addr, config, rx);
+                let f2 = beat(c, name.clone(), interval);
+                futures_util::pin_mut!(f1);
+                futures_util::pin_mut!(f2);
+                futures_util::future::select(f1, f2).await;
+                tracing::info!(?name, "shutdown server.");
+            },
+            "supervisor-api-serve",
+        );
     }
 
     async fn register(&self, schemas: Vec<ServiceSchema>) -> Result<(), ()> {

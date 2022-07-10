@@ -150,32 +150,36 @@ impl ServiceExecutor for Executor {
         let task_ctx = task_ctx.with_uri(&uri);
         match data::unpack::<F::Config>(&config_value.unwrap().config()) {
             Ok(config) => {
-                toy_rt::spawn(async move {
-                    let new_service = factory.new_service(service_type.clone()).await;
-                    let new_ctx = factory.new_context(service_type.clone(), config).await;
-                    match (new_service, new_ctx) {
-                        (Ok(service), Ok(ctx)) => {
-                            if let Err(e) = process(
-                                task_ctx,
-                                rx,
-                                upstream_count,
-                                tx,
-                                service,
-                                service_type,
-                                ctx,
-                            )
-                            .await
-                            {
-                                tracing::error!(?uri, err=?e, "an error occured;");
+                let task_name = uri.to_string();
+                toy_rt::spawn_named(
+                    async move {
+                        let new_service = factory.new_service(service_type.clone()).await;
+                        let new_ctx = factory.new_context(service_type.clone(), config).await;
+                        match (new_service, new_ctx) {
+                            (Ok(service), Ok(ctx)) => {
+                                if let Err(e) = process(
+                                    task_ctx,
+                                    rx,
+                                    upstream_count,
+                                    tx,
+                                    service,
+                                    service_type,
+                                    ctx,
+                                )
+                                .await
+                                {
+                                    tracing::error!(?uri, err=?e, "an error occured;");
+                                }
+                            }
+                            (s, c) => {
+                                let e1 = s.err();
+                                let e2 = c.err();
+                                tracing::error!(?uri, err1 = ?e1, err2 = ?e2, "an error occured;");
                             }
                         }
-                        (s, c) => {
-                            let e1 = s.err();
-                            let e2 = c.err();
-                            tracing::error!(?uri, err1 = ?e1, err2 = ?e2, "an error occured;");
-                        }
-                    }
-                });
+                    },
+                    &format!("task-{}", task_name),
+                );
             }
             Err(e) => tracing::error!("config initialize failed. uri:{:?}, error:{:?}", uri, e),
         }

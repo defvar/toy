@@ -6,6 +6,7 @@ use toy_api_auth_jwt::JWTAuth;
 use toy_api_store_etcd::EtcdStore;
 use toy_api_store_glogging::GLoggingStore;
 use toy_h::impl_reqwest::ReqwestClient;
+use toy_tracing::{CONSOLE_DEFAULT_IP, CONSOLE_DEFAULT_PORT};
 
 #[derive(Clone)]
 struct ToyConfig;
@@ -47,7 +48,24 @@ impl ServerConfig<ReqwestClient> for ToyConfig {
 
 fn main() {
     dotenv::dotenv().ok();
-    let _ = toy_tracing::console();
+
+    let tokio_console_host = std::env::var("TOY_API_TOKIO_CONSOLE_HOST");
+    let tokio_console_port = std::env::var("TOY_API_TOKIO_CONSOLE_PORT");
+
+    let addr = match (tokio_console_host, tokio_console_port) {
+        (Ok(host), Ok(port)) => format!("{}:{}", host, port)
+            .parse::<SocketAddr>()
+            .expect("invalid IP Address."),
+        (Ok(host), Err(_)) => format!("{}:{}", host, CONSOLE_DEFAULT_PORT)
+            .parse::<SocketAddr>()
+            .expect("invalid IP Address."),
+        (Err(_), Ok(port)) => format!("{}:{}", CONSOLE_DEFAULT_IP, port)
+            .parse::<SocketAddr>()
+            .expect("invalid IP Address."),
+        _ => SocketAddr::new(CONSOLE_DEFAULT_IP, CONSOLE_DEFAULT_PORT),
+    };
+
+    let _ = toy_tracing::console_with_addr(addr);
 
     let host = std::env::var("TOY_API_HOST").expect("env not found. TOY_API_HOST");
     let port = std::env::var("TOY_API_PORT").expect("env not found. TOY_API_PORT");
@@ -66,6 +84,8 @@ fn main() {
     let server = toy::api_server::Server::new(ToyConfig).with_client(client);
 
     api_rt.block_on(async move {
+        tracing::info!("start api-server :{}", host);
+        tracing::info!("tokio tracing console :{}", addr);
         let _ = server.run(host).await;
     });
 }

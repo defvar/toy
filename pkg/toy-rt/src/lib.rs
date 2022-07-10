@@ -16,6 +16,15 @@ where
     JoinHandle { raw: j }
 }
 
+pub fn spawn_named<F>(future: F, name: &str) -> JoinHandle<F::Output>
+where
+    F: Future + Send + 'static,
+    F::Output: Send + 'static,
+{
+    let j = tokio::task::Builder::new().name(name).spawn(future);
+    JoinHandle { raw: j }
+}
+
 pub fn block_in_place<F, R>(f: F) -> R
 where
     F: FnOnce() -> R,

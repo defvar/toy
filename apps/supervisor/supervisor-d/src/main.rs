@@ -13,7 +13,7 @@ use toy::executor::ExecutorFactory;
 use toy::supervisor::SupervisorConfig;
 use toy_api::authentication::Claims;
 use toy_jwt::Algorithm;
-use toy_tracing::LogGuard;
+use toy_tracing::{LogGuard, CONSOLE_DEFAULT_IP, CONSOLE_DEFAULT_PORT};
 
 mod error;
 mod opts;
@@ -77,17 +77,17 @@ fn go() -> Result<(), Error> {
 
     match &opts.c {
         Command::Local(c) => {
-            let _guard = initialize_log(&c.log)?;
+            let (_guard, tracing_addr) = initialize_log(&c.log)?;
             let g = get_graph(&c.graph)?;
             let (sv, _, _) = toy::supervisor::local(ExecutorFactory, app, Config);
-            log_start(&opts);
+            log_start(&opts, tracing_addr);
 
             rt.block_on(async {
                 let _ = sv.oneshot(g).await;
             });
         }
         Command::Subscribe(c) => {
-            let _guard = initialize_log(&c.log)?;
+            let (_guard, tracing_addr) = initialize_log(&c.log)?;
             let token = get_credential(&c.user, &c.kid, &c.credential)
                 .map_err(|e| Error::read_credential_error(e))?;
             let auth = toy::api_client::auth::Auth::with_bearer_token(&c.user, &token);
@@ -99,7 +99,7 @@ fn go() -> Result<(), Error> {
             let client = HttpApiClient::new(&c.api_root, auth).unwrap();
             let (sv, _, _) =
                 toy::supervisor::subscribe(&c.name, ExecutorFactory, app, client, addr, Config);
-            log_start(&opts);
+            log_start(&opts, tracing_addr);
 
             rt.block_on(async {
                 let _ = sv.run().await;
@@ -110,16 +110,32 @@ fn go() -> Result<(), Error> {
     Ok(())
 }
 
-fn initialize_log(opt: &LogOption) -> Result<LogGuard, Error> {
+fn initialize_log(opt: &LogOption) -> Result<(LogGuard, SocketAddr), Error> {
+    let addr = match (&opt.tokio_console_host, &opt.tokio_console_port) {
+        (Some(host), Some(port)) => format!("{}:{}", host, port)
+            .parse::<SocketAddr>()
+            .expect("invalid IP Address."),
+        (Some(host), None) => format!("{}:{}", host, CONSOLE_DEFAULT_PORT)
+            .parse::<SocketAddr>()
+            .expect("invalid IP Address."),
+        (None, Some(port)) => format!("{}:{}", CONSOLE_DEFAULT_IP, port)
+            .parse::<SocketAddr>()
+            .expect("invalid IP Address."),
+        _ => SocketAddr::new(CONSOLE_DEFAULT_IP, CONSOLE_DEFAULT_PORT),
+    };
+
     match opt.log {
         Some(ref path) => match (path.as_path().parent(), path.as_path().file_name()) {
             (Some(dir), Some(prefix)) => {
                 toy_tracing::file(dir, prefix, toy_tracing::LogRotation::Never)
                     .map_err(|x| x.into())
+                    .map(|g| (g, addr))
             }
             _ => Err(Error::invalid_log_path()),
         },
-        None => toy_tracing::console().map_err(|x| x.into()),
+        None => toy_tracing::console_with_addr(addr)
+            .map_err(|x| x.into())
+            .map(|g| (g, addr)),
     }
 }
 
@@ -154,6 +170,7 @@ fn get_graph(file: &PathBuf) -> Result<Graph, Error> {
     Ok(g)
 }
 
-fn log_start(opts: &Opts) {
+fn log_start(opts: &Opts, tracing_addr: SocketAddr) {
     tracing::info!("start supervisor for:{:?}", opts);
+    tracing::info!("tokio tracing console :{}", tracing_addr);
 }

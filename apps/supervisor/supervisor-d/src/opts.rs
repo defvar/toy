@@ -5,6 +5,10 @@ use std::path::PathBuf;
 pub struct LogOption {
     #[clap(short, long, value_hint = ValueHint::FilePath)]
     pub log: Option<PathBuf>,
+    #[clap(long, env = "TOY_SUPERVISOR_TOKIO_CONSOLE_HOST")]
+    pub tokio_console_host: Option<String>,
+    #[clap(long, env = "TOY_SUPERVISOR_TOKIO_CONSOLE_PORT")]
+    pub tokio_console_port: Option<String>,
 }
 
 #[derive(Parser, Debug)]

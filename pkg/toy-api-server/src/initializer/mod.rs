@@ -20,20 +20,26 @@ where
     crate::context::rbac::initialize(&store).await?;
 
     let s = store.clone();
-    toy_rt::spawn(async move {
-        tracing::info!("start watch context.");
-        if let Err(e) = crate::context::rbac::sync_role_bindings(s).await {
-            tracing::error!(err = ?e, "an error occured; when watch context.");
-        }
-    });
+    toy_rt::spawn_named(
+        async move {
+            tracing::info!("start watch context.");
+            if let Err(e) = crate::context::rbac::sync_role_bindings(s).await {
+                tracing::error!(err = ?e, "an error occured; when watch context.");
+            }
+        },
+        "api-serve-sync_role",
+    );
 
     let s = store.clone();
-    toy_rt::spawn(async move {
-        tracing::info!("start watch pending task.");
-        if let Err(e) = crate::context::dispatcher::dispatch_task(s, client).await {
-            tracing::error!(err = ?e, "an error occured; when watch pending task.");
-        }
-    });
+    toy_rt::spawn_named(
+        async move {
+            tracing::info!("start watch pending task.");
+            if let Err(e) = crate::context::dispatcher::dispatch_task(s, client).await {
+                tracing::error!(err = ?e, "an error occured; when watch pending task.");
+            }
+        },
+        "api-serv-dispatch_task",
+    );
 
     Ok(())
 }

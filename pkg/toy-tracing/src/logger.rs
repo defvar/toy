@@ -1,8 +1,9 @@
 use crate::tcp::TcpLogger;
-use std::net::ToSocketAddrs;
+use std::net::{IpAddr, SocketAddr, ToSocketAddrs};
 use std::path::Path;
 use tracing_appender::non_blocking::WorkerGuard;
 use tracing_subscriber::fmt::format::FmtSpan;
+use tracing_subscriber::prelude::*;
 use tracing_subscriber::EnvFilter;
 
 pub enum LogRotation {
@@ -17,18 +18,35 @@ pub struct LogGuard {
     _g: Option<WorkerGuard>,
 }
 
-pub fn console() -> Result<LogGuard, std::io::Error> {
-    let time = tracing_subscriber::fmt::time::UtcTime::rfc_3339();
-    let builder = tracing_subscriber::fmt()
-        .json()
-        .with_span_events(FmtSpan::NEW | FmtSpan::CLOSE)
-        .with_thread_ids(true)
-        .with_thread_names(true)
-        .with_env_filter(EnvFilter::from_default_env())
-        .with_timer(time)
-        .with_ansi(false);
+pub const CONSOLE_DEFAULT_IP: IpAddr = console_subscriber::Server::DEFAULT_IP;
+pub const CONSOLE_DEFAULT_PORT: u16 = console_subscriber::Server::DEFAULT_PORT;
 
-    builder.init();
+/// enable console log.
+pub fn console() -> Result<LogGuard, std::io::Error> {
+    console_with_addr(SocketAddr::new(CONSOLE_DEFAULT_IP, CONSOLE_DEFAULT_PORT))
+}
+
+/// enable console log.
+/// toki-tracing using addr.
+pub fn console_with_addr(addr: impl Into<SocketAddr>) -> Result<LogGuard, std::io::Error> {
+    let time = tracing_subscriber::fmt::time::UtcTime::rfc_3339();
+    let tokio_console_layer = console_subscriber::ConsoleLayer::builder()
+        .server_addr(addr)
+        .spawn();
+
+    tracing_subscriber::registry()
+        .with(tokio_console_layer)
+        .with(
+            tracing_subscriber::fmt::layer()
+                .with_ansi(false)
+                .with_timer(time)
+                .json()
+                .with_span_events(FmtSpan::NEW | FmtSpan::CLOSE)
+                .with_thread_ids(true)
+                .with_thread_names(true)
+                .with_filter(EnvFilter::from_default_env()),
+        )
+        .init();
     Ok(LogGuard { _g: None })
 }
 

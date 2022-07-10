@@ -30,12 +30,12 @@ where
                     .filter(|x| x.value().is_dispatchable())
                     .collect::<Vec<_>>();
                 if filterd.len() > 0 {
-                    tracing::debug!("found pending task, {}", filterd.len());
+                    tracing::info!("found pending task, {}", filterd.len());
                     for task in filterd {
                         let version = task.version();
                         match execute(&store, &client, task.into_value(), version).await {
                             Ok(r) => {
-                                tracing::debug!("execute task {}", r.task_id());
+                                tracing::info!("requested {}", r.task_id());
                             }
                             Err(e) => {
                                 tracing::error!("{:?}", e);
@@ -64,10 +64,11 @@ where
     let sv = candidate(store).await?;
     let task = allocate(store, sv.name(), task, version).await?;
 
+    tracing::info!("request task to {}:{}", sv.addr().ip(), sv.addr().port());
     toy_api_http_common::request::post(
         client,
         None,
-        &format!("http://{}:{}", sv.addr().ip(), sv.addr().port()),
+        &format!("https://{}:{}", sv.addr().ip(), sv.addr().port()),
         "tasks",
         &task,
         PostOption::new().with_format(Format::MessagePack),

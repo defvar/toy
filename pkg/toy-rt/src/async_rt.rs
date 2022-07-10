@@ -25,6 +25,16 @@ impl Runtime {
     {
         let _ = self.rt.spawn(future);
     }
+
+    pub fn spawn_named<F>(&self, future: F, name: &str)
+    where
+        F: Future + Send + 'static,
+        F::Output: Send + 'static,
+    {
+        let _ = tokio::task::Builder::new()
+            .name(name)
+            .spawn_on(future, self.rt.handle());
+    }
 }
 
 impl RuntimeBuilder {
