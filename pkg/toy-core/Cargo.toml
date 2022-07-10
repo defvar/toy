@@ -22,4 +22,4 @@ toy-map = { path = "../../shared/toy-map" }
 [dev-dependencies]
 toy-pack = { path = "../../shared/toy-pack", features = ["derive"] }
 toy-pack-json = { path = "../../shared/toy-pack-json" }
-tokio = { version = "1.15", features = ["rt-multi-thread"] }
+tokio = { version = "1.19.2", features = ["rt-multi-thread"] }

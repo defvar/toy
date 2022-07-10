@@ -23,5 +23,5 @@ toy-api-http-common = { path = "../toy-api-http-common", features = ["server"]}
 toy-pack-json = {path = "../../shared/toy-pack-json"}
 
 [dev-dependencies]
-tokio = { version = "1.15", features = ["full", "test-util"] }
+tokio = { version = "1.19.2", features = ["full", "test-util"] }
 tokio-test = "0.4.2"

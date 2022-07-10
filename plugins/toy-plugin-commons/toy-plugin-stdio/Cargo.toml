@@ -12,6 +12,6 @@ toy-core = { path = "../../../pkg/toy-core" }
 toy-pack = { path = "../../../shared/toy-pack", features = ["derive"] }
 tracing = "0.1"
 
-tokio = { version = "1.15", features = ["io-std", "io-util"] }
-tokio-util = { version = "0.6.7", features = ["io"] }
+tokio = { version = "1.19.2", features = ["io-std", "io-util"] }
+tokio-util = { version = "0.7.3", features = ["io"] }
 tokio-stream = { version = "0.1" }

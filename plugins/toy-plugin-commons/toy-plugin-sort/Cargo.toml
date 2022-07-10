@@ -9,9 +9,9 @@ edition = "2021"
 serde = { version = "1.0", features = ["derive"] }
 tracing = "0.1"
 bytes = "1"
-tokio = { version = "1.15", features = ["fs"] }
-tokio-util = { version = "0.6.7", features = ["codec"] }
-tokio-stream = { version = "0.1" }
+tokio = { version = "1.19.2", features = ["fs"] }
+tokio-util = { version = "0.7.3", features = ["codec"] }
+tokio-stream = { version = "0.1.9" }
 futures-util = { version = "0.3", features = ["sink"] }
 
 toy-core = { path = "../../../pkg/toy-core" }
