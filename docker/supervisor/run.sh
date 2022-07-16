@@ -9,11 +9,13 @@ ENV_FILE="$1"
 SECRET="$2"
 NAME="$3"
 
+#--log-driver=fluentd \
+#--log-opt fluentd-address=localhost:24224 \
+
 sudo docker run -d \
 --network toy \
---log-driver=fluentd \
---log-opt fluentd-address=localhost:24224 \
--p 127.0.0.1:3031:3031 \
+-p 3031:3031 \
+-p 9031:9031 \
 --mount type=bind,source=/"$SECRET",destination=/.keys \
 --env TOY_SUPERVISOR_NAME="$NAME" \
 --env-file "$ENV_FILE" \

@@ -25,11 +25,11 @@ jobs:
 
       - run: rustup update nightly --no-self-update && rustup default nightly
 
-      - name: test-console-backend
+      - name: test-toyapi
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --manifest-path ${{ github.workspace }}/apps/console/console-backend/Cargo.toml
+          args: --manifest-path ${{ github.workspace }}/apps/toyapi-d/Cargo.toml
 
       - name: test-supervisor
         uses: actions-rs/cargo@v1

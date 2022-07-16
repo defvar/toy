@@ -1,0 +1,24 @@
+[package]
+name = "toyapi-d"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+# common
+log = "0.4"
+tracing = "0.1"
+dotenv = "0.15.0"
+
+toy = { path = "../../pkg/toy", features = ["api-server"] }
+toy-rt = { path = "../../pkg/toy-rt"}
+toy-h = { path = "../../shared/toy-h", features = ["impl_reqwest"]}
+toy-tracing = { path = "../../pkg/toy-tracing" }
+
+# store
+toy-api-store-etcd = { path = "../../pkg/toy-api-store-etcd"}
+toy-api-store-glogging = { path = "../../pkg/toy-api-store-glogging" }
+
+# auth
+toy-api-auth-jwt = { path = "../../pkg/toy-api-auth-jwt" }

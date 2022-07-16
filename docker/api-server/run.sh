@@ -7,11 +7,13 @@ fi
 
 sudo docker container rm -f api-server
 
+#--log-driver=fluentd \
+#--log-opt fluentd-address=localhost:24224 \
+
 sudo docker run -d \
 --network toy \
---log-driver=fluentd \
---log-opt fluentd-address=localhost:24224 \
--p 127.0.0.1:3030:3030 \
+-p 3030:3030 \
+-p 9030:9030 \
 --mount type=bind,source=/"$2",destination=/.keys \
 --env-file "$1" \
 --name api-server \
