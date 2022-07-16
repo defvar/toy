@@ -1,5 +1,7 @@
 FROM ghcr.io/rust-lang/rust:nightly-buster-slim as cargo-build
 
+ARG RUSTFLAGS="--cfg tokio_unstable"
+
 WORKDIR /toy
 
 COPY pkg/ pkg/
@@ -18,5 +20,6 @@ COPY --from=cargo-build /usr/local/cargo/bin/console-backend /usr/local/bin/cons
 WORKDIR /toy
 
 EXPOSE 3030
+EXPOSE 9030
 
 CMD ["/usr/local/bin/console-backend"]

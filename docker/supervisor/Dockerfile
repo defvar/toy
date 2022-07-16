@@ -1,5 +1,7 @@
 FROM ghcr.io/rust-lang/rust:nightly-buster-slim as cargo-build
 
+ARG RUSTFLAGS="--cfg tokio_unstable"
+
 WORKDIR /toy
 
 COPY pkg/ pkg/
@@ -20,6 +22,6 @@ COPY --from=cargo-build /usr/local/cargo/bin/supervisor-d /usr/local/bin/supervi
 WORKDIR /toy
 
 EXPOSE 3031
+EXPOSE 9031
 
 CMD ["/usr/local/bin/supervisor-d", "subscribe"]
-#ENTRYPOINT ["./entrypoint.sh"]
