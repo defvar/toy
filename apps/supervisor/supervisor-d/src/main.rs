@@ -124,16 +124,24 @@ fn initialize_log(opt: &LogOption) -> Result<(LogGuard, SocketAddr), Error> {
         _ => SocketAddr::new(CONSOLE_DEFAULT_IP, CONSOLE_DEFAULT_PORT),
     };
 
+    let format = match opt.format {
+        LogFormat::Text => toy_tracing::LogFormat::Text,
+        LogFormat::Json => toy_tracing::LogFormat::Json,
+    };
+
+    let tracing_opt = toy_tracing::LogOption::default()
+        .with_ansi(opt.ansi)
+        .with_format(format)
+        .with_tokio_console_addr(addr);
+
     match opt.log {
         Some(ref path) => match (path.as_path().parent(), path.as_path().file_name()) {
-            (Some(dir), Some(prefix)) => {
-                toy_tracing::file(dir, prefix, toy_tracing::LogRotation::Never)
-                    .map_err(|x| x.into())
-                    .map(|g| (g, addr))
-            }
+            (Some(dir), Some(prefix)) => toy_tracing::file_with(dir, prefix, tracing_opt)
+                .map_err(|x| x.into())
+                .map(|g| (g, addr)),
             _ => Err(Error::invalid_log_path()),
         },
-        None => toy_tracing::console_with_addr(addr)
+        None => toy_tracing::console_with(tracing_opt)
             .map_err(|x| x.into())
             .map(|g| (g, addr)),
     }

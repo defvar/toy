@@ -10,6 +10,8 @@ edition = "2021"
 log = "0.4"
 tracing = "0.1"
 dotenv = "0.15.0"
+clap = { version = "3.0.0-rc.7", features = ["derive", "env"] }
+thiserror = "1.0"
 
 toy = { path = "../../pkg/toy", features = ["api-server"] }
 toy-rt = { path = "../../pkg/toy-rt"}

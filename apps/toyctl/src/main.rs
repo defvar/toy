@@ -74,7 +74,8 @@ fn initialize_log(opt: &LogOption) -> Result<LogGuard, Error> {
 
     match (path.as_path().parent(), path.as_path().file_name()) {
         (Some(dir), Some(prefix)) => {
-            toy_tracing::file(dir, prefix, toy_tracing::LogRotation::Never).map_err(|x| x.into())
+            toy_tracing::file_with(dir, prefix, toy_tracing::LogOption::default())
+                .map_err(|x| x.into())
         }
         _ => Err(Error::invalid_log_path()),
     }

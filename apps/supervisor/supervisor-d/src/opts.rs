@@ -1,5 +1,11 @@
-use clap::{Parser, ValueHint};
+use clap::{ArgEnum, Parser, ValueHint};
 use std::path::PathBuf;
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ArgEnum)]
+pub enum LogFormat {
+    Text,
+    Json,
+}
 
 #[derive(Parser, Debug)]
 pub struct LogOption {
@@ -9,6 +15,16 @@ pub struct LogOption {
     pub tokio_console_host: Option<String>,
     #[clap(long, env = "TOY_SUPERVISOR_TOKIO_CONSOLE_PORT")]
     pub tokio_console_port: Option<String>,
+    #[clap(long, env = "TOY_LOG_ANSI", default_value = "false")]
+    pub ansi: bool,
+    #[clap(
+        long,
+        env = "TOY_LOG_FORMAT",
+        default_value = "text",
+        arg_enum,
+        value_parser
+    )]
+    pub format: LogFormat,
 }
 
 #[derive(Parser, Debug)]

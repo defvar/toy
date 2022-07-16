@@ -1,3 +1,8 @@
+#![feature(backtrace)]
+
+use crate::error::Error;
+use crate::opts::*;
+use clap::Parser;
 use std::net::SocketAddr;
 use toy::api_server::authentication::CommonAuths;
 use toy::api_server::task::btree_log_store::BTreeLogStore;
@@ -5,10 +10,17 @@ use toy::api_server::ServerConfig;
 use toy_api_auth_jwt::JWTAuth;
 use toy_api_store_etcd::EtcdStore;
 use toy_h::impl_reqwest::ReqwestClient;
-use toy_tracing::{LogRotation, CONSOLE_DEFAULT_IP, CONSOLE_DEFAULT_PORT};
+use toy_tracing::{LogGuard, CONSOLE_DEFAULT_IP, CONSOLE_DEFAULT_PORT};
+
+mod error;
+mod opts;
 
 #[derive(Clone)]
-struct ToyConfig;
+struct ToyConfig {
+    cert_path: String,
+    key_path: String,
+    pub_path: String,
+}
 
 impl ServerConfig<ReqwestClient> for ToyConfig {
     type Auth = CommonAuths<JWTAuth, JWTAuth>;
@@ -33,58 +45,93 @@ impl ServerConfig<ReqwestClient> for ToyConfig {
     }
 
     fn cert_path(&self) -> String {
-        std::env::var("TOY_API_TLS_CERT_PATH").expect("config not found.")
+        self.cert_path.clone()
     }
 
     fn key_path(&self) -> String {
-        std::env::var("TOY_API_TLS_KEY_PATH").expect("config not found.")
+        self.key_path.clone()
     }
 
     fn pub_path(&self) -> String {
-        std::env::var("TOY_API_TLS_PUB_PATH").expect("config not found.")
+        self.pub_path.clone()
     }
 }
 
 fn main() {
+    if let Err(e) = go() {
+        tracing::error!("{:?}", e);
+    }
+}
+
+fn go() -> Result<(), Error> {
     dotenv::dotenv().ok();
+    let opts: Opts = Opts::parse();
 
-    let tokio_console_host = std::env::var("TOY_API_TOKIO_CONSOLE_HOST");
-    let tokio_console_port = std::env::var("TOY_API_TOKIO_CONSOLE_PORT");
-
-    let addr = match (tokio_console_host, tokio_console_port) {
-        (Ok(host), Ok(port)) => format!("{}:{}", host, port)
-            .parse::<SocketAddr>()
-            .expect("invalid IP Address."),
-        (Ok(host), Err(_)) => format!("{}:{}", host, CONSOLE_DEFAULT_PORT)
-            .parse::<SocketAddr>()
-            .expect("invalid IP Address."),
-        (Err(_), Ok(port)) => format!("{}:{}", CONSOLE_DEFAULT_IP, port)
-            .parse::<SocketAddr>()
-            .expect("invalid IP Address."),
-        _ => SocketAddr::new(CONSOLE_DEFAULT_IP, CONSOLE_DEFAULT_PORT),
-    };
-
-    let _ = toy_tracing::console_with_addr(addr);
-
-    let host = std::env::var("TOY_API_HOST").expect("env not found. TOY_API_HOST");
-    let port = std::env::var("TOY_API_PORT").expect("env not found. TOY_API_PORT");
+    let host = opts.host;
+    let port = opts.port;
 
     let host = format!("{}:{}", host, port)
         .parse::<SocketAddr>()
         .expect("invalid IP Address.");
 
+    let (_guard, tracing_addr) = initialize_log(&opts.log)?;
+
     let mut api_rt = toy_rt::RuntimeBuilder::new()
-        .thread_name("api-server")
-        .worker_threads(2)
+        .thread_name(opts.thread_name_prefix)
+        .worker_threads(opts.worker)
         .build()
         .unwrap();
 
     let client = ReqwestClient::new().unwrap();
-    let server = toy::api_server::Server::new(ToyConfig).with_client(client);
+    let config = ToyConfig {
+        cert_path: opts.cert_path.to_string(),
+        key_path: opts.key_path.to_string(),
+        pub_path: opts.pub_path.to_string(),
+    };
+    let server = toy::api_server::Server::new(config).with_client(client);
 
     api_rt.block_on(async move {
         tracing::info!("start api-server :{}", host);
-        tracing::info!("tokio tracing console :{}", addr);
+        tracing::info!("tokio tracing console :{}", tracing_addr);
         let _ = server.run(host).await;
     });
+
+    Ok(())
+}
+
+fn initialize_log(opt: &LogOption) -> Result<(LogGuard, SocketAddr), Error> {
+    let addr = match (&opt.tokio_console_host, &opt.tokio_console_port) {
+        (Some(host), Some(port)) => format!("{}:{}", host, port)
+            .parse::<SocketAddr>()
+            .expect("invalid IP Address."),
+        (Some(host), None) => format!("{}:{}", host, CONSOLE_DEFAULT_PORT)
+            .parse::<SocketAddr>()
+            .expect("invalid IP Address."),
+        (None, Some(port)) => format!("{}:{}", CONSOLE_DEFAULT_IP, port)
+            .parse::<SocketAddr>()
+            .expect("invalid IP Address."),
+        _ => SocketAddr::new(CONSOLE_DEFAULT_IP, CONSOLE_DEFAULT_PORT),
+    };
+
+    let format = match opt.format {
+        LogFormat::Text => toy_tracing::LogFormat::Text,
+        LogFormat::Json => toy_tracing::LogFormat::Json,
+    };
+
+    let tracing_opt = toy_tracing::LogOption::default()
+        .with_ansi(opt.ansi)
+        .with_format(format)
+        .with_tokio_console_addr(addr);
+
+    match opt.log {
+        Some(ref path) => match (path.as_path().parent(), path.as_path().file_name()) {
+            (Some(dir), Some(prefix)) => toy_tracing::file_with(dir, prefix, tracing_opt)
+                .map_err(|x| x.into())
+                .map(|g| (g, addr)),
+            _ => Err(Error::invalid_log_path()),
+        },
+        None => toy_tracing::console_with(tracing_opt)
+            .map_err(|x| x.into())
+            .map(|g| (g, addr)),
+    }
 }

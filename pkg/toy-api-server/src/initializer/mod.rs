@@ -27,7 +27,7 @@ where
                 tracing::error!(err = ?e, "an error occured; when watch context.");
             }
         },
-        "api-serve-sync_role",
+        "api-serv-sync_role",
     );
 
     let s = store.clone();
