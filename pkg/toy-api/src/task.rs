@@ -12,6 +12,7 @@ use toy_core::prelude::TaskId;
 pub enum PendingStatus {
     Created,
     Allocated,
+    AllocateFailed,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -122,10 +123,23 @@ impl PendingTask {
         }
     }
 
+    pub fn allocate_failed<S: Into<SupervisorName>>(
+        self,
+        name: S,
+        allocated_at: DateTime<Utc>,
+    ) -> Self {
+        Self {
+            status: PendingStatus::AllocateFailed,
+            allocated_supervisor: Some(name.into()),
+            allocated_on: Some(allocated_at),
+            ..self
+        }
+    }
+
     pub fn is_dispatchable(&self) -> bool {
         match self.status {
             PendingStatus::Allocated => false,
-            PendingStatus::Created => true,
+            PendingStatus::Created | PendingStatus::AllocateFailed => true,
         }
     }
 }
@@ -167,6 +181,13 @@ impl AllocateResponse {
         Self {
             task_id: id,
             status: AllocateStatus::Ok,
+        }
+    }
+
+    pub fn none(id: TaskId) -> Self {
+        Self {
+            task_id: id,
+            status: AllocateStatus::None,
         }
     }
 

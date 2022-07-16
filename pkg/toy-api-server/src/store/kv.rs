@@ -144,7 +144,7 @@ impl WatchOption {
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum PutResult {
     Create,
-    Update,
+    Update(u64),
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -155,7 +155,7 @@ pub enum DeleteResult {
 
 #[derive(Clone, Copy, Debug)]
 pub enum UpdateResult {
-    Update,
+    Update(u64),
     None,
     NotFound,
 }

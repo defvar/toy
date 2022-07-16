@@ -138,7 +138,7 @@ impl Put for MemoryStoreOps {
 
         let mut lock = con.map.lock().unwrap();
         Ok(match lock.insert(key, v) {
-            Some(_) => PutResult::Update,
+            Some(_) => PutResult::Update(0),
             None => PutResult::Create,
         })
     }
@@ -209,7 +209,7 @@ impl Update for MemoryStoreOps {
                 if v.is_some() {
                     let v = toy_core::data::pack(&v)?;
                     lock.insert(key, v);
-                    Ok(UpdateResult::Update)
+                    Ok(UpdateResult::Update(0))
                 } else {
                     Ok(UpdateResult::None)
                 }

@@ -2,19 +2,23 @@ use crate::common;
 use crate::store::kv::{KvStore, List, ListOption, Put, PutOption, PutResult};
 use crate::ApiError;
 use toy_api::common::{Format, PostOption};
-use toy_api::supervisors::{Supervisor, SupervisorName};
+use toy_api::supervisors::Supervisor;
 use toy_api::task::{AllocateResponse, PendingTask};
 use toy_h::HttpClient;
 
-pub async fn dispatch_task<T, Store>(store: Store, client: T) -> Result<(), ApiError>
+pub async fn dispatch_task<T, Store>(
+    store: Store,
+    client: T,
+    interval_mills: u64,
+) -> Result<(), ApiError>
 where
     Store: KvStore<T>,
     T: HttpClient,
 {
     loop {
         tracing::debug!("check pending task");
-        // 3sec
-        toy_rt::sleep(3000).await;
+
+        toy_rt::sleep(interval_mills).await;
         match store
             .ops()
             .list::<PendingTask>(
@@ -35,10 +39,14 @@ where
                         let version = task.version();
                         match execute(&store, &client, task.into_value(), version).await {
                             Ok(r) => {
-                                tracing::info!("requested {}", r.task_id());
+                                if r.is_ok() {
+                                    tracing::info!("requested {}", r.task_id());
+                                } else {
+                                    tracing::info!("no result {}", r.task_id());
+                                }
                             }
                             Err(e) => {
-                                tracing::error!("{:?}", e);
+                                tracing::error!("request failed cause {:?}", e);
                             }
                         }
                     }
@@ -62,22 +70,40 @@ where
     T: HttpClient,
 {
     let sv = candidate(store).await?;
-    let task = allocate(store, sv.name(), task, version).await?;
+    if sv.is_none() {
+        return Ok(AllocateResponse::none(task.task_id()));
+    }
 
-    tracing::info!("request task to {}:{}", sv.addr().ip(), sv.addr().port());
-    toy_api_http_common::request::post(
+    let sv = sv.unwrap();
+    let (task, new_version) =
+        put_pending_task(store, task.allocate(sv.name(), chrono::Utc::now()), version).await?;
+
+    tracing::info!("request task to {}:{}", sv.name(), sv.addr().port());
+
+    match toy_api_http_common::request::post(
         client,
         None,
-        &format!("https://{}:{}", sv.addr().ip(), sv.addr().port()),
+        &format!("https://{}:{}", sv.name(), sv.addr().port()),
         "tasks",
         &task,
         PostOption::new().with_format(Format::MessagePack),
     )
     .await
-    .map_err(|e| e.into())
+    {
+        Ok(r) => Ok(r),
+        Err(e) => {
+            let _ = put_pending_task(
+                store,
+                task.allocate_failed(sv.name(), chrono::Utc::now()),
+                new_version,
+            )
+            .await?;
+            Err(e.into())
+        }
+    }
 }
 
-async fn candidate<Store, T>(store: &Store) -> Result<Supervisor, ApiError>
+async fn candidate<Store, T>(store: &Store) -> Result<Option<Supervisor>, ApiError>
 where
     Store: KvStore<T>,
     T: HttpClient,
@@ -94,37 +120,36 @@ where
         Ok(vec) => {
             let s = vec.into_iter().filter(|x| x.value().is_alive()).nth(0);
             if let Some(s) = s {
-                Ok(s.into_value())
+                Ok(Some(s.into_value()))
             } else {
-                Err(ApiError::error("supervisor not found."))
+                tracing::info!("candidate supervisor not found.");
+                Ok(None)
             }
         }
         Err(e) => Err(ApiError::store_operation_failed(e)),
     }
 }
 
-async fn allocate<Store, T>(
+async fn put_pending_task<Store, T>(
     store: &Store,
-    name: &SupervisorName,
     v: PendingTask,
     version: u64,
-) -> Result<PendingTask, ApiError>
+) -> Result<(PendingTask, u64), ApiError>
 where
     Store: KvStore<T>,
     T: HttpClient,
 {
-    let allocated = v.allocate(name, chrono::Utc::now());
     match store
         .ops()
         .put(
             store.con().unwrap(),
-            common::constants::pending_key(allocated.task_id()),
-            allocated.clone(),
+            common::constants::pending_key(v.task_id()),
+            v.clone(),
             PutOption::new().with_update_only().with_version(version),
         )
         .await
     {
-        Ok(PutResult::Update) => Ok(allocated),
+        Ok(PutResult::Update(new_version)) => Ok((v, new_version)),
         Ok(_) => unreachable!(),
         Err(e) => Err(ApiError::store_operation_failed(e)),
     }

@@ -26,7 +26,7 @@ where
         .update(store.con().unwrap(), key.clone(), f)
         .await
     {
-        Ok(UpdateResult::Update) => Ok(StatusCode::OK),
+        Ok(UpdateResult::Update(_)) => Ok(StatusCode::OK),
         Ok(UpdateResult::NotFound) => Ok(StatusCode::NOT_FOUND),
         Ok(UpdateResult::None) => unreachable!(),
         Err(e) => {

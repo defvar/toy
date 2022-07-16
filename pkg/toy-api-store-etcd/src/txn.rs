@@ -140,6 +140,24 @@ impl TxnResponse {
     pub fn is_success(&self) -> bool {
         self.succeeded.is_some() && self.succeeded.unwrap()
     }
+
+    pub fn responses(&self) -> &[ResponseOp] {
+        &self.responses
+    }
+}
+
+impl ResponseOp {
+    pub fn put(&self) -> Option<&PutResponse> {
+        self.response_put.as_ref()
+    }
+
+    pub fn range(&self) -> Option<&RangeResponse> {
+        self.response_range.as_ref()
+    }
+
+    pub fn delete(&self) -> Option<&DeleteRangeResponse> {
+        self.response_delete_range.as_ref()
+    }
 }
 
 impl Default for CompareResult {

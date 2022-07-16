@@ -248,6 +248,12 @@ impl PutRequest {
     }
 }
 
+impl PutResponse {
+    pub fn revision(&self) -> Result<u64, EtcdError> {
+        self.header.revision.parse::<u64>().map_err(|e| e.into())
+    }
+}
+
 impl DeleteRangeRequest {
     pub fn single(key: &str) -> DeleteRangeRequest {
         let encoded_key = encode(key);

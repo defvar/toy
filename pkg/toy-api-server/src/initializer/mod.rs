@@ -34,11 +34,22 @@ where
     toy_rt::spawn_named(
         async move {
             tracing::info!("start watch pending task.");
-            if let Err(e) = crate::context::dispatcher::dispatch_task(s, client).await {
+            if let Err(e) = crate::context::dispatcher::dispatch_task(s, client, 3000).await {
                 tracing::error!(err = ?e, "an error occured; when watch pending task.");
             }
         },
         "api-serv-dispatch_task",
+    );
+
+    let s = store.clone();
+    toy_rt::spawn_named(
+        async move {
+            tracing::info!("start watch pending supervisor.");
+            if let Err(e) = crate::context::supervisor_cleaner::clean(s, 10000).await {
+                tracing::error!(err = ?e, "an error occured; when watch pending supervisor.");
+            }
+        },
+        "api-serv-supervisor_cleaner",
     );
 
     Ok(())

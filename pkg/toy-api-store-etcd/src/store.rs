@@ -112,7 +112,7 @@ where
 {
     type Con = EtcdStoreConnection<T>;
 
-    #[instrument(skip(self, con))]
+    #[instrument(level = "debug", skip(self, con))]
     async fn find<V>(
         &self,
         con: Self::Con,
@@ -145,7 +145,7 @@ where
 {
     type Con = EtcdStoreConnection<T>;
 
-    #[instrument(skip(self, con))]
+    #[instrument(level = "debug", skip(self, con))]
     async fn list<V>(
         &self,
         con: Self::Con,
@@ -174,7 +174,7 @@ where
 {
     type Con = EtcdStoreConnection<T>;
 
-    #[instrument(skip(self, con, v))]
+    #[instrument(level = "debug", skip(self, con, v))]
     async fn put<V>(
         &self,
         con: Self::Con,
@@ -224,7 +224,8 @@ where
 
             let upd_res = con.client.update(key, s, version).await?;
             if upd_res.is_success() {
-                Ok(PutResult::Update)
+                let version = upd_res.responses()[0].put().unwrap().revision()?;
+                Ok(PutResult::Update(version))
             } else {
                 Err(StoreError::failed_opration("update", key, ""))
             }
@@ -254,7 +255,7 @@ where
 {
     type Con = EtcdStoreConnection<T>;
 
-    #[instrument(skip(self, con))]
+    #[instrument(level = "debug", skip(self, con))]
     async fn delete(
         &self,
         con: Self::Con,
@@ -284,7 +285,7 @@ where
 {
     type Con = EtcdStoreConnection<T>;
 
-    #[instrument(skip(self, con))]
+    #[instrument(level = "debug", skip(self, con))]
     async fn watch<V>(
         &self,
         con: Self::Con,
@@ -322,7 +323,7 @@ where
 {
     type Con = EtcdStoreConnection<T>;
 
-    #[instrument(skip(self, con, v))]
+    #[instrument(level = "debug", skip(self, con, v))]
     async fn pending(&self, con: Self::Con, key: String, v: PendingTask) -> Result<(), StoreError> {
         let s = toy_pack_json::pack_to_string(&v)?;
         let create_res = con.client.create(&key, &s).await?;
@@ -342,7 +343,7 @@ where
     type Con = EtcdStoreConnection<T>;
     type Stream = impl toy_h::Stream<Item = Result<Vec<PendingTask>, StoreError>> + Send + 'static;
 
-    #[instrument(skip(self, con))]
+    #[instrument(level = "debug", skip(self, con))]
     async fn watch_pending(
         &self,
         con: Self::Con,
@@ -369,7 +370,7 @@ where
 {
     type Con = EtcdStoreConnection<T>;
 
-    #[instrument(skip(self, con, f))]
+    #[instrument(level = "debug", skip(self, con, f))]
     async fn update<V, F>(
         &self,
         con: Self::Con,
@@ -391,7 +392,8 @@ where
                     let json = toy_pack_json::pack_to_string(&result)?;
                     let upd_res = con.client.update(&key, json, version).await?;
                     if upd_res.is_success() {
-                        Ok(UpdateResult::Update)
+                        let version = upd_res.responses()[0].put().unwrap().revision()?;
+                        Ok(UpdateResult::Update(version))
                     } else {
                         Err(StoreError::failed_opration("update", key, ""))
                     }
