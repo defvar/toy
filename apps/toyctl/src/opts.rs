@@ -28,43 +28,44 @@ pub struct Config {
 
 #[derive(Parser, Debug)]
 pub struct FindCommand {
-    pub resource: String,
+    #[clap(subcommand)]
+    pub resource: FindResources,
     #[clap(short, long)]
-    pub name: String,
-    #[clap(short, long)]
-    pub pretty: Option<bool>,
+    pub pretty: bool,
 }
 
 #[derive(Parser, Debug)]
 pub struct ListCommand {
-    pub resource: String,
+    #[clap(subcommand)]
+    pub resource: ListResources,
     #[clap(short, long)]
     pub pretty: bool,
 }
 
 #[derive(Parser, Debug)]
 pub struct PutCommand {
-    pub resource: String,
+    #[clap(subcommand)]
+    pub resource: PutResources,
     #[clap(short, long)]
-    pub name: String,
-    #[clap(short, long, value_hint = ValueHint::FilePath)]
-    pub file: PathBuf,
-    #[clap(short, long)]
-    pub pretty: Option<bool>,
+    pub pretty: bool,
 }
 
 #[derive(Parser, Debug)]
 pub struct PostCommand {
-    pub resource: String,
-    #[clap(short, long, value_hint = ValueHint::FilePath)]
-    pub file: PathBuf,
+    #[clap(subcommand)]
+    pub resource: PostResources,
 }
 
 #[derive(Parser, Debug)]
 pub enum Command {
+    /// Find resource by name and key.
     Find(FindCommand),
+    /// List resource by name.
     List(ListCommand),
+    /// Add or modify resource by json file.
+    /// Resource is modified when a key is matched.
     Put(PutCommand),
+    /// Add resource by json file.
     Post(PostCommand),
 }
 
@@ -74,4 +75,61 @@ pub struct Opts {
     pub c: Command,
     #[clap(flatten)]
     pub config: Config,
+}
+
+/////////////////
+// resources
+/////////////////
+
+#[derive(Debug, Parser)]
+pub enum FindResources {
+    Supervisors(FindResourceCommand),
+    Services(FindResourceCommand),
+}
+
+#[derive(Debug, Parser)]
+pub struct FindResourceCommand {
+    #[clap(short, long)]
+    pub name: String,
+}
+
+#[derive(Debug, Parser)]
+pub enum ListResources {
+    Supervisors(ListResourceCommand),
+    Services(ListResourceCommand),
+    Roles(ListResourceCommand),
+    RoleBindings(ListResourceCommand),
+    Tasks(ListResourceCommand),
+}
+
+#[derive(Debug, Parser)]
+pub struct ListResourceCommand {
+    #[clap(short, long)]
+    pub opt: Option<String>,
+}
+
+#[derive(Debug, Parser)]
+pub enum PostResources {
+    Tasks(PostResourceCommand),
+}
+
+#[derive(Debug, Parser)]
+pub struct PostResourceCommand {
+    #[clap(short, long, value_hint = ValueHint::FilePath)]
+    pub file: PathBuf,
+}
+
+#[derive(Debug, Parser)]
+pub enum PutResources {
+    Roles(PutResourceCommand),
+    RoleBindings(PutResourceCommand),
+    Graphs(PutResourceCommand),
+}
+
+#[derive(Debug, Parser)]
+pub struct PutResourceCommand {
+    #[clap(short, long)]
+    pub name: String,
+    #[clap(short, long, value_hint = ValueHint::FilePath)]
+    pub file: PathBuf,
 }

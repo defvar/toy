@@ -1,6 +1,7 @@
 use std::fmt::Display;
 use thiserror::Error;
 use toy_jwt::error::JWTError;
+use toy_pack_urlencoded::QueryParseError;
 
 #[derive(Debug, Error)]
 pub enum Error {
@@ -37,6 +38,7 @@ pub enum Error {
     #[error("not found env. {}", inner)]
     NotFoundEnv { inner: String },
 
+    #[allow(dead_code)]
     #[error("unknwon resource. name: {}", name)]
     UnknwonResource { name: String },
 
@@ -44,6 +46,12 @@ pub enum Error {
     IOError {
         #[from]
         source: std::io::Error,
+    },
+
+    #[error("error: invalid opt. cause: {}", source)]
+    ParseOptionError {
+        #[from]
+        source: QueryParseError,
     },
 
     #[error("error: invalid log path.")]
@@ -67,6 +75,7 @@ impl Error {
         }
     }
 
+    #[allow(dead_code)]
     pub fn unknwon_resource<T>(name: T) -> Error
     where
         T: Display,

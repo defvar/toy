@@ -1,6 +1,6 @@
 use super::from_file;
 use crate::error::Error;
-use crate::opts::PostCommand;
+use crate::opts::{PostCommand, PostResources};
 use crate::output::Output;
 use std::io::Write;
 use toy::api_client::client::TaskClient;
@@ -12,14 +12,13 @@ pub async fn execute<W>(c: PostCommand, client: HttpApiClient, writer: W) -> Res
 where
     W: Write,
 {
-    let PostCommand { resource, file } = c;
+    let PostCommand { resource } = c;
 
-    match resource.as_str() {
-        "tasks" => client
+    match resource {
+        PostResources::Tasks(c) => client
             .task()
-            .post(from_file(file)?, PostOption::new())
+            .post(from_file(c.file)?, PostOption::new())
             .await
             .write(writer, false),
-        _ => return Err(Error::unknwon_resource(resource)),
     }
 }

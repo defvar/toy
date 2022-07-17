@@ -20,3 +20,4 @@ toy-jwt = { path = "../../shared/toy-jwt" }
 toy-rt = { path = "../../pkg/toy-rt" }
 toy-pack = { path = "../../shared/toy-pack" }
 toy-pack-json = {path = "../../shared/toy-pack-json"}
+toy-pack-urlencoded = {path = "../../shared/toy-pack-urlencoded"}

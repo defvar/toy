@@ -1,5 +1,5 @@
 use crate::output::Output;
-use crate::{Error, FindCommand};
+use crate::{Error, FindCommand, FindResources};
 use std::io::Write;
 use toy::api_client::client::{ServiceClient, SupervisorClient};
 use toy::api_client::http::HttpApiClient;
@@ -10,22 +10,20 @@ pub async fn execute<W>(c: FindCommand, client: HttpApiClient, writer: W) -> Res
 where
     W: Write,
 {
-    let FindCommand {
-        resource,
-        name,
-        pretty,
-    } = c;
+    let FindCommand { resource, pretty } = c;
 
     let opt = FindOption::new();
-    let pretty = pretty.is_some() && pretty.unwrap();
 
-    match resource.as_str() {
-        "supervisors" => client
+    match resource {
+        FindResources::Supervisors(c) => client
             .supervisor()
-            .find(name, opt)
+            .find(c.name, opt)
             .await
             .write(writer, pretty),
-        "services" => client.service().find(name, opt).await.write(writer, pretty),
-        _ => return Err(Error::unknwon_resource(resource)),
+        FindResources::Services(c) => client
+            .service()
+            .find(c.name, opt)
+            .await
+            .write(writer, pretty),
     }
 }

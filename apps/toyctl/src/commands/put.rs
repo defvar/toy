@@ -1,6 +1,6 @@
 use super::from_file;
 use crate::error::Error;
-use crate::opts::PutCommand;
+use crate::opts::{PutCommand, PutResources};
 use crate::output::Output;
 use std::io::Write;
 use toy::api_client::client::{GraphClient, Rbaclient, RoleBindingClient, RoleClient};
@@ -12,33 +12,25 @@ pub async fn execute<W>(c: PutCommand, client: HttpApiClient, writer: W) -> Resu
 where
     W: Write,
 {
-    let PutCommand {
-        resource,
-        name,
-        file,
-        pretty,
-    } = c;
+    let PutCommand { resource, pretty } = c;
 
-    let pretty = pretty.is_some() && pretty.unwrap();
-
-    match resource.as_str() {
-        "roles" => client
+    match resource {
+        PutResources::Roles(c) => client
             .rbac()
             .role()
-            .put(name, from_file(file)?, PutOption::new())
+            .put(c.name, from_file(c.file)?, PutOption::new())
             .await
             .write(writer, pretty),
-        "roleBindings" => client
+        PutResources::RoleBindings(c) => client
             .rbac()
             .role_binding()
-            .put(name, from_file(file)?, PutOption::new())
+            .put(c.name, from_file(c.file)?, PutOption::new())
             .await
             .write(writer, pretty),
-        "graphs" => client
+        PutResources::Graphs(c) => client
             .graph()
-            .put(name, from_file(file)?, PutOption::new())
+            .put(c.name, from_file(c.file)?, PutOption::new())
             .await
             .write(writer, pretty),
-        _ => return Err(Error::unknwon_resource(resource)),
     }
 }
