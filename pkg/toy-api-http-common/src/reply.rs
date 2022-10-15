@@ -1,23 +1,45 @@
 use crate::error::Error;
+#[cfg(feature = "server_axum")]
+use axum::response::IntoResponse;
+use bytes::Bytes;
 use futures_util::stream::Stream;
+use http::header::{HeaderValue, CACHE_CONTROL, CONTENT_TYPE, TRANSFER_ENCODING};
+use http::StatusCode;
 use serde::Serialize;
 use std::marker::PhantomData;
 use toy_api::common::{Format, Indent};
-use warp::http::header::{HeaderValue, CACHE_CONTROL, CONTENT_TYPE, TRANSFER_ENCODING};
-use warp::http::StatusCode;
-use warp::hyper::body::Bytes;
-use warp::reply::Reply;
-use warp::reply::Response;
+#[cfg(feature = "server")]
+use warp::reply::{Reply, Response};
 
+#[cfg(not(feature = "server_axum"))]
+#[cfg(feature = "server")]
 pub fn into_response<T>(v: &T, format: Option<Format>, indent: Option<Indent>) -> Response
 where
     T: Serialize,
 {
     let format = format.unwrap_or(Format::default());
     match format {
-        Format::Json => json(v, indent).into_response(),
-        Format::Yaml => yaml(v).into_response(),
-        Format::MessagePack => mp(v).into_response(),
+        Format::Json => Reply::into_response(json(v, indent)),
+        Format::Yaml => Reply::into_response(yaml(v)),
+        Format::MessagePack => Reply::into_response(mp(v)),
+    }
+}
+
+#[cfg(feature = "server_axum")]
+#[cfg(not(feature = "server"))]
+pub fn into_response<T>(
+    v: &T,
+    format: Option<Format>,
+    indent: Option<Indent>,
+) -> axum::response::Response
+where
+    T: Serialize,
+{
+    let format = format.unwrap_or(Format::default());
+    match format {
+        Format::Json => IntoResponse::into_response(json(v, indent)),
+        Format::Yaml => IntoResponse::into_response(yaml(v)),
+        Format::MessagePack => IntoResponse::into_response(mp(v)),
     }
 }
 
@@ -120,6 +142,7 @@ struct Mp {
     inner: Result<Vec<u8>, ()>,
 }
 
+#[cfg(feature = "server")]
 impl warp::Reply for Mp {
     fn into_response(self) -> Response {
         match self.inner {
@@ -131,7 +154,24 @@ impl warp::Reply for Mp {
                 );
                 res
             }
-            Err(()) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
+            Err(()) => Reply::into_response(StatusCode::INTERNAL_SERVER_ERROR),
+        }
+    }
+}
+
+#[cfg(feature = "server_axum")]
+impl IntoResponse for Mp {
+    fn into_response(self) -> axum::response::Response {
+        match self.inner {
+            Ok(body) => {
+                let mut res = IntoResponse::into_response(body);
+                res.headers_mut().insert(
+                    CONTENT_TYPE,
+                    ResponseContentType::MessagePack.to_header_value(),
+                );
+                res
+            }
+            Err(()) => IntoResponse::into_response(StatusCode::INTERNAL_SERVER_ERROR),
         }
     }
 }
@@ -140,6 +180,7 @@ struct Yaml {
     inner: Result<String, ()>,
 }
 
+#[cfg(feature = "server")]
 impl warp::Reply for Yaml {
     #[inline]
     fn into_response(self) -> Response {
@@ -150,7 +191,23 @@ impl warp::Reply for Yaml {
                     .insert(CONTENT_TYPE, ResponseContentType::Yaml.to_header_value());
                 res
             }
-            Err(()) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
+            Err(()) => Reply::into_response(StatusCode::INTERNAL_SERVER_ERROR),
+        }
+    }
+}
+
+#[cfg(feature = "server_axum")]
+impl IntoResponse for Yaml {
+    #[inline]
+    fn into_response(self) -> axum::response::Response {
+        match self.inner {
+            Ok(body) => {
+                let mut res = IntoResponse::into_response(body);
+                res.headers_mut()
+                    .insert(CONTENT_TYPE, ResponseContentType::Yaml.to_header_value());
+                res
+            }
+            Err(()) => IntoResponse::into_response(StatusCode::INTERNAL_SERVER_ERROR),
         }
     }
 }
@@ -159,6 +216,7 @@ pub struct Json {
     inner: Result<String, ()>,
 }
 
+#[cfg(feature = "server")]
 impl warp::Reply for Json {
     #[inline]
     fn into_response(self) -> Response {
@@ -169,7 +227,22 @@ impl warp::Reply for Json {
                     .insert(CONTENT_TYPE, ResponseContentType::Json.to_header_value());
                 res
             }
-            Err(()) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
+            Err(()) => Reply::into_response(StatusCode::INTERNAL_SERVER_ERROR),
+        }
+    }
+}
+
+#[cfg(feature = "server_axum")]
+impl axum::response::IntoResponse for Json {
+    fn into_response(self) -> axum::response::Response {
+        match self.inner {
+            Ok(body) => {
+                let mut res = IntoResponse::into_response(body);
+                res.headers_mut()
+                    .insert(CONTENT_TYPE, ResponseContentType::Json.to_header_value());
+                res
+            }
+            Err(()) => IntoResponse::into_response(StatusCode::INTERNAL_SERVER_ERROR),
         }
     }
 }
@@ -180,6 +253,7 @@ pub struct ReplyStream<St, B> {
     t: PhantomData<B>,
 }
 
+#[cfg(feature = "server")]
 impl<St, B> warp::Reply for ReplyStream<St, B>
 where
     St: Stream<Item = Result<B, Error>> + Send + 'static,
@@ -188,6 +262,25 @@ where
     #[inline]
     fn into_response(self) -> Response {
         let mut res = Response::new(warp::hyper::Body::wrap_stream(self.inner));
+        res.headers_mut()
+            .insert(CONTENT_TYPE, self.content_type.to_header_value());
+        res.headers_mut()
+            .insert(CACHE_CONTROL, HeaderValue::from_static("no-cache"));
+        res.headers_mut()
+            .insert(TRANSFER_ENCODING, HeaderValue::from_static("chunked"));
+        res
+    }
+}
+
+#[cfg(feature = "server_axum")]
+impl<St, B> IntoResponse for ReplyStream<St, B>
+where
+    St: Stream<Item = Result<B, Error>> + Send + 'static,
+    B: Into<Bytes> + Send + 'static,
+{
+    #[inline]
+    fn into_response(self) -> axum::response::Response {
+        let mut res = IntoResponse::into_response(axum::body::StreamBody::new(self.inner));
         res.headers_mut()
             .insert(CONTENT_TYPE, self.content_type.to_header_value());
         res.headers_mut()

@@ -54,7 +54,7 @@ where
     toy_pack_mp::pack(v).map_err(|e| e.into())
 }
 
-fn buf_to_string<T: warp::Buf>(mut buf: T) -> Result<String, Error> {
+fn buf_to_string<T: Buf>(mut buf: T) -> Result<String, Error> {
     std::str::from_utf8(&buf.copy_to_bytes(buf.remaining()))
         .map(|x| {
             tracing::debug!("receive:{:?}", x.to_string());

@@ -1,4 +1,4 @@
-mod filter;
+mod handler;
 mod server;
 
 use serde::Serialize;

@@ -1,3 +1,5 @@
+#[cfg(feature = "server_axum")]
+use axum::response::{IntoResponse, Response};
 use std::fmt::Display;
 use thiserror::Error as ThisError;
 use toy_api::error::ErrorMessage;
@@ -85,4 +87,17 @@ impl From<ErrorMessage> for Error {
     }
 }
 
+#[cfg(feature = "server")]
 impl warp::reject::Reject for Error {}
+
+#[cfg(feature = "server_axum")]
+impl IntoResponse for Error {
+    fn into_response(self) -> Response {
+        let e = ErrorMessage::new(http::StatusCode::INTERNAL_SERVER_ERROR.as_u16(), "");
+        let json = toy_pack_json::pack_to_string(&e);
+        match json {
+            Ok(v) => (http::StatusCode::INTERNAL_SERVER_ERROR, v).into_response(),
+            Err(_) => (http::StatusCode::INTERNAL_SERVER_ERROR, "".to_string()).into_response(),
+        }
+    }
+}

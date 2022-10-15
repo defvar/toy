@@ -1,9 +1,11 @@
-use crate::http::filter::filters;
+use crate::http::handler;
 use crate::supervisor::SupervisorContext;
 use crate::{SupervisorConfig, SupervisorError};
 use std::net::SocketAddr;
 use toy_api_client::ApiClient;
-use toy_api_http_common::warp;
+use toy_api_http_common::axum::routing::{get, post, put};
+use toy_api_http_common::axum::Router;
+use toy_api_http_common::axum_server::tls_rustls::RustlsConfig;
 use toy_core::mpsc::Incoming;
 
 pub struct Server<C> {
@@ -23,16 +25,24 @@ where
         self,
         addr: impl Into<SocketAddr> + 'static,
         config: impl SupervisorConfig,
-        mut shutdown_receiver: Incoming<(), SupervisorError>,
+        mut _shutdown_receiver: Incoming<(), SupervisorError>,
     ) {
-        let (addr, server) = warp::serve(filters(self.ctx))
-            .tls()
-            .cert_path(config.cert_path())
-            .key_path(config.key_path())
-            .bind_with_graceful_shutdown(addr, async move {
-                shutdown_receiver.next().await;
-            });
+        let config = RustlsConfig::from_pem_file(config.cert_path(), config.key_path())
+            .await
+            .unwrap();
+
+        let app = Router::with_state(self.ctx)
+            .route("/", get(handler::index))
+            .route("/status", get(handler::status))
+            .route("/services", get(handler::services))
+            .route("/tasks", post(handler::tasks))
+            .route("/shutdown", put(handler::shutdown));
+
+        let addr = addr.into();
         tracing::info!("listening on https://{}", addr);
-        server.await
+        toy_api_http_common::axum_server::bind_rustls(addr, config)
+            .serve(app.into_make_service())
+            .await
+            .unwrap();
     }
 }
