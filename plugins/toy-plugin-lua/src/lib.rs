@@ -1,4 +1,4 @@
-#![feature(backtrace, type_alias_impl_trait)]
+#![feature(error_generic_member_access, provide_any, type_alias_impl_trait)]
 
 mod error;
 mod function;
