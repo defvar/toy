@@ -19,7 +19,7 @@ toy-api = { path = "../toy-api" }
 toy-core = { path = "../toy-core"}
 toy-h = {path = "../../shared/toy-h"}
 toy-rt = { path = "../toy-rt"}
-toy-api-http-common = { path = "../toy-api-http-common", features = ["server"]}
+toy-api-http-common = { path = "../toy-api-http-common", default-features = false, features = ["server"]}
 toy-pack-json = {path = "../../shared/toy-pack-json"}
 
 [dev-dependencies]

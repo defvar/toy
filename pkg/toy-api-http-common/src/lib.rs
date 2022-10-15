@@ -7,7 +7,7 @@ pub mod request;
 pub mod body;
 #[cfg(feature = "server")]
 pub mod query;
-#[cfg(any(feature = "server", feature = "server_axum"))]
+#[cfg(feature = "server")]
 pub mod reply;
 
 pub use error::Error;
@@ -19,10 +19,10 @@ pub use toy_h::bytes;
 #[doc(hidden)]
 pub use warp;
 
-#[cfg(feature = "server_axum")]
+#[cfg(feature = "server")]
 #[doc(hidden)]
 pub use axum;
 
-#[cfg(feature = "server_axum")]
+#[cfg(feature = "server")]
 #[doc(hidden)]
 pub use axum_server;

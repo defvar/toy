@@ -1,5 +1,4 @@
 use crate::error::Error;
-#[cfg(feature = "server_axum")]
 use axum::response::IntoResponse;
 use bytes::Bytes;
 use futures_util::stream::Stream;
@@ -8,11 +7,8 @@ use http::StatusCode;
 use serde::Serialize;
 use std::marker::PhantomData;
 use toy_api::common::{Format, Indent};
-#[cfg(feature = "server")]
 use warp::reply::{Reply, Response};
 
-#[cfg(not(feature = "server_axum"))]
-#[cfg(feature = "server")]
 pub fn into_response<T>(v: &T, format: Option<Format>, indent: Option<Indent>) -> Response
 where
     T: Serialize,
@@ -25,9 +21,7 @@ where
     }
 }
 
-#[cfg(feature = "server_axum")]
-#[cfg(not(feature = "server"))]
-pub fn into_response<T>(
+pub fn into_response_2<T>(
     v: &T,
     format: Option<Format>,
     indent: Option<Indent>,
@@ -142,7 +136,6 @@ struct Mp {
     inner: Result<Vec<u8>, ()>,
 }
 
-#[cfg(feature = "server")]
 impl warp::Reply for Mp {
     fn into_response(self) -> Response {
         match self.inner {
@@ -159,7 +152,6 @@ impl warp::Reply for Mp {
     }
 }
 
-#[cfg(feature = "server_axum")]
 impl IntoResponse for Mp {
     fn into_response(self) -> axum::response::Response {
         match self.inner {
@@ -180,7 +172,6 @@ struct Yaml {
     inner: Result<String, ()>,
 }
 
-#[cfg(feature = "server")]
 impl warp::Reply for Yaml {
     #[inline]
     fn into_response(self) -> Response {
@@ -196,7 +187,6 @@ impl warp::Reply for Yaml {
     }
 }
 
-#[cfg(feature = "server_axum")]
 impl IntoResponse for Yaml {
     #[inline]
     fn into_response(self) -> axum::response::Response {
@@ -216,7 +206,6 @@ pub struct Json {
     inner: Result<String, ()>,
 }
 
-#[cfg(feature = "server")]
 impl warp::Reply for Json {
     #[inline]
     fn into_response(self) -> Response {
@@ -232,7 +221,6 @@ impl warp::Reply for Json {
     }
 }
 
-#[cfg(feature = "server_axum")]
 impl axum::response::IntoResponse for Json {
     fn into_response(self) -> axum::response::Response {
         match self.inner {
@@ -253,7 +241,6 @@ pub struct ReplyStream<St, B> {
     t: PhantomData<B>,
 }
 
-#[cfg(feature = "server")]
 impl<St, B> warp::Reply for ReplyStream<St, B>
 where
     St: Stream<Item = Result<B, Error>> + Send + 'static,
@@ -272,7 +259,6 @@ where
     }
 }
 
-#[cfg(feature = "server_axum")]
 impl<St, B> IntoResponse for ReplyStream<St, B>
 where
     St: Stream<Item = Result<B, Error>> + Send + 'static,

@@ -20,4 +20,4 @@ toy-rt = { path = "../toy-rt"}
 toy-api = { path = "../toy-api" }
 toy-api-client = { path = "../toy-api-client"}
 toy-pack-json = {path = "../../shared/toy-pack-json"}
-toy-api-http-common = {path = "../toy-api-http-common", features = ["server_axum"]}
+toy-api-http-common = {path = "../toy-api-http-common", default-features = false, features = ["server"]}
