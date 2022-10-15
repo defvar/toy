@@ -1,6 +1,6 @@
 //! # toy-pack Implementation for urlencoded
 
-#![feature(backtrace)]
+#![feature(error_generic_member_access)]
 
 mod deser;
 mod error;

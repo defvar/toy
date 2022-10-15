@@ -1,12 +1,12 @@
 use std::backtrace::Backtrace;
 use std::fmt::Display;
 use std::io;
-use thiserror::Error as ThisError;
+use thiserror::Error;
 
 /// Using Encoder and Serializer.
 /// It is used when an error occurs in the implementation of serialization.
 ///
-#[derive(Debug, ThisError)]
+#[derive(Debug, Error)]
 pub enum EncodeError {
     #[error("io error: {:?}", source)]
     IOError {

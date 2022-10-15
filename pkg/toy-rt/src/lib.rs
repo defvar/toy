@@ -22,7 +22,7 @@ where
     F::Output: Send + 'static,
 {
     let j = tokio::task::Builder::new().name(name).spawn(future);
-    JoinHandle { raw: j }
+    JoinHandle { raw: j.unwrap() }
 }
 
 pub fn block_in_place<F, R>(f: F) -> R

@@ -1,4 +1,4 @@
-#![feature(backtrace, type_alias_impl_trait)]
+#![feature(type_alias_impl_trait)]
 
 pub mod auth;
 pub mod client;

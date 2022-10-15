@@ -1,4 +1,6 @@
-#![feature(backtrace)]
+//! # toy JWT Library
+
+#![feature(error_generic_member_access, provide_any)]
 
 mod algorithm;
 pub mod error;

@@ -1,4 +1,4 @@
-#![feature(backtrace, type_alias_impl_trait)]
+#![feature(type_alias_impl_trait, error_generic_member_access, provide_any)]
 
 //! # toy-api-server
 //!
