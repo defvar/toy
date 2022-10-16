@@ -292,8 +292,8 @@ impl Value {
 
 #[inline]
 fn parse_str_from_integer<T: itoa::Integer>(v: T) -> Option<String> {
-    let mut s = String::new();
-    itoa::fmt(&mut s, v).map(|_| s).ok()
+    let mut buf = itoa::Buffer::new();
+    Some(buf.format(v).to_string())
 }
 
 #[inline]

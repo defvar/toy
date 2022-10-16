@@ -7,7 +7,7 @@ edition = "2021"
 [dependencies]
 thiserror = "1.0"
 toy-pack = {path = "../toy-pack"}
-itoa = "0.4"
+itoa = "1.0.4"
 ryu = "1.0"
 lexical = "^5.1"
 serde = { version = "1.0" }
