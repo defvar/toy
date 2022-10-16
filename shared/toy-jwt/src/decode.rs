@@ -21,7 +21,8 @@ pub fn from_rsa_components<T: DeserializeOwned>(
     exponent: &str,
 ) -> Result<T, JWTError> {
     let _ = header(token, &v)?;
-    let key = DecodingKey::from_rsa_components(modulus, exponent);
+    let key =
+        DecodingKey::from_rsa_components(modulus, exponent).map_err(|e| JWTError::error(e))?;
     claims(token, &key, v)
 }
 
@@ -47,7 +48,7 @@ fn header(token: &str, v: &Validation) -> Result<jsonwebtoken::Header, JWTError>
 
 fn claims<T: DeserializeOwned>(
     token: &str,
-    key: &jsonwebtoken::DecodingKey,
+    key: &DecodingKey,
     v: Validation,
 ) -> Result<T, JWTError> {
     let token_data =

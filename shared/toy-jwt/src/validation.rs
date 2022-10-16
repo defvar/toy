@@ -4,7 +4,7 @@ use std::collections::HashSet;
 #[derive(Debug, Clone, PartialEq)]
 pub struct Validation {
     pub aud: Option<HashSet<String>>,
-    pub iss: Option<String>,
+    pub iss: Option<HashSet<String>>,
     pub sub: Option<String>,
     algorithms: Vec<Algorithm>,
     pub kid: Option<String>,

@@ -5,7 +5,7 @@ use crate::jwk::JWK;
 use jsonwebtoken::DecodingKey;
 use serde::Deserialize;
 use std::cell::RefCell;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use toy_h::{header, HttpClient, RequestBuilder, Response, Uri};
 
@@ -71,14 +71,17 @@ where
         };
 
     // validate: alg, iss
-    let mut validation = jsonwebtoken::Validation {
-        iss: Some(iss),
-        ..jsonwebtoken::Validation::new(jsonwebtoken::Algorithm::RS256)
-    };
+    let mut iss_set = HashSet::new();
+    iss_set.insert(iss);
+    let mut validation = jsonwebtoken::Validation::new(jsonwebtoken::Algorithm::RS256);
+    validation.iss = Some(iss_set);
     // validate: aud
     validation.set_audience(&[&project_id]);
 
-    let key = DecodingKey::from_rsa_components(jwk.n(), jwk.e());
+    let key = match DecodingKey::from_rsa_components(jwk.n(), jwk.e()) {
+        Ok(v) => v,
+        Err(e) => return Err(GAuthError::error(e)),
+    };
     let decoded_token = jsonwebtoken::decode::<Claims>(token, &key, &validation)
         .map_err(|e| GAuthError::authentication_failed(e));
 
