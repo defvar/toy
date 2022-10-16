@@ -1,21 +1,39 @@
-use warp::http::header::{AUTHORIZATION, CONTENT_TYPE};
-use warp::http::HeaderValue;
-use warp::test::RequestBuilder;
+use toy_api_server::authentication::NoAuth;
+use toy_api_server::context::ServerState;
+use toy_api_server::store::memory::MemoryStore;
+
+#[derive(Clone)]
+pub struct TestState {
+    auth: NoAuth,
+    task_log_store: MemoryStore,
+    kv_store: MemoryStore,
+}
+
+impl ServerState for TestState {
+    type Client = ();
+    type Auth = NoAuth;
+    type TaskLogStore = MemoryStore;
+    type KvStore = MemoryStore;
+
+    fn client(&self) -> &Self::Client {
+        todo!()
+    }
+
+    fn auth(&self) -> &Self::Auth {
+        &self.auth
+    }
+
+    fn task_log_store(&self) -> &Self::TaskLogStore {
+        &self.task_log_store
+    }
+
+    fn kv_store(&self) -> &Self::KvStore {
+        &self.kv_store
+    }
+}
 
 pub fn prepare() {
     std::env::set_var("TOY_AUTHORIZATION", "none");
 }
 
-pub fn get() -> RequestBuilder {
-    warp::test::request()
-        .header(CONTENT_TYPE, HeaderValue::from_static("application/json"))
-        .header(AUTHORIZATION, HeaderValue::from_static("Bearer dummy"))
-        .method("GET")
-}
-
-pub fn put() -> RequestBuilder {
-    warp::test::request()
-        .header(CONTENT_TYPE, HeaderValue::from_static("application/json"))
-        .header(AUTHORIZATION, HeaderValue::from_static("Bearer dummy"))
-        .method("PUT")
-}
+pub fn test_state() -> impl ServerState {}

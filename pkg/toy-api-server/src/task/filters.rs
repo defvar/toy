@@ -1,91 +1,42 @@
-use crate::authentication::{authenticate, Auth};
+use crate::context::{Context, ServerState, WrappedState};
 use crate::task::handlers;
-use crate::task::store::{TaskLogStore, TaskStore};
-use crate::warp::filters::BoxedFilter;
+use crate::ApiError;
 use toy_api::task::{LogOption, PostOption, TaskListOption};
-use toy_h::HttpClient;
-use warp::Filter;
+use toy_api_http_common::axum::extract::{Path, Query, State};
+use toy_api_http_common::axum::response::IntoResponse;
+use toy_api_http_common::bytes::Bytes;
 
-/// warp filter for tasks api.
-pub fn tasks<T>(
-    auth: impl Auth<T> + Clone + 'static,
-    client: T,
-    log_store: impl TaskLogStore<T> + 'static,
-    task_store: impl TaskStore<T> + 'static,
-) -> BoxedFilter<(impl warp::Reply,)>
+pub async fn post<S>(
+    ctx: Context,
+    State(state): State<WrappedState<S>>,
+    Query(api_opt): Query<PostOption>,
+    request: Bytes,
+) -> Result<impl IntoResponse, ApiError>
 where
-    T: HttpClient + 'static,
+    S: ServerState,
 {
-    tasks_create(auth.clone(), client.clone(), task_store.clone())
-        .or(tasks_list(auth.clone(), client.clone(), log_store.clone()))
-        .or(tasks_log(auth.clone(), client.clone(), log_store))
-        .boxed()
+    handlers::post(ctx, api_opt, request, state.raw().task_store()).await
 }
 
-pub fn tasks_create<T>(
-    auth: impl Auth<T> + Clone + 'static,
-    client: T,
-    task_store: impl TaskStore<T> + 'static,
-) -> BoxedFilter<(impl warp::Reply,)>
+pub async fn list<S>(
+    ctx: Context,
+    State(state): State<WrappedState<S>>,
+    Query(api_opt): Query<TaskListOption>,
+) -> Result<impl IntoResponse, ApiError>
 where
-    T: HttpClient + 'static,
+    S: ServerState,
 {
-    warp::path!("tasks")
-        .and(warp::post())
-        .and(authenticate(auth, client))
-        .and(toy_api_http_common::query::query_opt::<PostOption>())
-        .and(toy_api_http_common::body::bytes())
-        .and(with_task_store(task_store))
-        .and_then(handlers::post)
-        .boxed()
+    handlers::list(ctx, api_opt, state.raw().task_log_store()).await
 }
 
-pub fn tasks_list<T>(
-    auth: impl Auth<T> + Clone,
-    client: T,
-    log_store: impl TaskLogStore<T>,
-) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone
+pub async fn log<S>(
+    ctx: Context,
+    State(state): State<WrappedState<S>>,
+    Path(key): Path<String>,
+    Query(api_opt): Query<LogOption>,
+) -> Result<impl IntoResponse, ApiError>
 where
-    T: HttpClient,
+    S: ServerState,
 {
-    warp::path!("tasks")
-        .and(warp::get())
-        .and(authenticate(auth, client))
-        .and(toy_api_http_common::query::query_opt::<TaskListOption>())
-        .and(with_log_store(log_store))
-        .and_then(handlers::tasks)
-}
-
-pub fn tasks_log<T>(
-    auth: impl Auth<T> + Clone,
-    client: T,
-    log_store: impl TaskLogStore<T>,
-) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone
-where
-    T: HttpClient,
-{
-    warp::path!("tasks" / String / "log")
-        .and(warp::get())
-        .and(authenticate(auth, client))
-        .and(toy_api_http_common::query::query_opt::<LogOption>())
-        .and(with_log_store(log_store))
-        .and_then(handlers::log)
-}
-
-fn with_log_store<T>(
-    log_store: impl TaskLogStore<T>,
-) -> impl Filter<Extract = (impl TaskLogStore<T>,), Error = std::convert::Infallible> + Clone
-where
-    T: HttpClient,
-{
-    warp::any().map(move || log_store.clone())
-}
-
-fn with_task_store<T>(
-    task_store: impl TaskStore<T>,
-) -> impl Filter<Extract = (impl TaskStore<T>,), Error = std::convert::Infallible> + Clone
-where
-    T: HttpClient,
-{
-    warp::any().map(move || task_store.clone())
+    handlers::log(ctx, key, api_opt, state.raw().task_log_store()).await
 }

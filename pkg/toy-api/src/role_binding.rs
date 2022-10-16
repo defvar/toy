@@ -1,6 +1,8 @@
 //! Model for rbac/roleBinding api.
 
-use crate::common::KVObject;
+use crate::common::{KVObject, ListOption, ListOptionLike, SelectionCandidate};
+use crate::selection::candidate::CandidateMap;
+use crate::selection::field::Selection;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
@@ -66,19 +68,6 @@ impl RoleBinding {
     }
 }
 
-impl KVObject for RoleBinding {
-    fn key(&self) -> &str {
-        &self.name
-    }
-}
-
-impl RoleBindingList {
-    pub fn new(items: Vec<RoleBinding>) -> Self {
-        let count = items.len() as u32;
-        Self { items, count }
-    }
-}
-
 pub struct RoleBindingBuilder {
     e: RoleBinding,
 }
@@ -123,5 +112,52 @@ impl RoleBindingBuilder {
 
     pub fn build(self) -> RoleBinding {
         self.e
+    }
+}
+
+impl SelectionCandidate for RoleBinding {
+    fn candidate_map(&self) -> CandidateMap {
+        CandidateMap::empty()
+    }
+}
+
+impl KVObject for RoleBinding {
+    fn key(&self) -> &str {
+        &self.name
+    }
+}
+
+impl RoleBindingList {
+    pub fn new(items: Vec<RoleBinding>) -> Self {
+        let count = items.len() as u32;
+        Self { items, count }
+    }
+}
+
+//////////////////////////////////
+// Option
+//////////////////////////////////
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct RoleBindingListOption {
+    #[serde(flatten)]
+    common: ListOption,
+}
+
+impl RoleBindingListOption {
+    pub fn new() -> Self {
+        Self {
+            common: ListOption::new(),
+        }
+    }
+}
+
+impl ListOptionLike for RoleBindingListOption {
+    fn common(&self) -> &ListOption {
+        &self.common
+    }
+
+    fn selection(&self) -> Selection {
+        Selection::empty()
     }
 }

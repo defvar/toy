@@ -7,17 +7,17 @@ mod secret;
 
 pub async fn initialize<T, Config>(
     config: &Config,
-    store: impl KvStore<T> + 'static,
+    store: &(impl KvStore<T> + 'static),
     client: T,
 ) -> Result<(), ApiError>
 where
     T: HttpClient + 'static,
-    Config: ServerConfig<T>,
+    Config: ServerConfig,
 {
-    secret::initialize(config, &store).await?;
-    role::initialize(config, &store).await?;
+    secret::initialize(config, store).await?;
+    role::initialize(config, store).await?;
 
-    crate::context::rbac::initialize(&store).await?;
+    crate::context::rbac::initialize(store).await?;
 
     let s = store.clone();
     toy_rt::spawn_named(

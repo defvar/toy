@@ -11,7 +11,6 @@
 
 mod common;
 pub mod context;
-mod reject_handler;
 mod server;
 
 pub mod config;
@@ -33,11 +32,11 @@ pub use server::Server;
 pub mod api {
     //! The `toy-api-server` apis.
 
-    pub use super::graph::graphs;
-    pub use super::rbac::rbac;
-    pub use super::services::services;
-    pub use super::supervisors::supervisors;
-    pub use super::task::tasks;
+    pub use super::graph;
+    pub use super::rbac;
+    pub use super::services;
+    pub use super::supervisors;
+    pub use super::task;
 }
 
 #[doc(hidden)]
@@ -46,5 +45,3 @@ pub use async_trait;
 pub use toy_core::task::TaskId;
 #[doc(hidden)]
 pub use toy_h;
-#[doc(hidden)]
-pub use warp;

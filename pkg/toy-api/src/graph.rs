@@ -93,6 +93,10 @@ impl GraphList {
     }
 }
 
+//////////////////////////////////
+// Option
+//////////////////////////////////
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct GraphListOption {
     #[serde(flatten)]

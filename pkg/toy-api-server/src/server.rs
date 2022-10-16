@@ -1,120 +1,104 @@
-use crate::api::{graphs, rbac, services, supervisors, tasks};
+use crate::api::{graph, rbac, services, supervisors, task};
 use crate::config::ServerConfig;
-use crate::reject_handler::handle_rejection;
+use crate::context::{ServerState, WrappedState};
 use crate::store::kv::KvStore;
 use crate::task::store::{TaskLogStore, TaskStore};
 use std::net::SocketAddr;
+use tower_http::cors::CorsLayer;
+use tower_http::trace::TraceLayer;
+use toy_api_http_common::axum::routing::{get, post};
+use toy_api_http_common::axum::Router;
+use toy_api_http_common::axum_server::tls_rustls::RustlsConfig;
 use toy_h::HttpClient;
-use warp::http::Method;
-use warp::{Filter, Reply};
 
 /// toy-api Server.
 #[derive(Debug)]
-pub struct Server<Config, Http> {
-    client: Option<Http>,
+pub struct Server<Config> {
     config: Config,
 }
 
-impl<Config, Http> Server<Config, Http>
+impl<Config> Server<Config>
 where
-    Config: ServerConfig<Http>,
-    Http: HttpClient + 'static,
+    Config: ServerConfig + Sync + Send + Clone + 'static,
 {
-    pub fn new(config: Config) -> Server<Config, Http> {
-        Server {
-            client: None,
-            config,
-        }
-    }
-
-    /// Use http client.
-    pub fn with_client(mut self, client: Http) -> Self {
-        self.client = Some(client);
-        self
-    }
-
-    /// Run this `Server` forever on the current thread, specified routes.
-    pub async fn run_with_routes<F>(&self, addr: impl Into<SocketAddr> + 'static, routes: F)
-    where
-        F: Filter + Clone + Send + Sync + 'static,
-        F::Extract: Reply,
-    {
-        let (addr, server) = warp::serve(routes)
-            .tls()
-            .cert_path(self.config.cert_path())
-            .key_path(self.config.key_path())
-            .bind_ephemeral(addr);
-        tracing::info!("listening on https://{}", addr);
-        server.await
+    pub fn new(config: Config) -> Server<Config> {
+        Server { config }
     }
 
     /// Run this `Server` forever on the current thread, default routes.
-    pub async fn run(&self, addr: impl Into<SocketAddr> + 'static) {
-        let client = match self.client {
-            Some(ref c) => c.clone(),
-            None => {
-                tracing::error!("http client not build.");
-                return;
-            }
-        };
-        let mut log_store = self.config.task_log_store();
-        let mut task_store = self.config.task_store();
-        let mut kv_store = self.config.kv_store();
-        if let Err(e) = log_store.establish(client.clone()) {
-            tracing::error!("log store connection failed. error:{:?}", e);
-            return;
-        };
-        if let Err(e) = task_store.establish(client.clone()) {
+    pub async fn run(
+        self,
+        mut state: impl ServerState<Client = impl HttpClient + 'static> + 'static,
+        addr: impl Into<SocketAddr> + 'static,
+    ) {
+        let c = state.client().clone();
+        if let Err(e) = state.kv_store_mut().establish(c.clone()) {
+            tracing::error!("kv store connection failed. error:{:?}", e);
+        }
+        if let Err(e) = state.task_store_mut().establish(c.clone()) {
             tracing::error!("task store connection failed. error:{:?}", e);
-            return;
-        };
-        if let Err(e) = kv_store.establish(client.clone()) {
-            tracing::error!("service store connection failed. error:{:?}", e);
-            return;
-        };
-        let routes = rbac(self.config.auth().clone(), client.clone(), kv_store.clone())
-            .or(graphs(
-                self.config.auth().clone(),
-                client.clone(),
-                kv_store.clone(),
-            ))
-            .or(tasks(
-                self.config.auth().clone(),
-                client.clone(),
-                log_store,
-                task_store,
-            ))
-            .or(supervisors(
-                self.config.auth().clone(),
-                client.clone(),
-                kv_store.clone(),
-            ))
-            .or(services(
-                self.config.auth().clone(),
-                client.clone(),
-                kv_store.clone(),
-            ))
-            .with(
-                warp::cors()
-                    .allow_any_origin()
-                    .allow_headers(vec!["authorization"])
-                    .allow_methods(&[
-                        Method::GET,
-                        Method::OPTIONS,
-                        Method::POST,
-                        Method::DELETE,
-                        Method::PUT,
-                    ]),
-            )
-            .with(warp::trace::request())
-            .recover(handle_rejection);
+        }
+        if let Err(e) = state.task_log_store_mut().establish(c.clone()) {
+            tracing::error!("task log store connection failed. error:{:?}", e);
+        }
 
-        if let Err(e) = crate::initializer::initialize(&self.config, kv_store, client.clone()).await
+        if let Err(e) =
+            crate::initializer::initialize(&self.config, state.kv_store(), state.client().clone())
+                .await
         {
             tracing::error!("{:?}", e);
             return;
         }
 
-        self.run_with_routes(addr, routes).await
+        let tls = RustlsConfig::from_pem_file(self.config.cert_path(), self.config.key_path())
+            .await
+            .unwrap();
+
+        let app = Router::with_state(WrappedState::new(state))
+            .route(
+                "/supervisors/:key",
+                get(supervisors::find)
+                    .put(supervisors::put)
+                    .delete(supervisors::delete),
+            )
+            .route("/supervisors", get(supervisors::list))
+            .route("/supervisors/:key/beat", post(supervisors::beat))
+            .route(
+                "/services/:key",
+                get(services::find)
+                    .put(services::put)
+                    .delete(services::delete),
+            )
+            .route("/services", get(services::list))
+            .route(
+                "/graphs/:key",
+                get(graph::find).put(graph::put).delete(graph::delete),
+            )
+            .route("/graphs", get(graph::list))
+            .route(
+                "/rbac/roles/:key",
+                get(rbac::role::find)
+                    .put(rbac::role::put)
+                    .delete(rbac::role::delete),
+            )
+            .route("/rbac/roles", get(rbac::role::list))
+            .route(
+                "/rbac/roleBindings/:key",
+                get(rbac::role_binding::find)
+                    .put(rbac::role_binding::put)
+                    .delete(rbac::role_binding::delete),
+            )
+            .route("/rbac/roleBindings", get(rbac::role_binding::list))
+            .route("/tasks", get(task::list).post(task::post))
+            .route("/tasks/:key/log", get(task::log))
+            .layer(CorsLayer::very_permissive())
+            .layer(TraceLayer::new_for_http());
+
+        let addr = addr.into();
+        tracing::info!("listening on https://{}", addr);
+        toy_api_http_common::axum_server::bind_rustls(addr, tls)
+            .serve(app.into_make_service())
+            .await
+            .unwrap();
     }
 }

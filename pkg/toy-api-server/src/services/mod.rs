@@ -2,4 +2,4 @@
 
 mod filters;
 
-pub use filters::services;
+pub use filters::{delete, find, list, put};

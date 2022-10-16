@@ -5,6 +5,7 @@ use crate::opts::*;
 use clap::Parser;
 use std::net::SocketAddr;
 use toy::api_server::authentication::CommonAuths;
+use toy::api_server::context::ServerState;
 use toy::api_server::task::btree_log_store::BTreeLogStore;
 use toy::api_server::ServerConfig;
 use toy_api_auth_jwt::JWTAuth;
@@ -22,28 +23,16 @@ struct ToyConfig {
     pub_path: String,
 }
 
-impl ServerConfig<ReqwestClient> for ToyConfig {
-    type Auth = CommonAuths<JWTAuth, JWTAuth>;
-    type TaskLogStore = BTreeLogStore<ReqwestClient>;
-    type TaskStore = EtcdStore<ReqwestClient>;
-    type KvStore = EtcdStore<ReqwestClient>;
+#[derive(Clone)]
+struct ToyState {
+    client: ReqwestClient,
+    auth: CommonAuths<JWTAuth, JWTAuth>,
+    kv_store: EtcdStore<ReqwestClient>,
+    task_store: EtcdStore<ReqwestClient>,
+    task_log_store: BTreeLogStore<ReqwestClient>,
+}
 
-    fn auth(&self) -> Self::Auth {
-        CommonAuths::new(JWTAuth::new(), JWTAuth::new())
-    }
-
-    fn task_store(&self) -> Self::TaskStore {
-        EtcdStore::new()
-    }
-
-    fn task_log_store(&self) -> Self::TaskLogStore {
-        BTreeLogStore::new()
-    }
-
-    fn kv_store(&self) -> Self::KvStore {
-        EtcdStore::new()
-    }
-
+impl ServerConfig for ToyConfig {
     fn cert_path(&self) -> String {
         self.cert_path.clone()
     }
@@ -54,6 +43,46 @@ impl ServerConfig<ReqwestClient> for ToyConfig {
 
     fn pub_path(&self) -> String {
         self.pub_path.clone()
+    }
+}
+
+impl ServerState for ToyState {
+    type Client = ReqwestClient;
+    type Auth = CommonAuths<JWTAuth, JWTAuth>;
+    type KvStore = EtcdStore<ReqwestClient>;
+    type TaskStore = EtcdStore<ReqwestClient>;
+    type TaskLogStore = BTreeLogStore<ReqwestClient>;
+
+    fn client(&self) -> &Self::Client {
+        &self.client
+    }
+
+    fn auth(&self) -> &Self::Auth {
+        &self.auth
+    }
+
+    fn kv_store(&self) -> &Self::KvStore {
+        &self.kv_store
+    }
+
+    fn kv_store_mut(&mut self) -> &mut Self::KvStore {
+        &mut self.kv_store
+    }
+
+    fn task_store(&self) -> &Self::TaskStore {
+        &self.task_store
+    }
+
+    fn task_store_mut(&mut self) -> &mut Self::TaskStore {
+        &mut self.kv_store
+    }
+
+    fn task_log_store(&self) -> &Self::TaskLogStore {
+        &self.task_log_store
+    }
+
+    fn task_log_store_mut(&mut self) -> &mut Self::TaskLogStore {
+        &mut self.task_log_store
     }
 }
 
@@ -88,12 +117,20 @@ fn go() -> Result<(), Error> {
         key_path: opts.key_path.to_string(),
         pub_path: opts.pub_path.to_string(),
     };
-    let server = toy::api_server::Server::new(config).with_client(client);
+    let state = ToyState {
+        client: client.clone(),
+        auth: CommonAuths::new(JWTAuth::new(), JWTAuth::new()),
+        kv_store: EtcdStore::new(),
+        task_store: EtcdStore::new(),
+        task_log_store: BTreeLogStore::new(),
+    };
+
+    let server = toy::api_server::Server::new(config);
 
     api_rt.block_on(async move {
         tracing::info!("start api-server :{}", host);
         tracing::info!("tokio tracing console :{}", tracing_addr);
-        let _ = server.run(host).await;
+        let _ = server.run(state, host).await;
     });
 
     Ok(())

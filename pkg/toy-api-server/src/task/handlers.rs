@@ -2,30 +2,29 @@ use crate::context::Context;
 use crate::task::store::{List, ListOption, Pending, TaskLogStore, TaskStore};
 use crate::{common, ApiError};
 use chrono::{Duration, Utc};
-use std::convert::Infallible;
 use toy_api::common::ListOptionLike;
 use toy_api::graph::Graph;
 use toy_api::selection::field::Selection;
 use toy_api::task::{LogOption, PendingResult, PendingTask, PostOption, TaskListOption};
+use toy_api_http_common::axum::http::StatusCode;
+use toy_api_http_common::axum::response::IntoResponse;
+use toy_api_http_common::bytes::Bytes;
 use toy_api_http_common::{codec, reply};
 use toy_core::task::TaskId;
 use toy_h::HttpClient;
-use warp::http::StatusCode;
-use warp::hyper::body::Bytes;
-use warp::reply::Reply;
 
 pub async fn post<T>(
     ctx: Context,
-    opt: Option<PostOption>,
+    opt: PostOption,
     request: Bytes,
-    store: impl TaskStore<T>,
-) -> Result<impl warp::Reply, warp::Rejection>
+    store: &impl TaskStore<T>,
+) -> Result<impl IntoResponse, ApiError>
 where
     T: HttpClient,
 {
     tracing::trace!("handle: {:?}", ctx);
 
-    let format = opt.map(|x| x.format()).unwrap_or(None);
+    let format = opt.format();
     let v = codec::decode::<_, Graph>(request, format)?;
 
     /*
@@ -40,35 +39,30 @@ where
         .pending(store.con().unwrap(), key, pending)
         .await
     {
-        Ok(()) => {
-            Ok(reply::into_response(&(PendingResult::from_id(id)), format, None).into_response())
-        }
-        Err(e) => Err(ApiError::store_operation_failed(e).into_rejection()),
+        Ok(()) => Ok(reply::into_response(
+            &(PendingResult::from_id(id)),
+            format,
+            None,
+        )),
+        Err(e) => Err(ApiError::store_operation_failed(e)),
     }
 }
 
-pub async fn tasks<T>(
+pub async fn list<T>(
     ctx: Context,
-    opt: Option<TaskListOption>,
-    log_store: impl TaskLogStore<T>,
-) -> Result<impl warp::Reply, Infallible>
+    opt: TaskListOption,
+    log_store: &impl TaskLogStore<T>,
+) -> Result<impl IntoResponse, ApiError>
 where
     T: HttpClient,
 {
     tracing::trace!("handle: {:?}", ctx);
 
-    let dt = match opt {
-        Some(ref o) => o
-            .timestamp()
-            .map(|x| x.clone())
-            .unwrap_or(Utc::now() - Duration::days(1)),
-        None => Utc::now() - Duration::days(1),
-    };
-
+    let dt = opt.timestamp().unwrap_or(Utc::now() - Duration::days(1));
     let store_opt = ListOption::new()
         .with_field_selection(Selection::default().greater_than("timestamp", dt.to_rfc3339()));
 
-    let format = opt.map(|x| x.common().format()).unwrap_or(None);
+    let format = opt.common().format();
     match log_store
         .ops()
         .list(log_store.con().unwrap(), store_opt)
@@ -77,17 +71,17 @@ where
         Ok(v) => Ok(reply::into_response(&v, format, None)),
         Err(e) => {
             tracing::error!("error:{:?}", e);
-            Ok(StatusCode::INTERNAL_SERVER_ERROR.into_response())
+            Err(ApiError::store_operation_failed(e))
         }
     }
 }
 
 pub async fn log<T>(
-    key: String,
     ctx: Context,
-    opt: Option<LogOption>,
-    log_store: impl TaskLogStore<T>,
-) -> Result<impl warp::Reply, warp::Rejection>
+    key: String,
+    opt: LogOption,
+    log_store: &impl TaskLogStore<T>,
+) -> Result<impl IntoResponse, ApiError>
 where
     T: HttpClient,
 {
@@ -96,10 +90,10 @@ where
     use crate::task::store::{FindLog, FindOption};
     let id = match TaskId::parse_str(&key) {
         Ok(id) => id,
-        Err(_) => return Err(ApiError::task_id_invalid_format(key.to_string()).into_rejection()),
+        Err(_) => return Err(ApiError::task_id_invalid_format(key.to_string())),
     };
 
-    let format = opt.map(|x| x.format()).unwrap_or(None);
+    let format = opt.format();
     match log_store
         .ops()
         .find(log_store.con().unwrap(), id, FindOption::new())
@@ -109,7 +103,7 @@ where
         Ok(None) => Ok(StatusCode::NOT_FOUND.into_response()),
         Err(e) => {
             tracing::error!("error:{:?}", e);
-            Ok(StatusCode::INTERNAL_SERVER_ERROR.into_response())
+            Err(ApiError::store_operation_failed(e))
         }
     }
 }

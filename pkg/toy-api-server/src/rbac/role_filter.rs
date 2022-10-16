@@ -1,10 +1,9 @@
-use crate::common::validator::OkValidator;
 use crate::context::{Context, ServerState, WrappedState};
+use crate::rbac::validator::RoleValidator;
 use crate::store::kv;
-use crate::store::kv::ListOption;
 use crate::{common, ApiError};
 use toy_api::common::{DeleteOption, FindOption, PutOption};
-use toy_api::services::{ServiceSpec, ServiceSpecList, ServiceSpecListOption};
+use toy_api::role::{Role, RoleList, RoleListOption};
 use toy_api_http_common::axum::extract::{Path, Query, State};
 use toy_api_http_common::axum::response::IntoResponse;
 use toy_api_http_common::bytes::Bytes;
@@ -21,10 +20,10 @@ where
     common::handler::find2(
         ctx,
         state.raw().kv_store(),
-        common::constants::generate_key(common::constants::SERVICES_KEY_PREFIX, key),
+        common::constants::generate_key(common::constants::ROLE_KEY_PREFIX, key),
         api_opt,
         kv::FindOption::new(),
-        |v: ServiceSpec| v,
+        |v: Role| v,
     )
     .await
 }
@@ -32,7 +31,7 @@ where
 pub async fn list<S>(
     ctx: Context,
     State(state): State<WrappedState<S>>,
-    Query(api_opt): Query<ServiceSpecListOption>,
+    Query(api_opt): Query<RoleListOption>,
 ) -> Result<impl IntoResponse, ApiError>
 where
     S: ServerState,
@@ -40,10 +39,10 @@ where
     common::handler::list2(
         ctx,
         state.raw().kv_store(),
-        common::constants::SERVICES_KEY_PREFIX,
+        common::constants::ROLE_KEY_PREFIX,
         api_opt,
-        |_: &ServiceSpecListOption| ListOption::new(),
-        |v: Vec<ServiceSpec>| ServiceSpecList::new(v),
+        |_: &RoleListOption| kv::ListOption::new(),
+        |v: Vec<Role>| RoleList::new(v),
     )
     .await
 }
@@ -61,12 +60,12 @@ where
     common::handler::put2(
         ctx,
         state.raw().kv_store(),
-        common::constants::SERVICES_KEY_PREFIX,
+        common::constants::ROLE_KEY_PREFIX,
         key,
         api_opt,
         kv::PutOption::new(),
         request,
-        OkValidator::<ServiceSpec>::new(),
+        RoleValidator,
     )
     .await
 }
@@ -83,7 +82,7 @@ where
     common::handler::delete2(
         ctx,
         state.raw().kv_store(),
-        common::constants::generate_key(common::constants::SERVICES_KEY_PREFIX, key),
+        common::constants::generate_key(common::constants::ROLE_KEY_PREFIX, key),
         api_opt,
         kv::DeleteOption::new(),
     )

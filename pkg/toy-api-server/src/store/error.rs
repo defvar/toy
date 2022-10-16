@@ -150,5 +150,3 @@ impl<T: StoreErrorCustom> From<T> for StoreError {
         custom(err)
     }
 }
-
-impl warp::reject::Reject for StoreError {}

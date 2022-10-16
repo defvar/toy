@@ -26,7 +26,7 @@ pub(crate) async fn initialize<T, Config>(
 ) -> Result<(), ApiError>
 where
     T: HttpClient,
-    Config: ServerConfig<T>,
+    Config: ServerConfig,
 {
     tracing::info!("initialize builtin role.");
 

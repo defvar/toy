@@ -1,6 +1,8 @@
 //! Model for rbac/role api.
 
-use crate::common::KVObject;
+use crate::common::{KVObject, ListOption, ListOptionLike, SelectionCandidate};
+use crate::selection::candidate::CandidateMap;
+use crate::selection::field::Selection;
 use serde::{Deserialize, Serialize};
 
 pub const RESOURCE_ALL: &'static str = "*";
@@ -57,6 +59,12 @@ impl Role {
     }
 }
 
+impl SelectionCandidate for Role {
+    fn candidate_map(&self) -> CandidateMap {
+        CandidateMap::empty()
+    }
+}
+
 impl KVObject for Role {
     fn key(&self) -> &str {
         &self.name
@@ -67,5 +75,33 @@ impl RoleList {
     pub fn new(items: Vec<Role>) -> Self {
         let count = items.len() as u32;
         Self { items, count }
+    }
+}
+
+//////////////////////////////////
+// Option
+//////////////////////////////////
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct RoleListOption {
+    #[serde(flatten)]
+    common: ListOption,
+}
+
+impl RoleListOption {
+    pub fn new() -> Self {
+        Self {
+            common: ListOption::new(),
+        }
+    }
+}
+
+impl ListOptionLike for RoleListOption {
+    fn common(&self) -> &ListOption {
+        &self.common
+    }
+
+    fn selection(&self) -> Selection {
+        Selection::empty()
     }
 }

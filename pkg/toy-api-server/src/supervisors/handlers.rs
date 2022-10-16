@@ -1,18 +1,19 @@
 use crate::common::constants;
 use crate::context::Context;
 use crate::store::kv::{KvStore, Update, UpdateResult};
+use crate::ApiError;
 use chrono::Utc;
 use toy_api::common::PostOption;
 use toy_api::supervisors::Supervisor;
-use toy_h::HttpClient;
-use warp::http::StatusCode;
+use toy_api_http_common::axum::response::IntoResponse;
+use toy_h::{HttpClient, StatusCode};
 
 pub async fn beat<T>(
-    key: String,
     ctx: Context,
+    store: &impl KvStore<T>,
+    key: String,
     _opt: Option<PostOption>,
-    store: impl KvStore<T>,
-) -> Result<impl warp::Reply, warp::Rejection>
+) -> Result<impl IntoResponse, ApiError>
 where
     T: HttpClient,
 {
@@ -31,7 +32,7 @@ where
         Ok(UpdateResult::None) => unreachable!(),
         Err(e) => {
             tracing::error!("error:{:?}", e);
-            Ok(StatusCode::INTERNAL_SERVER_ERROR)
+            Err(ApiError::error(e))
         }
     }
 }

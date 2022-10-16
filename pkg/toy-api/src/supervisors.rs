@@ -37,12 +37,6 @@ pub struct SupervisorList {
     count: u32,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct SupervisorListOption {
-    #[serde(flatten)]
-    common: ListOption,
-}
-
 impl Supervisor {
     pub fn new(
         name: String,
@@ -124,6 +118,16 @@ impl SupervisorList {
         let count = items.len() as u32;
         Self { items, count }
     }
+}
+
+//////////////////////////////////
+// Option
+//////////////////////////////////
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct SupervisorListOption {
+    #[serde(flatten)]
+    common: ListOption,
 }
 
 impl SupervisorListOption {

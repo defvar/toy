@@ -57,7 +57,7 @@ where
     let format = opt.common().format();
     let indent = opt.common().indent();
 
-    Ok(toy_api_http_common::reply::into_response_2(
+    Ok(toy_api_http_common::reply::into_response(
         &specs, format, indent,
     ))
 }
@@ -80,7 +80,7 @@ where
     let (o_tx, _) = toy_core::oneshot::channel::<RunTaskResponse, ServiceError>();
     let req = Request::RunTask(pending.task_id(), g, o_tx);
     let _ = ctx.tx_mut().send_ok(req).await;
-    Ok(toy_api_http_common::reply::into_response_2(
+    Ok(toy_api_http_common::reply::into_response(
         &AllocateResponse::ok(pending.task_id()),
         format,
         None,

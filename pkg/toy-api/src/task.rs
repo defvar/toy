@@ -258,6 +258,10 @@ impl TasksInner {
     }
 }
 
+//////////////////////////////////
+// Option
+//////////////////////////////////
+
 /// Watch api option.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct WatchOption {
@@ -339,8 +343,8 @@ impl TaskListOption {
         }
     }
 
-    pub fn timestamp(&self) -> Option<&DateTime<Utc>> {
-        self.timestamp.as_ref()
+    pub fn timestamp(&self) -> Option<DateTime<Utc>> {
+        self.timestamp.clone()
     }
 }
 

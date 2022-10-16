@@ -33,7 +33,10 @@ where
         let _ = res.bytes().await?;
         Ok(())
     } else {
+        let s = res.status();
         let bytes = res.bytes().await?;
+
+        tracing::info!("{:?}:{:?}", s, std::str::from_utf8(bytes.as_ref()));
         let r = decode::<ErrorMessage>(&bytes, Some(Format::Json))?;
         Err(r.into())
     }

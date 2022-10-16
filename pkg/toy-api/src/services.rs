@@ -67,6 +67,10 @@ impl Default for ServiceSpecList {
     }
 }
 
+//////////////////////////////////
+// Option
+//////////////////////////////////
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ServiceSpecListOption {
     #[serde(flatten)]

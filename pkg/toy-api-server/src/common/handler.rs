@@ -6,26 +6,23 @@ use crate::store::kv::{Delete, DeleteResult, Find, KvStore, List, Put};
 use crate::{common, ApiError};
 use serde::de::DeserializeOwned;
 use serde::Serialize;
-use std::convert::Infallible;
 use std::fmt::Debug;
 use toy_api::common::{
-    DeleteOption, FindOption, KVObject, ListOption, ListOptionLike, PutOption, SelectionCandidate,
+    DeleteOption, FindOption, KVObject, ListOptionLike, PutOption, SelectionCandidate,
 };
+use toy_api_http_common::axum::response::IntoResponse;
 use toy_api_http_common::{codec, reply};
-use toy_h::{Bytes, HttpClient};
-use warp::http::StatusCode;
-use warp::reply::Reply;
+use toy_h::{Bytes, HttpClient, StatusCode};
 
-pub async fn find<H, Store, V, R, F>(
+pub async fn find2<H, V, R, F>(
     ctx: Context,
-    store: Store,
+    store: &impl KvStore<H>,
     key: String,
-    api_opt: Option<FindOption>,
+    api_opt: FindOption,
     store_opt: kv::FindOption,
     f: F,
-) -> Result<impl warp::Reply, warp::Rejection>
+) -> Result<impl IntoResponse, ApiError>
 where
-    Store: KvStore<H>,
     H: HttpClient,
     F: FnOnce(V) -> R,
     V: DeserializeOwned,
@@ -39,69 +36,34 @@ where
     {
         Ok(v) => match v {
             Some(v) => {
-                let format = api_opt.as_ref().map(|x| x.format()).unwrap_or(None);
-                let indent = api_opt.as_ref().map(|x| x.indent()).unwrap_or(None);
+                let format = api_opt.format();
+                let indent = api_opt.indent();
                 let r = f(v.into_value());
                 Ok(reply::into_response(&r, format, indent))
             }
-            None => Err(warp::reject::not_found()),
+            None => Err(ApiError::error("not found")),
         },
         Err(e) => {
             tracing::error!("error:{:?}", e);
-            Err(warp::reject::custom(e))
+            Err(ApiError::error(e))
         }
     }
 }
 
-pub async fn list<H, Store, V, R, F>(
+pub async fn list2<H, V, R, Opt, StoreOptF, F>(
     ctx: Context,
-    store: Store,
+    store: &impl KvStore<H>,
     prefix: &str,
-    api_opt: Option<ListOption>,
-    store_opt: kv::ListOption,
-    f: F,
-) -> Result<impl warp::Reply, warp::Rejection>
-where
-    Store: KvStore<H>,
-    H: HttpClient,
-    F: FnOnce(Vec<V>) -> R,
-    V: DeserializeOwned,
-    R: Serialize,
-{
-    tracing::debug!("handle: {:?}", ctx);
-    match store
-        .ops()
-        .list::<V>(store.con().unwrap(), prefix.to_owned(), store_opt)
-        .await
-    {
-        Ok(v) => {
-            let format = api_opt.as_ref().map(|x| x.format()).unwrap_or(None);
-            let indent = api_opt.as_ref().map(|x| x.indent()).unwrap_or(None);
-            let r = f(v.into_iter().map(|x| x.into_value()).collect());
-            Ok(reply::into_response(&r, format, indent))
-        }
-        Err(e) => {
-            tracing::error!("error:{:?}", e);
-            Ok(StatusCode::INTERNAL_SERVER_ERROR.into_response())
-        }
-    }
-}
-
-pub async fn list_with_opt<H, Store, V, R, Opt, StoreOptF, F>(
-    ctx: Context,
-    store: Store,
-    prefix: &str,
-    api_opt: Option<Opt>,
+    api_opt: Opt,
     store_opt_f: StoreOptF,
     f: F,
-) -> Result<impl warp::Reply, warp::Rejection>
+) -> Result<impl IntoResponse, ApiError>
 where
     H: HttpClient,
-    Store: KvStore<H>,
     V: DeserializeOwned + SelectionCandidate,
     R: Serialize,
     Opt: ListOptionLike + Debug,
-    StoreOptF: FnOnce(Option<&Opt>) -> kv::ListOption,
+    StoreOptF: FnOnce(&Opt) -> kv::ListOption,
     F: FnOnce(Vec<V>) -> R,
 {
     tracing::debug!("handle: ctx:{:?}, opt:{:?}", ctx, api_opt);
@@ -111,27 +73,22 @@ where
         .list::<V>(
             store.con().unwrap(),
             prefix.to_owned(),
-            store_opt_f(api_opt.as_ref()),
+            store_opt_f(&api_opt),
         )
         .await
     {
         Ok(mut vec) => {
-            let selection = api_opt.as_ref().map(|x| x.selection());
-            let (format, indent) = api_opt
-                .as_ref()
-                .map(|x| (x.common().format(), x.common().indent()))
-                .unwrap_or((None, None));
+            let selection = api_opt.selection();
+            let format = api_opt.common().format();
+            let indent = api_opt.common().indent();
 
-            match selection {
-                Some(ref s) if !s.preds().is_empty() => {
-                    // filter
-                    vec = vec
-                        .into_iter()
-                        .filter(|item| s.is_match(item.value()))
-                        .collect();
-                }
-                _ => {}
-            };
+            if !selection.preds().is_empty() {
+                // filter
+                vec = vec
+                    .into_iter()
+                    .filter(|item| selection.is_match(item.value()))
+                    .collect();
+            }
 
             let r = f(vec.into_iter().map(|x| x.into_value()).collect());
 
@@ -139,29 +96,29 @@ where
         }
         Err(e) => {
             tracing::error!("error:{:?}", e);
-            Ok(StatusCode::INTERNAL_SERVER_ERROR.into_response())
+            Err(ApiError::error(e))
         }
     }
 }
 
-pub async fn put<H, Store, Req, T>(
+pub async fn put2<H, Store, Req, T>(
     ctx: Context,
-    store: Store,
+    store: &Store,
     prefix: &'static str,
     key: String,
-    opt: Option<PutOption>,
+    opt: PutOption,
     store_opt: kv::PutOption,
     request: Bytes,
     validator: T,
-) -> Result<impl warp::Reply, ApiError>
+) -> Result<impl IntoResponse, ApiError>
 where
-    Store: KvStore<H>,
     H: HttpClient,
     Req: DeserializeOwned + Serialize + KVObject + Send,
+    Store: KvStore<H>,
     T: Validator<H, Store, Req>,
 {
     tracing::debug!("handle: {:?}", ctx);
-    let format = opt.map(|x| x.format()).unwrap_or(None);
+    let format = opt.format();
     let v = codec::decode::<_, Req>(request, format)?;
     let key_of_data = KVObject::key(&v).to_owned();
 
@@ -191,15 +148,14 @@ where
     }
 }
 
-pub async fn delete<H, Store>(
+pub async fn delete2<H>(
     ctx: Context,
-    store: Store,
+    store: &impl KvStore<H>,
     key: String,
-    _api_opt: Option<DeleteOption>,
+    _api_opt: DeleteOption,
     store_opt: kv::DeleteOption,
-) -> Result<impl warp::Reply, Infallible>
+) -> Result<impl IntoResponse, ApiError>
 where
-    Store: KvStore<H>,
     H: HttpClient,
 {
     tracing::debug!("handle: {:?}", ctx);
@@ -214,7 +170,7 @@ where
         },
         Err(e) => {
             tracing::error!("error:{:?}", e);
-            Ok(StatusCode::INTERNAL_SERVER_ERROR)
+            Err(ApiError::error(e))
         }
     }
 }

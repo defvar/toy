@@ -24,12 +24,6 @@ impl AuthUser {
     }
 }
 
-impl warp::Reply for AuthUser {
-    fn into_response(self) -> warp::reply::Response {
-        warp::reply::Response::new(format!("{}", self.name).into())
-    }
-}
-
 impl fmt::Debug for AuthUser {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("AuthUser")

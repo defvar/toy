@@ -3,4 +3,4 @@
 mod filters;
 mod validator;
 
-pub use filters::graphs;
+pub use filters::{delete, find, list, put};

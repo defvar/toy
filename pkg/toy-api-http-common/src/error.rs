@@ -1,4 +1,4 @@
-#[cfg(feature = "server_axum")]
+#[cfg(feature = "server")]
 use axum::response::{IntoResponse, Response};
 use std::fmt::Display;
 use thiserror::Error as ThisError;
@@ -88,9 +88,6 @@ impl From<ErrorMessage> for Error {
 }
 
 #[cfg(feature = "server")]
-impl warp::reject::Reject for Error {}
-
-#[cfg(feature = "server_axum")]
 impl IntoResponse for Error {
     fn into_response(self) -> Response {
         let e = ErrorMessage::new(http::StatusCode::INTERNAL_SERVER_ERROR.as_u16(), "");

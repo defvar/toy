@@ -1,53 +1,92 @@
-use crate::authentication::Auth;
-use crate::common;
+use crate::context::{Context, ServerState, WrappedState};
 use crate::graph::validator::GraphPutValidator;
-use crate::store::kv::{KvStore, ListOption};
-use crate::warp::filters::BoxedFilter;
+use crate::store::kv;
+use crate::store::kv::ListOption;
+use crate::{common, ApiError};
+use toy_api::common::{DeleteOption, FindOption, PutOption};
 use toy_api::graph::{Graph, GraphList, GraphListOption};
-use toy_h::HttpClient;
-use warp::Filter;
+use toy_api::supervisors::Supervisor;
+use toy_api_http_common::axum::extract::{Path, Query, State};
+use toy_api_http_common::axum::response::IntoResponse;
+use toy_api_http_common::bytes::Bytes;
 
-/// warp filter for graphs api.
-pub fn graphs<T>(
-    auth: impl Auth<T> + Clone + 'static,
-    client: T,
-    store: impl KvStore<T> + 'static,
-) -> BoxedFilter<(impl warp::Reply,)>
+pub async fn find<S>(
+    ctx: Context,
+    State(state): State<WrappedState<S>>,
+    Path(key): Path<String>,
+    Query(api_opt): Query<FindOption>,
+) -> Result<impl IntoResponse, ApiError>
 where
-    T: HttpClient + 'static,
+    S: ServerState,
 {
-    crate::find!(
-        warp::path("graphs"),
-        auth.clone(),
-        client.clone(),
-        common::constants::GRAPHS_KEY_PREFIX,
-        store.clone(),
-        |v: Graph| v
+    common::handler::find2(
+        ctx,
+        state.raw().kv_store(),
+        common::constants::generate_key(common::constants::GRAPHS_KEY_PREFIX, key),
+        api_opt,
+        kv::FindOption::new(),
+        |v: Supervisor| v,
     )
-    .or(crate::list_with_opt!(
-        warp::path("graphs"),
-        auth.clone(),
-        client.clone(),
+    .await
+}
+
+pub async fn list<S>(
+    ctx: Context,
+    State(state): State<WrappedState<S>>,
+    Query(api_opt): Query<GraphListOption>,
+) -> Result<impl IntoResponse, ApiError>
+where
+    S: ServerState,
+{
+    common::handler::list2(
+        ctx,
+        state.raw().kv_store(),
         common::constants::GRAPHS_KEY_PREFIX,
-        store.clone(),
-        GraphListOption,
-        |_: Option<&GraphListOption>| ListOption::new(),
-        |v: Vec<Graph>| GraphList::new(v)
-    ))
-    .or(crate::put!(
-        warp::path("graphs"),
-        auth.clone(),
-        client.clone(),
+        api_opt,
+        |_: &GraphListOption| ListOption::new(),
+        |v: Vec<Graph>| GraphList::new(v),
+    )
+    .await
+}
+
+pub async fn put<S>(
+    ctx: Context,
+    State(state): State<WrappedState<S>>,
+    Path(key): Path<String>,
+    Query(api_opt): Query<PutOption>,
+    request: Bytes,
+) -> Result<impl IntoResponse, ApiError>
+where
+    S: ServerState,
+{
+    common::handler::put2(
+        ctx,
+        state.raw().kv_store(),
         common::constants::GRAPHS_KEY_PREFIX,
-        store.clone(),
-        GraphPutValidator
-    ))
-    .or(crate::delete!(
-        warp::path("graphs"),
-        auth.clone(),
-        client.clone(),
-        common::constants::GRAPHS_KEY_PREFIX,
-        store.clone()
-    ))
-    .boxed()
+        key,
+        api_opt,
+        kv::PutOption::new(),
+        request,
+        GraphPutValidator,
+    )
+    .await
+}
+
+pub async fn delete<S>(
+    ctx: Context,
+    State(state): State<WrappedState<S>>,
+    Path(key): Path<String>,
+    Query(api_opt): Query<DeleteOption>,
+) -> Result<impl IntoResponse, ApiError>
+where
+    S: ServerState,
+{
+    common::handler::delete2(
+        ctx,
+        state.raw().kv_store(),
+        common::constants::generate_key(common::constants::GRAPHS_KEY_PREFIX, key),
+        api_opt,
+        kv::DeleteOption::new(),
+    )
+    .await
 }

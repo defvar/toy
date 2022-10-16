@@ -7,21 +7,8 @@ use http::StatusCode;
 use serde::Serialize;
 use std::marker::PhantomData;
 use toy_api::common::{Format, Indent};
-use warp::reply::{Reply, Response};
 
-pub fn into_response<T>(v: &T, format: Option<Format>, indent: Option<Indent>) -> Response
-where
-    T: Serialize,
-{
-    let format = format.unwrap_or(Format::default());
-    match format {
-        Format::Json => Reply::into_response(json(v, indent)),
-        Format::Yaml => Reply::into_response(yaml(v)),
-        Format::MessagePack => Reply::into_response(mp(v)),
-    }
-}
-
-pub fn into_response_2<T>(
+pub fn into_response<T>(
     v: &T,
     format: Option<Format>,
     indent: Option<Indent>,
@@ -136,22 +123,6 @@ struct Mp {
     inner: Result<Vec<u8>, ()>,
 }
 
-impl warp::Reply for Mp {
-    fn into_response(self) -> Response {
-        match self.inner {
-            Ok(body) => {
-                let mut res = Response::new(body.into());
-                res.headers_mut().insert(
-                    CONTENT_TYPE,
-                    ResponseContentType::MessagePack.to_header_value(),
-                );
-                res
-            }
-            Err(()) => Reply::into_response(StatusCode::INTERNAL_SERVER_ERROR),
-        }
-    }
-}
-
 impl IntoResponse for Mp {
     fn into_response(self) -> axum::response::Response {
         match self.inner {
@@ -170,21 +141,6 @@ impl IntoResponse for Mp {
 
 struct Yaml {
     inner: Result<String, ()>,
-}
-
-impl warp::Reply for Yaml {
-    #[inline]
-    fn into_response(self) -> Response {
-        match self.inner {
-            Ok(body) => {
-                let mut res = Response::new(body.into());
-                res.headers_mut()
-                    .insert(CONTENT_TYPE, ResponseContentType::Yaml.to_header_value());
-                res
-            }
-            Err(()) => Reply::into_response(StatusCode::INTERNAL_SERVER_ERROR),
-        }
-    }
 }
 
 impl IntoResponse for Yaml {
@@ -206,22 +162,7 @@ pub struct Json {
     inner: Result<String, ()>,
 }
 
-impl warp::Reply for Json {
-    #[inline]
-    fn into_response(self) -> Response {
-        match self.inner {
-            Ok(body) => {
-                let mut res = Response::new(body.into());
-                res.headers_mut()
-                    .insert(CONTENT_TYPE, ResponseContentType::Json.to_header_value());
-                res
-            }
-            Err(()) => Reply::into_response(StatusCode::INTERNAL_SERVER_ERROR),
-        }
-    }
-}
-
-impl axum::response::IntoResponse for Json {
+impl IntoResponse for Json {
     fn into_response(self) -> axum::response::Response {
         match self.inner {
             Ok(body) => {
@@ -239,24 +180,6 @@ pub struct ReplyStream<St, B> {
     inner: St,
     content_type: ResponseContentType,
     t: PhantomData<B>,
-}
-
-impl<St, B> warp::Reply for ReplyStream<St, B>
-where
-    St: Stream<Item = Result<B, Error>> + Send + 'static,
-    B: Into<Bytes> + Send + 'static,
-{
-    #[inline]
-    fn into_response(self) -> Response {
-        let mut res = Response::new(warp::hyper::Body::wrap_stream(self.inner));
-        res.headers_mut()
-            .insert(CONTENT_TYPE, self.content_type.to_header_value());
-        res.headers_mut()
-            .insert(CACHE_CONTROL, HeaderValue::from_static("no-cache"));
-        res.headers_mut()
-            .insert(TRANSFER_ENCODING, HeaderValue::from_static("chunked"));
-        res
-    }
 }
 
 impl<St, B> IntoResponse for ReplyStream<St, B>

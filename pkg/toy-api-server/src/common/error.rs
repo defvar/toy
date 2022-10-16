@@ -1,10 +1,11 @@
 use std::fmt::{Debug, Display};
 use thiserror::Error;
+use toy_api::error::ErrorMessage;
+use toy_api_http_common::axum::response::{IntoResponse, Response};
 use toy_api_http_common::Error;
 use toy_core::error::ConfigError;
 use toy_h::error::HError;
-use toy_h::InvalidUri;
-use warp::http::StatusCode;
+use toy_h::{InvalidUri, StatusCode};
 
 #[derive(Debug, Error)]
 pub enum ApiError {
@@ -118,10 +119,6 @@ impl ApiError {
         }
     }
 
-    pub fn into_rejection(self) -> warp::Rejection {
-        warp::reject::custom(self)
-    }
-
     pub fn store_operation_failed<T>(msg: T) -> ApiError
     where
         T: Debug,
@@ -160,4 +157,13 @@ impl ApiError {
     }
 }
 
-impl warp::reject::Reject for ApiError {}
+impl IntoResponse for ApiError {
+    fn into_response(self) -> Response {
+        let e = ErrorMessage::new(self.status_code().as_u16(), self.error_message());
+        let json = toy_pack_json::pack_to_string(&e);
+        match json {
+            Ok(v) => (StatusCode::INTERNAL_SERVER_ERROR, v).into_response(),
+            Err(_) => (StatusCode::INTERNAL_SERVER_ERROR, "".to_string()).into_response(),
+        }
+    }
+}

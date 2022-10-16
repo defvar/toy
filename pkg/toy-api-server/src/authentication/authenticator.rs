@@ -1,78 +1,39 @@
 use crate::authentication::{Auth, AuthUser};
-use crate::authorization::authorize;
-use crate::context::Context;
+use crate::context::{Context, ServerState};
 use crate::ApiError;
-use toy_h::HttpClient;
-use warp::http::Method;
-use warp::path::FullPath;
-use warp::{reject, Filter, Rejection};
+use toy_api_http_common::axum::headers::authorization::Bearer;
+use toy_api_http_common::axum::headers::Authorization;
+use toy_api_http_common::axum::http::request::Parts;
+use toy_api_http_common::axum::RequestPartsExt;
+use toy_api_http_common::axum::TypedHeader;
 
-/// warp filter for authentication.
-pub fn authenticate<T>(
-    auth: impl Auth<T> + Clone,
-    client: T,
-) -> impl Filter<Extract = (Context,), Error = Rejection> + Clone
+pub async fn authenticate<S>(parts: &mut Parts, state: &S) -> Result<Context, ApiError>
 where
-    T: HttpClient,
+    S: ServerState,
 {
-    auth_bearer(auth, client)
-        .or_else(|e| auth_dev(e))
-        .and(warp::path::full())
-        .and(warp::method())
-        .and_then(|user, path: FullPath, method: Method| async move {
-            let ctx = Context::new(user, path.as_str(), method.as_str());
-            let roles = crate::context::rbac::rules(ctx.user().name());
-            match authorize(&ctx, roles) {
-                Ok(_) => Ok(ctx),
-                Err(e) => {
-                    tracing::info!("forbidden: {}", e.error_message());
-                    Err(reject::custom(e))
-                }
-            }
-        })
-}
-
-fn auth_bearer<T>(
-    auth: impl Auth<T> + Clone,
-    client: T,
-) -> impl Filter<Extract = (AuthUser,), Error = Rejection> + Clone
-where
-    T: HttpClient,
-{
-    warp::any()
-        .map(move || (auth.clone(), client.clone()))
-        .and(warp::header::header::<String>("Authorization"))
-        .and_then(|(a, b), c| handle_auth(a, b, c))
-}
-
-async fn auth_dev(e: Rejection) -> Result<(AuthUser,), Rejection> {
     if let Ok(v) = std::env::var("TOY_AUTHENTICATION") {
         if v == "none" {
             tracing::warn!("skip authentication.");
-            return Ok((AuthUser::new("dev".to_string()),));
+            return Ok(Context::new(
+                AuthUser::new("dev".to_string()),
+                parts.uri.path(),
+                parts.method.as_str(),
+            ));
         }
     }
-    Err(e)
-}
+    let TypedHeader(Authorization(bearer)) = parts
+        .extract::<TypedHeader<Authorization<Bearer>>>()
+        .await
+        .map_err(|_| ApiError::authentication_failed("not found Bearer token."))?;
 
-async fn handle_auth<T>(
-    auth: impl Auth<T> + Clone,
-    client: T,
-    authen_str: String,
-) -> Result<AuthUser, Rejection>
-where
-    T: HttpClient,
-{
-    if authen_str.starts_with("bearer") || authen_str.starts_with("Bearer") {
-        let token = authen_str[6..authen_str.len()].trim();
-        let user = auth.verify(client, token.to_string()).await;
-        match user {
-            Ok(u) => Ok(u),
-            Err(e) => Err(warp::reject::custom(e)),
+    let user = state
+        .auth()
+        .verify(state.client().clone(), bearer.token().to_string())
+        .await;
+    match user {
+        Ok(u) => {
+            return Ok(Context::new(u, parts.uri.path(), parts.method.as_str()));
         }
-    } else {
-        Err(warp::reject::custom(ApiError::authentication_failed(
-            "not found Bearer token.",
-        )))
+        Err(e) => Err(ApiError::authentication_failed(e)),
     }
 }
