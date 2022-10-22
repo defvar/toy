@@ -14,5 +14,6 @@ pub mod http;
 pub use async_trait;
 #[doc(hidden)]
 pub use toy_api;
+#[cfg(feature = "http")]
 #[doc(hidden)]
 pub use toy_api_http_common::auth::Auth;

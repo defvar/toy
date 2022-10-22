@@ -1,5 +1,6 @@
 use thiserror::Error;
 
+#[cfg(feature = "http")]
 use toy_api::error::ErrorMessage;
 #[cfg(feature = "http")]
 use toy_api_http_common::Error;
@@ -84,6 +85,7 @@ impl ApiClientError {
         }
     }
 
+    #[cfg(feature = "http")]
     pub fn error_message(&self) -> String {
         match self {
             ApiClientError::ApiError { source } => source.error_message(),
@@ -92,6 +94,7 @@ impl ApiClientError {
     }
 }
 
+#[cfg(feature = "http")]
 impl From<ErrorMessage> for ApiClientError {
     fn from(e: ErrorMessage) -> Self {
         ApiClientError::ApiError {
