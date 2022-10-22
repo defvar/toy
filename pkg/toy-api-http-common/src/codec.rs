@@ -5,8 +5,7 @@ use toy_api::common::Format;
 use toy_h::bytes::Buf;
 
 pub fn decode<B: Buf, T: DeserializeOwned>(buf: B, format: Option<Format>) -> Result<T, Error> {
-    let format = format.unwrap_or_default();
-    match format {
+    match format.unwrap_or(Format::MessagePack) {
         Format::Json => decode_json(buf).map_err(|e| e.into()),
         Format::MessagePack => decode_mp(buf).map_err(|e| e.into()),
         Format::Yaml => decode_yaml(buf),

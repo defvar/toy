@@ -278,22 +278,6 @@ impl WatchOption {
     }
 }
 
-/// Post api option.
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct PostOption {
-    format: Option<Format>,
-}
-
-impl PostOption {
-    pub fn new() -> Self {
-        Self { format: None }
-    }
-
-    pub fn format(&self) -> Option<Format> {
-        self.format
-    }
-}
-
 /// Allocate api option.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct AllocateOption {

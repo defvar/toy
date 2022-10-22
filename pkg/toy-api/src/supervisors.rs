@@ -37,6 +37,12 @@ pub struct SupervisorList {
     count: u32,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum SupervisorBeatResponse {
+    NotFound,
+    Ok { last_beat_time: DateTime<Utc> },
+}
+
 impl Supervisor {
     pub fn new(
         name: String,

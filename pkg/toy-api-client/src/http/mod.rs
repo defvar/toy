@@ -1,6 +1,5 @@
 //! # toy-api-client Implementation for http
 
-mod common;
 mod graph;
 mod role;
 mod role_binding;
@@ -13,15 +12,13 @@ pub use service::HttpServiceClient;
 pub use supervisor::HttpSupervisorClient;
 pub use task::HttpTaskClient;
 
-pub(crate) use common::{delete, find, list, list_with_opt, put};
-
 use crate::client::{ApiClient, Rbaclient};
 use crate::error::ApiClientError;
 
-use crate::auth::Auth;
 use crate::http::role::HttpRoleClient;
 use crate::http::role_binding::HttpRoleBindingClient;
 use std::sync::Arc;
+use toy_api_http_common::auth::Auth;
 use toy_h::impl_reqwest::ReqwestClient;
 
 #[derive(Debug, Clone)]

@@ -3,11 +3,14 @@
 use crate::error::ApiClientError;
 use async_trait::async_trait;
 use toy_api::common;
+use toy_api::common::CommonPutResponse;
 use toy_api::graph::{Graph, GraphList};
 use toy_api::role::{Role, RoleList};
 use toy_api::role_binding::{RoleBinding, RoleBindingList};
 use toy_api::services::{ServiceSpec, ServiceSpecList, ServiceSpecListOption};
-use toy_api::supervisors::{Supervisor, SupervisorList, SupervisorListOption};
+use toy_api::supervisors::{
+    Supervisor, SupervisorBeatResponse, SupervisorList, SupervisorListOption,
+};
 use toy_api::task::{self, PendingResult, TaskLog, Tasks};
 
 /// Composit All Api Client
@@ -54,14 +57,18 @@ pub trait GraphClient: Send + Sync {
         key: String,
         v: Graph,
         opt: common::PutOption,
-    ) -> Result<(), ApiClientError>;
+    ) -> Result<CommonPutResponse, ApiClientError>;
 
     async fn delete(&self, key: String, opt: common::DeleteOption) -> Result<(), ApiClientError>;
 }
 
 #[async_trait]
 pub trait TaskClient: Send + Sync {
-    async fn post(&self, v: Graph, opt: task::PostOption) -> Result<PendingResult, ApiClientError>;
+    async fn post(
+        &self,
+        v: Graph,
+        opt: common::PostOption,
+    ) -> Result<PendingResult, ApiClientError>;
 
     async fn list(&self, opt: task::TaskListOption) -> Result<Tasks, ApiClientError>;
 
@@ -83,11 +90,11 @@ pub trait SupervisorClient: Send + Sync {
         key: String,
         v: Supervisor,
         opt: common::PutOption,
-    ) -> Result<(), ApiClientError>;
+    ) -> Result<CommonPutResponse, ApiClientError>;
 
     async fn delete(&self, key: String, opt: common::DeleteOption) -> Result<(), ApiClientError>;
 
-    async fn beat(&self, key: &str) -> Result<(), ApiClientError>;
+    async fn beat(&self, key: &str) -> Result<SupervisorBeatResponse, ApiClientError>;
 }
 
 #[async_trait]
@@ -105,7 +112,7 @@ pub trait ServiceClient: Send + Sync {
         key: String,
         v: ServiceSpec,
         opt: common::PutOption,
-    ) -> Result<(), ApiClientError>;
+    ) -> Result<CommonPutResponse, ApiClientError>;
 
     async fn delete(&self, key: String, opt: common::DeleteOption) -> Result<(), ApiClientError>;
 }
@@ -120,8 +127,12 @@ pub trait RoleClient: Send + Sync {
         opt: common::FindOption,
     ) -> Result<Option<Role>, ApiClientError>;
 
-    async fn put(&self, key: String, v: Role, opt: common::PutOption)
-        -> Result<(), ApiClientError>;
+    async fn put(
+        &self,
+        key: String,
+        v: Role,
+        opt: common::PutOption,
+    ) -> Result<CommonPutResponse, ApiClientError>;
 
     async fn delete(&self, key: String, opt: common::DeleteOption) -> Result<(), ApiClientError>;
 }
@@ -141,7 +152,7 @@ pub trait RoleBindingClient: Send + Sync {
         key: String,
         v: RoleBinding,
         opt: common::PutOption,
-    ) -> Result<(), ApiClientError>;
+    ) -> Result<CommonPutResponse, ApiClientError>;
 
     async fn delete(&self, key: String, opt: common::DeleteOption) -> Result<(), ApiClientError>;
 }

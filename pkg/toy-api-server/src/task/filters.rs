@@ -1,7 +1,8 @@
 use crate::context::{Context, ServerState, WrappedState};
 use crate::task::handlers;
 use crate::ApiError;
-use toy_api::task::{LogOption, PostOption, TaskListOption};
+use toy_api::common::PostOption;
+use toy_api::task::{LogOption, TaskListOption};
 use toy_api_http_common::axum::extract::{Path, Query, State};
 use toy_api_http_common::axum::response::IntoResponse;
 use toy_api_http_common::bytes::Bytes;

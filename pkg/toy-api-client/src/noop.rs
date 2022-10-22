@@ -4,11 +4,11 @@ use crate::client::{
 };
 use crate::error::ApiClientError;
 use async_trait::async_trait;
-use toy_api::common::{DeleteOption, FindOption, ListOption, PutOption};
+use toy_api::common::{CommonPutResponse, DeleteOption, FindOption, ListOption, PutOption};
 use toy_api::role::{Role, RoleList};
 use toy_api::role_binding::{RoleBinding, RoleBindingList};
 use toy_api::services::{ServiceSpec, ServiceSpecList, ServiceSpecListOption};
-use toy_api::supervisors::SupervisorListOption;
+use toy_api::supervisors::{SupervisorBeatResponse, SupervisorListOption};
 use toy_api::task::{PendingResult, TaskListOption};
 
 #[derive(Clone)]
@@ -77,7 +77,7 @@ impl GraphClient for NoopApiClient {
         _key: String,
         _v: toy_api::graph::Graph,
         _opt: PutOption,
-    ) -> Result<(), ApiClientError> {
+    ) -> Result<CommonPutResponse, ApiClientError> {
         unimplemented!()
     }
 
@@ -91,7 +91,7 @@ impl TaskClient for NoopApiClient {
     async fn post(
         &self,
         _v: toy_api::graph::Graph,
-        _opt: toy_api::task::PostOption,
+        _opt: toy_api::common::PostOption,
     ) -> Result<PendingResult, ApiClientError> {
         unimplemented!()
     }
@@ -131,7 +131,7 @@ impl SupervisorClient for NoopApiClient {
         _key: String,
         _v: toy_api::supervisors::Supervisor,
         _opt: PutOption,
-    ) -> Result<(), ApiClientError> {
+    ) -> Result<CommonPutResponse, ApiClientError> {
         unimplemented!()
     }
 
@@ -139,7 +139,7 @@ impl SupervisorClient for NoopApiClient {
         unimplemented!()
     }
 
-    async fn beat(&self, _key: &str) -> Result<(), ApiClientError> {
+    async fn beat(&self, _key: &str) -> Result<SupervisorBeatResponse, ApiClientError> {
         unimplemented!()
     }
 }
@@ -163,7 +163,7 @@ impl ServiceClient for NoopApiClient {
         _key: String,
         _v: ServiceSpec,
         _opt: PutOption,
-    ) -> Result<(), ApiClientError> {
+    ) -> Result<CommonPutResponse, ApiClientError> {
         unimplemented!()
     }
 
@@ -175,26 +175,31 @@ impl ServiceClient for NoopApiClient {
 #[async_trait]
 impl RoleClient for NoopApiClient {
     async fn list(&self, _opt: ListOption) -> Result<RoleList, ApiClientError> {
-        todo!()
+        unimplemented!()
     }
 
     async fn find(&self, _key: String, _opt: FindOption) -> Result<Option<Role>, ApiClientError> {
-        todo!()
+        unimplemented!()
     }
 
-    async fn put(&self, _key: String, _v: Role, _opt: PutOption) -> Result<(), ApiClientError> {
-        todo!()
+    async fn put(
+        &self,
+        _key: String,
+        _v: Role,
+        _opt: PutOption,
+    ) -> Result<CommonPutResponse, ApiClientError> {
+        unimplemented!()
     }
 
     async fn delete(&self, _key: String, _opt: DeleteOption) -> Result<(), ApiClientError> {
-        todo!()
+        unimplemented!()
     }
 }
 
 #[async_trait]
 impl RoleBindingClient for NoopApiClient {
     async fn list(&self, _opt: ListOption) -> Result<RoleBindingList, ApiClientError> {
-        todo!()
+        unimplemented!()
     }
 
     async fn find(
@@ -202,7 +207,7 @@ impl RoleBindingClient for NoopApiClient {
         _key: String,
         _opt: FindOption,
     ) -> Result<Option<RoleBinding>, ApiClientError> {
-        todo!()
+        unimplemented!()
     }
 
     async fn put(
@@ -210,11 +215,11 @@ impl RoleBindingClient for NoopApiClient {
         _key: String,
         _v: RoleBinding,
         _opt: PutOption,
-    ) -> Result<(), ApiClientError> {
-        todo!()
+    ) -> Result<CommonPutResponse, ApiClientError> {
+        unimplemented!()
     }
 
     async fn delete(&self, _key: String, _opt: DeleteOption) -> Result<(), ApiClientError> {
-        todo!()
+        unimplemented!()
     }
 }

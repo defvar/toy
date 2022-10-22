@@ -16,18 +16,11 @@ where
     fn write(self, writer: W, pretty: bool) -> Result<(), Error> {
         match self {
             Ok(v) => JsonFormatter { data: v, pretty }.format(writer),
-            Err(e) => match e {
-                ApiClientError::ApiError { inner } => JsonFormatter {
-                    data: inner,
-                    pretty,
-                }
-                .format(writer),
-                _ => JsonFormatter {
-                    data: ErrorMessage::new(65535, e.to_string()),
-                    pretty,
-                }
-                .format(writer),
-            },
+            Err(e) => JsonFormatter {
+                data: ErrorMessage::new(e.status_code().as_u16(), e.error_message()),
+                pretty,
+            }
+            .format(writer),
         }
     }
 }

@@ -15,6 +15,7 @@ futures-core = { version = "0.3" }
 futures-util = { version = "0.3", default-features = false }
 
 toy-api = { path = "../toy-api" }
+toy-api-http-common = { path = "../toy-api-http-common", optional = true}
 toy-h = {path = "../../shared/toy-h", optional = true}
 toy-pack-urlencoded = {path = "../../shared/toy-pack-urlencoded", optional = true}
 toy-pack-json = {path = "../../shared/toy-pack-json"}
@@ -23,4 +24,4 @@ toy-pack-mp = {path = "../../shared/toy-pack-mp"}
 [features]
 # Nothing by default
 default = []
-http = ["toy-h/impl_reqwest", "toy-pack-urlencoded"]
+http = ["toy-h/impl_reqwest", "toy-api-http-common", "toy-pack-urlencoded"]

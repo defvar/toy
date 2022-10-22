@@ -1,7 +1,11 @@
 #[cfg(feature = "server")]
+use crate::reply;
+#[cfg(feature = "server")]
 use axum::response::{IntoResponse, Response};
+use http::StatusCode;
 use std::fmt::Display;
 use thiserror::Error as ThisError;
+use toy_api::common::Format;
 use toy_api::error::ErrorMessage;
 use toy_h::error::HError;
 use toy_h::InvalidUri;
@@ -79,6 +83,22 @@ impl Error {
             inner: msg.to_string(),
         }
     }
+
+    pub fn status_code(&self) -> StatusCode {
+        match self {
+            Error::ApiError { inner } => {
+                StatusCode::from_u16(inner.code()).unwrap_or(StatusCode::INTERNAL_SERVER_ERROR)
+            }
+            _ => StatusCode::INTERNAL_SERVER_ERROR,
+        }
+    }
+
+    pub fn error_message(&self) -> String {
+        match self {
+            Error::ApiError { inner } => inner.message().to_string(),
+            _ => self.to_string(),
+        }
+    }
 }
 
 impl From<ErrorMessage> for Error {
@@ -90,11 +110,9 @@ impl From<ErrorMessage> for Error {
 #[cfg(feature = "server")]
 impl IntoResponse for Error {
     fn into_response(self) -> Response {
-        let e = ErrorMessage::new(http::StatusCode::INTERNAL_SERVER_ERROR.as_u16(), "");
-        let json = toy_pack_json::pack_to_string(&e);
-        match json {
-            Ok(v) => (http::StatusCode::INTERNAL_SERVER_ERROR, v).into_response(),
-            Err(_) => (http::StatusCode::INTERNAL_SERVER_ERROR, "".to_string()).into_response(),
-        }
+        let e = ErrorMessage::new(self.status_code().as_u16(), self.error_message());
+        let code = StatusCode::from_u16(e.code()).unwrap_or(StatusCode::INTERNAL_SERVER_ERROR);
+        let r = reply::into_response(&e, Some(Format::Json), None);
+        (code, r).into_response()
     }
 }

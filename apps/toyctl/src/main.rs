@@ -39,7 +39,7 @@ fn main() {
         return;
     }
 
-    let auth = toy::api_client::auth::Auth::with_bearer_token(&opts.config.user, &token.unwrap());
+    let auth = toy::api_client::Auth::with_bearer_token(&opts.config.user, &token.unwrap());
     let client = HttpApiClient::new(&opts.config.api_root, auth).unwrap();
 
     rt.block_on(async {

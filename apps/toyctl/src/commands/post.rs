@@ -5,7 +5,7 @@ use crate::output::Output;
 use std::io::Write;
 use toy::api_client::client::TaskClient;
 use toy::api_client::http::HttpApiClient;
-use toy::api_client::toy_api::task::PostOption;
+use toy::api_client::toy_api::common::PostOption;
 use toy::api_client::ApiClient;
 
 pub async fn execute<W>(c: PostCommand, client: HttpApiClient, writer: W) -> Result<(), Error>

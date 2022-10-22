@@ -8,7 +8,8 @@ use serde::de::DeserializeOwned;
 use serde::Serialize;
 use std::fmt::Debug;
 use toy_api::common::{
-    DeleteOption, FindOption, KVObject, ListOptionLike, PutOption, SelectionCandidate,
+    CommonPutResponse, DeleteOption, FindOption, KVObject, ListOptionLike, PutOption,
+    SelectionCandidate,
 };
 use toy_api_http_common::axum::response::IntoResponse;
 use toy_api_http_common::{codec, reply};
@@ -117,7 +118,7 @@ where
     Store: KvStore<H>,
     T: Validator<H, Store, Req>,
 {
-    tracing::debug!("handle: {:?}", ctx);
+    tracing::debug!("handle: {:?}, opt: {:?}", ctx, opt);
     let format = opt.format();
     let v = codec::decode::<_, Req>(request, format)?;
     let key_of_data = KVObject::key(&v).to_owned();
@@ -131,15 +132,19 @@ where
         .ops()
         .put(
             store.con().unwrap(),
-            common::constants::generate_key(prefix, key),
+            common::constants::generate_key(prefix, &key),
             v,
             store_opt,
         )
         .await
     {
-        Ok(_) => Ok(StatusCode::CREATED),
+        Ok(_) => {
+            let r = CommonPutResponse::with_code(StatusCode::CREATED.as_u16());
+            let r = reply::into_response(&r, format, opt.indent());
+            Ok((StatusCode::CREATED, r))
+        }
         Err(e) => match e {
-            StoreError::AllreadyExists { .. } => Ok(StatusCode::CONFLICT),
+            StoreError::AllreadyExists { .. } => Err(ApiError::allready_exists(&key)),
             _ => {
                 tracing::error!("error:{:?}", e);
                 Err(ApiError::store_operation_failed("internal error..."))

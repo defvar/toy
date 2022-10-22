@@ -90,7 +90,7 @@ fn go() -> Result<(), Error> {
             let (_guard, tracing_addr) = initialize_log(&c.log)?;
             let token = get_credential(&c.user, &c.kid, &c.credential)
                 .map_err(|e| Error::read_credential_error(e))?;
-            let auth = toy::api_client::auth::Auth::with_bearer_token(&c.user, &token);
+            let auth = toy::api_client::Auth::with_bearer_token(&c.user, &token);
 
             let addr = format!("{}:{}", c.host, c.port)
                 .parse::<SocketAddr>()

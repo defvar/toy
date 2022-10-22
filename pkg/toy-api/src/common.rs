@@ -60,6 +60,22 @@ pub trait SelectionCandidate {
     fn candidate_map(&self) -> CandidateMap;
 }
 
+/// Common response for put-based api.
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct CommonPutResponse {
+    code: u16,
+}
+
+impl CommonPutResponse {
+    pub fn with_code(code: u16) -> Self {
+        Self { code }
+    }
+
+    pub fn code(&self) -> u16 {
+        self.code
+    }
+}
+
 /// Common option items for find-based api.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct FindOption {
@@ -119,6 +135,16 @@ impl ListOption {
             indent: Some(Indent::Pretty),
             ..self
         }
+    }
+}
+
+impl ListOptionLike for ListOption {
+    fn common(&self) -> &ListOption {
+        &self
+    }
+
+    fn selection(&self) -> Selection {
+        Selection::empty()
     }
 }
 

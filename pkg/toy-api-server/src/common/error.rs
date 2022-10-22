@@ -1,8 +1,9 @@
 use std::fmt::{Debug, Display};
 use thiserror::Error;
+use toy_api::common::Format;
 use toy_api::error::ErrorMessage;
 use toy_api_http_common::axum::response::{IntoResponse, Response};
-use toy_api_http_common::Error;
+use toy_api_http_common::{reply, Error};
 use toy_core::error::ConfigError;
 use toy_h::error::HError;
 use toy_h::{InvalidUri, StatusCode};
@@ -72,6 +73,9 @@ pub enum ApiError {
     #[error("validation failed. {}", inner)]
     ValidationFailed { inner: String },
 
+    #[error("allready exists. key:{}", key)]
+    AllreadyExists { key: String },
+
     #[error("{:?}", inner)]
     Error { inner: String },
 }
@@ -93,6 +97,7 @@ impl ApiError {
                 Error::QueryParse { .. } => StatusCode::BAD_REQUEST,
                 _ => StatusCode::INTERNAL_SERVER_ERROR,
             },
+            ApiError::AllreadyExists { .. } => StatusCode::CONFLICT,
             ApiError::AuthorizationFailed { .. } => StatusCode::FORBIDDEN,
             _ => StatusCode::INTERNAL_SERVER_ERROR,
         }
@@ -150,6 +155,13 @@ impl ApiError {
         }
     }
 
+    pub fn allready_exists<T>(key: T) -> ApiError
+    where
+        T: Into<String>,
+    {
+        ApiError::AllreadyExists { key: key.into() }
+    }
+
     pub fn difference_key(specified_key: &str, key_of_data: &str) -> ApiError {
         ApiError::ValidationFailed {
             inner: format!("There is a difference between the specified key and the key of the object to be registered. specified:{}, data:{}", specified_key, key_of_data),
@@ -160,10 +172,8 @@ impl ApiError {
 impl IntoResponse for ApiError {
     fn into_response(self) -> Response {
         let e = ErrorMessage::new(self.status_code().as_u16(), self.error_message());
-        let json = toy_pack_json::pack_to_string(&e);
-        match json {
-            Ok(v) => (StatusCode::INTERNAL_SERVER_ERROR, v).into_response(),
-            Err(_) => (StatusCode::INTERNAL_SERVER_ERROR, "".to_string()).into_response(),
-        }
+        let code = StatusCode::from_u16(e.code()).unwrap_or(StatusCode::INTERNAL_SERVER_ERROR);
+        let r = reply::into_response(&e, Some(Format::Json), None);
+        (code, r).into_response()
     }
 }

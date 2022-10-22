@@ -3,7 +3,7 @@ use crate::context::{Context, ServerState, WrappedState};
 use crate::store::kv;
 use crate::supervisors::handlers;
 use crate::{common, ApiError};
-use toy_api::common::{DeleteOption, FindOption, PutOption};
+use toy_api::common::{DeleteOption, FindOption, PostOption, PutOption};
 use toy_api::supervisors::{Supervisor, SupervisorList, SupervisorListOption};
 use toy_api_http_common::axum::extract::{Path, Query, State};
 use toy_api_http_common::axum::response::IntoResponse;
@@ -94,9 +94,10 @@ pub async fn beat<S>(
     ctx: Context,
     State(state): State<WrappedState<S>>,
     Path(key): Path<String>,
+    Query(api_opt): Query<PostOption>,
 ) -> Result<impl IntoResponse, ApiError>
 where
     S: ServerState,
 {
-    handlers::beat(ctx, state.raw().kv_store(), key, None).await
+    handlers::beat(ctx, state.raw().kv_store(), key, api_opt).await
 }

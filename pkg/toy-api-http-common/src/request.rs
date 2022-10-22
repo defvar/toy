@@ -2,9 +2,7 @@ use crate::auth::Auth;
 use crate::Error;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
-use toy_api::common::{
-    DeleteOption, FindOption, Format, ListOption, ListOptionLike, PostOption, PutOption,
-};
+use toy_api::common::{DeleteOption, FindOption, Format, ListOptionLike, PostOption, PutOption};
 use toy_api::error::ErrorMessage;
 use toy_h::{HeaderMap, HttpClient, RequestBuilder, Response, Uri};
 use toy_pack_urlencoded::QueryParseError;
@@ -25,7 +23,7 @@ where
     let uri = format!("{}/{}/{}?{}", root, path, key, query).parse::<Uri>()?;
     let h = common_headers(opt.format(), auth);
     let r = client.get(uri).headers(h).send().await?;
-    response(r, opt.format()).await
+    decode(r, opt.format()).await
 }
 
 pub async fn list<T, V>(
@@ -33,36 +31,17 @@ pub async fn list<T, V>(
     auth: Option<&Auth>,
     root: &str,
     path: &str,
-    opt: ListOption,
+    opt: impl ListOptionLike + Serialize,
 ) -> Result<V, Error>
 where
     T: HttpClient,
     V: DeserializeOwned,
-{
-    let query = prepare_query(&opt)?;
-    let uri = format!("{}/{}?{}", root, path, query).parse::<Uri>()?;
-    let h = common_headers(opt.format(), auth);
-    let r = client.get(uri).headers(h).send().await?;
-    response(r, opt.format()).await
-}
-
-pub async fn list_with_opt<T, V, O>(
-    client: &T,
-    auth: Option<&Auth>,
-    root: &str,
-    path: &str,
-    opt: O,
-) -> Result<V, Error>
-where
-    T: HttpClient,
-    V: DeserializeOwned,
-    O: Serialize + ListOptionLike,
 {
     let query = prepare_query(&opt)?;
     let uri = format!("{}/{}?{}", root, path, query).parse::<Uri>()?;
     let h = common_headers(opt.common().format(), auth);
     let r = client.get(uri).headers(h).send().await?;
-    response(r, opt.common().format()).await
+    decode(r, opt.common().format()).await
 }
 
 pub async fn put<T, V, R>(
@@ -84,7 +63,7 @@ where
     let h = common_headers(opt.format(), auth);
     let body = crate::codec::encode(&v, opt.format())?;
     let r = client.put(uri).headers(h).body(body).send().await?;
-    response(r, opt.format()).await
+    decode(r, opt.format()).await
 }
 
 pub async fn post<T, V, R>(
@@ -105,12 +84,12 @@ where
     let h = common_headers(opt.format(), auth);
     let body = crate::codec::encode(&v, opt.format())?;
     let r = client.post(uri).headers(h).body(body).send().await?;
-    response(r, opt.format()).await
+    decode(r, opt.format()).await
 }
 
 pub async fn delete<T, R>(
     client: &T,
-    auth: &Auth,
+    auth: Option<&Auth>,
     root: &str,
     path: &str,
     key: &str,
@@ -122,12 +101,12 @@ where
 {
     let query = prepare_query(&opt)?;
     let uri = format!("{}/{}/{}?{}", root, path, key, query).parse::<Uri>()?;
-    let h = common_headers(opt.format(), Some(auth));
+    let h = common_headers(opt.format(), auth);
     let r = client.delete(uri).headers(h).send().await?;
-    response(r, opt.format()).await
+    decode(r, opt.format()).await
 }
 
-pub fn common_headers(format: Option<Format>, auth: Option<&Auth>) -> toy_h::HeaderMap {
+pub fn common_headers(format: Option<Format>, auth: Option<&Auth>) -> HeaderMap {
     use toy_h::{header::HeaderValue, header::AUTHORIZATION, header::CONTENT_TYPE};
 
     let mut headers = HeaderMap::new();
@@ -155,7 +134,7 @@ pub fn common_headers(format: Option<Format>, auth: Option<&Auth>) -> toy_h::Hea
     headers
 }
 
-async fn response<T, V>(res: T, format: Option<Format>) -> Result<V, Error>
+pub async fn decode<T, V>(res: T, format: Option<Format>) -> Result<V, Error>
 where
     T: Response,
     V: DeserializeOwned,
@@ -170,7 +149,7 @@ where
     }
 }
 
-pub(crate) fn prepare_query<T>(p: &T) -> Result<String, QueryParseError>
+pub fn prepare_query<T>(p: &T) -> Result<String, QueryParseError>
 where
     T: Serialize,
 {

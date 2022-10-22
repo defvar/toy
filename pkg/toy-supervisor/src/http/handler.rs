@@ -1,9 +1,9 @@
 use crate::http::Status;
 use crate::supervisor::SupervisorContext;
 use crate::{Request, RunTaskResponse, SupervisorError};
-use toy_api::common::ListOptionLike;
+use toy_api::common::{ListOptionLike, PostOption};
 use toy_api::services::{ServiceSpec, ServiceSpecListOption};
-use toy_api::task::{AllocateResponse, PendingTask, PostOption};
+use toy_api::task::{AllocateResponse, PendingTask};
 use toy_api_client::ApiClient;
 use toy_api_http_common::axum::extract::{Query, State};
 use toy_api_http_common::axum::http::StatusCode;
