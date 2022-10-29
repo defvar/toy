@@ -10,6 +10,7 @@ import TimelineIcon from "@mui/icons-material/Timeline";
 import WidgetsIcon from "@mui/icons-material/Widgets";
 import DesktopWindowsIcon from "@mui/icons-material/DesktopWindows";
 import ExitToAppIcon from "@mui/icons-material/ExitToApp";
+import ManageAccountsIcon from "@mui/icons-material/ManageAccounts";
 import AccountCircle from "../components/AccountCircle";
 import Box from "@mui/material/Box";
 import DrawerHeader from "../components/DrawerHeader";
@@ -50,6 +51,11 @@ const menuOptions = (navigate: NavigateFunction) => {
             { key: "top", display: "top", icon: <DesktopWindowsIcon /> },
             { key: "timeline", display: "timeline", icon: <TimelineIcon /> },
             { key: "graphs", display: "graphs", icon: <WidgetsIcon /> },
+            {
+                key: "manageAuth",
+                display: "authorization",
+                icon: <ManageAccountsIcon />,
+            },
         ],
         onMenuItemChange: (key: string): void => {
             switch (key) {
@@ -61,6 +67,9 @@ const menuOptions = (navigate: NavigateFunction) => {
                     break;
                 case "graphs":
                     navigate("/graphs");
+                    break;
+                case "manageAuth":
+                    navigate("/manageAuth");
                     break;
                 default:
                     break;
@@ -115,7 +124,7 @@ const AppDrawer = (props: AppDrawerProps): JSX.Element => {
                         <MenuIcon />
                     </IconButton>
                     <Typography variant="h6" noWrap style={{ flexGrow: 1 }}>
-                        graph system
+                        toy console
                     </Typography>
                     <AccountCircle {...accountCircleProps(navigate)} />
                 </Toolbar>

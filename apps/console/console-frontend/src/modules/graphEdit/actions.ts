@@ -1,10 +1,5 @@
-import { ServiceResponse, GraphResponse } from "../api/toy-api";
-import { ChartElements, NodeData, LinkData } from "./types";
-
-export interface GetServices {
-    type: "GetServices";
-    payload: ServiceResponse;
-}
+import { GraphResponse } from "../api/toy-api";
+import { NodeData, LinkData } from "./types";
 
 export interface GetGraph {
     type: "GetGraph";
@@ -66,7 +61,6 @@ export interface CancelEditNode {
 }
 
 export type Actions =
-    | GetServices
     | GetGraph
     | AddLink
     | UpdateLink

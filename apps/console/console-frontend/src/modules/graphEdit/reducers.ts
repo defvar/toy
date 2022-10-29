@@ -5,15 +5,12 @@ import {
     LinkData,
     NodeData,
     PortType,
-    ChartElements,
 } from "./types";
 import { Actions } from "./actions";
 import { ServiceResponseItem, GraphNode } from "../api/toy-api";
 import { nextState } from "../../utils/immutable";
 
 export const initialState: GraphEditState = {
-    services: {},
-    namespaces: {},
     nodes: {},
     chart: {
         nodes: [],
@@ -120,25 +117,6 @@ const toChartData = (graph: {
 export const reducer = nextState(
     (state: GraphEditState = initialState, action: Actions): GraphEditState => {
         switch (action.type) {
-            case "GetServices": {
-                const r = action.payload.items
-                    .map((x) => toServiceState(x))
-                    .reduce(
-                        (r, v) => {
-                            r.services[v.fullName] = v;
-                            if (r.namespaces[v.namespace]) {
-                                r.namespaces[v.namespace].push(v.fullName);
-                            } else {
-                                r.namespaces[v.namespace] = [v.fullName];
-                            }
-                            return r;
-                        },
-                        { services: {}, namespaces: {} }
-                    );
-                state.services = r.services;
-                state.namespaces = r.namespaces;
-                return;
-            }
             case "GetGraph": {
                 const g = action.payload.services.reduce(
                     (r, v) => {
@@ -199,9 +177,9 @@ export const reducer = nextState(
                     config = { ...n.config };
                 }
                 let configSchema = {};
-                if (n && state.services[n.fullName]) {
+                if (n && n.configSchema) {
                     configSchema = {
-                        ...state.services[n.fullName].configSchema,
+                        ...n.configSchema,
                     };
                 }
                 state.edit = {

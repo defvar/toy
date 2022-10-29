@@ -13,10 +13,12 @@ import {
     Typography,
     Divider,
 } from "@mui/material";
+import TabList from "@mui/lab/TabList";
+import TabContext from "@mui/lab/TabContext";
+import TabPanel from "@mui/lab/TabPanel";
 import { Chart } from "./chart";
-import { reducer, initialState, ServiceState } from "../../modules/graphEdit";
-import { fetchServices, fetchGraph } from "../../modules/api/toy-api";
-import { ChartData } from "../../modules/graphEdit/types";
+import { reducer, initialState } from "../../modules/graphEdit";
+import { fetchGraph } from "../../modules/api/toy-api";
 import CircularProgress from "../../components/progress/CircularProgress";
 import { Resizable } from "react-resizable";
 import { NodeEditor } from "./NodeEditor";
@@ -42,123 +44,6 @@ const ResizeHandleBottom = styled("span")(({ theme }) => ({
     cursor: "ns-resize",
     zIndex: 11000,
 }));
-
-const _testServices = {
-    "a.b.c": {
-        fullName: "a.b.c",
-        name: "c",
-        namespace: "a.b",
-        description: "aaaaaa",
-        inPort: 1,
-        outPort: 1,
-        configSchema: null,
-        portType: "Flow",
-    },
-} as { [fullName: string]: ServiceState };
-
-const _testNamespaces = {
-    "a.b": ["a.b.c"],
-};
-
-const _testChartData = {
-    elements: [
-        {
-            id: "tick",
-            type: "input",
-            position: {
-                x: 250,
-                y: 0,
-            },
-            data: {
-                name: "tick",
-                label: "tick",
-                fullName: "plugin.common.timer.tick",
-                dirty: false,
-                portType: "Source",
-            },
-        },
-        {
-            id: "broadcast",
-            type: "default",
-            position: {
-                x: 250,
-                y: 150,
-            },
-            data: {
-                name: "broadcast",
-                label: "broadcast",
-                fullName: "plugin.common.fanout.broadcast",
-                dirty: false,
-                portType: "Flow",
-            },
-        },
-        {
-            id: "last",
-            type: "output",
-            position: {
-                x: 250,
-                y: 250,
-            },
-            data: {
-                name: "last",
-                label: "last",
-                fullName: "plugin.common.collect.last",
-                dirty: false,
-                portType: "Sink",
-            },
-        },
-        {
-            id: "count",
-            type: "output",
-            position: {
-                x: 500,
-                y: 250,
-            },
-            data: {
-                name: "count",
-                label: "count",
-                fullName: "plugin.common.collect.count",
-                dirty: false,
-                portType: "Sink",
-            },
-        },
-        {
-            id: "out",
-            type: "output",
-            position: {
-                x: 750,
-                y: 250,
-            },
-            data: {
-                name: "stdout",
-                label: "stdout",
-                fullName: "plugin.common.stdio.stdout",
-                dirty: false,
-                portType: "Sink",
-            },
-        },
-        {
-            id: "link-tick-broadcast",
-            source: "tick",
-            target: "broadcast",
-        },
-        {
-            id: "link-broadcast-last",
-            source: "broadcast",
-            target: "last",
-        },
-        {
-            id: "link-broadcast-count",
-            source: "broadcast",
-            target: "count",
-        },
-        {
-            id: "link-broadcast-out",
-            source: "broadcast",
-            target: "out",
-        },
-    ],
-} as ChartData;
 
 const LeftPane = styled(Box)(({ theme }) => ({
     flexGrow: 1,
@@ -187,16 +72,12 @@ const BottomPane = styled(Box)(({ theme }) => ({
 
 export const GraphEdit = () => {
     const { name } = useParams<{ name: string }>();
-
-    const [serviceResource, setServiceResource] = React.useState(() =>
-        fetchServices()
-    );
     const [graphResource, setGraphResource] = React.useState(() =>
         fetchGraph(name)
     );
     const [state, dispatch] = React.useReducer(reducer, initialState);
     const [tabNumber, setTabNumber] = React.useState(0);
-    const [bottomTabNumber, setBottomTabNumber] = React.useState(0);
+    const [bottomTabNumber, setBottomTabNumber] = React.useState("0");
     const [serviceListOpen, setServiceListOpen] = React.useState(false);
 
     const onChartRefleshClick = React.useCallback(() => {
@@ -233,15 +114,8 @@ export const GraphEdit = () => {
         });
     };
 
-    const onTabChange = React.useCallback(
-        (_event: React.ChangeEvent<{}>, newValue: number) => {
-            setTabNumber(newValue);
-        },
-        [state.services]
-    );
-
     const onBottomTabChange = React.useCallback(
-        (_event: React.ChangeEvent<{}>, newValue: number) => {
+        (_event: React.ChangeEvent<{}>, newValue: string) => {
             setBottomTabNumber(newValue);
         },
         []
@@ -295,11 +169,8 @@ export const GraphEdit = () => {
                                         fallback={<CircularProgress />}
                                     >
                                         <Chart
-                                            data={
-                                                /*_testChartData*/ state.chart
-                                            }
+                                            data={state.chart}
                                             graphResource={graphResource}
-                                            serviceResource={serviceResource}
                                             dispatch={dispatch}
                                         />
                                     </React.Suspense>
@@ -327,7 +198,6 @@ export const GraphEdit = () => {
                         >
                             <Tabs
                                 value={tabNumber}
-                                onChange={onTabChange}
                                 aria-label="tabs"
                                 variant="scrollable"
                                 scrollButtons="auto"
@@ -340,21 +210,27 @@ export const GraphEdit = () => {
                 </Box>
             </OuterResizable>
             <BottomPane sx={{ height: contentSize.bottom }}>
-                <Paper
-                    variant="outlined"
-                    sx={{ height: "100%", width: "100%", p: 1 }}
-                >
-                    <Tabs
-                        value={bottomTabNumber}
-                        onChange={onBottomTabChange}
-                        aria-label="tabs"
-                        variant="scrollable"
-                        scrollButtons="auto"
+                <TabContext value={bottomTabNumber}>
+                    <Paper
+                        variant="outlined"
+                        sx={{ height: "100%", width: "100%", p: 1 }}
                     >
-                        <Tab label="CONSOLE" />
-                        <Tab label="????" />
-                    </Tabs>
-                </Paper>
+                        <TabList
+                            value={bottomTabNumber}
+                            onChange={onBottomTabChange}
+                            aria-label="tabs"
+                            variant="scrollable"
+                            scrollButtons="auto"
+                        >
+                            <Tab label="CONSOLE" value="0" />
+                            <Tab label="CODE" value="1" />
+                        </TabList>
+                        <TabPanel value="0"></TabPanel>
+                        <TabPanel value="1">
+                            <Box>{JSON.stringify(state.nodes, null, 2)}</Box>
+                        </TabPanel>
+                    </Paper>
+                </TabContext>
             </BottomPane>
         </Stack>
     );

@@ -1,11 +1,7 @@
 import { useState, DragEvent, MouseEvent } from "react";
 import * as React from "react";
 import { styled } from "@mui/material/styles";
-import {
-    ChartData,
-    NodeData,
-    PortType,
-} from "../../../modules/graphEdit/types";
+import { ChartData, PortType } from "../../../modules/graphEdit/types";
 import { Actions } from "../../../modules/graphEdit";
 import ReactFlow, {
     ReactFlowProvider,
@@ -21,12 +17,11 @@ import ReactFlow, {
 } from "reactflow";
 import "reactflow/dist/style.css";
 import { Resource } from "../../../modules/common";
-import { GraphResponse, ServiceResponse } from "../../../modules/api/toy-api";
+import { GraphResponse } from "../../../modules/api/toy-api";
 
 export interface ChartProps {
     data: ChartData;
     graphResource: Resource<GraphResponse>;
-    serviceResource: Resource<ServiceResponse>;
     dispatch: React.Dispatch<Actions>;
     height?: string | number;
 }
@@ -68,14 +63,6 @@ export const Chart = (props: ChartProps) => {
             payload: graph,
         });
     }, [graph]);
-
-    const services = props.serviceResource.read();
-    React.useEffect(() => {
-        props.dispatch({
-            type: "GetServices",
-            payload: services,
-        });
-    }, [services]);
 
     const [reactFlowInstance, setReactFlowInstance] = useState(null);
 

@@ -5,6 +5,7 @@ import { Hello } from "./components/Hello";
 import { GraphEdit } from "./container/GraphEdit";
 import { Graphs } from "./container/Graphs";
 import { Login } from "./container/Login";
+import { ManageAuth } from "./container/ManageAuth";
 import { CssBaseline } from "@mui/material";
 import {
     StyledEngineProvider,
@@ -49,7 +50,10 @@ const App = (): JSX.Element => {
                                             path="/graphs/:name/edit"
                                             element={<GraphEdit />}
                                         />
-
+                                        <Route
+                                            path="/manageAuth"
+                                            element={<ManageAuth />}
+                                        />
                                         <Route
                                             path="/signout"
                                             element={<SignOut />}

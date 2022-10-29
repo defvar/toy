@@ -1,3 +1,4 @@
+import { languages } from "monaco-editor";
 import * as React from "react";
 import { useState, useCallback } from "react";
 import MonacoEditor from "react-monaco-editor";
@@ -5,24 +6,24 @@ import MonacoEditor from "react-monaco-editor";
 export interface CodeEditorProps {
     className?: string;
     initCode?: string;
+    language: string;
+    onChange: (code: string) => string;
 }
 
 export const CodeEditor = (props: CodeEditorProps) => {
+    const { onChange } = props;
     const [code, setCode] = useState(props.initCode ?? "");
-    const onChange = useCallback((newValue: string) => {
-        setCode(newValue);
-    }, []);
-    const onDidMount = useCallback((editor) => {
-        console.log("editor did mound");
+    const onChangeMonaco = useCallback((newValue: string) => {
+        const c = onChange(newValue);
+        setCode(c);
     }, []);
     return (
         <div className={props.className}>
             <MonacoEditor
                 height={500}
-                language="yaml"
+                language={props.language}
                 value={code}
-                onChange={onChange}
-                editorDidMount={onDidMount}
+                onChange={onChangeMonaco}
             />
         </div>
     );

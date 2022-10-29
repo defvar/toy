@@ -1,7 +1,6 @@
 import { JsonSchema } from "../common";
 
 export type PortType = "Source" | "Flow" | "Sink";
-export type ChartElements = Array<NodeData | LinkData>;
 
 export const initialChartData: ChartData = {
     nodes: [],
@@ -46,12 +45,11 @@ export interface LinkData {
 }
 
 export interface GraphEditState {
-    services: { [fullName: string]: ServiceState };
-    namespaces: { [namespace: string]: string[] };
     chart: ChartData;
     nodes: {
         [id: string]: {
             fullName: string;
+            configSchema?: JsonSchema;
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             config: any;
         };
