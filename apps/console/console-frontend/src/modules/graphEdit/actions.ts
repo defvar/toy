@@ -1,5 +1,5 @@
 import { ServiceResponse, GraphResponse } from "../api/toy-api";
-import { ChartElements, NodeData } from "./types";
+import { ChartElements, NodeData, LinkData } from "./types";
 
 export interface GetServices {
     type: "GetServices";
@@ -11,25 +11,31 @@ export interface GetGraph {
     payload: GraphResponse;
 }
 
-export interface ChangeChart {
-    type: "ChangeChart";
-    payload: (prev: ChartElements) => ChartElements;
+export interface AddLink {
+    type: "AddLink";
+    payload: (prev: LinkData[]) => LinkData[];
+}
+
+export interface UpdateLink {
+    type: "UpdateLink";
+    payload: (prev: LinkData[]) => LinkData[];
+}
+
+export interface ChangeLink {
+    type: "ChangeLink";
+    payload: (prev: LinkData[]) => LinkData[];
 }
 
 export interface AddNodeOnChart {
     type: "AddNodeOnChart";
     payload: {
-        f: (prev: ChartElements) => ChartElements;
         node: NodeData;
     };
 }
 
-export interface RemoveNodeOnChart {
-    type: "RemoveNodeOnChart";
-    payload: {
-        f: (prev: ChartElements) => ChartElements;
-        removeNodeId: string;
-    };
+export interface ChangeNode {
+    type: "ChangeNode";
+    payload: (prev: NodeData[]) => NodeData[];
 }
 
 export interface ZoomChart {
@@ -62,9 +68,11 @@ export interface CancelEditNode {
 export type Actions =
     | GetServices
     | GetGraph
-    | ChangeChart
+    | AddLink
+    | UpdateLink
+    | ChangeLink
     | AddNodeOnChart
-    | RemoveNodeOnChart
+    | ChangeNode
     | ZoomChart
     | StartEditNode
     | ChangeEditNode

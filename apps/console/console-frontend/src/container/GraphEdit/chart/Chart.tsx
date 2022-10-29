@@ -10,14 +10,16 @@ import { Actions } from "../../../modules/graphEdit";
 import ReactFlow, {
     ReactFlowProvider,
     addEdge,
-    removeElements,
-    OnLoadParams,
-    Elements,
     Connection,
+    NodeChange,
+    EdgeChange,
     Edge,
-    ElementId,
     Node,
-} from "react-flow-renderer";
+    updateEdge,
+    applyEdgeChanges,
+    applyNodeChanges,
+} from "reactflow";
+import "reactflow/dist/style.css";
 import { Resource } from "../../../modules/common";
 import { GraphResponse, ServiceResponse } from "../../../modules/api/toy-api";
 
@@ -54,7 +56,7 @@ const onDragOver = (event: DragEvent) => {
 };
 
 let id = 0;
-const getId = (): ElementId => `dndnode_${id++}`;
+const getId = () => `dndnode_${id++}`;
 
 export const Chart = (props: ChartProps) => {
     const { data, graphResource, dispatch, height } = props;
@@ -75,27 +77,29 @@ export const Chart = (props: ChartProps) => {
         });
     }, [services]);
 
-    const [reactFlowInstance, setReactFlowInstance] = useState<OnLoadParams>();
+    const [reactFlowInstance, setReactFlowInstance] = useState(null);
 
     const onConnect = React.useCallback(
         (params: Connection | Edge) => {
             dispatch({
-                type: "ChangeChart",
-                payload: (elm) => addEdge(params, elm),
+                type: "AddLink",
+                payload: (e) => addEdge(params, e),
             });
         },
         [dispatch]
     );
-    const onElementsRemove = React.useCallback(
-        (elementsToRemove: Elements) => {
+
+    const onEdgeUpdate = React.useCallback(
+        (oldEdge, newConnection) => {
             dispatch({
-                type: "ChangeChart",
-                payload: (elm) => removeElements(elementsToRemove, elm),
+                type: "UpdateLink",
+                payload: (e) => updateEdge(oldEdge, newConnection, e),
             });
         },
         [dispatch]
     );
-    const onLoad = (_reactFlowInstance: OnLoadParams) =>
+
+    const onLoad = (_reactFlowInstance) =>
         setReactFlowInstance(_reactFlowInstance);
 
     const onDrop = React.useCallback(
@@ -127,7 +131,6 @@ export const Chart = (props: ChartProps) => {
                     type: "AddNodeOnChart",
                     payload: {
                         node: newNode,
-                        f: (elm) => elm.concat(newNode),
                     },
                 });
             }
@@ -145,14 +148,37 @@ export const Chart = (props: ChartProps) => {
         [dispatch]
     );
 
+    const onNodesChange = React.useCallback(
+        (changes: NodeChange[]) => {
+            dispatch({
+                type: "ChangeNode",
+                payload: (prev) => applyNodeChanges(changes, prev),
+            });
+        },
+        [dispatch]
+    );
+
+    const onEdgesChange = React.useCallback(
+        (changes: EdgeChange[]) => {
+            dispatch({
+                type: "ChangeLink",
+                payload: (prev) => applyEdgeChanges(changes, prev),
+            });
+        },
+        [dispatch]
+    );
+
     return (
         <FlowArea sx={{ height }}>
             <ReactFlowProvider>
                 <FlowWrapper sx={{ height }}>
                     <ReactFlow
-                        elements={data.elements}
+                        nodes={data.nodes}
+                        edges={data.links}
                         onConnect={onConnect}
-                        onElementsRemove={onElementsRemove}
+                        onNodesChange={onNodesChange}
+                        onEdgesChange={onEdgesChange}
+                        onEdgeUpdate={onEdgeUpdate}
                         onLoad={onLoad}
                         onDrop={onDrop}
                         onDragOver={onDragOver}

@@ -16,7 +16,8 @@ export const initialState: GraphEditState = {
     namespaces: {},
     nodes: {},
     chart: {
-        elements: [],
+        nodes: [],
+        links: [],
     },
     edit: {
         config: {},
@@ -113,8 +114,7 @@ const toChartData = (graph: {
 }): [{ [id: string]: { fullName: string; config: any } }, ChartData] => {
     const [configs, nodes] = toNodes(graph);
     const links = toLinks(graph);
-    const elements: ChartElements = [...nodes, ...links];
-    return [configs, { elements }];
+    return [configs, { nodes, links }];
 };
 
 export const reducer = nextState(
@@ -152,13 +152,23 @@ export const reducer = nextState(
                 state.nodes = nodes;
                 return;
             }
-            case "ChangeChart": {
-                const elm = action.payload(state.chart.elements);
-                state.chart.elements = elm;
+            case "AddLink": {
+                const links = action.payload(state.chart.links);
+                state.chart.links = links;
+                return;
+            }
+            case "UpdateLink": {
+                const links = action.payload(state.chart.links);
+                state.chart.links = links;
+                return;
+            }
+            case "ChangeLink": {
+                const links = action.payload(state.chart.links);
+                state.chart.links = links;
                 return;
             }
             case "AddNodeOnChart": {
-                const { f, node } = action.payload;
+                const { node } = action.payload;
                 if (!state.nodes[node.id]) {
                     state.nodes[node.id] = {
                         fullName: node.data.fullName,
@@ -166,18 +176,12 @@ export const reducer = nextState(
                     };
                 }
 
-                const elm = f(state.chart.elements);
-                state.chart.elements = elm;
+                state.chart.nodes = state.chart.nodes.concat(node);
                 return;
             }
-            case "RemoveNodeOnChart": {
-                const { f, removeNodeId } = action.payload;
-                if (state.nodes[removeNodeId]) {
-                    delete state.nodes[removeNodeId];
-                }
-
-                const elm = f(state.chart.elements);
-                state.chart.elements = elm;
+            case "ChangeNode": {
+                const nodes = action.payload(state.chart.nodes);
+                state.chart.nodes = nodes;
                 return;
             }
             case "StartEditNode": {

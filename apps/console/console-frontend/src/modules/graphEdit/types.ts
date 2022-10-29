@@ -4,11 +4,13 @@ export type PortType = "Source" | "Flow" | "Sink";
 export type ChartElements = Array<NodeData | LinkData>;
 
 export const initialChartData: ChartData = {
-    elements: [],
+    nodes: [],
+    links: [],
 };
 
 export interface ChartData {
-    elements: ChartElements;
+    nodes: Array<NodeData>;
+    links: Array<LinkData>;
 }
 
 export interface Port {
@@ -27,7 +29,7 @@ export interface NodeData {
         x: number;
         y: number;
     };
-    data?: {
+    data: {
         name: string;
         label: string;
         fullName: string;

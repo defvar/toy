@@ -1,8 +1,6 @@
 import * as React from "react";
 import { useParams } from "react-router-dom";
-import { Theme, styled } from "@mui/material/styles";
-import createStyles from "@mui/styles/createStyles";
-import makeStyles from "@mui/styles/makeStyles";
+import { styled } from "@mui/material/styles";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import AddIcon from "@mui/icons-material/Add";
 import {
@@ -24,29 +22,26 @@ import { Resizable } from "react-resizable";
 import { NodeEditor } from "./NodeEditor";
 import ServiceSelector from "./ServiceList";
 
-const useStyles = makeStyles((theme: Theme) =>
-    createStyles({
-        resizeHandle: {
-            position: "absolute",
-            width: "2px",
-            height: "100%",
-            backgroundColor: theme.palette.divider,
-            opacity: "0.75",
-            top: "0",
-            cursor: "ew-resize",
-        },
-        resizeHandleBottom: {
-            position: "absolute",
-            width: "100%",
-            height: "2px",
-            backgroundColor: theme.palette.divider,
-            opacity: "0.75",
-            bottom: "0",
-            cursor: "ns-resize",
-            zIndex: 11000,
-        },
-    })
-);
+const ResizeHandle = styled("span")(({ theme }) => ({
+    position: "absolute",
+    width: "2px",
+    height: "100%",
+    backgroundColor: theme.palette.divider,
+    opacity: "0.75",
+    top: "0",
+    cursor: "ew-resize",
+}));
+
+const ResizeHandleBottom = styled("span")(({ theme }) => ({
+    position: "absolute",
+    width: "100%",
+    height: "2px",
+    backgroundColor: theme.palette.divider,
+    opacity: "0.75",
+    bottom: "0",
+    cursor: "ns-resize",
+    zIndex: 11000,
+}));
 
 const _testServices = {
     "a.b.c": {
@@ -192,7 +187,6 @@ const BottomPane = styled(Box)(({ theme }) => ({
 
 export const GraphEdit = () => {
     const { name } = useParams<{ name: string }>();
-    const classes = useStyles();
 
     const [serviceResource, setServiceResource] = React.useState(() =>
         fetchServices()
@@ -259,7 +253,7 @@ export const GraphEdit = () => {
                 width={Infinity}
                 height={contentSize.content}
                 onResize={onBottomResize}
-                handle={<span className={classes.resizeHandleBottom} />}
+                handle={<ResizeHandleBottom />}
                 resizeHandles={["s"]}
             >
                 <Box
@@ -321,7 +315,7 @@ export const GraphEdit = () => {
                         width={rightPaneSize.width}
                         height={Infinity}
                         onResize={onRightPaneResize}
-                        handle={<span className={classes.resizeHandle} />}
+                        handle={<ResizeHandle />}
                         resizeHandles={["w"]}
                     >
                         <Box

@@ -1,8 +1,5 @@
 import * as React from "react";
 import { GraphList } from "./GraphList";
-import { Theme } from "@mui/material/styles";
-import makeStyles from '@mui/styles/makeStyles';
-import createStyles from '@mui/styles/createStyles';
 import {
     reducer,
     GraphListState,
@@ -45,23 +42,6 @@ const items2: { [key: string]: GraphListItemState } = {
     },
 };
 
-const useStyles = makeStyles((theme: Theme) =>
-    createStyles({
-        loader: {
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-        },
-        progress: {
-            position: "absolute",
-            top: "50%",
-            left: "50%",
-            marginTop: -12,
-            marginLeft: -12,
-        },
-    })
-);
-
 const fetch = (id: number) => {
     const promise = new Promise<{ [key: string]: GraphListItemState }>(
         (resolve) => {
@@ -92,34 +72,48 @@ const GraphListSuspense = (props: GraphListSuspenseProps) => {
 };
 
 export const Graphs = () => {
-    const classes = useStyles();
-
     const [resource, setResource] = React.useState(() => fetch(0));
     const [state, dispatch] = React.useReducer(reducer, initialState);
     const onClick = React.useCallback(() => {
         setResource(() => fetch(1));
     }, []);
-    return <>
-        <IconButton aria-label="refresh" onClick={onClick} size="large">
-            <RefreshIcon />
-        </IconButton>
-        <React.Suspense
-            fallback={
-                <div className={classes.loader}>
-                    <CircularProgress
-                        size={68}
-                        className={classes.progress}
-                    />
-                </div>
-            }
-        >
-            <GraphListSuspense
-                state={state}
-                dispatch={dispatch}
-                resource={resource}
-            />
-        </React.Suspense>
-    </>;
+    return (
+        <>
+            <IconButton aria-label="refresh" onClick={onClick} size="large">
+                <RefreshIcon />
+            </IconButton>
+            <React.Suspense
+                fallback={
+                    <div
+                        style={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                        }}
+                    >
+                        <CircularProgress
+                            size={68}
+                            sx={{
+                                progress: {
+                                    position: "absolute",
+                                    top: "50%",
+                                    left: "50%",
+                                    marginTop: -12,
+                                    marginLeft: -12,
+                                },
+                            }}
+                        />
+                    </div>
+                }
+            >
+                <GraphListSuspense
+                    state={state}
+                    dispatch={dispatch}
+                    resource={resource}
+                />
+            </React.Suspense>
+        </>
+    );
 };
 
 export default Graphs;

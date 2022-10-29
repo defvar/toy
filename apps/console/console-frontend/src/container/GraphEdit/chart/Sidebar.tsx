@@ -1,7 +1,4 @@
 import * as React from "react";
-import { Theme } from "@mui/material/styles";
-import createStyles from "@mui/styles/createStyles";
-import makeStyles from "@mui/styles/makeStyles";
 import List from "@mui/material/List";
 import ListItem from "@mui/material/ListItem";
 import ListItemText from "@mui/material/ListItemText";
@@ -10,14 +7,11 @@ import ExpandLess from "@mui/icons-material/ExpandLess";
 import ExpandMore from "@mui/icons-material/ExpandMore";
 import { SidebarItem } from "./SidebarItem";
 import { PortType } from "../../../modules/graphEdit/types";
+import { styled } from "@mui/material/styles";
 
-const useStyles = makeStyles((theme: Theme) =>
-    createStyles({
-        nested: {
-            paddingLeft: theme.spacing(3),
-        },
-    })
-);
+const NestedListItem = styled(ListItem)(({ theme }) => ({
+    paddingLeft: theme.spacing(3),
+}));
 
 export interface SidebarProps {
     services: {
@@ -38,7 +32,6 @@ export interface SidebarProps {
 }
 
 export const Sidebar = (props: SidebarProps) => {
-    const classes = useStyles();
     const [open, setOpen] = React.useState<{ [namespace: string]: boolean }>(
         {}
     );
@@ -85,12 +78,9 @@ export const Sidebar = (props: SidebarProps) => {
                                 {entry.map((x) => {
                                     const s = props.services[x];
                                     return (
-                                        <ListItem
-                                            className={classes.nested}
-                                            key={s.fullName}
-                                        >
+                                        <NestedListItem key={s.fullName}>
                                             <SidebarItem {...s} />
-                                        </ListItem>
+                                        </NestedListItem>
                                     );
                                 })}
                             </List>

@@ -1,14 +1,12 @@
 import * as React from "react";
 import { Field } from "./types";
-import { Theme } from "@mui/material/styles";
-import createStyles from '@mui/styles/createStyles';
-import makeStyles from '@mui/styles/makeStyles';
 import Divider from "@mui/material/Divider";
 import Typography from "@mui/material/Typography";
 import { isObject } from "../../utils/types";
 import { CommonField } from "./CommonField";
 import { ValidationResult } from "./types";
 import { getChildErrors, getValidationChild } from "./validation";
+import { styled } from "@mui/material/styles";
 
 export interface ObjectFieldsProps<T> {
     name: string;
@@ -20,20 +18,18 @@ export interface ObjectFieldsProps<T> {
     validation?: ValidationResult;
 }
 
-const useStyles = makeStyles((theme: Theme) =>
-    createStyles({
-        field: {
-            marginBottom: theme.spacing(1),
-        },
-        fieldSet: {
-            padding: theme.spacing(0, 1),
-        },
-        objectHeader: {
-            marginTop: theme.spacing(2),
-            marginBottom: theme.spacing(2),
-        },
-    })
-);
+const FieldDiv = styled("div")(({ theme }) => ({
+    marginBottom: theme.spacing(1),
+}));
+
+const FieldSetDiv = styled("div")(({ theme }) => ({
+    padding: theme.spacing(0, 1),
+}));
+
+const ObjectHeaderDiv = styled("div")(({ theme }) => ({
+    marginTop: theme.spacing(2),
+    marginBottom: theme.spacing(2),
+}));
 
 export const ObjectFields = React.memo(
     <T extends {}>({
@@ -44,8 +40,6 @@ export const ObjectFields = React.memo(
         onChange,
         validation,
     }: ObjectFieldsProps<T>) => {
-        const classes = useStyles();
-
         const getId = (name: string, path: string, sufix = ""): string => {
             return sufix ? `${path}-${name}-${sufix}` : `${path}-${name}`;
         };
@@ -80,18 +74,12 @@ export const ObjectFields = React.memo(
                 );
             } else {
                 return (
-                    <div
-                        key={`${item.name}-FieldSet`}
-                        className={classes.fieldSet}
-                    >
-                        <div className={classes.objectHeader}>
+                    <FieldSetDiv key={`${item.name}-FieldSet`}>
+                        <ObjectHeaderDiv>
                             <Typography>{item.label}</Typography>
                             <Divider />
-                        </div>
-                        <div
-                            key={getId(name, path, "Field")}
-                            className={classes.field}
-                        >
+                        </ObjectHeaderDiv>
+                        <FieldDiv key={getId(name, path, "Field")}>
                             <ObjectFields
                                 key={getId(name, path, "ObjectFields")}
                                 name={item.name}
@@ -107,8 +95,8 @@ export const ObjectFields = React.memo(
                                     item.name
                                 )}
                             />
-                        </div>
-                    </div>
+                        </FieldDiv>
+                    </FieldSetDiv>
                 );
             }
         };

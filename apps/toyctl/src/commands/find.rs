@@ -1,7 +1,7 @@
 use crate::output::Output;
 use crate::{Error, FindCommand, FindResources};
 use std::io::Write;
-use toy::api_client::client::{ServiceClient, SupervisorClient};
+use toy::api_client::client::{GraphClient, ServiceClient, SupervisorClient};
 use toy::api_client::http::HttpApiClient;
 use toy::api_client::toy_api::common::FindOption;
 use toy::api_client::ApiClient;
@@ -25,5 +25,6 @@ where
             .find(c.name, opt)
             .await
             .write(writer, pretty),
+        FindResources::Graphs(c) => client.graph().find(c.name, opt).await.write(writer, pretty),
     }
 }

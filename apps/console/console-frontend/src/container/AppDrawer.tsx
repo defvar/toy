@@ -1,10 +1,6 @@
 import * as React from "react";
-import clsx from "clsx";
-import { Theme } from "@mui/material/styles";
-import createStyles from "@mui/styles/createStyles";
-import makeStyles from "@mui/styles/makeStyles";
 import { SideMenu } from "../components/SideMenu";
-import AppBar from "@mui/material/AppBar";
+import MuiAppBar, { AppBarProps as MuiAppBarProps } from "@mui/material/AppBar";
 import Toolbar from "@mui/material/Toolbar";
 import Typography from "@mui/material/Typography";
 import IconButton from "@mui/material/IconButton";
@@ -17,28 +13,31 @@ import ExitToAppIcon from "@mui/icons-material/ExitToApp";
 import AccountCircle from "../components/AccountCircle";
 import Box from "@mui/material/Box";
 import DrawerHeader from "../components/DrawerHeader";
+import { styled } from "@mui/material/styles";
 
 const drawerWidth = 240;
 
-const useStyles = makeStyles((theme: Theme) =>
-    createStyles({
-        appBar: {
-            zIndex: theme.zIndex.drawer + 1,
-            transition: theme.transitions.create(["margin", "width"], {
-                easing: theme.transitions.easing.sharp,
-                duration: theme.transitions.duration.leavingScreen,
-            }),
-        },
-        appBarShift: {
-            width: `calc(100% - ${drawerWidth}px)`,
-            marginLeft: drawerWidth,
-            transition: theme.transitions.create(["margin", "width"], {
-                easing: theme.transitions.easing.sharp,
-                duration: theme.transitions.duration.enteringScreen,
-            }),
-        },
-    })
-);
+interface AppBarProps extends MuiAppBarProps {
+    open?: boolean;
+}
+
+const AppBar = styled(MuiAppBar, {
+    shouldForwardProp: (prop) => prop !== "open",
+})<AppBarProps>(({ theme, open }) => ({
+    zIndex: theme.zIndex.drawer + 1,
+    transition: theme.transitions.create(["width", "margin"], {
+        easing: theme.transitions.easing.sharp,
+        duration: theme.transitions.duration.leavingScreen,
+    }),
+    ...(open && {
+        marginLeft: drawerWidth,
+        width: `calc(100% - ${drawerWidth}px)`,
+        transition: theme.transitions.create(["width", "margin"], {
+            easing: theme.transitions.easing.sharp,
+            duration: theme.transitions.duration.enteringScreen,
+        }),
+    }),
+}));
 
 export interface AppDrawerProps {
     children: React.ReactNode;
@@ -88,7 +87,6 @@ const accountCircleProps = (navigate: NavigateFunction) => {
 };
 
 const AppDrawer = (props: AppDrawerProps): JSX.Element => {
-    const classes = useStyles();
     const navigate = useNavigate();
     const [open, setOpen] = React.useState(true);
 
@@ -102,12 +100,7 @@ const AppDrawer = (props: AppDrawerProps): JSX.Element => {
 
     return (
         <Box sx={{ display: "flex", flexGrow: 1 }}>
-            <AppBar
-                position="fixed"
-                className={clsx(classes.appBar, {
-                    [classes.appBarShift]: open,
-                })}
-            >
+            <AppBar position="fixed" open={open}>
                 <Toolbar>
                     <IconButton
                         color="inherit"

@@ -1,9 +1,8 @@
 import * as React from "react";
-import * as ReactDOM from "react-dom";
-import { hot } from "react-hot-loader/root";
-
+import { createRoot } from "react-dom/client";
 import App from "./App";
 
-const HotContainer = hot(App);
+const container = document.getElementById("root");
+const root = createRoot(container!);
 
-ReactDOM.render(<HotContainer />, document.getElementById("root"));
+root.render(<App />);

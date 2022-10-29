@@ -5,7 +5,6 @@ use crate::store::kv::ListOption;
 use crate::{common, ApiError};
 use toy_api::common::{DeleteOption, FindOption, PutOption};
 use toy_api::graph::{Graph, GraphList, GraphListOption};
-use toy_api::supervisors::Supervisor;
 use toy_api_http_common::axum::extract::{Path, Query, State};
 use toy_api_http_common::axum::response::IntoResponse;
 use toy_api_http_common::bytes::Bytes;
@@ -25,7 +24,7 @@ where
         common::constants::generate_key(common::constants::GRAPHS_KEY_PREFIX, key),
         api_opt,
         kv::FindOption::new(),
-        |v: Supervisor| v,
+        |v: Graph| v,
     )
     .await
 }

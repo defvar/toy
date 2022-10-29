@@ -85,6 +85,7 @@ pub struct Opts {
 pub enum FindResources {
     Supervisors(FindResourceCommand),
     Services(FindResourceCommand),
+    Graphs(FindResourceCommand),
 }
 
 #[derive(Debug, Parser)]

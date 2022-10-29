@@ -1,17 +1,16 @@
-const webpack = require('webpack');
-const HtmlWebpackPlugin = require('html-webpack-plugin')
+const webpack = require("webpack");
+const HtmlWebpackPlugin = require("html-webpack-plugin");
 const MonacoWebpackPlugin = require("monaco-editor-webpack-plugin");
-const Dotenv = require('dotenv-webpack')
+const Dotenv = require("dotenv-webpack");
 
 module.exports = {
-    mode: 'development',
+    mode: "development",
 
-    entry: './src/index.tsx',
+    entry: "./src/index.tsx",
 
     resolve: {
         extensions: [".ts", ".tsx", ".mjs", ".cjs", ".js", ".json"],
-        alias: { 'react-dom': '@hot-loader/react-dom' },
-        modules: ["node_modules"]
+        modules: ["node_modules"],
     },
 
     optimization: {
@@ -21,20 +20,20 @@ module.exports = {
                     test: /[\\/]node_modules[\\/]monaco-editor[\\/]/,
                     name: "vendor-editor",
                     chunks: "initial",
-                }
-            }
-        }
+                },
+            },
+        },
     },
 
     module: {
         rules: [
             {
                 test: /\.html$/,
-                loader: "html-loader"
+                loader: "html-loader",
             },
             {
                 test: /\.css$/,
-                use: ["style-loader", "css-loader"]
+                use: ["style-loader", "css-loader"],
             },
             {
                 test: /\.ttf$/,
@@ -45,20 +44,19 @@ module.exports = {
                 enforce: "pre",
                 test: /\.js$/,
                 exclude: /node_modules\/@mrblenny/, //avoid warinig...
-                loader: "source-map-loader"
-            }
-        ]
+                loader: "source-map-loader",
+            },
+        ],
     },
 
     plugins: [
         new webpack.HotModuleReplacementPlugin(),
         new HtmlWebpackPlugin({
-            template: "./src/index.html"
+            template: "./src/index.html",
         }),
         new MonacoWebpackPlugin({
-            languages: ["yaml", "json"]
+            languages: ["yaml", "json"],
         }),
-        new Dotenv({
-        })
+        new Dotenv({}),
     ],
 };

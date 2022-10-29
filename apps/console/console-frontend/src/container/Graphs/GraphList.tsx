@@ -1,7 +1,4 @@
 import * as React from "react";
-import { Theme } from "@mui/material/styles";
-import makeStyles from "@mui/styles/makeStyles";
-import createStyles from "@mui/styles/createStyles";
 import Paper from "@mui/material/Paper";
 import Table from "@mui/material/Table";
 import TableBody from "@mui/material/TableBody";
@@ -23,19 +20,6 @@ export interface GraphListProps {
     dispatch: React.Dispatch<Actions>;
 }
 
-const useStyles = makeStyles((theme: Theme) =>
-    createStyles({
-        root: {
-            width: "100%",
-        },
-        container: {
-            maxHeight: 440,
-        },
-        tableHeader: {},
-        rowProgress: {},
-    })
-);
-
 const menuOptions = (navigate: NavigateFunction, name): SimpleMenuProps => {
     return {
         options: [
@@ -56,7 +40,6 @@ const menuOptions = (navigate: NavigateFunction, name): SimpleMenuProps => {
 };
 
 export const GraphList = (props: GraphListProps) => {
-    const classes = useStyles();
     const navigate = useNavigate();
 
     const [page, setPage] = React.useState(0);
@@ -105,10 +88,10 @@ export const GraphList = (props: GraphListProps) => {
     );
 
     return (
-        <Paper className={classes.root}>
-            <TableContainer className={classes.container}>
+        <Paper sx={{ width: "100%" }}>
+            <TableContainer sx={{ maxHeight: 440 }}>
                 <Table stickyHeader aria-label="sticky table">
-                    <TableHead className={classes.tableHeader}>
+                    <TableHead>
                         <TableRow>
                             <TableCell
                                 key="name"
@@ -161,9 +144,6 @@ export const GraphList = (props: GraphListProps) => {
                                             {isProgress && (
                                                 <LinearProgress
                                                     key={`${item.name}-progress`}
-                                                    className={
-                                                        classes.rowProgress
-                                                    }
                                                 />
                                             )}
                                         </TableCell>

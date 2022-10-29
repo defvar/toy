@@ -1,12 +1,10 @@
 import * as React from "react";
 import { Widgets } from "./widgets";
 import { Field, FieldError } from "./types";
-import { Theme } from "@mui/material/styles";
-import createStyles from '@mui/styles/createStyles';
-import makeStyles from '@mui/styles/makeStyles';
 import FormHelperText from "@mui/material/FormHelperText";
 import List from "@mui/material/List";
 import ListItem from "@mui/material/ListItem";
+import { styled } from "@mui/material/styles";
 
 export interface CommonFieldProps<T> {
     path: string;
@@ -16,13 +14,9 @@ export interface CommonFieldProps<T> {
     errors: FieldError[];
 }
 
-const useStyles = makeStyles((theme: Theme) =>
-    createStyles({
-        field: {
-            marginBottom: theme.spacing(1),
-        },
-    })
-);
+const Area = styled("div")(({ theme }) => ({
+    marginBottom: theme.spacing(1),
+}));
 
 const getId = (name: string, path: string, sufix = ""): string => {
     return sufix ? `${path}-${name}-${sufix}` : `${path}-${name}`;
@@ -36,7 +30,6 @@ export const CommonField = React.memo(
         onChange,
         errors,
     }: CommonFieldProps<T>) => {
-        const classes = useStyles();
         const isError = errors.length > 0;
 
         const handleOnChange = React.useCallback(
@@ -53,7 +46,7 @@ export const CommonField = React.memo(
         if (field.type in Widgets) {
             const Widget = Widgets[field.type];
             return (
-                <div className={classes.field}>
+                <Area>
                     <Widget
                         key={id}
                         id={id}
@@ -77,7 +70,7 @@ export const CommonField = React.memo(
                             })}
                         </List>
                     )}
-                </div>
+                </Area>
             );
         }
     }
