@@ -1,9 +1,10 @@
 import * as React from "react";
-import { Box, Modal } from "@mui/material";
+import { Box, Modal, Stack, Alert, Snackbar, Typography } from "@mui/material";
 import {
     DataGrid,
     GridColumns,
     GridRowParams,
+    GridRowsProp,
     MuiEvent,
     GridRowId,
     GridRowModel,
@@ -17,7 +18,7 @@ import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/DeleteOutlined";
 import SaveIcon from "@mui/icons-material/Save";
 import CancelIcon from "@mui/icons-material/Close";
-import { Role } from "../../modules/api";
+import { Role, RbacClient } from "../../modules/api";
 import { Resource } from "../../modules/common";
 
 const columns = (
@@ -111,6 +112,7 @@ interface Row {
     post: boolean;
     put: boolean;
     delete: boolean;
+    isDirty: boolean;
 }
 
 function toItems(role: Role): Row[] {
@@ -144,18 +146,51 @@ function toItems(role: Role): Row[] {
     return Object.values(r);
 }
 
+function toModel(name: string, items: Row[]): Role {
+    if (!items) return null;
+
+    const r = {
+        name,
+        note: null,
+        rules: [],
+    } as Role;
+
+    let rules = [];
+    for (const item of items) {
+        let ruleItem = { resources: [], verbs: [] };
+        ruleItem.resources.push(item.resource);
+        if (item.get) {
+            ruleItem.verbs.push("GET");
+        }
+        if (item.post) {
+            ruleItem.verbs.push("POST");
+        }
+        if (item.put) {
+            ruleItem.verbs.push("PUT");
+        }
+        if (item.delete) {
+            ruleItem.verbs.push("DELETE");
+        }
+        rules.push(ruleItem);
+    }
+
+    r.rules = rules;
+    return r;
+}
+
 const style = {
     position: "relative" as "relative",
     top: "50%",
     left: "50%",
     transform: "translate(-50%, -50%)",
-    height: "400px",
+    height: "450px",
     width: "100%",
     maxWidth: "1000px",
     bgcolor: "background.paper",
     border: "2px solid #000",
     boxShadow: 24,
     p: 4,
+    display: "flex",
 };
 
 export interface RuleListProps {
@@ -165,18 +200,66 @@ export interface RuleListProps {
     onClose: () => void;
 }
 
+interface EditToolbarProps {
+    setRows: (newRows: (oldRows: GridRowsProp) => GridRowsProp) => void;
+    setRowModesModel: (
+        newModel: (oldModel: GridRowModesModel) => GridRowModesModel
+    ) => void;
+}
+
+const PostResult = ({ resource, snackOpen, onSnackClose, onSnackOpen }) => {
+    const r = resource.read();
+    if (r) {
+        onSnackOpen();
+    }
+    return (
+        <Snackbar
+            open={snackOpen}
+            autoHideDuration={r && r.code == 201 ? 6000 : null}
+            onClose={onSnackClose}
+        >
+            <div>
+                {r && r.code === 201 && (
+                    <Alert
+                        onClose={onSnackClose}
+                        severity={"success"}
+                        sx={{ width: "100%" }}
+                    >
+                        {r && r.message ? r.message : "success !"}
+                    </Alert>
+                )}
+                {r && r.code !== 201 && (
+                    <Alert
+                        onClose={onSnackClose}
+                        severity={"error"}
+                        sx={{ width: "100%" }}
+                    >
+                        {r && r.message ? r.message : "error !"}
+                    </Alert>
+                )}
+            </div>
+        </Snackbar>
+    );
+};
+
 export const RuleList = (props: RuleListProps) => {
     const { name, resource, open, onClose } = props;
     const [rows, setRows] = React.useState([]);
+    const [snackOpen, setSnackOpen] = React.useState(false);
     const [rowModesModel, setRowModesModel] = React.useState<GridRowModesModel>(
         {}
     );
+    const [postResource, setPostResource] = React.useState({
+        read() {
+            return null;
+        },
+    });
 
     const role = resource ? resource.read() : null;
     React.useEffect(() => {
         const items = toItems(role);
         setRows(items);
-    }, [role]);
+    }, [resource]);
 
     const handleRowEditStart = (
         params: GridRowParams,
@@ -223,9 +306,37 @@ export const RuleList = (props: RuleListProps) => {
     };
 
     const processRowUpdate = (newRow: GridRowModel) => {
-        const updatedRow = { ...newRow, isNew: false };
-        setRows(rows.map((row) => (row.id === newRow.id ? updatedRow : row)));
+        const updatedRow = { ...newRow, isNew: false, isDirty: true };
+        setRows((prev) => {
+            const results = rows.map((row) =>
+                row.id === newRow.id ? updatedRow : row
+            );
+            const m = toModel(name, results);
+            setPostResource(RbacClient.putRole(name, m));
+            return results;
+        });
         return updatedRow;
+    };
+
+    const handleSnackClose = (
+        event?: React.SyntheticEvent | Event,
+        reason?: string
+    ) => {
+        if (reason === "clickaway") {
+            return;
+        }
+        setPostResource((prev) => {
+            setSnackOpen(false);
+            return {
+                read() {
+                    return null;
+                },
+            };
+        });
+    };
+
+    const onSnackOpen = () => {
+        setSnackOpen(true);
     };
 
     return (
@@ -237,26 +348,39 @@ export const RuleList = (props: RuleListProps) => {
             sx={{ zIndex: 30000 }}
         >
             <Box sx={style}>
-                <DataGrid
-                    rows={rows}
-                    columns={columns(
-                        rowModesModel,
-                        handleSaveClick,
-                        handleCancelClick,
-                        handleEditClick,
-                        handleDeleteClick
-                    )}
-                    editMode="row"
-                    rowModesModel={rowModesModel}
-                    onRowModesModelChange={(newModel) =>
-                        setRowModesModel(newModel)
-                    }
-                    onRowEditStart={handleRowEditStart}
-                    onRowEditStop={handleRowEditStop}
-                    processRowUpdate={processRowUpdate}
-                    disableSelectionOnClick
-                    experimentalFeatures={{ newEditingApi: true }}
-                />
+                <Stack sx={{ flexGrow: 1 }} direction="column" spacing={2}>
+                    <Typography>{name}</Typography>
+                    <Box sx={{ flexGrow: 1 }}>
+                        <DataGrid
+                            rows={rows}
+                            columns={columns(
+                                rowModesModel,
+                                handleSaveClick,
+                                handleCancelClick,
+                                handleEditClick,
+                                handleDeleteClick
+                            )}
+                            editMode="row"
+                            rowModesModel={rowModesModel}
+                            onRowModesModelChange={(newModel) =>
+                                setRowModesModel(newModel)
+                            }
+                            onRowEditStart={handleRowEditStart}
+                            onRowEditStop={handleRowEditStop}
+                            processRowUpdate={processRowUpdate}
+                            disableSelectionOnClick
+                            experimentalFeatures={{ newEditingApi: true }}
+                        />
+                    </Box>
+                    <Stack sx={{ width: "100%", height: 50 }} spacing={1}>
+                        <PostResult
+                            resource={postResource}
+                            snackOpen={snackOpen}
+                            onSnackOpen={onSnackOpen}
+                            onSnackClose={handleSnackClose}
+                        />
+                    </Stack>
+                </Stack>
             </Box>
         </Modal>
     );

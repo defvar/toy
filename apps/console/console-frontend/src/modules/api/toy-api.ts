@@ -43,54 +43,72 @@ export interface GraphResponse {
     services: GraphNode[];
 }
 
+export interface ErrorMessage {
+    code: number;
+    message: string;
+}
+
 async function commonRequest<T>(
     resource: string,
     method: string,
+    body: string,
     defaultFunc: () => T
-): Promise<T> {
+): Promise<T | ErrorMessage> {
     const key = await getIdToken();
-    return fetch(`${config.root}/${resource}`, {
+    return fetch(`${config.root}/${resource}?format=json`, {
         method,
         mode: "cors",
         headers: {
             Authorization: `Bearer ${key}`,
         },
+        body,
     })
         .then((res) => {
-            if (res.ok) {
-                return res.json();
-            }
-            throw new Error("response was not ok.");
+            return res.json().then((json) => ({ json, ok: res.ok }));
         })
-        .then((json) => {
-            return json as T;
+        .then(({ json, ok }) => {
+            if (ok) {
+                return json as T;
+            } else {
+                return json as ErrorMessage;
+            }
         })
         .catch((error) => {
             console.log(
                 "There has been a problem with your fetch operation: ",
                 error.message
             );
-            return defaultFunc();
+            return { code: -1, message: error.message };
         });
 }
 
 export const ToyApi = {
-    getRoles: async (): Promise<RoleList> => {
-        return commonRequest<RoleList>("rbac/roles", "GET", () => ({
+    getRoles: async (): Promise<RoleList | ErrorMessage> => {
+        return commonRequest<RoleList>("rbac/roles", "GET", null, () => ({
             count: 0,
             items: [],
         }));
     },
 
-    getRole: async (name: string): Promise<Role> => {
-        return commonRequest<Role>(`rbac/roles/${name}`, "GET", () => ({
+    getRole: async (name: string): Promise<Role | ErrorMessage> => {
+        return commonRequest<Role>(`rbac/roles/${name}`, "GET", null, () => ({
             name: "",
             rules: [],
         }));
     },
 
-    getServices: async (): Promise<ServiceResponse> => {
-        return commonRequest<ServiceResponse>("services", "GET", () => ({
+    putRole: async (
+        name: string,
+        body: string
+    ): Promise<Role | ErrorMessage> => {
+        return commonRequest<Role>(`rbac/roles/${name}`, "PUT", body, () => ({
+            name: "",
+            rules: [],
+        }));
+    },
+
+    getServices: async (): Promise<ServiceResponse | ErrorMessage> => {
+        return commonRequest<ServiceResponse>("services", "GET", null, () => ({
             count: 0,
             items: [],
         }));
@@ -144,5 +162,9 @@ export const RbacClient = {
 
     fetchRole: (name: string) => {
         return toResource(() => ToyApi.getRole(name));
+    },
+
+    putRole: (name: string, role: Role) => {
+        return toResource(() => ToyApi.putRole(name, JSON.stringify(role)));
     },
 };
