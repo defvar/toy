@@ -79,25 +79,13 @@ impl Default for ServiceSpecList {
 pub struct ServiceSpecListOption {
     #[serde(flatten)]
     common: ListOption,
-    name_space: Option<String>,
-    port_type: Option<String>,
 }
 
 impl ServiceSpecListOption {
     pub fn new() -> Self {
         Self {
             common: ListOption::new(),
-            name_space: None,
-            port_type: None,
         }
-    }
-
-    pub fn name_space(&self) -> Option<&str> {
-        self.name_space.as_ref().map(|x| x.as_str())
-    }
-
-    pub fn port_type(&self) -> Option<&str> {
-        self.port_type.as_ref().map(|x| x.as_str())
     }
 }
 
