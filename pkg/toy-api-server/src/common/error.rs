@@ -76,6 +76,9 @@ pub enum ApiError {
     #[error("allready exists. key:{}", key)]
     AllreadyExists { key: String },
 
+    #[error("invalid field selector. fields:{:?}", fields)]
+    InvalidFieldSelector { fields: Vec<String> },
+
     #[error("{:?}", inner)]
     Error { inner: String },
 }
@@ -98,6 +101,7 @@ impl ApiError {
                 _ => StatusCode::INTERNAL_SERVER_ERROR,
             },
             ApiError::AllreadyExists { .. } => StatusCode::CONFLICT,
+            ApiError::InvalidFieldSelector { .. } => StatusCode::BAD_REQUEST,
             ApiError::AuthorizationFailed { .. } => StatusCode::FORBIDDEN,
             _ => StatusCode::INTERNAL_SERVER_ERROR,
         }
@@ -166,6 +170,11 @@ impl ApiError {
         ApiError::ValidationFailed {
             inner: format!("There is a difference between the specified key and the key of the object to be registered. specified:{}, data:{}", specified_key, key_of_data),
         }
+    }
+
+    pub fn invalid_field_selector(fields: &[&str]) -> ApiError {
+        let vec: Vec<String> = fields.iter().map(|x| x.to_string()).collect();
+        ApiError::InvalidFieldSelector { fields: vec }
     }
 }
 

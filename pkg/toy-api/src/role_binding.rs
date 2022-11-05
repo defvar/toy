@@ -2,7 +2,7 @@
 
 use crate::common::{KVObject, ListOption, ListOptionLike, SelectionCandidate};
 use crate::selection::candidate::CandidateMap;
-use crate::selection::field::Selection;
+use crate::selection::selector::Selector;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
@@ -116,6 +116,10 @@ impl RoleBindingBuilder {
 }
 
 impl SelectionCandidate for RoleBinding {
+    fn candidate_fields() -> &'static [&'static str] {
+        &[]
+    }
+
     fn candidate_map(&self) -> CandidateMap {
         CandidateMap::empty()
     }
@@ -157,7 +161,7 @@ impl ListOptionLike for RoleBindingListOption {
         &self.common
     }
 
-    fn selection(&self) -> Selection {
-        Selection::empty()
+    fn selection(&self) -> &Selector {
+        self.common.selection()
     }
 }

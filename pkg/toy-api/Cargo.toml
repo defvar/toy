@@ -10,3 +10,6 @@ edition = "2021"
 serde = { version = "1.0", features = ["derive"] }
 toy-core = { path = "../toy-core" }
 chrono = { version = "0.4", features = ["serde"] }
+
+[dev-dependencies]
+toy-pack-json = {path = "../../shared/toy-pack-json"}

@@ -2,11 +2,12 @@
 
 use crate::common::{format, KVObject, ListOption, ListOptionLike, SelectionCandidate};
 use crate::selection::candidate::CandidateMap;
-use crate::selection::field::Selection;
+use crate::selection::selector::Selector;
 use crate::supervisors::SupervisorStatus::Ready;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::net::SocketAddr;
+use toy_core::data::Value;
 
 pub type SupervisorName = String;
 
@@ -114,8 +115,14 @@ impl KVObject for Supervisor {
 }
 
 impl SelectionCandidate for Supervisor {
+    fn candidate_fields() -> &'static [&'static str] {
+        &["name", "start_time"]
+    }
+
     fn candidate_map(&self) -> CandidateMap {
-        CandidateMap::empty()
+        CandidateMap::default()
+            .with_candidate("name", Value::from(&self.name))
+            .with_candidate("start_time", Value::from(&self.start_time))
     }
 }
 
@@ -149,7 +156,7 @@ impl ListOptionLike for SupervisorListOption {
         &self.common
     }
 
-    fn selection(&self) -> Selection {
-        Selection::empty()
+    fn selection(&self) -> &Selector {
+        self.common.selection()
     }
 }

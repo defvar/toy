@@ -4,7 +4,7 @@ use crate::{common, ApiError};
 use chrono::{Duration, Utc};
 use toy_api::common::{ListOptionLike, PostOption};
 use toy_api::graph::Graph;
-use toy_api::selection::field::Selection;
+use toy_api::selection::selector::Selector;
 use toy_api::task::{LogOption, PendingResult, PendingTask, TaskListOption};
 use toy_api_http_common::axum::http::StatusCode;
 use toy_api_http_common::axum::response::IntoResponse;
@@ -60,7 +60,7 @@ where
 
     let dt = opt.timestamp().unwrap_or(Utc::now() - Duration::days(1));
     let store_opt = ListOption::new()
-        .with_field_selection(Selection::default().greater_than("timestamp", dt.to_rfc3339()));
+        .with_field_selection(Selector::default().greater_than("timestamp", dt.to_rfc3339()));
 
     let format = opt.common().format();
     match log_store

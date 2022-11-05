@@ -2,7 +2,7 @@ use crate::common::validator::Validator;
 use crate::context::Context;
 use crate::store::error::StoreError;
 use crate::store::kv;
-use crate::store::kv::{Delete, DeleteResult, Find, KvStore, List, Put};
+use crate::store::kv::{Delete, DeleteResult, Find, KvResponse, KvStore, List, Put};
 use crate::{common, ApiError};
 use serde::de::DeserializeOwned;
 use serde::Serialize;
@@ -84,11 +84,30 @@ where
             let indent = api_opt.common().indent();
 
             if !selection.preds().is_empty() {
-                // filter
-                vec = vec
+                // check fields
+                let unknowns: Vec<&str> = selection
+                    .predicate_fields()
                     .into_iter()
-                    .filter(|item| selection.is_match(item.value()))
+                    .filter(|x| !V::candidate_fields().contains(x))
                     .collect();
+                if !unknowns.is_empty() {
+                    return Err(ApiError::invalid_field_selector(&unknowns[..]));
+                }
+
+                // filter
+                let filterd: Result<Vec<KvResponse<V>>, String> = vec
+                    .into_iter()
+                    .filter_map(|item| match selection.is_match(item.value()) {
+                        Ok(true) => Some(Ok(item)),
+                        Ok(false) => None,
+                        Err(name) => Some(Err(name)),
+                    })
+                    .collect();
+
+                match filterd {
+                    Ok(v) => vec = v,
+                    Err(name) => return Err(ApiError::invalid_field_selector(&[&name])),
+                }
             }
 
             let r = f(vec.into_iter().map(|x| x.into_value()).collect());

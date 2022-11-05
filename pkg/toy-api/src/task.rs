@@ -2,7 +2,7 @@
 
 use crate::common::{Format, ListOption, ListOptionLike};
 use crate::graph::Graph;
-use crate::selection::field::Selection;
+use crate::selection::selector::Selector;
 use crate::supervisors::SupervisorName;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
@@ -337,7 +337,7 @@ impl ListOptionLike for TaskListOption {
         &self.common
     }
 
-    fn selection(&self) -> Selection {
-        Selection::empty()
+    fn selection(&self) -> &Selector {
+        self.common.selection()
     }
 }

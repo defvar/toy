@@ -2,7 +2,7 @@
 
 use crate::common::{KVObject, ListOption, ListOptionLike, SelectionCandidate};
 use crate::selection::candidate::CandidateMap;
-use crate::selection::field::Selection;
+use crate::selection::selector::Selector;
 use serde::{Deserialize, Serialize};
 use toy_core::prelude::Value;
 use toy_core::registry::PortType;
@@ -38,6 +38,10 @@ pub struct GraphList {
 }
 
 impl SelectionCandidate for Graph {
+    fn candidate_fields() -> &'static [&'static str] {
+        &[]
+    }
+
     fn candidate_map(&self) -> CandidateMap {
         CandidateMap::empty()
     }
@@ -116,7 +120,7 @@ impl ListOptionLike for GraphListOption {
         &self.common
     }
 
-    fn selection(&self) -> Selection {
-        Selection::empty()
+    fn selection(&self) -> &Selector {
+        self.common.selection()
     }
 }

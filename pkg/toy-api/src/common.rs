@@ -1,5 +1,5 @@
 use crate::selection::candidate::CandidateMap;
-use crate::selection::field::Selection;
+use crate::selection::selector::Selector;
 use serde::{Deserialize, Serialize};
 
 /// Data format of the api.
@@ -51,11 +51,13 @@ pub trait ListOptionLike {
     fn common(&self) -> &ListOption;
 
     /// Create `Selection`.
-    fn selection(&self) -> Selection;
+    fn selection(&self) -> &Selector;
 }
 
 /// This trait is used to select data based on the specified conditions when calling api.
 pub trait SelectionCandidate {
+    fn candidate_fields() -> &'static [&'static str];
+
     /// Creates and returns the field information needed to make a selection.
     fn candidate_map(&self) -> CandidateMap;
 }
@@ -112,6 +114,8 @@ impl FindOption {
 pub struct ListOption {
     format: Option<Format>,
     indent: Option<Indent>,
+    #[serde(default)]
+    selector: Selector,
 }
 
 impl ListOption {
@@ -119,6 +123,7 @@ impl ListOption {
         Self {
             format: None,
             indent: None,
+            selector: Selector::empty(),
         }
     }
 
@@ -143,8 +148,8 @@ impl ListOptionLike for ListOption {
         &self
     }
 
-    fn selection(&self) -> Selection {
-        Selection::empty()
+    fn selection(&self) -> &Selector {
+        &self.selector
     }
 }
 
@@ -323,14 +328,14 @@ pub(crate) mod format {
 
             fn visit_none<E>(self) -> Result<Self::Value, E>
             where
-                E: serde::de::Error,
+                E: de::Error,
             {
                 Ok(None)
             }
 
             fn visit_some<D>(self, d: D) -> Result<Self::Value, D::Error>
             where
-                D: de::Deserializer<'de>,
+                D: Deserializer<'de>,
             {
                 d.deserialize_str(TimestampVisitor).map(Some)
             }

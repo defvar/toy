@@ -2,7 +2,7 @@
 
 use crate::common::{KVObject, ListOption, ListOptionLike, SelectionCandidate};
 use crate::selection::candidate::CandidateMap;
-use crate::selection::field::Selection;
+use crate::selection::selector::Selector;
 use serde::{Deserialize, Serialize};
 use toy_core::data::schema::JsonSchema;
 use toy_core::data::Value;
@@ -42,6 +42,10 @@ impl ServiceSpec {
 }
 
 impl SelectionCandidate for ServiceSpec {
+    fn candidate_fields() -> &'static [&'static str] {
+        &["name_space", "port_type"]
+    }
+
     fn candidate_map(&self) -> CandidateMap {
         let p = match self.port_type {
             PortType::Source(_) => "Source",
@@ -102,9 +106,19 @@ impl ListOptionLike for ServiceSpecListOption {
         &self.common
     }
 
-    fn selection(&self) -> Selection {
-        Selection::default()
-            .contains("name_space", self.name_space())
-            .contains("port_type", self.port_type())
+    fn selection(&self) -> &Selector {
+        self.common.selection()
     }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::selection::Operator;
+    use crate::services::ServiceSpecListSelectors;
+
+    // #[test]
+    // fn aaaaa() {
+    //     let r = toy_pack_json::unpack(b"").unwrap();
+    //     println!("{:?}", r);
+    // }
 }
