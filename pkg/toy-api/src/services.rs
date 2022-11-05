@@ -110,15 +110,3 @@ impl ListOptionLike for ServiceSpecListOption {
         self.common.selection()
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use crate::selection::Operator;
-    use crate::services::ServiceSpecListSelectors;
-
-    // #[test]
-    // fn aaaaa() {
-    //     let r = toy_pack_json::unpack(b"").unwrap();
-    //     println!("{:?}", r);
-    // }
-}
