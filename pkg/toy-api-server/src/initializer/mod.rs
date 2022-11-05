@@ -31,10 +31,11 @@ where
     );
 
     let s = store.clone();
+    let interval = config.dispatch_interval_mills();
     toy_rt::spawn_named(
         async move {
             tracing::info!("start watch pending task.");
-            if let Err(e) = crate::context::dispatcher::dispatch_task(s, client, 3000).await {
+            if let Err(e) = crate::context::dispatcher::dispatch_task(s, client, interval).await {
                 tracing::error!(err = ?e, "an error occured; when watch pending task.");
             }
         },
@@ -42,10 +43,11 @@ where
     );
 
     let s = store.clone();
+    let interval = config.clean_supervisor_interval_mills();
     toy_rt::spawn_named(
         async move {
             tracing::info!("start watch pending supervisor.");
-            if let Err(e) = crate::context::supervisor_cleaner::clean(s, 10000).await {
+            if let Err(e) = crate::context::supervisor_cleaner::clean(s, interval).await {
                 tracing::error!(err = ?e, "an error occured; when watch pending supervisor.");
             }
         },

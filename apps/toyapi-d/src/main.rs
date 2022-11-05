@@ -21,6 +21,8 @@ struct ToyConfig {
     cert_path: String,
     key_path: String,
     pub_path: String,
+    dispatch_interval_mills: u64,
+    clean_supervisor_interval_mills: u64,
 }
 
 #[derive(Clone)]
@@ -43,6 +45,14 @@ impl ServerConfig for ToyConfig {
 
     fn pub_path(&self) -> String {
         self.pub_path.clone()
+    }
+
+    fn dispatch_interval_mills(&self) -> u64 {
+        self.dispatch_interval_mills
+    }
+
+    fn clean_supervisor_interval_mills(&self) -> u64 {
+        self.clean_supervisor_interval_mills
     }
 }
 
@@ -116,6 +126,8 @@ fn go() -> Result<(), Error> {
         cert_path: opts.cert_path.to_string(),
         key_path: opts.key_path.to_string(),
         pub_path: opts.pub_path.to_string(),
+        dispatch_interval_mills: opts.dispatch_interval_mills,
+        clean_supervisor_interval_mills: opts.clean_supervisor_interval_mills,
     };
     let state = ToyState {
         client: client.clone(),

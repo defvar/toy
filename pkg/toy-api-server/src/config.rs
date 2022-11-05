@@ -7,4 +7,8 @@ pub trait ServerConfig {
     fn key_path(&self) -> String;
 
     fn pub_path(&self) -> String;
+
+    fn dispatch_interval_mills(&self) -> u64;
+
+    fn clean_supervisor_interval_mills(&self) -> u64;
 }
