@@ -39,6 +39,12 @@ pub struct Opts {
     pub key_path: String,
     #[clap(long, env = "TOY_API_TLS_PUB_PATH", value_hint = ValueHint::FilePath)]
     pub pub_path: String,
+    #[clap(
+        long,
+        env = "TOY_API_TLS_SECRET_KEY",
+        default_value = "__TLS_SECRET_KID__"
+    )]
+    pub tls_secret_key: String,
     #[clap(flatten)]
     pub log: LogOption,
     #[clap(short, long, default_value = "4")]

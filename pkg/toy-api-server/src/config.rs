@@ -8,6 +8,8 @@ pub trait ServerConfig {
 
     fn pub_path(&self) -> String;
 
+    fn tls_secret_key(&self) -> String;
+
     fn dispatch_interval_mills(&self) -> u64;
 
     fn clean_supervisor_interval_mills(&self) -> u64;

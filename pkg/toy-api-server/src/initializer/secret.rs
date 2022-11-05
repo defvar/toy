@@ -6,7 +6,7 @@ use std::collections::HashMap;
 use std::fs::File;
 use std::io::Read;
 use toy_api::authentication::KeyPair;
-use toy_api::authentication::{self, Secret};
+use toy_api::authentication::Secret;
 
 pub(crate) async fn initialize<T, Config>(
     config: &Config,
@@ -18,16 +18,12 @@ where
 {
     tracing::info!("initialize secret");
 
-    let key = constants::generate_key(constants::SECRET_KEY_PREFIX, authentication::TLS_SECRET_KID);
+    let key = constants::generate_key(constants::SECRET_KEY_PREFIX, config.tls_secret_key());
 
     let private_key = from_file(&config.key_path())?;
     let pub_key = from_file(&config.pub_path())?;
 
-    let v = KeyPair::new(
-        authentication::TLS_SECRET_KID.to_owned(),
-        private_key,
-        pub_key,
-    );
+    let v = KeyPair::new(config.tls_secret_key(), private_key, pub_key);
 
     store
         .ops()

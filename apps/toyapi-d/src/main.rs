@@ -21,6 +21,7 @@ struct ToyConfig {
     cert_path: String,
     key_path: String,
     pub_path: String,
+    tls_secret_key: String,
     dispatch_interval_mills: u64,
     clean_supervisor_interval_mills: u64,
 }
@@ -45,6 +46,10 @@ impl ServerConfig for ToyConfig {
 
     fn pub_path(&self) -> String {
         self.pub_path.clone()
+    }
+
+    fn tls_secret_key(&self) -> String {
+        self.tls_secret_key.clone()
     }
 
     fn dispatch_interval_mills(&self) -> u64 {
@@ -126,6 +131,7 @@ fn go() -> Result<(), Error> {
         cert_path: opts.cert_path.to_string(),
         key_path: opts.key_path.to_string(),
         pub_path: opts.pub_path.to_string(),
+        tls_secret_key: opts.tls_secret_key.to_string(),
         dispatch_interval_mills: opts.dispatch_interval_mills,
         clean_supervisor_interval_mills: opts.clean_supervisor_interval_mills,
     };

@@ -22,8 +22,6 @@ pub enum Secret {
     KeyPair(KeyPair),
 }
 
-pub const TLS_SECRET_KID: &'static str = "__TLS_SECRET_KID__";
-
 #[derive(Debug, Eq, PartialEq, Clone, Serialize, Deserialize)]
 pub struct KeyPair {
     kid: String,
