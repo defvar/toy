@@ -1,4 +1,4 @@
-use core::time::Duration;
+use chrono::{DateTime, Utc};
 use std::cmp::Ordering;
 use std::fmt;
 use std::str::FromStr;
@@ -16,7 +16,7 @@ pub enum Value {
     None,
     Seq(Vec<Value>),
     Map(Map<String, Value>),
-    TimeStamp(Duration),
+    TimeStamp(DateTime<Utc>),
 }
 
 impl Value {
@@ -125,10 +125,42 @@ impl Value {
         self.as_timestamp().is_some()
     }
 
-    pub fn as_timestamp(&self) -> Option<Duration> {
+    pub fn as_timestamp(&self) -> Option<DateTime<Utc>> {
         match self {
             Value::TimeStamp(v) => Some(v.clone()),
             _ => None,
+        }
+    }
+
+    pub fn is_same_type(&self, other: &Value) -> bool {
+        match (self, other) {
+            (Value::Bool(_), Value::Bool(_)) => true,
+            (Value::Integer(_), Value::Integer(_)) => true,
+            (Value::Number(_), Value::Number(_)) => true,
+            (Value::String(_), Value::String(_)) => true,
+            (Value::Bytes(_), Value::Bytes(_)) => true,
+            (Value::None, Value::None) => true,
+            (Value::Seq(_), Value::Seq(_)) => true,
+            (Value::Map(_), Value::Map(_)) => true,
+            (Value::TimeStamp(_), Value::TimeStamp(_)) => true,
+            _ => false,
+        }
+    }
+
+    pub fn as_same_type(&self, other: &Value) -> Option<Value> {
+        match other {
+            Value::Bool(_) => self.as_bool().map(Value::from),
+            Value::Integer(_) => self.parse_integer::<i64>().map(Value::from),
+            Value::Number(_) => self.parse_f64().map(Value::from),
+            Value::String(_) => self.parse_str().map(Value::from),
+            Value::Bytes(_) => self.as_bytes().map(Value::from),
+            Value::None => match self {
+                Value::None => Some(Value::None),
+                _ => None,
+            },
+            Value::Seq(_) => self.as_vec().map(Value::from).map(Value::from),
+            Value::Map(_) => self.as_map().map(Value::from),
+            Value::TimeStamp(_) => self.parse_timestamp().map(Value::from),
         }
     }
 
@@ -285,6 +317,18 @@ impl Value {
                 .ok(),
             Value::Integer(v) => parse_str_from_integer(*v),
             Value::Number(v) => parse_str_from_float(*v),
+            Value::TimeStamp(v) => Some(v.to_rfc3339()),
+            _ => None,
+        }
+    }
+
+    pub fn parse_timestamp(&self) -> Option<DateTime<Utc>> {
+        match self {
+            Value::TimeStamp(v) => Some(v.clone()),
+            Value::String(v) => match DateTime::parse_from_rfc3339(v) {
+                Ok(dt) => Some(dt.with_timezone(&Utc)),
+                Err(_) => None,
+            },
             _ => None,
         }
     }
@@ -414,6 +458,12 @@ impl From<Vec<u8>> for Value {
     }
 }
 
+impl From<&Vec<u8>> for Value {
+    fn from(v: &Vec<u8>) -> Self {
+        Value::Bytes(v.clone())
+    }
+}
+
 impl From<String> for Value {
     fn from(v: String) -> Self {
         Value::String(v)
@@ -438,6 +488,12 @@ impl From<Map<String, Value>> for Value {
     }
 }
 
+impl From<&Map<String, Value>> for Value {
+    fn from(v: &Map<String, Value>) -> Self {
+        Value::Map(v.clone())
+    }
+}
+
 impl From<&mut Map<String, Value>> for Value {
     fn from(v: &mut Map<String, Value>) -> Self {
         Value::Map(v.clone())
@@ -450,15 +506,27 @@ impl From<Vec<Value>> for Value {
     }
 }
 
+impl From<&Vec<Value>> for Value {
+    fn from(v: &Vec<Value>) -> Self {
+        Value::Seq(v.clone())
+    }
+}
+
 impl From<&mut Vec<Value>> for Value {
     fn from(v: &mut Vec<Value>) -> Self {
         Value::Seq(v.clone())
     }
 }
 
-impl From<Duration> for Value {
-    fn from(v: Duration) -> Self {
+impl From<DateTime<Utc>> for Value {
+    fn from(v: DateTime<Utc>) -> Self {
         Value::TimeStamp(v)
+    }
+}
+
+impl From<&DateTime<Utc>> for Value {
+    fn from(v: &DateTime<Utc>) -> Self {
+        Value::TimeStamp(v.clone())
     }
 }
 
@@ -600,15 +668,15 @@ impl PartialEq<Value> for Vec<u8> {
 }
 
 ////////////////////////////////////////////////
-// duration
+// datetime
 
-impl PartialEq<Duration> for Value {
-    fn eq(&self, other: &Duration) -> bool {
+impl PartialEq<DateTime<Utc>> for Value {
+    fn eq(&self, other: &DateTime<Utc>) -> bool {
         self.as_timestamp().map_or(false, |x| x == *other)
     }
 }
 
-impl PartialEq<Value> for Duration {
+impl PartialEq<Value> for DateTime<Utc> {
     fn eq(&self, other: &Value) -> bool {
         other.as_timestamp().map_or(false, |x| x == *self)
     }

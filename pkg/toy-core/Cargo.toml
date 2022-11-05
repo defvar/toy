@@ -15,6 +15,7 @@ itoa = "1.0.4"
 ryu = "1.0"
 uuid = { version = "0.8", features = ["v4"] }
 serde = { version = "1.0", features = ["derive"]  }
+chrono = { version = "0.4", features = ["serde"] }
 
 toy-pack = { path = "../../shared/toy-pack", features = ["derive"] }
 toy-map = { path = "../../shared/toy-map" }

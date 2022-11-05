@@ -380,10 +380,6 @@ impl<'toy, 'a> Deserializer<'toy> for &'a mut ValueDeserializer<'toy> {
     {
         match self.value {
             Value::Map(_) => visitor.visit_map(DeserializeMap::new(self)),
-            Value::TimeStamp(_) => {
-                // TODO ...
-                visitor.visit_map(DeserializeMap::new(self))
-            }
             _ => Err(DeserializeError::invalid_type("map", self.value)),
         }
     }
@@ -400,7 +396,6 @@ impl<'toy, 'a> Deserializer<'toy> for &'a mut ValueDeserializer<'toy> {
         match self.value {
             Value::Seq(_) => self.deserialize_seq(visitor),
             Value::Map(_) => self.deserialize_map(visitor),
-            Value::TimeStamp(_) => self.deserialize_map(visitor),
             _ => Err(DeserializeError::error(
                 "deserialize struct, must be a map, array or Duration type.",
             )),

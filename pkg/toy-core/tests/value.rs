@@ -1,3 +1,4 @@
+use chrono::{DateTime, Utc};
 use toy_core::data::Value;
 use toy_core::prelude::*;
 
@@ -243,4 +244,45 @@ fn ord_integer_string() {
     let small = Value::Integer(2);
     let big = Value::String("1".to_string());
     assert_eq!(small < big, true);
+}
+
+#[test]
+fn ord_timestamp() {
+    let small = Value::TimeStamp(
+        DateTime::parse_from_rfc3339("1996-12-19T16:39:57+00:00")
+            .unwrap()
+            .with_timezone(&Utc),
+    );
+    let big = Value::TimeStamp(
+        DateTime::parse_from_rfc3339("1996-12-19T16:39:58+00:00")
+            .unwrap()
+            .with_timezone(&Utc),
+    );
+    assert_eq!(small < big, true);
+}
+
+#[test]
+fn is_same_type() {
+    assert_eq!(Value::Integer(1).is_same_type(&Value::Integer(4)), true);
+}
+
+#[test]
+fn as_same_type() {
+    assert_eq!(
+        Value::Integer(1).as_same_type(&Value::String("a".to_string())),
+        Some(Value::from("1"))
+    );
+
+    assert_eq!(
+        Value::String("1".to_string()).as_same_type(&Value::Integer(2)),
+        Some(Value::from(1))
+    );
+}
+
+#[test]
+fn as_same_type_fail() {
+    assert_eq!(
+        Value::String("a".to_string()).as_same_type(&Value::Integer(2)),
+        None,
+    );
 }
