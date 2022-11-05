@@ -8,7 +8,7 @@ use serde::de::DeserializeOwned;
 use serde::Serialize;
 use std::fmt::Debug;
 use toy_api::common::{
-    CommonPutResponse, DeleteOption, FindOption, KVObject, ListOptionLike, PutOption,
+    CommonPutResponse, DeleteOption, FindOption, KVObject, ListObject, ListOptionLike, PutOption,
     SelectionCandidate,
 };
 use toy_api_http_common::axum::response::IntoResponse;
@@ -29,7 +29,8 @@ where
     V: DeserializeOwned,
     R: Serialize,
 {
-    tracing::debug!("handle: {:?}", ctx);
+    tracing::debug!("handle: ctx:{:?}, opt:{:?}", ctx, api_opt);
+
     match store
         .ops()
         .find::<V>(store.con().unwrap(), key, store_opt)
@@ -39,8 +40,17 @@ where
             Some(v) => {
                 let format = api_opt.format();
                 let indent = api_opt.indent();
+                let fields = api_opt.fields();
                 let r = f(v.into_value());
-                Ok(reply::into_response(&r, format, indent))
+                if fields.is_empty() {
+                    Ok(reply::into_response(&r, format, indent))
+                } else {
+                    let value = toy_core::data::pack(r)?;
+                    let applied_value = fields
+                        .apply(&value)
+                        .map_err(|e| ApiError::invalid_field(e))?;
+                    Ok(reply::into_response(&applied_value, format, indent))
+                }
             }
             None => Err(ApiError::error("not found")),
         },
@@ -61,8 +71,8 @@ pub async fn list2<H, V, R, Opt, StoreOptF, F>(
 ) -> Result<impl IntoResponse, ApiError>
 where
     H: HttpClient,
-    V: DeserializeOwned + SelectionCandidate,
-    R: Serialize,
+    V: Serialize + DeserializeOwned + SelectionCandidate,
+    R: Serialize + ListObject<V>,
     Opt: ListOptionLike + Debug,
     StoreOptF: FnOnce(&Opt) -> kv::ListOption,
     F: FnOnce(Vec<V>) -> R,
@@ -79,25 +89,21 @@ where
         .await
     {
         Ok(mut vec) => {
-            let selection = api_opt.selection();
+            let selector = api_opt.common().selection();
+            let fields = api_opt.common().fields();
             let format = api_opt.common().format();
             let indent = api_opt.common().indent();
 
-            if !selection.preds().is_empty() {
+            if !selector.preds().is_empty() {
                 // check fields
-                let unknowns: Vec<&str> = selection
-                    .predicate_fields()
-                    .into_iter()
-                    .filter(|x| !V::candidate_fields().contains(x))
-                    .collect();
-                if !unknowns.is_empty() {
-                    return Err(ApiError::invalid_field_selector(&unknowns[..]));
-                }
+                selector
+                    .validation_fields::<V>()
+                    .map_err(|e| ApiError::invalid_selectors(e))?;
 
                 // filter
                 let filterd: Result<Vec<KvResponse<V>>, String> = vec
                     .into_iter()
-                    .filter_map(|item| match selection.is_match(item.value()) {
+                    .filter_map(|item| match selector.is_match(item.value()) {
                         Ok(true) => Some(Ok(item)),
                         Ok(false) => None,
                         Err(name) => Some(Err(name)),
@@ -106,13 +112,29 @@ where
 
                 match filterd {
                     Ok(v) => vec = v,
-                    Err(name) => return Err(ApiError::invalid_field_selector(&[&name])),
+                    Err(name) => return Err(ApiError::invalid_selector(name)),
                 }
             }
 
             let r = f(vec.into_iter().map(|x| x.into_value()).collect());
-
-            Ok(reply::into_response(&r, format, indent))
+            if fields.is_empty() {
+                Ok(reply::into_response(&r, format, indent))
+            } else {
+                let result_list = r.items().iter().try_fold(
+                    Vec::with_capacity(r.count() as usize),
+                    |mut acc, item| {
+                        let value = toy_core::data::pack(item)?;
+                        match fields.apply(&value) {
+                            Ok(applied_value) => {
+                                acc.push(applied_value);
+                                Ok(acc)
+                            }
+                            Err(f) => Err(ApiError::invalid_field(f)),
+                        }
+                    },
+                )?;
+                Ok(reply::into_response(&result_list, format, indent))
+            }
         }
         Err(e) => {
             tracing::error!("error:{:?}", e);
@@ -138,6 +160,7 @@ where
     T: Validator<H, Store, Req>,
 {
     tracing::debug!("handle: {:?}, opt: {:?}", ctx, opt);
+
     let format = opt.format();
     let v = codec::decode::<_, Req>(request, format)?;
     let key_of_data = KVObject::key(&v).to_owned();

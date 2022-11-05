@@ -1,8 +1,7 @@
 //! Model for rbac/roleBinding api.
 
-use crate::common::{KVObject, ListOption, ListOptionLike, SelectionCandidate};
-use crate::selection::candidate::CandidateMap;
-use crate::selection::selector::Selector;
+use crate::common::{KVObject, ListObject, ListOption, ListOptionLike, SelectionCandidate};
+use crate::selection::candidate::Candidates;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
@@ -120,14 +119,24 @@ impl SelectionCandidate for RoleBinding {
         &[]
     }
 
-    fn candidate_map(&self) -> CandidateMap {
-        CandidateMap::empty()
+    fn candidates(&self) -> Candidates {
+        Candidates::empty()
     }
 }
 
 impl KVObject for RoleBinding {
     fn key(&self) -> &str {
         &self.name
+    }
+}
+
+impl ListObject<RoleBinding> for RoleBindingList {
+    fn items(&self) -> &[RoleBinding] {
+        &self.items
+    }
+
+    fn count(&self) -> u32 {
+        self.count
     }
 }
 
@@ -159,9 +168,5 @@ impl RoleBindingListOption {
 impl ListOptionLike for RoleBindingListOption {
     fn common(&self) -> &ListOption {
         &self.common
-    }
-
-    fn selection(&self) -> &Selector {
-        self.common.selection()
     }
 }

@@ -1,8 +1,7 @@
 //! Model for services api.
 
-use crate::common::{KVObject, ListOption, ListOptionLike, SelectionCandidate};
-use crate::selection::candidate::CandidateMap;
-use crate::selection::selector::Selector;
+use crate::common::{KVObject, ListObject, ListOption, ListOptionLike, SelectionCandidate};
+use crate::selection::candidate::Candidates;
 use serde::{Deserialize, Serialize};
 use toy_core::data::schema::JsonSchema;
 use toy_core::data::Value;
@@ -27,6 +26,16 @@ impl KVObject for ServiceSpec {
     }
 }
 
+impl ListObject<ServiceSpec> for ServiceSpecList {
+    fn items(&self) -> &[ServiceSpec] {
+        &self.items
+    }
+
+    fn count(&self) -> u32 {
+        self.count
+    }
+}
+
 impl ServiceSpec {
     pub fn new(service_type: ServiceType, port_type: PortType, schema: Option<JsonSchema>) -> Self {
         Self {
@@ -46,13 +55,13 @@ impl SelectionCandidate for ServiceSpec {
         &["name_space", "port_type"]
     }
 
-    fn candidate_map(&self) -> CandidateMap {
+    fn candidates(&self) -> Candidates {
         let p = match self.port_type {
             PortType::Source(_) => "Source",
             PortType::Flow(_, _) => "Flow",
             PortType::Sink(_) => "Sink",
         };
-        CandidateMap::default()
+        Candidates::default()
             .with_candidate("name_space", Value::from(self.service_type.name_space()))
             .with_candidate("port_type", Value::from(p))
     }
@@ -92,9 +101,5 @@ impl ServiceSpecListOption {
 impl ListOptionLike for ServiceSpecListOption {
     fn common(&self) -> &ListOption {
         &self.common
-    }
-
-    fn selection(&self) -> &Selector {
-        self.common.selection()
     }
 }

@@ -7,18 +7,18 @@ use std::hash::{Hash, Hasher};
 use toy_core::data::Value;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct CandidateMap {
-    map: HashMap<String, Candidate>,
+pub struct Candidates {
+    map: HashMap<String, CandidatePart>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct Candidate {
+pub struct CandidatePart {
     name: String,
     value: Value,
 }
 
-impl CandidateMap {
-    pub fn new(candidates: &[Candidate]) -> Self {
+impl Candidates {
+    pub fn new(candidates: &[CandidatePart]) -> Self {
         let map = candidates
             .iter()
             .map(|x| (x.name.clone(), x.clone()))
@@ -34,7 +34,7 @@ impl CandidateMap {
 
     pub fn with_candidate(mut self, name: impl Into<String>, value: Value) -> Self {
         let key = name.into();
-        self.map.insert(key.clone(), Candidate::new(key, value));
+        self.map.insert(key.clone(), CandidatePart::new(key, value));
         self
     }
 
@@ -42,18 +42,18 @@ impl CandidateMap {
         self.map.is_empty()
     }
 
-    pub fn get(&self, name: &str) -> Option<&Candidate> {
+    pub fn get(&self, name: &str) -> Option<&CandidatePart> {
         self.map.get(name)
     }
 }
 
-impl Default for CandidateMap {
+impl Default for Candidates {
     fn default() -> Self {
-        CandidateMap::new(&[])
+        Candidates::new(&[])
     }
 }
 
-impl Candidate {
+impl CandidatePart {
     pub fn new(name: impl Into<String>, value: Value) -> Self {
         Self {
             name: name.into(),
@@ -70,15 +70,15 @@ impl Candidate {
     }
 }
 
-impl PartialEq for Candidate {
+impl PartialEq for CandidatePart {
     fn eq(&self, other: &Self) -> bool {
         self.name == other.name
     }
 }
 
-impl Eq for Candidate {}
+impl Eq for CandidatePart {}
 
-impl Hash for Candidate {
+impl Hash for CandidatePart {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.name.hash(state)
     }

@@ -1,8 +1,7 @@
 //! Model for task api.
 
-use crate::common::{Format, ListOption, ListOptionLike};
+use crate::common::{Format, ListObject, ListOption, ListOptionLike};
 use crate::graph::Graph;
-use crate::selection::selector::Selector;
 use crate::supervisors::SupervisorName;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
@@ -258,6 +257,16 @@ impl TasksInner {
     }
 }
 
+impl ListObject<TasksInner> for Tasks {
+    fn items(&self) -> &[TasksInner] {
+        &self.tasks
+    }
+
+    fn count(&self) -> u32 {
+        self.count
+    }
+}
+
 //////////////////////////////////
 // Option
 //////////////////////////////////
@@ -335,9 +344,5 @@ impl TaskListOption {
 impl ListOptionLike for TaskListOption {
     fn common(&self) -> &ListOption {
         &self.common
-    }
-
-    fn selection(&self) -> &Selector {
-        self.common.selection()
     }
 }

@@ -1,3 +1,4 @@
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use toy_core::data::{self, Map, Value};
 use toy_core::{map_value, seq_value};
@@ -109,6 +110,27 @@ fn de_struct() {
     assert_eq!(v, expected);
 }
 
+#[test]
+fn de_timestamp() {
+    #[derive(Debug, PartialEq, Deserialize)]
+    struct Test {
+        dt: DateTime<Utc>,
+    }
+
+    let expected = Test {
+        dt: DateTime::parse_from_rfc3339("2018-12-07T19:31:28+09:00")
+            .unwrap()
+            .with_timezone(&Utc),
+    };
+
+    let mut map = Map::new();
+    map.insert("dt".to_string(), Value::from(expected.dt));
+
+    let v = Value::from(map);
+    let v = data::unpack::<Test>(&v).unwrap();
+    assert_eq!(v, expected);
+}
+
 #[derive(Debug, PartialEq, Deserialize)]
 struct Dum {
     v_u8: u8,
@@ -134,7 +156,7 @@ enum Terminator {
     LF,
 }
 
-impl std::default::Default for Terminator {
+impl Default for Terminator {
     fn default() -> Self {
         Terminator::LF
     }

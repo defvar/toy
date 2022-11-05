@@ -1,8 +1,7 @@
 //! Model for supervisor api.
 
-use crate::common::{format, KVObject, ListOption, ListOptionLike, SelectionCandidate};
-use crate::selection::candidate::CandidateMap;
-use crate::selection::selector::Selector;
+use crate::common::{format, KVObject, ListObject, ListOption, ListOptionLike, SelectionCandidate};
+use crate::selection::candidate::Candidates;
 use crate::supervisors::SupervisorStatus::Ready;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
@@ -114,13 +113,23 @@ impl KVObject for Supervisor {
     }
 }
 
+impl ListObject<Supervisor> for SupervisorList {
+    fn items(&self) -> &[Supervisor] {
+        &self.items
+    }
+
+    fn count(&self) -> u32 {
+        self.count
+    }
+}
+
 impl SelectionCandidate for Supervisor {
     fn candidate_fields() -> &'static [&'static str] {
         &["name", "start_time"]
     }
 
-    fn candidate_map(&self) -> CandidateMap {
-        CandidateMap::default()
+    fn candidates(&self) -> Candidates {
+        Candidates::default()
             .with_candidate("name", Value::from(&self.name))
             .with_candidate("start_time", Value::from(&self.start_time))
     }
@@ -154,9 +163,5 @@ impl SupervisorListOption {
 impl ListOptionLike for SupervisorListOption {
     fn common(&self) -> &ListOption {
         &self.common
-    }
-
-    fn selection(&self) -> &Selector {
-        self.common.selection()
     }
 }

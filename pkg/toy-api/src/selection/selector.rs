@@ -1,7 +1,7 @@
 //! Apply the predicate to the struct's field to selection the necessary data.
 
 use crate::common::SelectionCandidate;
-use crate::selection::candidate::Candidate;
+use crate::selection::candidate::CandidatePart;
 use crate::selection::operator::operator_strings;
 use crate::selection::Operator;
 use serde::de::{Error, Visitor};
@@ -34,8 +34,22 @@ impl Selector {
         }
     }
 
-    pub fn predicate_fields(&self) -> Vec<&str> {
+    fn predicate_fields(&self) -> Vec<&str> {
         self.preds.iter().map(|x| x.field.as_str()).collect()
+    }
+
+    pub fn validation_fields<T: SelectionCandidate>(&self) -> Result<(), Vec<String>> {
+        let unknowns = self
+            .predicate_fields()
+            .into_iter()
+            .filter(|x| !T::candidate_fields().contains(x))
+            .map(|x| x.to_owned())
+            .collect::<Vec<_>>();
+        if !unknowns.is_empty() {
+            Err(unknowns)
+        } else {
+            Ok(())
+        }
     }
 
     pub fn preds(&self) -> &[Predicate] {
@@ -43,7 +57,7 @@ impl Selector {
     }
 
     pub fn is_match(&self, candidate: &impl SelectionCandidate) -> Result<bool, String> {
-        let map = candidate.candidate_map();
+        let map = candidate.candidates();
         if map.is_empty() {
             return Ok(true);
         }
@@ -130,7 +144,7 @@ impl Predicate {
         &self.value
     }
 
-    pub fn is_match(&self, candidate: &Candidate) -> Result<bool, ()> {
+    pub fn is_match(&self, candidate: &CandidatePart) -> Result<bool, ()> {
         let mut l = &self.value;
         let r = candidate.value();
         let mut same_type_left_value = None;
@@ -147,19 +161,19 @@ impl Predicate {
             None => (),
         };
 
-        Ok(match self.op {
-            Operator::Eq => l == r,
-            Operator::NotEq => l != r,
-            Operator::LessThan => l > r,
-            Operator::GreaterThan => l < r,
+        match self.op {
+            Operator::Eq => Ok(l == r),
+            Operator::NotEq => Ok(l != r),
+            Operator::LessThan => Ok(l > r),
+            Operator::GreaterThan => Ok(l < r),
             Operator::Contains => {
                 if l.is_string() && r.is_string() {
-                    r.as_str().unwrap().contains(l.as_str().unwrap())
+                    Ok(r.as_str().unwrap().contains(l.as_str().unwrap()))
                 } else {
-                    false
+                    Err(())
                 }
             }
-        })
+        }
     }
 
     pub fn from_str(v: &str) -> Result<Predicate, ()> {

@@ -1,4 +1,5 @@
-use crate::selection::candidate::CandidateMap;
+use crate::selection::candidate::Candidates;
+use crate::selection::fields::Fields;
 use crate::selection::selector::Selector;
 use serde::{Deserialize, Serialize};
 
@@ -39,6 +40,13 @@ pub trait KVObject {
     fn key(&self) -> &str;
 }
 
+/// Traits that should be implemented by List object.
+pub trait ListObject<T> {
+    fn items(&self) -> &[T];
+
+    fn count(&self) -> u32;
+}
+
 /// Traits that should be implemented by structs that are used as options for find-based api.
 pub trait FindOptionLike {
     /// Returns the common option items.
@@ -49,17 +57,15 @@ pub trait FindOptionLike {
 pub trait ListOptionLike {
     /// Returns the common option items.
     fn common(&self) -> &ListOption;
-
-    /// Create `Selection`.
-    fn selection(&self) -> &Selector;
 }
 
 /// This trait is used to select data based on the specified conditions when calling api.
 pub trait SelectionCandidate {
+    /// Candidate field names.
     fn candidate_fields() -> &'static [&'static str];
 
     /// Creates and returns the field information needed to make a selection.
-    fn candidate_map(&self) -> CandidateMap;
+    fn candidates(&self) -> Candidates;
 }
 
 /// Common response for put-based api.
@@ -83,6 +89,8 @@ impl CommonPutResponse {
 pub struct FindOption {
     format: Option<Format>,
     indent: Option<Indent>,
+    #[serde(default)]
+    fields: Fields,
 }
 
 impl FindOption {
@@ -90,6 +98,7 @@ impl FindOption {
         Self {
             format: None,
             indent: None,
+            fields: Fields::default(),
         }
     }
 
@@ -99,6 +108,10 @@ impl FindOption {
 
     pub fn indent(&self) -> Option<Indent> {
         self.indent
+    }
+
+    pub fn fields(&self) -> &Fields {
+        &self.fields
     }
 
     pub fn with_pretty(self) -> Self {
@@ -116,6 +129,8 @@ pub struct ListOption {
     indent: Option<Indent>,
     #[serde(default)]
     selector: Selector,
+    #[serde(default)]
+    fields: Fields,
 }
 
 impl ListOption {
@@ -124,6 +139,7 @@ impl ListOption {
             format: None,
             indent: None,
             selector: Selector::empty(),
+            fields: Fields::default(),
         }
     }
 
@@ -133,6 +149,14 @@ impl ListOption {
 
     pub fn indent(&self) -> Option<Indent> {
         self.indent
+    }
+
+    pub fn selection(&self) -> &Selector {
+        &self.selector
+    }
+
+    pub fn fields(&self) -> &Fields {
+        &self.fields
     }
 
     pub fn with_pretty(self) -> Self {
@@ -146,10 +170,6 @@ impl ListOption {
 impl ListOptionLike for ListOption {
     fn common(&self) -> &ListOption {
         &self
-    }
-
-    fn selection(&self) -> &Selector {
-        &self.selector
     }
 }
 

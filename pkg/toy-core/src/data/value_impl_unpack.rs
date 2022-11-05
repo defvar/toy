@@ -272,6 +272,7 @@ impl<'toy, 'a> Deserializer<'toy> for &'a mut ValueDeserializer<'toy> {
     {
         match self.value {
             Value::String(v) => visitor.visit_str(v.as_str()),
+            Value::TimeStamp(v) => visitor.visit_str(&v.to_rfc3339()),
             _ => Err(DeserializeError::invalid_type("str", self.value)),
         }
     }

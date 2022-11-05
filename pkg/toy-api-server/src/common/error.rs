@@ -76,8 +76,11 @@ pub enum ApiError {
     #[error("allready exists. key:{}", key)]
     AllreadyExists { key: String },
 
-    #[error("invalid field selector. fields:{:?}", fields)]
-    InvalidFieldSelector { fields: Vec<String> },
+    #[error("invalid selector {:?}", fields)]
+    InvalidSelector { fields: Vec<String> },
+
+    #[error("invalid field {:?}", field)]
+    InvalidField { field: String },
 
     #[error("{:?}", inner)]
     Error { inner: String },
@@ -101,7 +104,8 @@ impl ApiError {
                 _ => StatusCode::INTERNAL_SERVER_ERROR,
             },
             ApiError::AllreadyExists { .. } => StatusCode::CONFLICT,
-            ApiError::InvalidFieldSelector { .. } => StatusCode::BAD_REQUEST,
+            ApiError::InvalidSelector { .. } => StatusCode::BAD_REQUEST,
+            ApiError::InvalidField { .. } => StatusCode::BAD_REQUEST,
             ApiError::AuthorizationFailed { .. } => StatusCode::FORBIDDEN,
             _ => StatusCode::INTERNAL_SERVER_ERROR,
         }
@@ -172,9 +176,20 @@ impl ApiError {
         }
     }
 
-    pub fn invalid_field_selector(fields: &[&str]) -> ApiError {
-        let vec: Vec<String> = fields.iter().map(|x| x.to_string()).collect();
-        ApiError::InvalidFieldSelector { fields: vec }
+    pub fn invalid_selectors(fields: Vec<String>) -> ApiError {
+        ApiError::InvalidSelector { fields }
+    }
+
+    pub fn invalid_selector(field: String) -> ApiError {
+        ApiError::InvalidSelector {
+            fields: vec![field],
+        }
+    }
+
+    pub fn invalid_field(field: impl Into<String>) -> ApiError {
+        ApiError::InvalidField {
+            field: field.into(),
+        }
     }
 }
 

@@ -1,8 +1,7 @@
 //! Model for graph api.
 
-use crate::common::{KVObject, ListOption, ListOptionLike, SelectionCandidate};
-use crate::selection::candidate::CandidateMap;
-use crate::selection::selector::Selector;
+use crate::common::{KVObject, ListObject, ListOption, ListOptionLike, SelectionCandidate};
+use crate::selection::candidate::Candidates;
 use serde::{Deserialize, Serialize};
 use toy_core::prelude::Value;
 use toy_core::registry::PortType;
@@ -42,14 +41,24 @@ impl SelectionCandidate for Graph {
         &[]
     }
 
-    fn candidate_map(&self) -> CandidateMap {
-        CandidateMap::empty()
+    fn candidates(&self) -> Candidates {
+        Candidates::empty()
     }
 }
 
 impl KVObject for Graph {
     fn key(&self) -> &str {
         &self.name
+    }
+}
+
+impl ListObject<Graph> for GraphList {
+    fn items(&self) -> &[Graph] {
+        &self.graphs
+    }
+
+    fn count(&self) -> u32 {
+        self.count
     }
 }
 
@@ -118,9 +127,5 @@ impl GraphListOption {
 impl ListOptionLike for GraphListOption {
     fn common(&self) -> &ListOption {
         &self.common
-    }
-
-    fn selection(&self) -> &Selector {
-        self.common.selection()
     }
 }
