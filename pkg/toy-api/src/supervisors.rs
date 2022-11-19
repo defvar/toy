@@ -82,8 +82,13 @@ impl Supervisor {
     }
 
     pub fn with_last_beat_time(self, last_replied_on: DateTime<Utc>) -> Supervisor {
+        let status = match self.status {
+            SupervisorStatus::NoContact => SupervisorStatus::Ready,
+            _ => self.status,
+        };
         Self {
             last_beat_time: Some(last_replied_on),
+            status,
             ..self
         }
     }

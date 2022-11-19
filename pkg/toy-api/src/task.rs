@@ -53,6 +53,12 @@ pub enum AllocateStatus {
     None,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum FinishResponse {
+    Ok { id: TaskId },
+    NotFound { id: TaskId },
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct TaskLog {
     task_id: TaskId,
@@ -204,6 +210,16 @@ impl AllocateResponse {
 
     pub fn is_ok(&self) -> bool {
         self.status == AllocateStatus::Ok
+    }
+}
+
+impl FinishResponse {
+    pub fn ok(id: TaskId) -> Self {
+        FinishResponse::Ok { id }
+    }
+
+    pub fn not_found(id: TaskId) -> Self {
+        FinishResponse::NotFound { id }
     }
 }
 
