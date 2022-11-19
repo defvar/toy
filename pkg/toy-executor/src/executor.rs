@@ -407,9 +407,9 @@ fn log_total_time(
     }
 }
 
-fn now() -> Option<f64> {
+fn now() -> f64 {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .map(|x| x.as_secs_f64())
-        .ok()
+        .unwrap()
 }

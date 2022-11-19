@@ -31,11 +31,11 @@ pub struct EventRecord {
     id: TaskId,
     uri: Option<Uri>,
     event: String,
-    timestamp: Option<f64>,
+    timestamp: f64,
 }
 
 impl EventRecord {
-    pub fn task_event(id: TaskId, event: impl Into<String>, timestamp: Option<f64>) -> EventRecord {
+    pub fn task_event(id: TaskId, event: impl Into<String>, timestamp: f64) -> EventRecord {
         Self {
             id,
             uri: None,
@@ -48,7 +48,7 @@ impl EventRecord {
         id: TaskId,
         uri: &Uri,
         event: impl Into<String>,
-        timestamp: Option<f64>,
+        timestamp: f64,
     ) -> EventRecord {
         Self {
             id,
