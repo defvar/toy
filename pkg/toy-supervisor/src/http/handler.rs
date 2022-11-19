@@ -1,4 +1,4 @@
-use crate::http::Status;
+use crate::http::{Metrics, Status};
 use crate::supervisor::SupervisorContext;
 use crate::{Request, RunTaskResponse, SupervisorError};
 use toy_api::common::{ListOptionLike, PostOption};
@@ -100,4 +100,41 @@ where
             Ok(StatusCode::INTERNAL_SERVER_ERROR)
         }
     }
+}
+
+pub async fn log<C>(
+    State(ctx): State<SupervisorContext<C>>,
+    Query(opt): Query<PostOption>,
+) -> Result<impl IntoResponse, SupervisorError>
+where
+    C: ApiClient + Clone + Send + Sync + 'static,
+{
+    let format = opt.format();
+    let events = ctx.events().records().await;
+    Ok(toy_api_http_common::reply::into_response(
+        &events,
+        format,
+        opt.indent(),
+    ))
+}
+
+pub async fn metrics<C>(
+    State(ctx): State<SupervisorContext<C>>,
+    Query(opt): Query<PostOption>,
+) -> Result<impl IntoResponse, SupervisorError>
+where
+    C: ApiClient + Clone + Send + Sync + 'static,
+{
+    let format = opt.format();
+    let r = Metrics {
+        name: ctx.name().to_string(),
+        task_start_count: ctx.metrics().task_start_count(),
+        tasks: ctx.metrics().task_metrics().await,
+    };
+
+    Ok(toy_api_http_common::reply::into_response(
+        &r,
+        format,
+        opt.indent(),
+    ))
 }

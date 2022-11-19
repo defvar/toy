@@ -1,4 +1,5 @@
 use crate::beat::beat;
+use crate::metrics::{EventCache, SupervisorMetrics};
 use crate::msg::Request;
 use crate::task::RunningTask;
 use crate::{Response, RunTaskResponse, SupervisorConfig, SupervisorError, TaskResponse};
@@ -83,8 +84,10 @@ pub struct SupervisorContext<C> {
     started_at: Option<DateTime<Utc>>,
     /// send any request.
     tx: Outgoing<Request, ServiceError>,
-    schemas: Vec<ServiceSchema>,
+    schemas: Arc<Vec<ServiceSchema>>,
     tx_http_server_shutdown: Option<Outgoing<(), SupervisorError>>,
+    metrics: SupervisorMetrics,
+    events: EventCache,
 }
 
 impl<TF, P, C, Config> Supervisor<TF, P, C, Config>
@@ -121,8 +124,10 @@ where
                     tasks: Arc::new(Mutex::new(HashMap::new())),
                     started_at: None,
                     tx: tx_req.clone(),
-                    schemas,
+                    schemas: Arc::new(schemas),
                     tx_http_server_shutdown: None,
+                    metrics: SupervisorMetrics::new(),
+                    events: EventCache::new(),
                 },
                 addr,
                 config,
@@ -160,8 +165,11 @@ where
                     Request::RunTask(id, g, tx) => {
                         tracing::info!(name=?self.ctx.name, "receive run task request.");
 
+                        self.ctx.metrics.inc_task_start_count();
                         let tasks = Arc::clone(&self.ctx.tasks);
-                        let ctx = TaskContext::new(id, g);
+                        let metrics = self.ctx.metrics.new_task_metrics(id).await;
+                        let events = self.ctx.events.new_task_events(id).await;
+                        let ctx = TaskContext::with_parts(id, g, metrics, events);
                         let app = Arc::clone(&self.app);
                         let _ = toy_rt::spawn_named(
                             async move {
@@ -386,6 +394,14 @@ impl<C> SupervisorContext<C> {
 
     pub fn schemas(&self) -> &[ServiceSchema] {
         &self.schemas
+    }
+
+    pub fn events(&self) -> &EventCache {
+        &self.events
+    }
+
+    pub fn metrics(&self) -> &SupervisorMetrics {
+        &self.metrics
     }
 }
 

@@ -36,6 +36,8 @@ where
             .route("/status", get(handler::status))
             .route("/services", get(handler::services))
             .route("/tasks", post(handler::tasks))
+            .route("/log", get(handler::log))
+            .route("/metrics", get(handler::metrics))
             .route("/shutdown", put(handler::shutdown));
 
         let addr = addr.into();

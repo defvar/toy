@@ -2,6 +2,7 @@ mod beat;
 mod config;
 mod error;
 mod http;
+mod metrics;
 mod msg;
 mod supervisor;
 mod task;
