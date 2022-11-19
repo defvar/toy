@@ -1,6 +1,7 @@
 //! The URI of Node.
 //!
 
+use serde::{Serialize, Serializer};
 use std::fmt::{Debug, Display, Error, Formatter};
 
 /// The URI of Node.
@@ -46,5 +47,14 @@ impl Debug for Uri {
 impl Display for Uri {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.path.to_string())
+    }
+}
+
+impl Serialize for Uri {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(&self.path)
     }
 }
