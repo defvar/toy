@@ -89,7 +89,7 @@ impl ServerState for ToyState {
     }
 
     fn task_store_mut(&mut self) -> &mut Self::TaskStore {
-        &mut self.kv_store
+        &mut self.task_store
     }
 
     fn task_log_store(&self) -> &Self::TaskLogStore {
