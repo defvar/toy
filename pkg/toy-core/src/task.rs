@@ -2,12 +2,14 @@
 //!
 
 use crate::graph::Graph;
+use crate::metrics::{EventRecord, Events, TaskMetrics};
 use crate::Uri;
 use serde::{de::Visitor, Deserialize, Deserializer, Serialize, Serializer};
 use std::fmt;
 use std::fmt::Formatter;
 use std::sync::Arc;
 use std::time::SystemTime;
+use tokio::sync::Mutex;
 use uuid::Uuid;
 
 /// Task Identifier
@@ -24,6 +26,8 @@ pub struct TaskContext {
     inner: Arc<Inner>,
     uri: Option<Uri>,
     current_span: Option<tracing::Span>,
+    metrics: Arc<TaskMetrics>,
+    events: Arc<Mutex<Events>>,
 }
 
 struct Inner {
@@ -91,6 +95,27 @@ impl TaskContext {
             }),
             uri: None,
             current_span: None,
+            metrics: Arc::new(TaskMetrics::new()),
+            events: Arc::new(Mutex::new(Events::new())),
+        }
+    }
+
+    pub fn with_parts(
+        id: TaskId,
+        graph: Graph,
+        metrics: Arc<TaskMetrics>,
+        events: Arc<Mutex<Events>>,
+    ) -> Self {
+        Self {
+            inner: Arc::new(Inner {
+                id,
+                started_at: SystemTime::now(),
+                graph,
+            }),
+            uri: None,
+            current_span: None,
+            metrics,
+            events,
         }
     }
 
@@ -99,6 +124,8 @@ impl TaskContext {
             inner: self.inner,
             uri: Some(uri.clone()),
             current_span: self.current_span,
+            metrics: self.metrics,
+            events: self.events,
         }
     }
 
@@ -134,6 +161,15 @@ impl TaskContext {
 
     task_span!(debug_span, DEBUG);
     task_span!(info_span, INFO);
+
+    pub fn metrics(&self) -> &TaskMetrics {
+        &self.metrics
+    }
+
+    pub async fn push_event(&self, e: EventRecord) {
+        let mut lock = self.events.lock().await;
+        lock.push(e);
+    }
 }
 
 impl fmt::Debug for TaskContext {
