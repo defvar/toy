@@ -9,7 +9,11 @@ static CONFIG: &'static str = "./examples/tick.json";
 struct SVConfig;
 
 impl SupervisorConfig for SVConfig {
-    fn heart_beat_interval_secs(&self) -> u64 {
+    fn heart_beat_interval_mills(&self) -> u64 {
+        todo!()
+    }
+
+    fn event_export_interval_mills(&self) -> u64 {
         todo!()
     }
 
