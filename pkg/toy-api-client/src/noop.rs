@@ -9,7 +9,8 @@ use toy_api::role::{Role, RoleList};
 use toy_api::role_binding::{RoleBinding, RoleBindingList};
 use toy_api::services::{ServiceSpec, ServiceSpecList, ServiceSpecListOption};
 use toy_api::supervisors::{SupervisorBeatResponse, SupervisorListOption};
-use toy_api::task::{PendingResult, TaskListOption};
+use toy_api::task::{FinishResponse, PendingResult, TaskListOption};
+use toy_core::prelude::TaskId;
 
 #[derive(Clone)]
 pub struct NoopApiClient;
@@ -93,6 +94,14 @@ impl TaskClient for NoopApiClient {
         _v: toy_api::graph::Graph,
         _opt: toy_api::common::PostOption,
     ) -> Result<PendingResult, ApiClientError> {
+        unimplemented!()
+    }
+
+    async fn finish(
+        &self,
+        _key: TaskId,
+        _opt: toy_api::common::PostOption,
+    ) -> Result<FinishResponse, ApiClientError> {
         unimplemented!()
     }
 

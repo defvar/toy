@@ -11,6 +11,6 @@ where
             tracing::error!(?name, err= %e, "an error occured; supervisor when heart beat.");
         }
 
-        toy_rt::sleep(interval * 1000).await;
+        toy_rt::sleep(interval).await;
     }
 }

@@ -1,6 +1,7 @@
 mod beat;
 mod config;
 mod error;
+mod event_export;
 mod http;
 mod metrics;
 mod msg;

@@ -1,4 +1,5 @@
 use crate::beat::beat;
+use crate::event_export::event_export;
 use crate::metrics::{EventCache, SupervisorMetrics};
 use crate::msg::Request;
 use crate::task::RunningTask;
@@ -7,15 +8,16 @@ use chrono::{DateTime, Utc};
 use core::future::Future;
 use core::pin::Pin;
 use core::task::{Context, Poll};
+use futures_util::FutureExt;
 use std::collections::HashMap;
 use std::fmt::Formatter;
 use std::net::SocketAddr;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::Mutex;
-use toy_api::common::PutOption;
+use toy_api::common::{PostOption, PutOption};
 use toy_api::services::ServiceSpec;
-use toy_api_client::client::{ServiceClient, SupervisorClient};
+use toy_api_client::client::{ServiceClient, SupervisorClient, TaskClient};
 use toy_api_client::{ApiClient, NoopApiClient};
 use toy_core::data::Frame;
 use toy_core::error::ServiceError;
@@ -171,6 +173,7 @@ where
                         let events = self.ctx.events.new_task_events(id).await;
                         let ctx = TaskContext::with_parts(id, g, metrics, events);
                         let app = Arc::clone(&self.app);
+                        let client = self.ctx.client.clone().unwrap();
                         let _ = toy_rt::spawn_named(
                             async move {
                                 let (e, tx_signal) = TF::new(ctx.clone());
@@ -183,6 +186,11 @@ where
                                 {
                                     let mut tasks = tasks.lock().await;
                                     let _ = tasks.remove(&ctx.id());
+                                }
+                                if let Err(e) =
+                                    client.task().finish(ctx.id(), PostOption::new()).await
+                                {
+                                    tracing::error!(name=?ctx.name(), err = %e, "an error occured; supervisor.")
                                 }
                                 ()
                             },
@@ -271,14 +279,17 @@ where
             async move {
                 let name = ctx.name.clone();
                 let c = ctx.client.clone().unwrap();
-                let interval = config.heart_beat_interval_secs();
+                let beat_interval = config.heart_beat_interval_mills();
+                let event_interval = config.event_export_interval_mills();
                 tracing::info!(?name, "start server.");
-                let server = crate::http::Server::new(ctx);
+                let server = crate::http::Server::new(ctx.clone());
                 let f1 = server.run(addr, config, rx);
-                let f2 = beat(c, name.clone(), interval);
+                let f2 = beat(c, name.clone(), beat_interval);
+                let f3 = event_export(&ctx, event_interval);
                 futures_util::pin_mut!(f1);
                 futures_util::pin_mut!(f2);
-                futures_util::future::select(f1, f2).await;
+                futures_util::pin_mut!(f3);
+                futures_util::future::select_all(vec![f1.boxed(), f2.boxed(), f3.boxed()]).await;
                 tracing::info!(?name, "shutdown server.");
             },
             "supervisor-api-serve",

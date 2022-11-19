@@ -19,11 +19,18 @@ mod error;
 mod opts;
 
 #[derive(Clone)]
-struct Config;
+struct Config {
+    heart_beat_interval_mills: u64,
+    event_export_interval_mills: u64,
+}
 
 impl SupervisorConfig for Config {
-    fn heart_beat_interval_secs(&self) -> u64 {
-        10
+    fn heart_beat_interval_mills(&self) -> u64 {
+        self.heart_beat_interval_mills
+    }
+
+    fn event_export_interval_mills(&self) -> u64 {
+        self.event_export_interval_mills
     }
 
     fn cert_path(&self) -> String {
@@ -36,6 +43,15 @@ impl SupervisorConfig for Config {
 
     fn pub_path(&self) -> String {
         std::env::var("TOY_SUPERVISOR_API_TLS_PUB_PATH").expect("config not found.")
+    }
+}
+
+impl Default for Config {
+    fn default() -> Self {
+        Self {
+            heart_beat_interval_mills: 0,
+            event_export_interval_mills: 0,
+        }
     }
 }
 
@@ -77,9 +93,10 @@ fn go() -> Result<(), Error> {
 
     match &opts.c {
         Command::Local(c) => {
+            let config = Config::default();
             let (_guard, tracing_addr) = initialize_log(&c.log)?;
             let g = get_graph(&c.graph)?;
-            let (sv, _, _) = toy::supervisor::local(ExecutorFactory, app, Config);
+            let (sv, _, _) = toy::supervisor::local(ExecutorFactory, app, config);
             log_start(&opts, tracing_addr);
 
             rt.block_on(async {
@@ -87,6 +104,10 @@ fn go() -> Result<(), Error> {
             });
         }
         Command::Subscribe(c) => {
+            let config = Config {
+                heart_beat_interval_mills: c.heart_beat_interval_mills,
+                event_export_interval_mills: c.event_export_interval_mills,
+            };
             let (_guard, tracing_addr) = initialize_log(&c.log)?;
             let token = get_credential(&c.user, &c.kid, &c.credential)
                 .map_err(|e| Error::read_credential_error(e))?;
@@ -98,7 +119,7 @@ fn go() -> Result<(), Error> {
 
             let client = HttpApiClient::new(&c.api_root, auth).unwrap();
             let (sv, _, _) =
-                toy::supervisor::subscribe(&c.name, ExecutorFactory, app, client, addr, Config);
+                toy::supervisor::subscribe(&c.name, ExecutorFactory, app, client, addr, config);
             log_start(&opts, tracing_addr);
 
             rt.block_on(async {

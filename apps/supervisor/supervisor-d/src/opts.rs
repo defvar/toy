@@ -55,6 +55,18 @@ pub struct Subscribe {
     pub kid: String,
     #[clap(flatten)]
     pub log: LogOption,
+    #[clap(
+        long,
+        env = "TOY_SUPERVISOR_HEART_BEAT_INTERVAL",
+        default_value = "10000"
+    )]
+    pub heart_beat_interval_mills: u64,
+    #[clap(
+        long,
+        env = "TOY_SUPERVISOR_EVENT_EXPORT_INTERVAL",
+        default_value = "10000"
+    )]
+    pub event_export_interval_mills: u64,
 }
 
 #[derive(Parser, Debug)]

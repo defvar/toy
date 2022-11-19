@@ -4,8 +4,9 @@ use async_trait::async_trait;
 use std::sync::Arc;
 use toy_api::common::PostOption;
 use toy_api::graph::Graph;
-use toy_api::task::{LogOption, PendingResult, TaskListOption, TaskLog, Tasks};
+use toy_api::task::{FinishResponse, LogOption, PendingResult, TaskListOption, TaskLog, Tasks};
 use toy_api_http_common::{auth::Auth, request};
+use toy_core::prelude::TaskId;
 use toy_h::{HttpClient, RequestBuilder, Uri};
 
 static PATH: &'static str = "tasks";
@@ -37,6 +38,13 @@ where
 {
     async fn post(&self, v: Graph, opt: PostOption) -> Result<PendingResult, ApiClientError> {
         request::post(&self.inner, Some(&self.auth), &self.root, PATH, &v, opt)
+            .await
+            .map_err(|e| e.into())
+    }
+
+    async fn finish(&self, key: TaskId, opt: PostOption) -> Result<FinishResponse, ApiClientError> {
+        let path = format!("{}/{}/finish", PATH, key);
+        request::post(&self.inner, Some(&self.auth), &self.root, &path, &(), opt)
             .await
             .map_err(|e| e.into())
     }

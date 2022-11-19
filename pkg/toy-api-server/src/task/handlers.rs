@@ -7,7 +7,7 @@ use chrono::{Duration, Utc};
 use toy_api::common::{ListOptionLike, PostOption};
 use toy_api::graph::Graph;
 use toy_api::selection::selector::Selector;
-use toy_api::task::{LogOption, PendingResult, PendingTask, TaskListOption};
+use toy_api::task::{FinishResponse, LogOption, PendingResult, PendingTask, TaskListOption};
 use toy_api_http_common::axum::http::StatusCode;
 use toy_api_http_common::axum::response::IntoResponse;
 use toy_api_http_common::bytes::Bytes;
@@ -54,19 +54,32 @@ pub async fn finish<T>(
     ctx: Context,
     store: &impl KvStore<T>,
     key: String,
-    _api_opt: PostOption,
+    api_opt: PostOption,
 ) -> Result<impl IntoResponse, ApiError>
 where
     T: HttpClient,
 {
     tracing::trace!("handle: {:?}", ctx);
 
+    let id = TaskId::parse_str(&key);
+    if id.is_err() {
+        return Err(ApiError::task_id_invalid_format(key));
+    }
+    let id = id.unwrap();
+
+    let format = api_opt.format();
     let key = constants::generate_key(constants::PENDINGS_KEY_PREFIX, key);
     let now = Utc::now();
     let f = |v: PendingTask| Some(v.finished(now));
     match store.ops().update(store.con().unwrap(), key, f).await {
-        Ok(UpdateResult::Update(_)) => Ok(StatusCode::OK),
-        Ok(UpdateResult::NotFound) => Ok(StatusCode::NOT_FOUND),
+        Ok(UpdateResult::Update(_)) => {
+            Ok(reply::into_response(&FinishResponse::ok(id), format, None))
+        }
+        Ok(UpdateResult::NotFound) => Ok(reply::into_response(
+            &FinishResponse::not_found(id),
+            format,
+            None,
+        )),
         Ok(UpdateResult::None) => unreachable!(),
         Err(e) => {
             tracing::error!("error:{:?}", e);

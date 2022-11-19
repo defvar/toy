@@ -32,4 +32,15 @@ impl EventCache {
         }
         r
     }
+
+    pub async fn drain(&self) -> Vec<EventRecord> {
+        let mut r = Vec::new();
+        for (_, v) in self.task_events.lock().await.drain() {
+            {
+                let lock = v.lock().await;
+                r.extend(lock.records());
+            }
+        }
+        r
+    }
 }
