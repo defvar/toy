@@ -5,7 +5,6 @@ use axum::response::{IntoResponse, Response};
 use http::StatusCode;
 use std::fmt::Display;
 use thiserror::Error as ThisError;
-use toy_api::common::Format;
 use toy_api::error::ErrorMessage;
 use toy_h::error::HError;
 use toy_h::InvalidUri;
@@ -112,7 +111,7 @@ impl IntoResponse for Error {
     fn into_response(self) -> Response {
         let e = ErrorMessage::new(self.status_code().as_u16(), self.error_message());
         let code = StatusCode::from_u16(e.code()).unwrap_or(StatusCode::INTERNAL_SERVER_ERROR);
-        let r = reply::into_response(&e, Some(Format::Json), None);
+        let r = reply::into_response(&e, Some(toy_api::common::Format::Json), None);
         (code, r).into_response()
     }
 }
