@@ -14,8 +14,8 @@ tracing = "0.1"
 thiserror = "1.0"
 serde = { version = "1.0", features = ["derive"]  }
 futures-util = { version = "0.3", default-features = false }
-axum = { version = "0.6.0-rc.2", optional = true, features = ["headers", "http2"] }
-axum-server = { version = "0.4.2", features = ["tls-rustls"], optional = true}
+axum = { version = "0.6.0-rc.5", optional = true, features = ["headers", "http2"] }
+axum-server = { version = "0.4.4", features = ["tls-rustls"], optional = true}
 bytes = "1.0"
 http = "0.2.8"
 

@@ -54,7 +54,7 @@ where
             .await
             .unwrap();
 
-        let app = Router::with_state(WrappedState::new(state))
+        let app = Router::new()
             .route(
                 "/supervisors/:key",
                 get(supervisors::find)
@@ -90,9 +90,12 @@ where
             )
             .route("/rbac/roleBindings", get(rbac::role_binding::list))
             .route("/tasks", get(task::list).post(task::post))
+            .route("/tasks/:key", get(task::find))
             .route("/tasks/:key/log", get(task::log))
+            .route("/tasks/:key/finish", post(task::finish))
             .layer(CorsLayer::very_permissive())
-            .layer(TraceLayer::new_for_http());
+            .layer(TraceLayer::new_for_http())
+            .with_state(WrappedState::new(state));
 
         let addr = addr.into();
         tracing::info!("listening on https://{}", addr);

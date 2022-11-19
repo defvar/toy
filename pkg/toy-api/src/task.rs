@@ -12,6 +12,7 @@ pub enum PendingStatus {
     Created,
     Allocated,
     AllocateFailed,
+    Finished,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -135,10 +136,17 @@ impl PendingTask {
         }
     }
 
+    pub fn finished(self, _finished_at: DateTime<Utc>) -> Self {
+        Self {
+            status: PendingStatus::Finished,
+            ..self
+        }
+    }
+
     pub fn is_dispatchable(&self) -> bool {
         match self.status {
-            PendingStatus::Allocated => false,
             PendingStatus::Created | PendingStatus::AllocateFailed => true,
+            _ => false,
         }
     }
 }

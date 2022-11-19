@@ -1,4 +1,6 @@
+use crate::common::constants;
 use crate::context::Context;
+use crate::store::kv::{KvStore, Update, UpdateResult};
 use crate::task::store::{List, ListOption, Pending, TaskLogStore, TaskStore};
 use crate::{common, ApiError};
 use chrono::{Duration, Utc};
@@ -45,6 +47,31 @@ where
             None,
         )),
         Err(e) => Err(ApiError::store_operation_failed(e)),
+    }
+}
+
+pub async fn finish<T>(
+    ctx: Context,
+    store: &impl KvStore<T>,
+    key: String,
+    _api_opt: PostOption,
+) -> Result<impl IntoResponse, ApiError>
+where
+    T: HttpClient,
+{
+    tracing::trace!("handle: {:?}", ctx);
+
+    let key = constants::generate_key(constants::PENDINGS_KEY_PREFIX, key);
+    let now = Utc::now();
+    let f = |v: PendingTask| Some(v.finished(now));
+    match store.ops().update(store.con().unwrap(), key, f).await {
+        Ok(UpdateResult::Update(_)) => Ok(StatusCode::OK),
+        Ok(UpdateResult::NotFound) => Ok(StatusCode::NOT_FOUND),
+        Ok(UpdateResult::None) => unreachable!(),
+        Err(e) => {
+            tracing::error!("error:{:?}", e);
+            Err(ApiError::error(e))
+        }
     }
 }
 
