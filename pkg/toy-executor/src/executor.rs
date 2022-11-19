@@ -1,10 +1,11 @@
 use async_trait::async_trait;
 use serde::de::DeserializeOwned;
-use std::time::SystemTime;
+use std::time::{SystemTime, UNIX_EPOCH};
 use toy_core::data::{self, Frame};
 use toy_core::error::ServiceError;
 use toy_core::executor::{ServiceExecutor, TaskExecutor, TaskExecutorFactory};
 use toy_core::graph::Graph;
+use toy_core::metrics::EventRecord;
 use toy_core::mpsc::{Incoming, Outgoing};
 use toy_core::node_channel::{self, Awaiter, Incomings, Outgoings, SignalOutgoings, Starters};
 use toy_core::registry::{App, Registry};
@@ -30,6 +31,12 @@ impl Operation {
             Operation::StartTask => "start task.",
             Operation::FinishTask => "finish task.",
         }
+    }
+}
+
+impl Into<String> for Operation {
+    fn into(self) -> String {
+        self.as_message().to_string()
     }
 }
 
@@ -114,6 +121,13 @@ impl Executor {
                 }
             }
         }
+        awaiter_ctx
+            .push_event(EventRecord::task_event(
+                awaiter_ctx.id(),
+                Operation::FinishTask,
+                now(),
+            ))
+            .await;
         Ok(())
     }
 }
@@ -201,6 +215,13 @@ impl TaskExecutor for Executor {
             "{}",
             Operation::StartTask.as_message()
         );
+        self.ctx
+            .push_event(EventRecord::task_event(
+                self.ctx.id(),
+                Operation::StartTask,
+                now(),
+            ))
+            .await;
         // need to reverse ....
         let nodes = self
             .graph
@@ -261,6 +282,16 @@ where
         Operation::StartService.as_message()
     );
 
+    task_ctx
+        .push_event(EventRecord::service_event(
+            task_ctx.id(),
+            &uri,
+            Operation::StartService,
+            now(),
+        ))
+        .await;
+    task_ctx.metrics().inc_service_start_count();
+
     sc = service.started(task_ctx.clone(), sc.into());
 
     //main loop, receive on message
@@ -300,9 +331,14 @@ where
                 }
             }
             Some(Ok(req)) => {
+                task_ctx.metrics().inc_request_receive_count();
                 let tx = tx.clone();
-                let task_ctx = task_ctx.clone();
-                sc = service.handle(task_ctx, sc.into(), req, tx).await?;
+                sc = {
+                    let task_ctx = task_ctx.clone();
+                    task_ctx.metrics().inc_request_send_count();
+                    service.handle(task_ctx, sc.into(), req, tx).await?
+                };
+                task_ctx.metrics().inc_request_complete_count();
             }
             Some(Err(e)) => {
                 tracing::error!(parent: &info_span, ?uri, err=?e, "node receive message error");
@@ -316,12 +352,21 @@ where
     }
 
     service.completed(task_ctx.clone(), sc.into());
-    log_total_time(
+    let _ = log_total_time(
         service_starded_at,
         &info_span,
         Some((&uri, service_type)),
         Operation::FinishService,
     );
+    task_ctx
+        .push_event(EventRecord::service_event(
+            task_ctx.id(),
+            &uri,
+            Operation::FinishService,
+            now(),
+        ))
+        .await;
+    task_ctx.metrics().inc_service_finish_count();
     Ok(())
 }
 
@@ -341,7 +386,7 @@ fn log_total_time(
     parent: &Span,
     uri: Option<(&Uri, ServiceType)>,
     operation: Operation,
-) {
+) -> Option<f64> {
     let now = SystemTime::now();
     let ended = now.duration_since(started_at);
     if ended.is_ok() {
@@ -355,7 +400,16 @@ fn log_total_time(
                 tracing::info!(parent: parent, total=?total, ?operation, "{}", operation.as_message());
             }
         };
+        Some(total)
     } else {
         tracing::error!(parent: parent, ?operation, "error, calc total time.");
+        None
     }
+}
+
+fn now() -> Option<f64> {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|x| x.as_secs_f64())
+        .ok()
 }
