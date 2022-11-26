@@ -5,14 +5,12 @@ use futures_util::StreamExt;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use std::marker::PhantomData;
-use toy_api::task::PendingTask;
 use toy_api_server::store::kv::{
     Delete, DeleteOption, DeleteResult, Find, FindOption, KvResponse, KvStore, KvStoreOps,
     KvWatchEventType, KvWatchResponse, List, ListOption, Put, PutOperation, PutOption, PutResult,
     Update, UpdateResult, Watch, WatchOption,
 };
 use toy_api_server::store::{error::StoreError, StoreConnection};
-use toy_api_server::task::store::{Pending, TaskStore, TaskStoreOps, WatchPending};
 use toy_h::HttpClient;
 use tracing::instrument;
 
@@ -62,28 +60,7 @@ where
 
 impl<T> StoreConnection for EtcdStoreConnection<T> where T: HttpClient {}
 
-impl<T> TaskStoreOps<EtcdStoreConnection<T>> for EtcdStoreOps<T> where T: HttpClient + 'static {}
 impl<T> KvStoreOps<EtcdStoreConnection<T>> for EtcdStoreOps<T> where T: HttpClient + 'static {}
-
-impl<T> TaskStore<T> for EtcdStore<T>
-where
-    T: HttpClient + 'static,
-{
-    type Con = EtcdStoreConnection<T>;
-    type Ops = EtcdStoreOps<T>;
-
-    fn con(&self) -> Option<Self::Con> {
-        self.con.clone()
-    }
-
-    fn ops(&self) -> Self::Ops {
-        EtcdStoreOps { _t: PhantomData }
-    }
-
-    fn establish(&mut self, client: T) -> Result<(), StoreError> {
-        self.establish_etcd(client, "task")
-    }
-}
 
 impl<T> KvStore<T> for EtcdStore<T>
 where
@@ -313,53 +290,6 @@ where
                 Err(e) => Err(e),
             })
             .boxed())
-    }
-}
-
-#[toy_api_server::async_trait::async_trait]
-impl<T> Pending for EtcdStoreOps<T>
-where
-    T: HttpClient,
-{
-    type Con = EtcdStoreConnection<T>;
-
-    #[instrument(level = "debug", skip(self, con, v))]
-    async fn pending(&self, con: Self::Con, key: String, v: PendingTask) -> Result<(), StoreError> {
-        let s = toy_pack_json::pack_to_string(&v)?;
-        let create_res = con.client.create(&key, &s).await?;
-        if create_res.is_success() {
-            Ok(())
-        } else {
-            Err(StoreError::allready_exists(key))
-        }
-    }
-}
-
-#[toy_api_server::async_trait::async_trait]
-impl<T> WatchPending for EtcdStoreOps<T>
-where
-    T: HttpClient + 'static,
-{
-    type Con = EtcdStoreConnection<T>;
-    type Stream = impl toy_h::Stream<Item = Result<Vec<PendingTask>, StoreError>> + Send + 'static;
-
-    #[instrument(level = "debug", skip(self, con))]
-    async fn watch_pending(
-        &self,
-        con: Self::Con,
-        prefix: String,
-    ) -> Result<Self::Stream, StoreError> {
-        let prefix = prefix.clone();
-        let stream = con.client.watch(prefix).await?;
-        Ok(stream.map(|x: Result<WatchResponse, StoreError>| match x {
-            Ok(res) => res.unpack(|x, e| match e {
-                EventType::PUT => {
-                    Some(toy_pack_json::unpack::<PendingTask>(&x.into_data()).map_err(|e| e.into()))
-                }
-                _ => None,
-            }),
-            Err(e) => Err(e),
-        }))
     }
 }
 

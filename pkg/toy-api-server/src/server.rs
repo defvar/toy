@@ -2,7 +2,7 @@ use crate::api::{graph, rbac, services, supervisors, task};
 use crate::config::ServerConfig;
 use crate::context::{ServerState, WrappedState};
 use crate::store::kv::KvStore;
-use crate::task::store::{TaskLogStore, TaskStore};
+use crate::task::store::TaskLogStore;
 use std::net::SocketAddr;
 use tower_http::cors::CorsLayer;
 use tower_http::trace::TraceLayer;
@@ -34,9 +34,6 @@ where
         let c = state.client().clone();
         if let Err(e) = state.kv_store_mut().establish(c.clone()) {
             tracing::error!("kv store connection failed. error:{:?}", e);
-        }
-        if let Err(e) = state.task_store_mut().establish(c.clone()) {
-            tracing::error!("task store connection failed. error:{:?}", e);
         }
         if let Err(e) = state.task_log_store_mut().establish(c.clone()) {
             tracing::error!("task log store connection failed. error:{:?}", e);

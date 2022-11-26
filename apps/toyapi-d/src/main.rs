@@ -31,7 +31,6 @@ struct ToyState {
     client: ReqwestClient,
     auth: CommonAuths<JWTAuth, JWTAuth>,
     kv_store: EtcdStore<ReqwestClient>,
-    task_store: EtcdStore<ReqwestClient>,
     task_log_store: BTreeLogStore<ReqwestClient>,
 }
 
@@ -65,7 +64,6 @@ impl ServerState for ToyState {
     type Client = ReqwestClient;
     type Auth = CommonAuths<JWTAuth, JWTAuth>;
     type KvStore = EtcdStore<ReqwestClient>;
-    type TaskStore = EtcdStore<ReqwestClient>;
     type TaskLogStore = BTreeLogStore<ReqwestClient>;
 
     fn client(&self) -> &Self::Client {
@@ -82,14 +80,6 @@ impl ServerState for ToyState {
 
     fn kv_store_mut(&mut self) -> &mut Self::KvStore {
         &mut self.kv_store
-    }
-
-    fn task_store(&self) -> &Self::TaskStore {
-        &self.task_store
-    }
-
-    fn task_store_mut(&mut self) -> &mut Self::TaskStore {
-        &mut self.task_store
     }
 
     fn task_log_store(&self) -> &Self::TaskLogStore {
@@ -139,7 +129,6 @@ fn go() -> Result<(), Error> {
         client: client.clone(),
         auth: CommonAuths::new(JWTAuth::new(), JWTAuth::new()),
         kv_store: EtcdStore::new(),
-        task_store: EtcdStore::new(),
         task_log_store: BTreeLogStore::new(),
     };
 

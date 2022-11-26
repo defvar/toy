@@ -1,7 +1,7 @@
 use crate::common::constants;
 use crate::context::Context;
-use crate::store::kv::{KvStore, Update, UpdateResult};
-use crate::task::store::{List, ListOption, Pending, TaskLogStore, TaskStore};
+use crate::store::kv::{KvStore, Put, PutOption, PutResult, Update, UpdateResult};
+use crate::task::store::{List, ListOption, TaskLogStore};
 use crate::{common, ApiError};
 use chrono::{Duration, Utc};
 use toy_api::common::{ListOptionLike, PostOption};
@@ -19,7 +19,7 @@ pub async fn post<T>(
     ctx: Context,
     opt: PostOption,
     request: Bytes,
-    store: &impl TaskStore<T>,
+    store: &impl KvStore<T>,
 ) -> Result<impl IntoResponse, ApiError>
 where
     T: HttpClient,
@@ -38,14 +38,20 @@ where
     let key = common::constants::pending_key(id);
     match store
         .ops()
-        .pending(store.con().unwrap(), key, pending)
+        .put(
+            store.con().unwrap(),
+            key,
+            pending,
+            PutOption::new().with_create_only(),
+        )
         .await
     {
-        Ok(()) => Ok(reply::into_response(
+        Ok(PutResult::Create) => Ok(reply::into_response(
             &(PendingResult::from_id(id)),
             format,
             None,
         )),
+        Ok(PutResult::Update(_)) => unreachable!(),
         Err(e) => Err(ApiError::store_operation_failed(e)),
     }
 }

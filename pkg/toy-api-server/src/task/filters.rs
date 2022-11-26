@@ -37,7 +37,7 @@ pub async fn post<S>(
 where
     S: ServerState,
 {
-    handlers::post(ctx, api_opt, request, state.raw().task_store()).await
+    handlers::post(ctx, api_opt, request, state.raw().kv_store()).await
 }
 
 pub async fn finish<S>(
