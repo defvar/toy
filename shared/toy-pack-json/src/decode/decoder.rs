@@ -91,7 +91,8 @@ where
 
     pub fn decode_str<'a>(&'a mut self, buf: &'a mut Vec<u8>) -> Result<Reference<'toy, 'a, str>> {
         self.reader.decode_str_bytes(buf, |_, bytes| {
-            std::str::from_utf8(bytes).map_err(|e| e.into())
+            //std::str::from_utf8(bytes).map_err(|e| e.into())
+            Ok(unsafe { std::str::from_utf8_unchecked(bytes) })
         })
     }
 
