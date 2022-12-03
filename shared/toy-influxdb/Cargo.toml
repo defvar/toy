@@ -1,0 +1,28 @@
+[package]
+name = "toy-influxdb"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+tracing = { version = "0.1" }
+thiserror = "1.0"
+serde = { version = "1.0", features = ["derive"]}
+chrono = { version = "0.4", features = ["serde"] }
+itoa = "1.0.4"
+ryu = "1.0"
+
+toy-map = { path = "../toy-map" }
+toy-pack-json = {path = "../toy-pack-json"}
+toy-h = {path = "../toy-h", features = ["impl_reqwest"]}
+toy-text-parser = {path = "../toy-text-parser"}
+
+[dev-dependencies]
+tokio = { version = "1.22.0", features = ["full"] }
+tracing-subscriber = "0.3"
+dotenv = "0.15.0"
+
+[[example]]
+name = "example"
+path = "examples/example.rs"

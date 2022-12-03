@@ -6,5 +6,6 @@ sudo docker run -d \
 --network toy \
 --name influxdb \
 -p 8086:8086 \
---mount type=bind,source=/var/influxdb-data,destination=/var/lib/influxdb2 \
-quay.io/influxdb/influxdb:v2.0.7
+influxdb:2.5.1
+
+#--mount type=bind,source=/var/influxdb-data,destination=/var/lib/influxdb2 \

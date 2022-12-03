@@ -126,6 +126,12 @@ jobs:
         command: build
         args: --manifest-path ${{ github.workspace }}/shared/toy-rocksdb/Cargo.toml
 
+    - name: test-shared-influxdb
+      uses: actions-rs/cargo@v1
+      with:
+        command: build
+        args: --manifest-path ${{ github.workspace }}/shared/toy-influxdb/Cargo.toml
+
   test-plugin:
     name: build toy plugin
     runs-on: ${{ matrix.os }}
