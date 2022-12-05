@@ -1,10 +1,8 @@
 //! Structure that holds metrics and event log information
 
 mod event;
-mod task;
 
-pub use event::{EventRecord, Events};
-pub use task::TaskMetrics;
+pub use event::{EventRecord, Events, MetricsEvent};
 
 use serde::{Serialize, Serializer};
 use std::sync::atomic::{AtomicU64, Ordering};

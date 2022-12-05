@@ -4,12 +4,15 @@ use crate::client::{
 };
 use crate::error::ApiClientError;
 use async_trait::async_trait;
-use toy_api::common::{CommonPutResponse, DeleteOption, FindOption, ListOption, PutOption};
+use toy_api::common::{
+    CommonPostResponse, CommonPutResponse, DeleteOption, FindOption, ListOption, PostOption,
+    PutOption,
+};
 use toy_api::role::{Role, RoleList};
 use toy_api::role_binding::{RoleBinding, RoleBindingList};
 use toy_api::services::{ServiceSpec, ServiceSpecList, ServiceSpecListOption};
 use toy_api::supervisors::{SupervisorBeatResponse, SupervisorListOption};
-use toy_api::task::{FinishResponse, PendingResult, TaskListOption};
+use toy_api::task::{FinishResponse, PendingResult, TaskEvent, TaskListOption};
 use toy_core::prelude::TaskId;
 
 #[derive(Clone)]
@@ -92,7 +95,7 @@ impl TaskClient for NoopApiClient {
     async fn post(
         &self,
         _v: toy_api::graph::Graph,
-        _opt: toy_api::common::PostOption,
+        _opt: PostOption,
     ) -> Result<PendingResult, ApiClientError> {
         unimplemented!()
     }
@@ -100,7 +103,7 @@ impl TaskClient for NoopApiClient {
     async fn finish(
         &self,
         _key: TaskId,
-        _opt: toy_api::common::PostOption,
+        _opt: PostOption,
     ) -> Result<FinishResponse, ApiClientError> {
         unimplemented!()
     }
@@ -109,11 +112,19 @@ impl TaskClient for NoopApiClient {
         unimplemented!()
     }
 
-    async fn log(
+    async fn find_event(
         &self,
         _key: String,
-        _opt: toy_api::task::LogOption,
-    ) -> Result<toy_api::task::TaskLog, ApiClientError> {
+        _opt: FindOption,
+    ) -> Result<toy_api::task::TaskEventList, ApiClientError> {
+        unimplemented!()
+    }
+
+    async fn post_event(
+        &self,
+        _v: Vec<TaskEvent>,
+        _opt: PostOption,
+    ) -> Result<CommonPostResponse, ApiClientError> {
         unimplemented!()
     }
 }

@@ -3,7 +3,4 @@
 mod filters;
 mod handlers;
 
-pub mod btree_log_store;
-pub mod store;
-
-pub use filters::{find, finish, list, log, post};
+pub use filters::{find, find_task_event, finish, list, post, post_task_event};

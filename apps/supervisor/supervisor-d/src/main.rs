@@ -104,10 +104,6 @@ fn go() -> Result<(), Error> {
             });
         }
         Command::Subscribe(c) => {
-            let config = Config {
-                heart_beat_interval_mills: c.heart_beat_interval_mills,
-                event_export_interval_mills: c.event_export_interval_mills,
-            };
             let (_guard, tracing_addr) = initialize_log(&c.log)?;
             let token = get_credential(&c.user, &c.kid, &c.credential)
                 .map_err(|e| Error::read_credential_error(e))?;
@@ -117,9 +113,13 @@ fn go() -> Result<(), Error> {
                 .parse::<SocketAddr>()
                 .expect("invalid IP Address.");
 
-            let client = HttpApiClient::new(&c.api_root, auth).unwrap();
+            let api_client = HttpApiClient::new(&c.api_root, auth).unwrap();
+            let config = Config {
+                heart_beat_interval_mills: c.heart_beat_interval_mills,
+                event_export_interval_mills: c.event_export_interval_mills,
+            };
             let (sv, _, _) =
-                toy::supervisor::subscribe(&c.name, ExecutorFactory, app, client, addr, config);
+                toy::supervisor::subscribe(&c.name, ExecutorFactory, app, api_client, addr, config);
             log_start(&opts, tracing_addr);
 
             rt.block_on(async {

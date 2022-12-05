@@ -3,7 +3,7 @@
 use crate::error::ApiClientError;
 use async_trait::async_trait;
 use toy_api::common;
-use toy_api::common::CommonPutResponse;
+use toy_api::common::{CommonPostResponse, CommonPutResponse};
 use toy_api::graph::{Graph, GraphList};
 use toy_api::role::{Role, RoleList};
 use toy_api::role_binding::{RoleBinding, RoleBindingList};
@@ -11,7 +11,7 @@ use toy_api::services::{ServiceSpec, ServiceSpecList, ServiceSpecListOption};
 use toy_api::supervisors::{
     Supervisor, SupervisorBeatResponse, SupervisorList, SupervisorListOption,
 };
-use toy_api::task::{self, FinishResponse, PendingResult, TaskLog, Tasks};
+use toy_api::task::{self, FinishResponse, PendingResult, TaskEvent, TaskEventList, Tasks};
 use toy_core::task::TaskId;
 
 /// Composit All Api Client
@@ -79,7 +79,17 @@ pub trait TaskClient: Send + Sync {
 
     async fn list(&self, opt: task::TaskListOption) -> Result<Tasks, ApiClientError>;
 
-    async fn log(&self, key: String, opt: task::LogOption) -> Result<TaskLog, ApiClientError>;
+    async fn find_event(
+        &self,
+        key: String,
+        opt: common::FindOption,
+    ) -> Result<TaskEventList, ApiClientError>;
+
+    async fn post_event(
+        &self,
+        v: Vec<TaskEvent>,
+        opt: common::PostOption,
+    ) -> Result<CommonPostResponse, ApiClientError>;
 }
 
 #[async_trait]

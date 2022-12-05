@@ -1,8 +1,10 @@
 //! The URI of Node.
 //!
 
-use serde::{Serialize, Serializer};
+use serde::de::Visitor;
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::fmt::{Debug, Display, Error, Formatter};
+use std::hash::Hash;
 
 /// The URI of Node.
 #[derive(Clone, PartialEq, Eq, Hash)]
@@ -32,6 +34,12 @@ impl From<&String> for Uri {
     }
 }
 
+impl From<&Uri> for Uri {
+    fn from(v: &Uri) -> Self {
+        v.clone()
+    }
+}
+
 impl AsRef<Uri> for Uri {
     fn as_ref(&self) -> &Uri {
         self
@@ -56,5 +64,56 @@ impl Serialize for Uri {
         S: Serializer,
     {
         serializer.serialize_str(&self.path)
+    }
+}
+
+impl<'toy> Deserialize<'toy> for Uri {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'toy>,
+    {
+        struct UriVisitor;
+
+        impl<'a> Visitor<'a> for UriVisitor {
+            type Value = Uri;
+
+            fn expecting(&self, formatter: &mut Formatter) -> std::fmt::Result {
+                write!(formatter, "error")
+            }
+
+            fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                Ok(Uri::from(v))
+            }
+
+            fn visit_string<E>(self, v: String) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                Ok(Uri::from(v))
+            }
+
+            fn visit_bytes<E>(self, v: &[u8]) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                let s =
+                    std::str::from_utf8(v).map_err(|e| serde::de::Error::custom(e.to_string()))?;
+                Ok(Uri::from(s))
+            }
+
+            fn visit_byte_buf<E>(self, v: Vec<u8>) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                let s =
+                    std::str::from_utf8(&v).map_err(|e| serde::de::Error::custom(e.to_string()))?;
+                Ok(Uri::from(s))
+            }
+        }
+
+        deserializer.deserialize_string(UriVisitor)
     }
 }

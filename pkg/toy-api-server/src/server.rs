@@ -2,7 +2,7 @@ use crate::api::{graph, rbac, services, supervisors, task};
 use crate::config::ServerConfig;
 use crate::context::{ServerState, WrappedState};
 use crate::store::kv::KvStore;
-use crate::task::store::TaskLogStore;
+use crate::store::task_event::TaskEventStore;
 use std::net::SocketAddr;
 use tower_http::cors::CorsLayer;
 use tower_http::trace::TraceLayer;
@@ -35,7 +35,7 @@ where
         if let Err(e) = state.kv_store_mut().establish(c.clone()) {
             tracing::error!("kv store connection failed. error:{:?}", e);
         }
-        if let Err(e) = state.task_log_store_mut().establish(c.clone()) {
+        if let Err(e) = state.task_event_store_mut().establish(c.clone()) {
             tracing::error!("task log store connection failed. error:{:?}", e);
         }
 
@@ -88,8 +88,9 @@ where
             .route("/rbac/roleBindings", get(rbac::role_binding::list))
             .route("/tasks", get(task::list).post(task::post))
             .route("/tasks/:key", get(task::find))
-            .route("/tasks/:key/log", get(task::log))
             .route("/tasks/:key/finish", post(task::finish))
+            .route("/tasks/events", post(task::post_task_event))
+            .route("/tasks/events/:key", get(task::find_task_event))
             .layer(CorsLayer::very_permissive())
             .layer(TraceLayer::new_for_http())
             .with_state(WrappedState::new(state));

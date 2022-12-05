@@ -25,6 +25,12 @@ pub enum Error {
         backtrace: Backtrace,
     },
 
+    #[error(transparent)]
+    HError {
+        #[from]
+        source: toy::api_client::toy_h::error::HError,
+    },
+
     #[error("error: {:?}", source)]
     JsonDeserializeError {
         #[from]

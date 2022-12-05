@@ -1,5 +1,6 @@
 use crate::beat::beat;
 use crate::event_export::event_export;
+use crate::exporters::ToyExporter;
 use crate::metrics::{EventCache, SupervisorMetrics};
 use crate::msg::Request;
 use crate::task::RunningTask;
@@ -74,13 +75,13 @@ pub struct Supervisor<TF, P, C, Config> {
     /// send shutdown.
     tx_shutdown: Outgoing<(), ServiceError>,
     ctx: SupervisorContext<C>,
-    addr: Option<SocketAddr>,
     config: Config,
 }
 
 #[derive(Debug, Clone)]
 pub struct SupervisorContext<C> {
     name: String,
+    addr: Option<SocketAddr>,
     client: Option<C>,
     tasks: Arc<Mutex<HashMap<TaskId, RunningTask>>>,
     started_at: Option<DateTime<Utc>>,
@@ -122,6 +123,7 @@ where
                 tx_shutdown,
                 ctx: SupervisorContext {
                     name: name.into(),
+                    addr,
                     client,
                     tasks: Arc::new(Mutex::new(HashMap::new())),
                     started_at: None,
@@ -131,7 +133,6 @@ where
                     metrics: SupervisorMetrics::new(),
                     events: EventCache::new(),
                 },
-                addr,
                 config,
             },
             tx_req,
@@ -169,9 +170,8 @@ where
 
                         self.ctx.metrics.inc_task_start_count();
                         let tasks = Arc::clone(&self.ctx.tasks);
-                        let metrics = self.ctx.metrics.new_task_metrics(id).await;
                         let events = self.ctx.events.new_task_events(id).await;
-                        let ctx = TaskContext::with_parts(id, g, metrics, events);
+                        let ctx = TaskContext::with_parts(id, g, events);
                         let app = Arc::clone(&self.app);
                         let client = self.ctx.client.clone().unwrap();
                         let _ = toy_rt::spawn_named(
@@ -265,12 +265,12 @@ where
     }
 
     fn spawn_server(&mut self) {
-        if self.addr.is_none() {
+        if self.ctx.addr().is_none() {
             return;
         }
 
         let ctx = self.ctx.clone();
-        let addr = self.addr.unwrap().clone();
+        let addr = ctx.addr().unwrap().clone();
         let config = self.config.clone();
         let (tx, rx) = mpsc::channel::<(), SupervisorError>(10);
         self.ctx.tx_http_server_shutdown = Some(tx);
@@ -283,9 +283,9 @@ where
                 let event_interval = config.event_export_interval_mills();
                 tracing::info!(?name, "start server.");
                 let server = crate::http::Server::new(ctx.clone());
-                let f1 = server.run(addr, config, rx);
-                let f2 = beat(c, name.clone(), beat_interval);
-                let f3 = event_export(&ctx, event_interval);
+                let f1 = server.run(addr, config.clone(), rx);
+                let f2 = beat(c.clone(), name.clone(), beat_interval);
+                let f3 = event_export(&ctx, Some(ToyExporter::new(&c)), event_interval);
                 futures_util::pin_mut!(f1);
                 futures_util::pin_mut!(f2);
                 futures_util::pin_mut!(f3);
@@ -305,7 +305,7 @@ where
             self.ctx.name.clone(),
             Utc::now(),
             Vec::new(),
-            self.addr.unwrap(),
+            self.ctx.addr().unwrap(),
         );
 
         let c = self.ctx.client.as_ref().unwrap();
@@ -381,6 +381,10 @@ impl<TF, P, C, Config> std::fmt::Debug for Supervisor<TF, P, C, Config> {
 impl<C> SupervisorContext<C> {
     pub fn name(&self) -> &str {
         &self.name
+    }
+
+    pub fn addr(&self) -> Option<SocketAddr> {
+        self.addr
     }
 
     pub async fn tasks(&self) -> Vec<(TaskId, String)> {

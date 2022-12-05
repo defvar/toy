@@ -14,6 +14,12 @@ pub enum SupervisorError {
     },
 
     #[error(transparent)]
+    ApiClientError {
+        #[from]
+        source: toy_api_client::error::ApiClientError,
+    },
+
+    #[error(transparent)]
     ParseGraphConfigFailed {
         #[from]
         source: ConfigError,

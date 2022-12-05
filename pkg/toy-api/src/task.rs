@@ -6,6 +6,7 @@ use crate::supervisors::SupervisorName;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use toy_core::prelude::TaskId;
+use toy_core::Uri;
 
 #[derive(Debug, Copy, Clone, Serialize, Deserialize)]
 pub enum PendingStatus {
@@ -59,20 +60,19 @@ pub enum FinishResponse {
     NotFound { id: TaskId },
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct TaskLog {
-    task_id: TaskId,
-    payload: Vec<TaskLogInner>,
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TaskEventList {
+    items: Vec<TaskEvent>,
     count: u32,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct TaskLogInner {
-    message: String,
-    target: String,
-    graph: String,
-    uri: Option<String>,
-    level: String,
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TaskEvent {
+    task_id: TaskId,
+    name: String,
+    uri: Uri,
+    event: String,
+    timestamp: DateTime<Utc>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -229,26 +229,32 @@ impl Default for AllocateStatus {
     }
 }
 
-impl TaskLog {
-    pub fn new(task_id: TaskId, payload: Vec<TaskLogInner>) -> Self {
-        let count = payload.len() as u32;
-        Self {
-            task_id,
-            payload,
-            count,
-        }
+impl TaskEventList {
+    pub fn new(items: Vec<TaskEvent>) -> Self {
+        let count = items.len() as u32;
+        Self { items, count }
     }
 }
 
-impl TaskLogInner {
-    pub fn new<S: Into<String>>(message: S, target: S, graph: S, uri: Option<S>, level: S) -> Self {
+impl TaskEvent {
+    pub fn new<S: Into<String>>(
+        task_id: TaskId,
+        name: S,
+        uri: Uri,
+        event: S,
+        timestamp: DateTime<Utc>,
+    ) -> Self {
         Self {
-            message: message.into(),
-            target: target.into(),
-            graph: graph.into(),
-            uri: uri.map(Into::into),
-            level: level.into(),
+            task_id,
+            name: name.into(),
+            uri,
+            event: event.into(),
+            timestamp,
         }
+    }
+
+    pub fn task_id(&self) -> TaskId {
+        self.task_id
     }
 }
 
@@ -318,22 +324,6 @@ pub struct AllocateOption {
 }
 
 impl AllocateOption {
-    pub fn new() -> Self {
-        Self { format: None }
-    }
-
-    pub fn format(&self) -> Option<Format> {
-        self.format
-    }
-}
-
-/// Log api option.
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct LogOption {
-    format: Option<Format>,
-}
-
-impl LogOption {
     pub fn new() -> Self {
         Self { format: None }
     }

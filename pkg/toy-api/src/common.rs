@@ -84,6 +84,22 @@ impl CommonPutResponse {
     }
 }
 
+/// Common response for post-based api.
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct CommonPostResponse {
+    code: u16,
+}
+
+impl CommonPostResponse {
+    pub fn with_code(code: u16) -> Self {
+        Self { code }
+    }
+
+    pub fn code(&self) -> u16 {
+        self.code
+    }
+}
+
 /// Common option items for find-based api.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct FindOption {

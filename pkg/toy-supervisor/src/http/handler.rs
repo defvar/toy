@@ -102,7 +102,7 @@ where
     }
 }
 
-pub async fn log<C>(
+pub async fn event_buffers<C>(
     State(ctx): State<SupervisorContext<C>>,
     Query(opt): Query<PostOption>,
 ) -> Result<impl IntoResponse, SupervisorError>
@@ -129,7 +129,6 @@ where
     let r = Metrics {
         name: ctx.name().to_string(),
         task_start_count: ctx.metrics().task_start_count(),
-        tasks: ctx.metrics().task_metrics().await,
     };
 
     Ok(toy_api_http_common::reply::into_response(

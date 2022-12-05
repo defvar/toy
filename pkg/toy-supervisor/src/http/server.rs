@@ -36,7 +36,7 @@ where
             .route("/status", get(handler::status))
             .route("/services", get(handler::services))
             .route("/tasks", post(handler::tasks))
-            .route("/log", get(handler::log))
+            .route("/event_buffers", get(handler::event_buffers))
             .route("/metrics", get(handler::metrics))
             .route("/shutdown", put(handler::shutdown))
             .with_state(self.ctx);

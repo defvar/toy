@@ -10,7 +10,6 @@ members = [
     "toy-api-http-common",
     "toy-api-server",
     "toy-api-store-etcd",
-    "toy-api-store-glogging",
     "toy-api-auth-jwt",
     "toy-tracing"
 ]

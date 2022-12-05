@@ -1,7 +1,46 @@
+use crate::metrics::{Counter, Gauge};
 use crate::prelude::TaskId;
-use crate::Uri;
+use crate::{ServiceType, Uri};
+use chrono::{DateTime, Utc};
 use serde::Serialize;
 use std::collections::VecDeque;
+
+#[derive(Debug, Clone, Serialize)]
+pub enum MetricsEvent {
+    StartTask,
+    FinishTask,
+    StartService,
+    FinishService,
+    SendRequest,
+    ReceiveRequest,
+    ReceiveStop,
+    ReceiveUpstreamFinish,
+    FinishUpstreamFinish,
+    FinishUpstreamFinishAll,
+    CustomEvent(String),
+    CustomCounter(String, Counter),
+    CustomGauge(String, Gauge),
+}
+
+impl MetricsEvent {
+    pub fn as_event_text(&self) -> &str {
+        match self {
+            MetricsEvent::StartTask => "StartTask",
+            MetricsEvent::FinishTask => "FinishTask",
+            MetricsEvent::StartService => "StartService",
+            MetricsEvent::FinishService => "FinishService",
+            MetricsEvent::SendRequest => "SendRequest",
+            MetricsEvent::ReceiveRequest => "ReceiveRequest",
+            MetricsEvent::ReceiveStop => "ReceiveStop",
+            MetricsEvent::ReceiveUpstreamFinish => "ReceiveUpstreamFinish",
+            MetricsEvent::FinishUpstreamFinish => "FinishUpstreamFinish",
+            MetricsEvent::FinishUpstreamFinishAll => "FinishUpstreamFinishAll",
+            MetricsEvent::CustomEvent(e) => e,
+            MetricsEvent::CustomCounter(e, _) => e,
+            MetricsEvent::CustomGauge(e, _) => e,
+        }
+    }
+}
 
 #[derive(Debug, Clone, Serialize)]
 pub struct Events {
@@ -29,32 +68,71 @@ impl Events {
 #[derive(Debug, Clone, Serialize)]
 pub struct EventRecord {
     id: TaskId,
-    uri: Option<Uri>,
-    event: String,
-    timestamp: f64,
+    name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    service_type: Option<ServiceType>,
+    uri: Uri,
+    event: MetricsEvent,
+    timestamp: DateTime<Utc>,
 }
 
 impl EventRecord {
-    pub fn task_event(id: TaskId, event: impl Into<String>, timestamp: f64) -> EventRecord {
+    pub fn with_task(
+        id: TaskId,
+        name: impl Into<String>,
+        uri: impl Into<Uri>,
+        event: MetricsEvent,
+        timestamp: DateTime<Utc>,
+    ) -> EventRecord {
         Self {
             id,
-            uri: None,
-            event: event.into(),
+            name: name.into(),
+            service_type: None,
+            uri: uri.into(),
+            event,
             timestamp,
         }
     }
 
-    pub fn service_event(
+    pub fn with_service(
         id: TaskId,
-        uri: &Uri,
-        event: impl Into<String>,
-        timestamp: f64,
+        name: impl Into<String>,
+        service_type: impl Into<ServiceType>,
+        uri: impl Into<Uri>,
+        event: MetricsEvent,
+        timestamp: DateTime<Utc>,
     ) -> EventRecord {
         Self {
             id,
-            uri: Some(uri.clone()),
-            event: event.into(),
+            name: name.into(),
+            service_type: Some(service_type.into()),
+            uri: uri.into(),
+            event,
             timestamp,
         }
+    }
+
+    pub fn id(&self) -> TaskId {
+        self.id
+    }
+
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
+    pub fn service_type(&self) -> Option<&ServiceType> {
+        self.service_type.as_ref()
+    }
+
+    pub fn uri(&self) -> &Uri {
+        &self.uri
+    }
+
+    pub fn event(&self) -> &MetricsEvent {
+        &self.event
+    }
+
+    pub fn timestamp(&self) -> &DateTime<Utc> {
+        &self.timestamp
     }
 }

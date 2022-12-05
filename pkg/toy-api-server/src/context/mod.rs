@@ -1,7 +1,7 @@
 use crate::async_trait::async_trait;
 use crate::authentication::{Auth, AuthUser};
 use crate::store::kv::KvStore;
-use crate::task::store::TaskLogStore;
+use crate::store::task_event::TaskEventStore;
 use crate::ApiError;
 use toy_api_http_common::axum::{extract::FromRequestParts, http::request::Parts};
 use toy_h::HttpClient;
@@ -15,7 +15,7 @@ pub trait ServerState: Clone + Send + Sync {
     type Client: HttpClient;
     type Auth: Auth<Self::Client> + 'static;
     type KvStore: KvStore<Self::Client> + 'static;
-    type TaskLogStore: TaskLogStore<Self::Client> + 'static;
+    type TaskEventStore: TaskEventStore<Self::Client> + 'static;
 
     fn client(&self) -> &Self::Client;
 
@@ -25,9 +25,9 @@ pub trait ServerState: Clone + Send + Sync {
 
     fn kv_store_mut(&mut self) -> &mut Self::KvStore;
 
-    fn task_log_store(&self) -> &Self::TaskLogStore;
+    fn task_event_store(&self) -> &Self::TaskEventStore;
 
-    fn task_log_store_mut(&mut self) -> &mut Self::TaskLogStore;
+    fn task_event_store_mut(&mut self) -> &mut Self::TaskEventStore;
 }
 
 #[derive(Debug, Clone)]

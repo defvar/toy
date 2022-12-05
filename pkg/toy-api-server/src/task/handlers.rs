@@ -1,13 +1,15 @@
 use crate::common::constants;
 use crate::context::Context;
 use crate::store::kv::{KvStore, Put, PutOption, PutResult, Update, UpdateResult};
-use crate::task::store::{List, ListOption, TaskLogStore};
-use crate::{common, ApiError};
+use crate::store::task_event::{
+    CreateOption, FindOption, ListOption, TaskEventStore, TaskEventStoreOps,
+};
+use crate::ApiError;
 use chrono::{Duration, Utc};
-use toy_api::common::{ListOptionLike, PostOption};
+use toy_api::common::{self as api_common, CommonPostResponse, ListOptionLike};
 use toy_api::graph::Graph;
 use toy_api::selection::selector::Selector;
-use toy_api::task::{FinishResponse, LogOption, PendingResult, PendingTask, TaskListOption};
+use toy_api::task::{FinishResponse, PendingResult, PendingTask, TaskEvent, TaskListOption};
 use toy_api_http_common::axum::http::StatusCode;
 use toy_api_http_common::axum::response::IntoResponse;
 use toy_api_http_common::bytes::Bytes;
@@ -17,14 +19,14 @@ use toy_h::HttpClient;
 
 pub async fn post<T>(
     ctx: Context,
-    opt: PostOption,
+    opt: api_common::PostOption,
     request: Bytes,
     store: &impl KvStore<T>,
 ) -> Result<impl IntoResponse, ApiError>
 where
     T: HttpClient,
 {
-    tracing::trace!("handle: {:?}", ctx);
+    tracing::debug!("handle: {:?}", ctx);
 
     let format = opt.format();
     let v = codec::decode::<_, Graph>(request, format)?;
@@ -35,7 +37,7 @@ where
 
     let id = TaskId::new();
     let pending = PendingTask::new(id, v);
-    let key = common::constants::pending_key(id);
+    let key = constants::pending_key(id);
     match store
         .ops()
         .put(
@@ -60,12 +62,12 @@ pub async fn finish<T>(
     ctx: Context,
     store: &impl KvStore<T>,
     key: String,
-    api_opt: PostOption,
+    api_opt: api_common::PostOption,
 ) -> Result<impl IntoResponse, ApiError>
 where
     T: HttpClient,
 {
-    tracing::trace!("handle: {:?}", ctx);
+    tracing::debug!("handle: {:?}", ctx);
 
     let id = TaskId::parse_str(&key);
     if id.is_err() {
@@ -97,12 +99,12 @@ where
 pub async fn list<T>(
     ctx: Context,
     opt: TaskListOption,
-    log_store: &impl TaskLogStore<T>,
+    log_store: &impl TaskEventStore<T>,
 ) -> Result<impl IntoResponse, ApiError>
 where
     T: HttpClient,
 {
-    tracing::trace!("handle: {:?}", ctx);
+    tracing::debug!("handle: {:?}", ctx);
 
     let dt = opt.timestamp().unwrap_or(Utc::now() - Duration::days(1));
     let store_opt = ListOption::new()
@@ -122,30 +124,59 @@ where
     }
 }
 
-pub async fn log<T>(
+pub async fn post_task_event<T>(
     ctx: Context,
-    key: String,
-    opt: LogOption,
-    log_store: &impl TaskLogStore<T>,
+    opt: api_common::PostOption,
+    request: Bytes,
+    event_store: &impl TaskEventStore<T>,
 ) -> Result<impl IntoResponse, ApiError>
 where
     T: HttpClient,
 {
-    tracing::trace!("handle: {:?}", ctx);
+    tracing::debug!("handle: {:?}", ctx);
 
-    use crate::task::store::{FindLog, FindOption};
+    let format = opt.format();
+    let v = codec::decode::<_, Vec<TaskEvent>>(request, format)?;
+
+    match event_store
+        .ops()
+        .create(event_store.con().unwrap(), v, CreateOption::new())
+        .await
+    {
+        Ok(()) => {
+            let r = CommonPostResponse::with_code(StatusCode::CREATED.as_u16());
+            let r = reply::into_response(&r, format, opt.indent());
+            Ok((StatusCode::CREATED, r))
+        }
+        Err(e) => {
+            tracing::error!("error:{:?}", e);
+            Err(ApiError::store_operation_failed(e))
+        }
+    }
+}
+
+pub async fn find_task_event<T>(
+    ctx: Context,
+    key: String,
+    opt: toy_api::common::FindOption,
+    event_store: &impl TaskEventStore<T>,
+) -> Result<impl IntoResponse, ApiError>
+where
+    T: HttpClient,
+{
+    tracing::debug!("handle: {:?}", ctx);
+
     let id = match TaskId::parse_str(&key) {
         Ok(id) => id,
         Err(_) => return Err(ApiError::task_id_invalid_format(key.to_string())),
     };
 
-    let format = opt.format();
-    match log_store
+    match event_store
         .ops()
-        .find(log_store.con().unwrap(), id, FindOption::new())
+        .find(event_store.con().unwrap(), id, FindOption::new())
         .await
     {
-        Ok(Some(v)) => Ok(reply::into_response(&v, format, None)),
+        Ok(Some(v)) => Ok(reply::into_response(&v, opt.format(), opt.indent())),
         Ok(None) => Ok(StatusCode::NOT_FOUND.into_response()),
         Err(e) => {
             tracing::error!("error:{:?}", e);

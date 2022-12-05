@@ -2,8 +2,9 @@
 //!
 
 use crate::graph::Graph;
-use crate::metrics::{EventRecord, Events, TaskMetrics};
-use crate::Uri;
+use crate::metrics::{EventRecord, Events, MetricsEvent};
+use crate::{ServiceType, Uri};
+use chrono::Utc;
 use serde::{de::Visitor, Deserialize, Deserializer, Serialize, Serializer};
 use std::fmt;
 use std::fmt::Formatter;
@@ -24,9 +25,8 @@ pub struct TaskId {
 #[derive(Clone)]
 pub struct TaskContext {
     inner: Arc<Inner>,
-    uri: Option<Uri>,
+    uri: Uri,
     current_span: Option<tracing::Span>,
-    metrics: Arc<TaskMetrics>,
     events: Arc<Mutex<Events>>,
 }
 
@@ -53,13 +53,13 @@ impl TaskId {
 }
 
 impl fmt::Display for TaskId {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         self.id.fmt(f)
     }
 }
 
 impl fmt::Debug for TaskId {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         self.id.fmt(f)
     }
 }
@@ -73,58 +73,46 @@ impl Default for TaskId {
 macro_rules! task_span {
     ($name: ident, $level: ident) => {
         pub fn $name(&self) -> tracing::span::Span {
-            match self.uri() {
-              Some(uri) => {
-                  tracing::span!(tracing::Level::$level, "Task", task=%self.id(), graph=%self.name(), uri=%uri)
-               }
-               None => {
-                  tracing::span!(tracing::Level::$level, "Task", task=%self.id(), graph=%self.name())
-               }
-            }
-         }
+            tracing::span!(tracing::Level::$level, "Task", task=%self.id(), graph=%self.name(), uri=%self.uri())
+        }
     };
 }
 
 impl TaskContext {
     pub fn new(id: TaskId, graph: Graph) -> Self {
+        let task_name = graph.name().to_owned();
         Self {
             inner: Arc::new(Inner {
                 id,
                 started_at: SystemTime::now(),
                 graph,
             }),
-            uri: None,
+            uri: Uri::from(task_name),
             current_span: None,
-            metrics: Arc::new(TaskMetrics::new()),
             events: Arc::new(Mutex::new(Events::new())),
         }
     }
 
-    pub fn with_parts(
-        id: TaskId,
-        graph: Graph,
-        metrics: Arc<TaskMetrics>,
-        events: Arc<Mutex<Events>>,
-    ) -> Self {
+    pub fn with_parts(id: TaskId, graph: Graph, events: Arc<Mutex<Events>>) -> Self {
+        let task_name = graph.name().to_owned();
         Self {
             inner: Arc::new(Inner {
                 id,
                 started_at: SystemTime::now(),
                 graph,
             }),
-            uri: None,
+            uri: Uri::from(task_name),
             current_span: None,
-            metrics,
             events,
         }
     }
 
     pub fn with_uri(self, uri: &Uri) -> Self {
+        let task_name = self.name().to_owned();
         Self {
             inner: self.inner,
-            uri: Some(uri.clone()),
+            uri: Uri::from(format!("{}/{}", task_name, uri.clone())),
             current_span: self.current_span,
-            metrics: self.metrics,
             events: self.events,
         }
     }
@@ -145,8 +133,8 @@ impl TaskContext {
         self.inner.graph.name()
     }
 
-    pub fn uri(&self) -> Option<Uri> {
-        self.uri.as_ref().map(|x| x.clone())
+    pub fn uri(&self) -> &Uri {
+        &self.uri
     }
 
     /// Get current span.
@@ -162,18 +150,42 @@ impl TaskContext {
     task_span!(debug_span, DEBUG);
     task_span!(info_span, INFO);
 
-    pub fn metrics(&self) -> &TaskMetrics {
-        &self.metrics
-    }
-
     pub async fn push_event(&self, e: EventRecord) {
         let mut lock = self.events.lock().await;
         lock.push(e);
     }
+
+    pub async fn push_task_event(&self, event: MetricsEvent) {
+        let mut lock = self.events.lock().await;
+        lock.push(EventRecord::with_task(
+            self.id(),
+            self.name(),
+            &self.uri,
+            event,
+            Utc::now(),
+        ));
+    }
+
+    pub async fn push_service_event(
+        &self,
+        uri: &Uri,
+        service_type: &ServiceType,
+        event: MetricsEvent,
+    ) {
+        let mut lock = self.events.lock().await;
+        lock.push(EventRecord::with_service(
+            self.id(),
+            self.name(),
+            service_type,
+            uri,
+            event,
+            Utc::now(),
+        ));
+    }
 }
 
 impl fmt::Debug for TaskContext {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         f.debug_struct("TaskContext")
             .field("id", &self.inner.id)
             .field("started_at", &self.inner.started_at)

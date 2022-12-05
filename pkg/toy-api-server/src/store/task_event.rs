@@ -3,18 +3,17 @@
 use crate::store::error::StoreError;
 use crate::store::StoreConnection;
 use std::fmt;
-use std::future::Future;
 use toy_api::selection::selector::Selector;
-use toy_api::task::{TaskLog, Tasks};
+use toy_api::task::{TaskEvent, TaskEventList, Tasks};
 use toy_core::task::TaskId;
 
-/// This trait represents the concept of a Log Store.
+/// This trait represents the concept of a task event Store.
 ///
 ///  - Create or get establish connection.
 ///  - Get composit operation trait.
-pub trait TaskLogStore<T>: Clone + Send + Sync {
+pub trait TaskEventStore<T>: Clone + Send + Sync {
     type Con: StoreConnection;
-    type Ops: TaskLogStoreOps<Self::Con>;
+    type Ops: TaskEventStoreOps<Con = Self::Con>;
 
     fn con(&self) -> Option<Self::Con>;
 
@@ -23,31 +22,30 @@ pub trait TaskLogStore<T>: Clone + Send + Sync {
     fn establish(&mut self, client: T) -> Result<(), StoreError>;
 }
 
-/// Trait Composit log store operations.
-pub trait TaskLogStoreOps<C>: Send + Sync + FindLog<Con = C> + List<Con = C>
-where
-    C: StoreConnection,
-{
-}
-
-/// Find task log.
-pub trait FindLog {
+/// Trait task event store operations.
+#[async_trait::async_trait]
+pub trait TaskEventStoreOps: Send + Sync {
     type Con: StoreConnection;
-    type T: Future<Output = Result<Option<TaskLog>, Self::Err>> + Send;
     type Err: fmt::Debug + Send;
 
-    /// Find task log by specified task id.
-    fn find(&self, con: Self::Con, task_id: TaskId, opt: FindOption) -> Self::T;
-}
-
-/// List task info.
-pub trait List {
-    type Con: StoreConnection;
-    type T: Future<Output = Result<Tasks, Self::Err>> + Send;
-    type Err: fmt::Debug + Send;
+    /// Find task events by specified task id.
+    async fn find(
+        &self,
+        con: Self::Con,
+        task_id: TaskId,
+        opt: FindOption,
+    ) -> Result<Option<TaskEventList>, Self::Err>;
 
     /// List task info by time span.
-    fn list(&self, con: Self::Con, opt: ListOption) -> Self::T;
+    async fn list(&self, con: Self::Con, opt: ListOption) -> Result<Tasks, Self::Err>;
+
+    /// create task events.
+    async fn create(
+        &self,
+        con: Self::Con,
+        events: Vec<TaskEvent>,
+        opt: CreateOption,
+    ) -> Result<(), Self::Err>;
 }
 
 #[derive(Clone, Debug)]
@@ -57,6 +55,9 @@ pub struct FindOption {}
 pub struct ListOption {
     selection: Selector,
 }
+
+#[derive(Clone, Debug)]
+pub struct CreateOption {}
 
 impl FindOption {
     pub fn new() -> Self {
@@ -77,5 +78,11 @@ impl ListOption {
 
     pub fn selection(&self) -> &Selector {
         &self.selection
+    }
+}
+
+impl CreateOption {
+    pub fn new() -> Self {
+        Self {}
     }
 }

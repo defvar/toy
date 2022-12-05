@@ -3,7 +3,6 @@ mod server;
 
 use serde::Serialize;
 pub use server::Server;
-use toy_core::metrics::TaskMetrics;
 use toy_core::task::TaskId;
 
 #[derive(Serialize)]
@@ -18,5 +17,4 @@ pub struct Status {
 pub struct Metrics {
     pub(crate) name: String,
     pub(crate) task_start_count: u64,
-    pub(crate) tasks: Vec<(TaskId, TaskMetrics)>,
 }

@@ -39,13 +39,13 @@ pub struct HttpRbacClient {
 impl HttpApiClient {
     pub fn new<P: AsRef<str>>(root: P, auth: Auth) -> Result<Self, ApiClientError> {
         let client = ReqwestClient::new()?;
-        HttpApiClient::from(root, auth, client)
+        HttpApiClient::from(root, auth, &client)
     }
 
     pub fn from<P: AsRef<str>>(
         root: P,
         auth: Auth,
-        inner: ReqwestClient,
+        inner: &ReqwestClient,
     ) -> Result<Self, ApiClientError> {
         let auth = Arc::new(auth);
         let rbac = HttpRbacClient::from(root.as_ref(), Arc::clone(&auth), inner.clone())?;

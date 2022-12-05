@@ -6,7 +6,7 @@ use clap::Parser;
 use std::net::SocketAddr;
 use toy::api_server::authentication::CommonAuths;
 use toy::api_server::context::ServerState;
-use toy::api_server::task::btree_log_store::BTreeLogStore;
+use toy::api_server::store::task_log_btree::BTreeLogStore;
 use toy::api_server::ServerConfig;
 use toy_api_auth_jwt::JWTAuth;
 use toy_api_store_etcd::EtcdStore;
@@ -64,7 +64,7 @@ impl ServerState for ToyState {
     type Client = ReqwestClient;
     type Auth = CommonAuths<JWTAuth, JWTAuth>;
     type KvStore = EtcdStore<ReqwestClient>;
-    type TaskLogStore = BTreeLogStore<ReqwestClient>;
+    type TaskEventStore = BTreeLogStore<ReqwestClient>;
 
     fn client(&self) -> &Self::Client {
         &self.client
@@ -82,11 +82,11 @@ impl ServerState for ToyState {
         &mut self.kv_store
     }
 
-    fn task_log_store(&self) -> &Self::TaskLogStore {
+    fn task_event_store(&self) -> &Self::TaskEventStore {
         &self.task_log_store
     }
 
-    fn task_log_store_mut(&mut self) -> &mut Self::TaskLogStore {
+    fn task_event_store_mut(&mut self) -> &mut Self::TaskEventStore {
         &mut self.task_log_store
     }
 }

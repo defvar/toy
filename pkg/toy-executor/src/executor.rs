@@ -1,11 +1,11 @@
 use async_trait::async_trait;
 use serde::de::DeserializeOwned;
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::time::SystemTime;
 use toy_core::data::{self, Frame};
 use toy_core::error::ServiceError;
 use toy_core::executor::{ServiceExecutor, TaskExecutor, TaskExecutorFactory};
 use toy_core::graph::Graph;
-use toy_core::metrics::EventRecord;
+use toy_core::metrics::MetricsEvent;
 use toy_core::mpsc::{Incoming, Outgoing};
 use toy_core::node_channel::{self, Awaiter, Incomings, Outgoings, SignalOutgoings, Starters};
 use toy_core::registry::{App, Registry};
@@ -121,13 +121,7 @@ impl Executor {
                 }
             }
         }
-        awaiter_ctx
-            .push_event(EventRecord::task_event(
-                awaiter_ctx.id(),
-                Operation::FinishTask,
-                now(),
-            ))
-            .await;
+        awaiter_ctx.push_task_event(MetricsEvent::FinishTask).await;
         Ok(())
     }
 }
@@ -215,13 +209,7 @@ impl TaskExecutor for Executor {
             "{}",
             Operation::StartTask.as_message()
         );
-        self.ctx
-            .push_event(EventRecord::task_event(
-                self.ctx.id(),
-                Operation::StartTask,
-                now(),
-            ))
-            .await;
+        self.ctx.push_task_event(MetricsEvent::StartTask).await;
         // need to reverse ....
         let nodes = self
             .graph
@@ -271,7 +259,7 @@ where
     let info_span = task_ctx.info_span();
     task_ctx.set_span(info_span.clone());
 
-    let uri = task_ctx.uri().unwrap();
+    let uri = task_ctx.uri();
 
     tracing::info!(
         parent: &info_span,
@@ -283,14 +271,8 @@ where
     );
 
     task_ctx
-        .push_event(EventRecord::service_event(
-            task_ctx.id(),
-            &uri,
-            Operation::StartService,
-            now(),
-        ))
+        .push_service_event(&uri, &service_type, MetricsEvent::StartService)
         .await;
-    task_ctx.metrics().inc_service_start_count();
 
     sc = service.started(task_ctx.clone(), sc.into());
 
@@ -302,9 +284,16 @@ where
             ServiceContext::Next(_) => Some(Ok(Frame::default())),
         };
 
+        task_ctx
+            .push_service_event(&uri, &service_type, MetricsEvent::ReceiveRequest)
+            .await;
+
         match item {
             Some(Ok(req)) if req.is_stop() => {
                 tracing::info!(parent: &info_span, ?uri, "receive stop signal.");
+                task_ctx
+                    .push_service_event(&uri, &service_type, MetricsEvent::ReceiveStop)
+                    .await;
                 break;
             }
             Some(Ok(req)) if req.is_upstream_finish() => {
@@ -316,36 +305,47 @@ where
                     upstream_count,
                     "receive upstream finish signal."
                 );
+                task_ctx
+                    .push_service_event(&uri, &service_type, MetricsEvent::ReceiveUpstreamFinish)
+                    .await;
                 {
                     let tx = tx.clone();
-                    let task_ctx = task_ctx.clone();
-                    sc = service
-                        .upstream_finish(task_ctx, sc.into(), req, tx)
-                        .await?;
+                    let ctx = task_ctx.clone();
+                    sc = service.upstream_finish(ctx, sc.into(), req, tx).await?;
+                    task_ctx
+                        .push_service_event(&uri, &service_type, MetricsEvent::FinishUpstreamFinish)
+                        .await;
                 }
                 if finish_count >= upstream_count {
                     tracing::info!(parent: &info_span, ?uri, "all upstream finish.");
                     let tx = tx.clone();
-                    let task_ctx = task_ctx.clone();
-                    sc = service.upstream_finish_all(task_ctx, sc.into(), tx).await?;
+                    let ctx = task_ctx.clone();
+                    sc = service.upstream_finish_all(ctx, sc.into(), tx).await?;
+                    task_ctx
+                        .push_service_event(
+                            &uri,
+                            &service_type,
+                            MetricsEvent::FinishUpstreamFinishAll,
+                        )
+                        .await;
                 }
             }
             Some(Ok(req)) => {
-                task_ctx.metrics().inc_request_receive_count();
                 let tx = tx.clone();
                 sc = {
                     let task_ctx = task_ctx.clone();
-                    task_ctx.metrics().inc_request_send_count();
                     service.handle(task_ctx, sc.into(), req, tx).await?
                 };
-                task_ctx.metrics().inc_request_complete_count();
+                task_ctx
+                    .push_service_event(&uri, &service_type, MetricsEvent::SendRequest)
+                    .await;
             }
             Some(Err(e)) => {
                 tracing::error!(parent: &info_span, ?uri, err=?e, "node receive message error");
                 return Err(e);
             }
             None => {
-                on_finish(tx_signal, task_ctx.uri().unwrap()).await;
+                on_finish(tx_signal, task_ctx.uri().clone()).await;
                 break;
             }
         };
@@ -355,18 +355,12 @@ where
     let _ = log_total_time(
         service_starded_at,
         &info_span,
-        Some((&uri, service_type)),
+        Some((&uri, &service_type)),
         Operation::FinishService,
     );
     task_ctx
-        .push_event(EventRecord::service_event(
-            task_ctx.id(),
-            &uri,
-            Operation::FinishService,
-            now(),
-        ))
+        .push_service_event(&uri, &service_type, MetricsEvent::FinishService)
         .await;
-    task_ctx.metrics().inc_service_finish_count();
     Ok(())
 }
 
@@ -384,7 +378,7 @@ async fn on_finish(mut tx: Outgoing<Frame, ServiceError>, uri: Uri) {
 fn log_total_time(
     started_at: SystemTime,
     parent: &Span,
-    uri: Option<(&Uri, ServiceType)>,
+    uri: Option<(&Uri, &ServiceType)>,
     operation: Operation,
 ) -> Option<f64> {
     let now = SystemTime::now();
@@ -405,11 +399,4 @@ fn log_total_time(
         tracing::error!(parent: parent, ?operation, "error, calc total time.");
         None
     }
-}
-
-fn now() -> f64 {
-    SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .map(|x| x.as_secs_f64())
-        .unwrap()
 }

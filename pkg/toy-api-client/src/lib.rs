@@ -17,3 +17,6 @@ pub use toy_api;
 #[cfg(feature = "http")]
 #[doc(hidden)]
 pub use toy_api_http_common::auth::Auth;
+#[cfg(feature = "http")]
+#[doc(hidden)]
+pub use toy_h;

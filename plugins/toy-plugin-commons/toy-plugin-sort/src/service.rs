@@ -9,7 +9,6 @@ use toy_core::prelude::{
     Frame, Outgoing, PortType, Service, ServiceContext, ServiceError, ServiceFactory, ServiceType,
     TaskContext, Value,
 };
-use toy_core::Uri;
 
 #[derive(Clone, Debug)]
 pub struct Sort;
@@ -97,11 +96,7 @@ impl SortContext {
                 }
             }
             BufferFullStrategy::Persist { path: temp_path } => {
-                let name = task_ctx
-                    .uri()
-                    .unwrap_or_else(|| Uri::from("unknown"))
-                    .to_string()
-                    .replace("/", "-");
+                let name = task_ctx.uri().to_string().replace("/", "-");
                 let path = PathBuf::from(temp_path).join(format!(
                     "{}-{}-{}",
                     task_ctx.id().to_string(),
