@@ -69,8 +69,7 @@ impl Events {
 pub struct EventRecord {
     id: TaskId,
     name: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    service_type: Option<ServiceType>,
+    service_type: ServiceType,
     uri: Uri,
     event: MetricsEvent,
     timestamp: DateTime<Utc>,
@@ -87,7 +86,7 @@ impl EventRecord {
         Self {
             id,
             name: name.into(),
-            service_type: None,
+            service_type: ServiceType::noop(),
             uri: uri.into(),
             event,
             timestamp,
@@ -105,7 +104,7 @@ impl EventRecord {
         Self {
             id,
             name: name.into(),
-            service_type: Some(service_type.into()),
+            service_type: service_type.into(),
             uri: uri.into(),
             event,
             timestamp,
@@ -120,8 +119,8 @@ impl EventRecord {
         &self.name
     }
 
-    pub fn service_type(&self) -> Option<&ServiceType> {
-        self.service_type.as_ref()
+    pub fn service_type(&self) -> &ServiceType {
+        &self.service_type
     }
 
     pub fn uri(&self) -> &Uri {

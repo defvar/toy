@@ -1,5 +1,5 @@
+use crate::context::SupervisorContext;
 use crate::exporters::Exporter;
-use crate::supervisor::SupervisorContext;
 use toy_api_client::ApiClient;
 
 pub async fn event_export<C>(
@@ -16,6 +16,7 @@ pub async fn event_export<C>(
             if let Err(e) = ex.export(ctx, vec).await {
                 tracing::error!("{:?}", e);
             }
+            ctx.event_exported().await;
         }
 
         toy_rt::sleep(interval).await;

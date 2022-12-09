@@ -1,11 +1,11 @@
 use crate::beat::beat;
+use crate::context::SupervisorContext;
 use crate::event_export::event_export;
 use crate::exporters::ToyExporter;
-use crate::metrics::{EventCache, SupervisorMetrics};
 use crate::msg::Request;
 use crate::task::RunningTask;
 use crate::{Response, RunTaskResponse, SupervisorConfig, SupervisorError, TaskResponse};
-use chrono::{DateTime, Utc};
+use chrono::Utc;
 use core::future::Future;
 use core::pin::Pin;
 use core::task::{Context, Poll};
@@ -78,21 +78,6 @@ pub struct Supervisor<TF, P, C, Config> {
     config: Config,
 }
 
-#[derive(Debug, Clone)]
-pub struct SupervisorContext<C> {
-    name: String,
-    addr: Option<SocketAddr>,
-    client: Option<C>,
-    tasks: Arc<Mutex<HashMap<TaskId, RunningTask>>>,
-    started_at: Option<DateTime<Utc>>,
-    /// send any request.
-    tx: Outgoing<Request, ServiceError>,
-    schemas: Arc<Vec<ServiceSchema>>,
-    tx_http_server_shutdown: Option<Outgoing<(), SupervisorError>>,
-    metrics: SupervisorMetrics,
-    events: EventCache,
-}
-
 impl<TF, P, C, Config> Supervisor<TF, P, C, Config>
 where
     TF: TaskExecutorFactory + Send + 'static,
@@ -121,18 +106,7 @@ where
                 app: Arc::new(app),
                 rx: rx_req,
                 tx_shutdown,
-                ctx: SupervisorContext {
-                    name: name.into(),
-                    addr,
-                    client,
-                    tasks: Arc::new(Mutex::new(HashMap::new())),
-                    started_at: None,
-                    tx: tx_req.clone(),
-                    schemas: Arc::new(schemas),
-                    tx_http_server_shutdown: None,
-                    metrics: SupervisorMetrics::new(),
-                    events: EventCache::new(),
-                },
+                ctx: SupervisorContext::with(name, addr, client, tx_req.clone(), schemas),
                 config,
             },
             tx_req,
@@ -141,7 +115,7 @@ where
     }
 
     pub async fn oneshot(self, g: Graph) -> Result<RunTaskResponse, ServiceError> {
-        tracing::info!(name=?self.ctx.name, "oneshot supervisor");
+        tracing::info!(name=?self.ctx.name(), "oneshot supervisor");
 
         let id = TaskId::new();
         let ctx = TaskContext::new(id, g);
@@ -152,9 +126,9 @@ where
     }
 
     pub async fn run(mut self) -> Result<(), ()> {
-        tracing::info!(name=?self.ctx.name, "start supervisor");
+        tracing::info!(name=?self.ctx.name(), "start supervisor");
 
-        self.ctx.started_at = Some(Utc::now());
+        self.ctx.set_started_at(Some(Utc::now()));
         if let Err(_) = self.register(self.app.schemas()).await {
             return Err(());
         }
@@ -166,31 +140,38 @@ where
             match r {
                 Ok(m) => match m {
                     Request::RunTask(id, g, tx) => {
-                        tracing::info!(name=?self.ctx.name, "receive run task request.");
+                        tracing::info!(name=?self.ctx.name(), "receive run task request.");
 
-                        self.ctx.metrics.inc_task_start_count();
-                        let tasks = Arc::clone(&self.ctx.tasks);
-                        let events = self.ctx.events.new_task_events(id).await;
-                        let ctx = TaskContext::with_parts(id, g, events);
+                        self.ctx.metrics().inc_task_start_count();
+
                         let app = Arc::clone(&self.app);
-                        let client = self.ctx.client.clone().unwrap();
+                        let ctx = self.ctx.clone();
                         let _ = toy_rt::spawn_named(
                             async move {
-                                let (e, tx_signal) = TF::new(ctx.clone());
-                                let task = RunningTask::new(&ctx, tx_signal);
+                                let tasks = ctx.tasks();
+                                let events = ctx.events().new_task_events(id).await;
+                                let task_ctx = TaskContext::with_parts(id, g, events);
+
+                                let (e, tx_signal) = TF::new(task_ctx.clone());
+                                let task = RunningTask::new(&task_ctx, tx_signal);
                                 {
                                     let mut tasks = tasks.lock().await;
-                                    let _ = tasks.insert(ctx.id(), task);
+                                    let _ = tasks.insert(task_ctx.id(), task);
                                 }
                                 let _ = e.run(&app, Frame::default()).await;
                                 {
                                     let mut tasks = tasks.lock().await;
-                                    let _ = tasks.remove(&ctx.id());
+                                    let _ = tasks.remove(&task_ctx.id());
                                 }
-                                if let Err(e) =
-                                    client.task().finish(ctx.id(), PostOption::new()).await
+                                ctx.task_executed().await;
+                                if let Err(e) = ctx
+                                    .client()
+                                    .unwrap()
+                                    .task()
+                                    .finish(task_ctx.id(), PostOption::new())
+                                    .await
                                 {
-                                    tracing::error!(name=?ctx.name(), err = %e, "an error occured; supervisor.")
+                                    tracing::error!(name=?task_ctx.name(), err = %e, "an error occured; supervisor.")
                                 }
                                 ()
                             },
@@ -200,7 +181,8 @@ where
                     }
                     Request::Tasks(tx) => {
                         let r = {
-                            let tasks = self.ctx.tasks.lock().await;
+                            let tasks = self.ctx.tasks();
+                            let tasks = tasks.lock().await;
                             tasks
                                 .iter()
                                 .map(|(_, v)| TaskResponse {
@@ -213,7 +195,7 @@ where
                         let _ = tx.send_ok(r).await;
                     }
                     Request::Stop(uuid) => {
-                        let tasks = Arc::clone(&self.ctx.tasks);
+                        let tasks = self.ctx.tasks();
                         let mut tasks = tasks.lock().await;
                         if let Some(t) = tasks.get_mut(&uuid) {
                             send_stop_signal(t).await;
@@ -224,40 +206,40 @@ where
                         let _ = tx.send_ok(m).await;
                     }
                     Request::Shutdown => {
-                        tracing::info!(name=?self.ctx.name, "receive shutdown request.");
+                        tracing::info!(name=?self.ctx.name(), "receive shutdown request.");
 
-                        if let Some(mut tx) = self.ctx.tx_http_server_shutdown {
-                            tracing::info!(name=?self.ctx.name, "shutdown api server...");
+                        if let Some(mut tx) = self.ctx.tx_http_server_shutdown() {
+                            tracing::info!(name=?self.ctx.name(), "shutdown api server...");
                             let _ = tx.send_ok(()).await;
                         }
 
-                        tracing::info!(name=?self.ctx.name, "send stop signal all tasks.");
+                        tracing::info!(name=?self.ctx.name(), "send stop signal all tasks.");
                         {
-                            let tasks = Arc::clone(&self.ctx.tasks);
+                            let tasks = self.ctx.tasks();
                             let mut tasks = tasks.lock().await;
                             for (_, t) in tasks.iter_mut() {
                                 send_stop_signal(t).await;
                             }
                         }
-                        tracing::info!(name=?self.ctx.name, "waiting all task stop....");
+                        tracing::info!(name=?self.ctx.name(), "waiting all task stop....");
                         let sd = Shutdown {
-                            tasks: Arc::clone(&self.ctx.tasks),
+                            tasks: Arc::clone(&self.ctx.tasks()),
                         };
                         sd.await;
-                        tracing::info!(name=?self.ctx.name, "all task stopped.");
+                        tracing::info!(name=?self.ctx.name(), "all task stopped.");
                         break;
                     }
                 },
                 Err(e) => {
-                    tracing::error!(name=?self.ctx.name, err = %e, "an error occured; supervisor.")
+                    tracing::error!(name=?self.ctx.name(), err = %e, "an error occured; supervisor.")
                 }
             }
         }
-        tracing::info!(name=?self.ctx.name, "shutdown supervisor.");
+        tracing::info!(name=?self.ctx.name(), "shutdown supervisor.");
         if !self.tx_shutdown.is_closed() {
-            tracing::info!(name=?self.ctx.name, "send shutdown message.");
+            tracing::info!(name=?self.ctx.name(), "send shutdown message.");
             if let Err(e) = self.tx_shutdown.send_ok(()).await {
-                tracing::error!(name=?self.ctx.name, err = %e, "an error occured; supervisor when shutdown.")
+                tracing::error!(name=?self.ctx.name(), err = %e, "an error occured; supervisor when shutdown.")
             }
         }
 
@@ -273,19 +255,19 @@ where
         let addr = ctx.addr().unwrap().clone();
         let config = self.config.clone();
         let (tx, rx) = mpsc::channel::<(), SupervisorError>(10);
-        self.ctx.tx_http_server_shutdown = Some(tx);
+        self.ctx.set_tx_http_server_shutdown(Some(tx));
 
         toy_rt::spawn_named(
             async move {
-                let name = ctx.name.clone();
-                let c = ctx.client.clone().unwrap();
+                let name = ctx.name().to_string();
+                let c = ctx.client().clone().unwrap();
                 let beat_interval = config.heart_beat_interval_mills();
                 let event_interval = config.event_export_interval_mills();
                 tracing::info!(?name, "start server.");
                 let server = crate::http::Server::new(ctx.clone());
                 let f1 = server.run(addr, config.clone(), rx);
                 let f2 = beat(c.clone(), name.clone(), beat_interval);
-                let f3 = event_export(&ctx, Some(ToyExporter::new(&c)), event_interval);
+                let f3 = event_export(&ctx, Some(ToyExporter::new(c)), event_interval);
                 futures_util::pin_mut!(f1);
                 futures_util::pin_mut!(f2);
                 futures_util::pin_mut!(f3);
@@ -297,24 +279,24 @@ where
     }
 
     async fn register(&self, schemas: Vec<ServiceSchema>) -> Result<(), ()> {
-        if self.ctx.client.is_none() {
+        if self.ctx.client().is_none() {
             return Ok(());
         }
 
         let sv = toy_api::supervisors::Supervisor::new(
-            self.ctx.name.clone(),
+            self.ctx.name().to_string(),
             Utc::now(),
             Vec::new(),
             self.ctx.addr().unwrap(),
         );
 
-        let c = self.ctx.client.as_ref().unwrap();
+        let c = self.ctx.client().unwrap();
         if let Err(e) = c
             .supervisor()
-            .put(self.ctx.name.clone(), sv, PutOption::new())
+            .put(self.ctx.name().to_string(), sv, PutOption::new())
             .await
         {
-            tracing::error!(name=?self.ctx.name, err = %e, "an error occured; supervisor when start up.");
+            tracing::error!(name=?self.ctx.name(), err = %e, "an error occured; supervisor when start up.");
             return Err(());
         }
 
@@ -340,7 +322,7 @@ where
                 )
                 .await
             {
-                tracing::error!(name=?self.ctx.name, err = %e, service_type = %key, "an error occured; supervisor when register service.");
+                tracing::error!(name=?self.ctx.name(), err = %e, service_type = %key, "an error occured; supervisor when register service.");
                 return Err(());
             }
         }
@@ -366,57 +348,15 @@ async fn send_stop_signal(task: &mut RunningTask) {
 
 impl<TF, P, C, Config> std::fmt::Debug for Supervisor<TF, P, C, Config> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        let mode = if self.ctx.client.is_none() {
+        let mode = if self.ctx.client().is_none() {
             "local"
         } else {
             "subscribe"
         };
         f.debug_struct("Supervisor")
-            .field("name", &self.ctx.name)
+            .field("name", &self.ctx.name())
             .field("mode", &mode)
             .finish()
-    }
-}
-
-impl<C> SupervisorContext<C> {
-    pub fn name(&self) -> &str {
-        &self.name
-    }
-
-    pub fn addr(&self) -> Option<SocketAddr> {
-        self.addr
-    }
-
-    pub async fn tasks(&self) -> Vec<(TaskId, String)> {
-        let vec = {
-            let tasks = Arc::clone(&self.tasks);
-            let tasks = tasks.lock().await;
-            tasks
-                .iter()
-                .map(|x| (x.0.clone(), x.1.graph().name().to_owned()))
-                .collect()
-        };
-        vec
-    }
-
-    pub fn started_at_str(&self) -> Option<String> {
-        self.started_at.map(|x| x.to_rfc3339())
-    }
-
-    pub fn tx_mut(&mut self) -> &mut Outgoing<Request, ServiceError> {
-        &mut self.tx
-    }
-
-    pub fn schemas(&self) -> &[ServiceSchema] {
-        &self.schemas
-    }
-
-    pub fn events(&self) -> &EventCache {
-        &self.events
-    }
-
-    pub fn metrics(&self) -> &SupervisorMetrics {
-        &self.metrics
     }
 }
 

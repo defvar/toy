@@ -1,5 +1,5 @@
+use crate::context::SupervisorContext;
 use crate::http::handler;
-use crate::supervisor::SupervisorContext;
 use crate::{SupervisorConfig, SupervisorError};
 use std::net::SocketAddr;
 use toy_api_client::ApiClient;

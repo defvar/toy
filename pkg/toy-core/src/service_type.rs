@@ -14,6 +14,10 @@ pub struct ServiceType {
 }
 
 impl ServiceType {
+    pub fn noop() -> ServiceType {
+        ServiceType::new("builtin", "noop").unwrap()
+    }
+
     pub fn new<P: AsRef<str>>(name_space: P, service_name: P) -> Result<ServiceType, ConfigError> {
         let name_space = name_space.as_ref().to_string();
         let service_name = service_name.as_ref().to_string();

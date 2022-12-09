@@ -1,5 +1,5 @@
+use crate::context::SupervisorContext;
 use crate::http::{Metrics, Status};
-use crate::supervisor::SupervisorContext;
 use crate::{Request, RunTaskResponse, SupervisorError};
 use toy_api::common::{ListOptionLike, PostOption};
 use toy_api::services::{ServiceSpec, ServiceSpecListOption};
@@ -25,7 +25,9 @@ where
     let st = Status {
         name: ctx.name().to_owned(),
         started_at: ctx.started_at_str(),
-        running_tasks: ctx.tasks().await,
+        running_tasks: ctx.task_id_and_graph_name().await,
+        last_task_executed_at: ctx.last_task_executed_at().await,
+        last_event_exported_at: ctx.last_event_exported_at().await,
     };
     match toy_pack_json::pack_to_string(&st) {
         Ok(v) => Ok(v),

@@ -16,7 +16,7 @@ impl EventCache {
         }
     }
 
-    pub async fn new_task_events(&mut self, id: TaskId) -> Arc<Mutex<Events>> {
+    pub async fn new_task_events(&self, id: TaskId) -> Arc<Mutex<Events>> {
         let mut lock = self.task_events.lock().await;
         lock.insert(id, Arc::new(Mutex::new(Events::new())));
         lock.get(&id).map(|x| Arc::clone(x)).unwrap()

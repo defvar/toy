@@ -1,4 +1,4 @@
-use crate::supervisor::SupervisorContext;
+use crate::context::SupervisorContext;
 use crate::SupervisorError;
 use toy_api_client::ApiClient;
 use toy_core::metrics::EventRecord;

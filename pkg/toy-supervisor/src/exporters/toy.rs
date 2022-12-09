@@ -1,5 +1,5 @@
+use crate::context::SupervisorContext;
 use crate::exporters::Exporter;
-use crate::supervisor::SupervisorContext;
 use crate::SupervisorError;
 use toy_api::common::PostOption;
 use toy_api::task::TaskEvent;
@@ -29,7 +29,7 @@ where
 {
     async fn export<C>(
         &self,
-        _ctx: &SupervisorContext<C>,
+        ctx: &SupervisorContext<C>,
         events: Vec<EventRecord>,
     ) -> Result<(), SupervisorError>
     where
@@ -40,8 +40,10 @@ where
             body.push(TaskEvent::new(
                 item.id(),
                 item.name(),
+                item.service_type().clone(),
                 item.uri().clone(),
                 item.event().as_event_text(),
+                ctx.name(),
                 item.timestamp().clone(),
             ));
         }

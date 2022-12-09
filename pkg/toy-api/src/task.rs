@@ -6,7 +6,7 @@ use crate::supervisors::SupervisorName;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use toy_core::prelude::TaskId;
-use toy_core::Uri;
+use toy_core::{ServiceType, Uri};
 
 #[derive(Debug, Copy, Clone, Serialize, Deserialize)]
 pub enum PendingStatus {
@@ -70,8 +70,10 @@ pub struct TaskEventList {
 pub struct TaskEvent {
     task_id: TaskId,
     name: String,
+    service_type: ServiceType,
     uri: Uri,
     event: String,
+    supervisor: String,
     timestamp: DateTime<Utc>,
 }
 
@@ -240,21 +242,49 @@ impl TaskEvent {
     pub fn new<S: Into<String>>(
         task_id: TaskId,
         name: S,
+        service_type: ServiceType,
         uri: Uri,
         event: S,
+        supervisor: S,
         timestamp: DateTime<Utc>,
     ) -> Self {
         Self {
             task_id,
             name: name.into(),
+            service_type,
             uri,
             event: event.into(),
+            supervisor: supervisor.into(),
             timestamp,
         }
     }
 
     pub fn task_id(&self) -> TaskId {
         self.task_id
+    }
+
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
+    pub fn service_type(&self) -> &ServiceType {
+        &self.service_type
+    }
+
+    pub fn uri(&self) -> &Uri {
+        &self.uri
+    }
+
+    pub fn event(&self) -> &str {
+        &self.event
+    }
+
+    pub fn supervisor(&self) -> &str {
+        &self.supervisor
+    }
+
+    pub fn timestamp(&self) -> &DateTime<Utc> {
+        &self.timestamp
     }
 }
 

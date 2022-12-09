@@ -1,5 +1,6 @@
 mod beat;
 mod config;
+mod context;
 mod error;
 mod event_export;
 mod exporters;
