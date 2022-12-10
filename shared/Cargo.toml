@@ -1,0 +1,18 @@
+[workspace]
+members = [
+    "toy-gauth",
+    "toy-glogging",
+    "toy-h",
+    "toy-influxdb",
+    "toy-jwt",
+    "toy-map",
+    "toy-pack",
+    "toy-pack-derive",
+    "toy-pack-json",
+    "toy-pack-mp",
+    "toy-pack-urlencoded",
+    "toy-pack-yaml",
+    "toy-rocksdb",
+    "toy-test-utils",
+    "toy-text-parser"
+]
