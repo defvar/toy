@@ -54,83 +54,8 @@ jobs:
       if: runner.os == 'Windows'
       run: choco install llvm -y
 
-    - name: test-shared-gauth
-      uses: actions-rs/cargo@v1
-      with:
-        command: test
-        args: --manifest-path ${{ github.workspace }}/shared/toy-gauth/Cargo.toml
-
-    - name: test-shared-glogging
-      uses: actions-rs/cargo@v1
-      with:
-        command: test
-        args: --manifest-path ${{ github.workspace }}/shared/toy-glogging/Cargo.toml
-
-    - name: test-shared-h
-      uses: actions-rs/cargo@v1
-      with:
-        command: test
-        args: --manifest-path ${{ github.workspace }}/shared/toy-h/Cargo.toml
-
-    - name: test-shared-pack
-      uses: actions-rs/cargo@v1
-      with:
-        command: test
-        args: --manifest-path ${{ github.workspace }}/shared/toy-pack/Cargo.toml
-
-    - name: test-shared-pack-mp
-      uses: actions-rs/cargo@v1
-      with:
-        command: test
-        args: --manifest-path ${{ github.workspace }}/shared/toy-pack-mp/Cargo.toml
-
-    - name: test-shared-pack-json
-      uses: actions-rs/cargo@v1
-      with:
-        command: test
-        args: --manifest-path ${{ github.workspace }}/shared/toy-pack-json/Cargo.toml
-
-    - name: test-shared-pack-urlencoded
-      uses: actions-rs/cargo@v1
-      with:
-        command: test
-        args: --manifest-path ${{ github.workspace }}/shared/toy-pack-urlencoded/Cargo.toml
-
-    - name: test-shared-pack-yaml
-      uses: actions-rs/cargo@v1
-      with:
-        command: test
-        args: --manifest-path ${{ github.workspace }}/shared/toy-pack-yaml/Cargo.toml
-
-    - name: test-shared-pack-derive
-      uses: actions-rs/cargo@v1
-      with:
-        command: test
-        args: --manifest-path ${{ github.workspace }}/shared/toy-pack-derive/Cargo.toml
-
-    - name: test-shared-text-parser
-      uses: actions-rs/cargo@v1
-      with:
-        command: test
-        args: --manifest-path ${{ github.workspace }}/shared/toy-text-parser/Cargo.toml
-
-    - name: test-shared-jwt
-      uses: actions-rs/cargo@v1
-      with:
-        command: test
-        args: --manifest-path ${{ github.workspace }}/shared/toy-jwt/Cargo.toml
-
-    - name: test-shared-rocksdb
-      uses: actions-rs/cargo@v1
-      with:
-        command: build
-        args: --manifest-path ${{ github.workspace }}/shared/toy-rocksdb/Cargo.toml
-
-    - name: test-shared-influxdb
-      uses: actions-rs/cargo@v1
-      with:
-        command: build
-        args: --manifest-path ${{ github.workspace }}/shared/toy-influxdb/Cargo.toml
+    - name: test-shared
+      run: cargo test --manifest-path ${{ github.workspace }}/shared/Cargo.toml
 
   test-plugin:
     name: build toy plugin
