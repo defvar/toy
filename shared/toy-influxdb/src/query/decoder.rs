@@ -62,6 +62,7 @@ where
                 Some(v) if v == constants::ANNOTATION_IDENT_DATATYPE => {
                     self.read_datetype(index, &mut buf)?
                 }
+                Some(v) if v == constants::ANNOTATION_IDENT_DEFAULT => (),
                 Some(b"") => {
                     if read_column_header {
                         self.read_data(index, &mut buf)?;

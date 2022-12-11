@@ -5,6 +5,7 @@ pub mod query_param;
 
 mod table;
 mod table_builder;
+mod table_de;
 
 pub use common::{Annotation, ErrorInfo};
 pub use field_value::FieldValue;
@@ -12,6 +13,7 @@ pub use field_value::FieldValue;
 pub mod flux_table {
     pub use super::table::*;
     pub use super::table_builder::FluxTableBuilder;
+    pub use super::table_de::unpack;
 }
 
 pub mod constants {

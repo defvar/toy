@@ -24,6 +24,18 @@ impl FluxTable {
         self.headers.iter().map(|x| x.as_str())
     }
 
+    pub fn header(&self, index: usize) -> Option<&str> {
+        self.headers.get(index).map(|x| x.as_str())
+    }
+
+    pub fn column_size(&self) -> usize {
+        self.headers.len()
+    }
+
+    pub fn row_size(&self) -> usize {
+        self.data.len()
+    }
+
     pub fn data(&self) -> &[DataRecord] {
         &self.data
     }

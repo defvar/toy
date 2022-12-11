@@ -39,7 +39,7 @@ impl QueryParam {
 impl Default for Dialect {
     fn default() -> Self {
         Self {
-            annotations: vec![Annotation::Group, Annotation::DataType],
+            annotations: vec![Annotation::Group, Annotation::DataType, Annotation::Default],
             comment_prefix: "#".to_string(),
             date_time_format: DateTimeFormat::RFC3339Nano,
             delimiter: ",".to_string(),

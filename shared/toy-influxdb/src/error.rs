@@ -5,19 +5,19 @@ use toy_h::InvalidUri;
 
 #[derive(Debug, ThisError)]
 pub enum InfluxDBError {
-    #[error("error: {:?}", source)]
+    #[error("error: {source}")]
     DeserializeError {
         #[from]
         source: toy_pack_json::DecodeError,
     },
 
-    #[error("error: {:?}", source)]
+    #[error("error: {source}")]
     SerializeError {
         #[from]
         source: toy_pack_json::EncodeError,
     },
 
-    #[error("error: {:?}", source)]
+    #[error("error: {source}")]
     HError {
         #[from]
         source: toy_h::error::HError,
@@ -35,7 +35,7 @@ pub enum InfluxDBError {
         source: std::str::Utf8Error,
     },
 
-    #[error("invalid uri: {:?}", source)]
+    #[error("invalid uri: {source}")]
     InvalidUri {
         #[from]
         source: InvalidUri,
@@ -53,10 +53,10 @@ pub enum InfluxDBError {
         value: String,
     },
 
-    #[error("error: {:?}", info)]
+    #[error("influxdb api error: {info}")]
     InfluxDBApiError { info: ErrorInfo },
 
-    #[error("error: {:?}", inner)]
+    #[error("error: {inner}")]
     Error { inner: String },
 }
 
@@ -84,5 +84,14 @@ impl InfluxDBError {
 
     pub fn api_error(info: ErrorInfo) -> InfluxDBError {
         InfluxDBError::InfluxDBApiError { info }
+    }
+}
+
+impl serde::de::Error for InfluxDBError {
+    fn custom<T>(msg: T) -> Self
+    where
+        T: Display,
+    {
+        InfluxDBError::error(msg)
     }
 }

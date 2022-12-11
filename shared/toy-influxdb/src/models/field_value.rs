@@ -11,10 +11,14 @@ pub enum FieldValue {
     String(String),
     Boolean(bool),
     Timestamp(DateTime<Utc>),
+    Nil,
 }
 
 impl FieldValue {
     pub fn from(field: &str, data_type: &str, value: &str) -> Result<Self, InfluxDBError> {
+        if value.is_empty() {
+            return Ok(FieldValue::Nil);
+        }
         match data_type {
             "boolean" => {
                 let b = if value.is_empty() {
@@ -89,6 +93,7 @@ impl ToLineProtocol for FieldValue {
                 writer.write(bytes)?;
                 Ok(bytes.len())
             }
+            FieldValue::Nil => Ok(0),
         }
     }
 }
