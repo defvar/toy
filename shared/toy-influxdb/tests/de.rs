@@ -63,7 +63,7 @@ fn common_struct() {
     }
 
     let mut ft = test_table();
-    //println!("{:?}", ft);
+    println!("{:?}", ft);
     let r = unpack::<Vec<TestData>>(&mut ft).unwrap();
     assert_eq!(
         r,

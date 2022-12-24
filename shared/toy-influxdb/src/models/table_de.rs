@@ -37,20 +37,19 @@ impl<'a> FluxTableDeserializer<'a> {
 
     pub fn next(&mut self) -> Result<&FieldValue, InfluxDBError> {
         if self.remaining() {
+            let row = self.row;
             let pos = self.position;
-            let fv = self
-                .table
-                .data()
-                .get(self.row)
-                .map(|x| x.get(pos))
-                .flatten();
+            let fv = self.table.data().get(row).map(|x| x.get(pos)).flatten();
             self.position += 1;
             if self.table.column_size() <= self.position {
                 self.position = 0;
                 self.row += 1;
             }
             fv.ok_or_else(|| {
-                InfluxDBError::error(format!("eof while parsing value. position:{}", pos))
+                InfluxDBError::error(format!(
+                    "eof while parsing value. row:{}, position:{}",
+                    row, pos
+                ))
             })
         } else {
             Err(InfluxDBError::error("eof while parsing value."))
@@ -58,7 +57,7 @@ impl<'a> FluxTableDeserializer<'a> {
     }
 
     pub fn remaining(&self) -> bool {
-        self.table.row_size() > self.row && self.table.column_size() > self.position
+        self.table.row_size() > self.row
     }
 }
 
@@ -244,7 +243,7 @@ impl<'de, 'a> Deserializer<'de> for &'a mut FluxTableDeserializer<'de> {
     where
         V: Visitor<'de>,
     {
-        visitor.visit_seq(DeserializeAccess::new(self, self.table.column_size()))
+        visitor.visit_seq(DeserializeAccess::new(self))
     }
 
     fn deserialize_tuple<V>(self, _len: usize, visitor: V) -> Result<V::Value, Self::Error>
@@ -270,7 +269,7 @@ impl<'de, 'a> Deserializer<'de> for &'a mut FluxTableDeserializer<'de> {
     where
         V: Visitor<'de>,
     {
-        visitor.visit_map(DeserializeAccess::new(self, self.table.column_size()))
+        visitor.visit_map(DeserializeAccess::new(self))
     }
 
     fn deserialize_struct<V>(
@@ -282,7 +281,7 @@ impl<'de, 'a> Deserializer<'de> for &'a mut FluxTableDeserializer<'de> {
     where
         V: Visitor<'de>,
     {
-        visitor.visit_map(DeserializeAccess::new(self, self.table.column_size()))
+        visitor.visit_map(DeserializeAccess::new(self))
     }
 
     fn deserialize_enum<V>(
@@ -294,7 +293,7 @@ impl<'de, 'a> Deserializer<'de> for &'a mut FluxTableDeserializer<'de> {
     where
         V: Visitor<'de>,
     {
-        visitor.visit_enum(DeserializeAccess::new(self, 0))
+        visitor.visit_enum(DeserializeAccess::new(self))
     }
 
     fn deserialize_identifier<V>(self, visitor: V) -> Result<V::Value, Self::Error>
@@ -315,12 +314,16 @@ impl<'de, 'a> Deserializer<'de> for &'a mut FluxTableDeserializer<'de> {
 
 pub struct DeserializeAccess<'a, 'de: 'a> {
     de: &'a mut FluxTableDeserializer<'de>,
-    remaining: usize,
+    column_remaining: usize,
 }
 
 impl<'a, 'de> DeserializeAccess<'a, 'de> {
-    pub fn new(de: &'a mut FluxTableDeserializer<'de>, remaining: usize) -> Self {
-        Self { de, remaining }
+    pub fn new(de: &'a mut FluxTableDeserializer<'de>) -> Self {
+        let column_remaining = de.table.column_size();
+        Self {
+            de,
+            column_remaining,
+        }
     }
 }
 
@@ -331,8 +334,8 @@ impl<'de, 'a> MapAccess<'de> for DeserializeAccess<'a, 'de> {
     where
         K: DeserializeSeed<'de>,
     {
-        if self.remaining > 0 {
-            self.remaining -= 1;
+        if self.column_remaining > 0 {
+            self.column_remaining -= 1;
             if self.de.remaining() {
                 let h = self.de.table.header(self.de.position);
                 match h {
@@ -362,13 +365,8 @@ impl<'a, 'de> SeqAccess<'de> for DeserializeAccess<'a, 'de> {
     where
         T: DeserializeSeed<'de>,
     {
-        if self.remaining > 0 {
-            self.remaining -= 1;
-            if self.de.remaining() {
-                seed.deserialize(&mut *self.de).map(Some)
-            } else {
-                Ok(None)
-            }
+        if self.de.remaining() {
+            seed.deserialize(&mut *self.de).map(Some)
         } else {
             Ok(None)
         }

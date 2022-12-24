@@ -1,3 +1,4 @@
+pub mod builder;
 mod decoder;
 
 use crate::models::flux_table::FluxTable;

@@ -50,8 +50,8 @@ fn record() {
     let vec = vec![Tag::with("a", "123"), Tag::with("b", "456")];
     let tags = TagSet::with(vec.into_iter());
     let vec = vec![
-        Field::with("a", FieldValue::Integer(123)),
-        Field::with("b", FieldValue::Integer(456)),
+        Field::with("field_a", FieldValue::Integer(123)),
+        Field::with("field_b", FieldValue::String("hoge".to_string())),
     ];
     let fields = FieldSet::with(vec.into_iter());
 
@@ -69,6 +69,6 @@ fn record() {
     record.to_lp(&mut buf).unwrap();
     assert_eq!(
         std::str::from_utf8(&buf).unwrap(),
-        "test,a=123,b=456 a=123,b=456 1000000000000000555"
+        "test,a=123,b=456 field_a=123,field_b=\"hoge\" 1000000000000000555"
     );
 }

@@ -55,10 +55,13 @@ impl FieldValue {
             _ => Err(InfluxDBError::invalid_field_value(field, data_type, value)),
         }
     }
-}
 
-impl ToLineProtocol for FieldValue {
-    fn to_lp<W: Write>(&self, writer: &mut W) -> Result<usize, InfluxDBError> {
+    pub fn write<W: Write>(
+        &self,
+        writer: &mut W,
+        quote: bool,
+        rfc_3399: bool,
+    ) -> Result<usize, InfluxDBError> {
         match self {
             FieldValue::Float(v) => {
                 let mut buf = ryu::Buffer::new();
@@ -79,7 +82,13 @@ impl ToLineProtocol for FieldValue {
                 Ok(bytes.len())
             }
             FieldValue::String(v) => {
+                if quote {
+                    writer.write(&[b'\"'])?;
+                }
                 writer.write(v.as_bytes())?;
+                if quote {
+                    writer.write(&[b'\"'])?;
+                }
                 Ok(v.as_bytes().len())
             }
             FieldValue::Boolean(v) => {
@@ -88,12 +97,34 @@ impl ToLineProtocol for FieldValue {
                 Ok(bytes.len())
             }
             FieldValue::Timestamp(v) => {
-                let mut buf = itoa::Buffer::new();
-                let bytes = buf.format(v.timestamp_nanos()).as_bytes();
-                writer.write(bytes)?;
-                Ok(bytes.len())
+                if rfc_3399 {
+                    let text = v.to_rfc3339();
+                    writer.write(text.as_bytes())?;
+                    Ok(text.len())
+                } else {
+                    let mut buf = itoa::Buffer::new();
+                    let bytes = buf.format(v.timestamp_nanos()).as_bytes();
+                    writer.write(bytes)?;
+                    Ok(bytes.len())
+                }
             }
             FieldValue::Nil => Ok(0),
         }
+    }
+
+    pub fn is_string(&self) -> bool {
+        matches!(self, FieldValue::String(_))
+    }
+}
+
+impl ToLineProtocol for FieldValue {
+    fn to_lp<W: Write>(&self, writer: &mut W) -> Result<usize, InfluxDBError> {
+        self.write(writer, true, false)
+    }
+}
+
+impl From<&str> for FieldValue {
+    fn from(value: &str) -> Self {
+        FieldValue::String(value.to_owned())
     }
 }

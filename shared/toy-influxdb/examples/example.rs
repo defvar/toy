@@ -31,6 +31,7 @@ async fn main() -> Result<(), InfluxDBError> {
         builder
             .start_record("toy_example", Utc::now())
             .tag("name", &t.name)
+            .tag("category", &t.name)
             .field("va", FieldValue::Integer(100 + t.number))
             .field("va2", FieldValue::Integer(200 + t.number))
             .end_record();
@@ -42,7 +43,7 @@ async fn main() -> Result<(), InfluxDBError> {
     //
     // query
     //
-    let query = "from(bucket: \"toy\") |> range(start: -2d) |> filter(fn: (r) => r._measurement == \"toy_example\") |> sort(columns: [\"_time\"])".to_string();
+    let query = "from(bucket: \"toy\") |> range(start: -2d) |> filter(fn: (r) => r._measurement == \"toy_example\") |> group() |> sort(columns: [\"_time\"])".to_string();
     //let query = "from(bucket: \"toy\") |> range(start: -2d) |> filter(fn: (r) => r._measurement == \"events\") |> group() |> sort(columns: [\"_time\"]) |> keep(columns: [\"_time\", \"_value\", \"name\", \"supervisor_name\", \"uri\"])".to_string();
 
     let param = QueryParam::with(query);
