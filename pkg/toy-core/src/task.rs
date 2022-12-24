@@ -8,6 +8,7 @@ use chrono::Utc;
 use serde::{de::Visitor, Deserialize, Deserializer, Serialize, Serializer};
 use std::fmt;
 use std::fmt::Formatter;
+use std::str::FromStr;
 use std::sync::Arc;
 use std::time::SystemTime;
 use tokio::sync::Mutex;
@@ -50,6 +51,14 @@ impl TaskId {
             .map(|id| TaskId::from(id))
             .map_err(|_| ())
     }
+
+    pub fn encode_lower<'buf>(&self, buffer: &'buf mut [u8]) -> &'buf str {
+        self.id.to_hyphenated_ref().encode_lower(buffer)
+    }
+
+    pub const fn encode_buffer() -> [u8; 45] {
+        [0; 45]
+    }
 }
 
 impl fmt::Display for TaskId {
@@ -67,6 +76,14 @@ impl fmt::Debug for TaskId {
 impl Default for TaskId {
     fn default() -> Self {
         TaskId::from(Uuid::nil())
+    }
+}
+
+impl FromStr for TaskId {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        TaskId::parse_str(s)
     }
 }
 
