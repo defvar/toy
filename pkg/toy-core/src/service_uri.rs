@@ -46,6 +46,12 @@ impl AsRef<Uri> for Uri {
     }
 }
 
+impl AsRef<str> for Uri {
+    fn as_ref(&self) -> &str {
+        &self.path
+    }
+}
+
 impl Debug for Uri {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), Error> {
         write!(f, "{}", self.path.to_string())
