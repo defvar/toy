@@ -128,6 +128,9 @@ impl Value {
     pub fn as_timestamp(&self) -> Option<DateTime<Utc>> {
         match self {
             Value::TimeStamp(v) => Some(v.clone()),
+            Value::String(v) => DateTime::parse_from_rfc3339(v)
+                .map(|x| x.with_timezone(&Utc))
+                .ok(),
             _ => None,
         }
     }
