@@ -2,11 +2,12 @@
 //!
 
 use crate::error::ConfigError;
-use serde::{Deserialize, Serialize};
+use serde::de::Visitor;
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::fmt::{Debug, Display, Error, Formatter};
 
 /// The type of service.
-#[derive(Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Clone, PartialEq, Eq, Hash)]
 pub struct ServiceType {
     full_name: String,
     name_space: String,
@@ -109,5 +110,64 @@ impl Display for ServiceType {
 impl Default for ServiceType {
     fn default() -> Self {
         ServiceType::new("builtin", "noop").unwrap()
+    }
+}
+
+impl Serialize for ServiceType {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        self.full_name.serialize(serializer)
+    }
+}
+
+impl<'de> Deserialize<'de> for ServiceType {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        struct ServiceTypeVisitor;
+
+        impl<'a> Visitor<'a> for ServiceTypeVisitor {
+            type Value = ServiceType;
+
+            fn expecting(&self, formatter: &mut Formatter) -> std::fmt::Result {
+                write!(formatter, "error")
+            }
+
+            fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                ServiceType::from_full_name(v).map_err(|e| serde::de::Error::custom(e))
+            }
+
+            fn visit_string<E>(self, v: String) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                ServiceType::from_full_name(v).map_err(|e| serde::de::Error::custom(e))
+            }
+
+            fn visit_bytes<E>(self, v: &[u8]) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                let str = std::str::from_utf8(v).map_err(|e| serde::de::Error::custom(e))?;
+                ServiceType::from_full_name(str).map_err(|e| serde::de::Error::custom(e))
+            }
+
+            fn visit_byte_buf<E>(self, v: Vec<u8>) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                let str =
+                    std::str::from_utf8(v.as_slice()).map_err(|e| serde::de::Error::custom(e))?;
+                ServiceType::from_full_name(str).map_err(|e| serde::de::Error::custom(e))
+            }
+        }
+
+        deserializer.deserialize_string(ServiceTypeVisitor)
     }
 }
