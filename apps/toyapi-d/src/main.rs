@@ -6,10 +6,10 @@ use clap::Parser;
 use std::net::SocketAddr;
 use toy::api_server::authentication::CommonAuths;
 use toy::api_server::context::ServerState;
-use toy::api_server::store::task_log_btree::BTreeLogStore;
 use toy::api_server::ServerConfig;
 use toy_api_auth_jwt::JWTAuth;
 use toy_api_store_etcd::EtcdStore;
+use toy_api_store_influxdb::InfluxdbStore;
 use toy_h::impl_reqwest::ReqwestClient;
 use toy_tracing::{LogGuard, CONSOLE_DEFAULT_IP, CONSOLE_DEFAULT_PORT};
 
@@ -31,7 +31,7 @@ struct ToyState {
     client: ReqwestClient,
     auth: CommonAuths<JWTAuth, JWTAuth>,
     kv_store: EtcdStore<ReqwestClient>,
-    task_log_store: BTreeLogStore<ReqwestClient>,
+    task_log_store: InfluxdbStore<ReqwestClient>,
 }
 
 impl ServerConfig for ToyConfig {
@@ -64,7 +64,7 @@ impl ServerState for ToyState {
     type Client = ReqwestClient;
     type Auth = CommonAuths<JWTAuth, JWTAuth>;
     type KvStore = EtcdStore<ReqwestClient>;
-    type TaskEventStore = BTreeLogStore<ReqwestClient>;
+    type TaskEventStore = InfluxdbStore<ReqwestClient>;
 
     fn client(&self) -> &Self::Client {
         &self.client
@@ -129,7 +129,7 @@ fn go() -> Result<(), Error> {
         client: client.clone(),
         auth: CommonAuths::new(JWTAuth::new(), JWTAuth::new()),
         kv_store: EtcdStore::new(),
-        task_log_store: BTreeLogStore::new(),
+        task_log_store: InfluxdbStore::new(),
     };
 
     let server = toy::api_server::Server::new(config);

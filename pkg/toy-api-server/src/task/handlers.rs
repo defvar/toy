@@ -2,14 +2,16 @@ use crate::common::constants;
 use crate::context::Context;
 use crate::store::kv::{KvStore, Put, PutOption, PutResult, Update, UpdateResult};
 use crate::store::task_event::{
-    CreateOption, FindOption, ListOption, TaskEventStore, TaskEventStoreOps,
+    CreateOption, ListEventOption, ListTaskOption, TaskEventStore, TaskEventStoreOps,
 };
 use crate::ApiError;
-use chrono::{Duration, Utc};
+use chrono::Utc;
 use toy_api::common::{self as api_common, CommonPostResponse, ListOptionLike};
 use toy_api::graph::Graph;
-use toy_api::selection::selector::Selector;
-use toy_api::task::{FinishResponse, PendingResult, PendingTask, TaskEvent, TaskListOption};
+use toy_api::selection::Operator;
+use toy_api::task::{
+    FinishResponse, PendingResult, PendingTask, TaskEvent, TaskEventListOption, TaskListOption,
+};
 use toy_api_http_common::axum::http::StatusCode;
 use toy_api_http_common::axum::response::IntoResponse;
 use toy_api_http_common::bytes::Bytes;
@@ -96,7 +98,7 @@ where
     }
 }
 
-pub async fn list<T>(
+pub async fn list_task<T>(
     ctx: Context,
     opt: TaskListOption,
     log_store: &impl TaskEventStore<T>,
@@ -106,14 +108,12 @@ where
 {
     tracing::debug!("handle: {:?}", ctx);
 
-    let dt = opt.timestamp().unwrap_or(Utc::now() - Duration::days(1));
-    let store_opt = ListOption::new()
-        .with_field_selection(Selector::default().greater_than("timestamp", dt.to_rfc3339()));
+    let store_opt = ListTaskOption::with(None, None, None, None);
 
     let format = opt.common().format();
     match log_store
         .ops()
-        .list(log_store.con().unwrap(), store_opt)
+        .list_task(log_store.con().unwrap(), store_opt)
         .await
     {
         Ok(v) => Ok(reply::into_response(&v, format, None)),
@@ -155,29 +155,56 @@ where
     }
 }
 
-pub async fn find_task_event<T>(
+pub async fn list_task_event<T>(
     ctx: Context,
-    key: String,
-    opt: toy_api::common::FindOption,
+    opt: TaskEventListOption,
     event_store: &impl TaskEventStore<T>,
 ) -> Result<impl IntoResponse, ApiError>
 where
     T: HttpClient,
 {
-    tracing::debug!("handle: {:?}", ctx);
+    tracing::debug!("handle: {:?}, opt: {:?}", ctx, opt);
 
-    let id = match TaskId::parse_str(&key) {
-        Ok(id) => id,
-        Err(_) => return Err(ApiError::task_id_invalid_format(key.to_string())),
-    };
+    opt.common()
+        .selection()
+        .validation_fields_by_names(&["name", "start", "stop"])
+        .map_err(|e| ApiError::invalid_selectors(e))?;
+
+    let name = opt.common().selection().get("name").map(|x| x.clone());
+    let start = opt.common().selection().get("start").map(|x| x.clone());
+    let stop = opt.common().selection().get("stop").map(|x| x.clone());
+
+    let start = if let Some(start) = start {
+        match start.op() {
+            Operator::Eq => Ok(start.value().as_timestamp()),
+            _ => Err(ApiError::error("selector: [start] must be eq.")),
+        }
+    } else {
+        Ok(None)
+    }?;
+
+    let stop = if let Some(stop) = stop {
+        match stop.op() {
+            Operator::Eq => Ok(stop.value().as_timestamp()),
+            _ => Err(ApiError::error("selector: [stop] must be eq.")),
+        }
+    } else {
+        Ok(None)
+    }?;
 
     match event_store
         .ops()
-        .find(event_store.con().unwrap(), id, FindOption::new())
+        .list_event(
+            event_store.con().unwrap(),
+            ListEventOption::with(name, start, stop, opt.common().limit()),
+        )
         .await
     {
-        Ok(Some(v)) => Ok(reply::into_response(&v, opt.format(), opt.indent())),
-        Ok(None) => Ok(StatusCode::NOT_FOUND.into_response()),
+        Ok(v) => Ok(reply::into_response(
+            &v,
+            opt.common().format(),
+            opt.common().indent(),
+        )),
         Err(e) => {
             tracing::error!("error:{:?}", e);
             Err(ApiError::store_operation_failed(e))

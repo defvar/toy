@@ -14,14 +14,20 @@ pub enum Operator {
     NotEq,
     /// candidate \> predicate value
     GreaterThan,
+    /// candidate \>= predicate value
+    GreaterThanOrEqual,
     /// candidate \< predicate value
     LessThan,
-    /// candidate contains predicate value. supportted by string only.
-    Contains,
+    /// candidate \<= predicate value
+    LessThanOrEqual,
+    /// Regex match. supported by string only.
+    Match,
+    /// Regex unmatch. supported by string only.
+    Unmatch,
 }
 
 pub const fn operator_strings() -> &'static [&'static str] {
-    &["!==", "!=", ">", "<", "==", "="]
+    &["!==", "!=", ">=", ">", "<=", "<", "==", "=~", "!~", "="]
 }
 
 impl TryFrom<&str> for Operator {
@@ -32,7 +38,11 @@ impl TryFrom<&str> for Operator {
             "=" | "==" => Ok(Operator::Eq),
             "!=" | "!==" => Ok(Operator::NotEq),
             ">" => Ok(Operator::GreaterThan),
+            ">=" => Ok(Operator::GreaterThanOrEqual),
             "<" => Ok(Operator::LessThan),
+            "<=" => Ok(Operator::LessThanOrEqual),
+            "=~" => Ok(Operator::Match),
+            "!~" => Ok(Operator::Unmatch),
             _ => Err(()),
         }
     }
@@ -46,7 +56,11 @@ impl TryFrom<&&str> for Operator {
             "=" | "==" => Ok(Operator::Eq),
             "!=" | "!==" => Ok(Operator::NotEq),
             ">" => Ok(Operator::GreaterThan),
+            ">=" => Ok(Operator::GreaterThanOrEqual),
             "<" => Ok(Operator::LessThan),
+            "<=" => Ok(Operator::LessThanOrEqual),
+            "=~" => Ok(Operator::Match),
+            "!~" => Ok(Operator::Unmatch),
             _ => Err(()),
         }
     }
@@ -119,5 +133,14 @@ mod tests {
 
         let t: Test = toy_pack_json::unpack("{ \"ope\": \"!==\" } ".as_bytes()).unwrap();
         assert_eq!(t.ope, Operator::NotEq);
+    }
+
+    #[test]
+    fn deser_operator_less() {
+        let t: Test = toy_pack_json::unpack("{ \"ope\": \"<\" } ".as_bytes()).unwrap();
+        assert_eq!(t.ope, Operator::LessThan);
+
+        let t: Test = toy_pack_json::unpack("{ \"ope\": \"<=\" } ".as_bytes()).unwrap();
+        assert_eq!(t.ope, Operator::LessThanOrEqual);
     }
 }

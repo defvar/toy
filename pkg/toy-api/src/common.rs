@@ -147,6 +147,7 @@ pub struct ListOption {
     selector: Selector,
     #[serde(default)]
     fields: Fields,
+    limit: Option<usize>,
 }
 
 impl ListOption {
@@ -156,6 +157,7 @@ impl ListOption {
             indent: None,
             selector: Selector::empty(),
             fields: Fields::default(),
+            limit: None,
         }
     }
 
@@ -173,6 +175,10 @@ impl ListOption {
 
     pub fn fields(&self) -> &Fields {
         &self.fields
+    }
+
+    pub fn limit(&self) -> Option<usize> {
+        self.limit
     }
 
     pub fn with_pretty(self) -> Self {

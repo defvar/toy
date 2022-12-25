@@ -1,11 +1,12 @@
 //! Model for task api.
 
-use crate::common::{Format, ListObject, ListOption, ListOptionLike};
+use crate::common::{Format, ListObject, ListOption, ListOptionLike, SelectionCandidate};
 use crate::graph::Graph;
+use crate::selection::candidate::Candidates;
 use crate::supervisors::SupervisorName;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use toy_core::prelude::TaskId;
+use toy_core::prelude::{TaskId, Value};
 use toy_core::{ServiceType, Uri};
 
 #[derive(Debug, Copy, Clone, Serialize, Deserialize)]
@@ -77,18 +78,16 @@ pub struct TaskEvent {
     timestamp: DateTime<Utc>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct Tasks {
-    tasks: Vec<TasksInner>,
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TaskList {
+    items: Vec<Task>,
     count: u32,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct TasksInner {
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Task {
     task_id: TaskId,
-    graph: String,
-    operation: String,
-    operation_at: DateTime<Utc>,
+    name: String,
     supervisor: String,
 }
 
@@ -238,6 +237,16 @@ impl TaskEventList {
     }
 }
 
+impl ListObject<TaskEvent> for TaskEventList {
+    fn items(&self) -> &[TaskEvent] {
+        &self.items
+    }
+
+    fn count(&self) -> u32 {
+        self.count
+    }
+}
+
 impl TaskEvent {
     pub fn new<S: Into<String>>(
         task_id: TaskId,
@@ -288,19 +297,39 @@ impl TaskEvent {
     }
 }
 
-impl Tasks {
-    pub fn new(tasks: Vec<TasksInner>) -> Self {
-        let count = tasks.len() as u32;
-        Self { tasks, count }
+impl SelectionCandidate for TaskEvent {
+    fn candidate_fields() -> &'static [&'static str] {
+        &["name", "service_type", "uri", "supervisor", "timestamp"]
+    }
+
+    fn candidates(&self) -> Candidates {
+        Candidates::default()
+            .with_candidate("name", Value::String(self.name.to_string()))
+            .with_candidate("timestamp", Value::TimeStamp(self.timestamp))
     }
 }
 
-impl TasksInner {
+impl TaskList {
+    pub fn new(items: Vec<Task>) -> Self {
+        let count = items.len() as u32;
+        Self { items, count }
+    }
+}
+
+impl ListObject<Task> for TaskList {
+    fn items(&self) -> &[Task] {
+        &self.items
+    }
+
+    fn count(&self) -> u32 {
+        self.count
+    }
+}
+
+impl Task {
     pub fn new<T: AsRef<str>, S: Into<String>>(
         task_id: T,
-        operation: S,
-        operation_at: DateTime<Utc>,
-        graph: S,
+        name: S,
         supervisor: S,
     ) -> Result<Self, ()> {
         let id = match TaskId::parse_str(task_id.as_ref()) {
@@ -309,21 +338,9 @@ impl TasksInner {
         };
         Ok(Self {
             task_id: id,
-            operation: operation.into(),
-            operation_at,
-            graph: graph.into(),
+            name: name.into(),
             supervisor: supervisor.into(),
         })
-    }
-}
-
-impl ListObject<TasksInner> for Tasks {
-    fn items(&self) -> &[TasksInner] {
-        &self.tasks
-    }
-
-    fn count(&self) -> u32 {
-        self.count
     }
 }
 
@@ -364,24 +381,36 @@ impl AllocateOption {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct TaskEventListOption {
+    #[serde(flatten)]
+    common: ListOption,
+}
+
+impl TaskEventListOption {
+    pub fn new() -> Self {
+        Self {
+            common: ListOption::new(),
+        }
+    }
+}
+
+impl ListOptionLike for TaskEventListOption {
+    fn common(&self) -> &ListOption {
+        &self.common
+    }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct TaskListOption {
     #[serde(flatten)]
     common: ListOption,
-
-    #[serde(with = "crate::common::format::rfc3399_option")]
-    timestamp: Option<DateTime<Utc>>,
 }
 
 impl TaskListOption {
     pub fn new() -> Self {
         Self {
             common: ListOption::new(),
-            timestamp: None,
         }
-    }
-
-    pub fn timestamp(&self) -> Option<DateTime<Utc>> {
-        self.timestamp.clone()
     }
 }
 

@@ -20,6 +20,7 @@ toy-tracing = { path = "../../pkg/toy-tracing" }
 
 # store
 toy-api-store-etcd = { path = "../../pkg/toy-api-store-etcd"}
+toy-api-store-influxdb = { path = "../../pkg/toy-api-store-influxdb"}
 
 # auth
 toy-api-auth-jwt = { path = "../../pkg/toy-api-auth-jwt" }

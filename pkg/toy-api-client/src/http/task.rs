@@ -5,7 +5,7 @@ use std::sync::Arc;
 use toy_api::common::{CommonPostResponse, FindOption, PostOption};
 use toy_api::graph::Graph;
 use toy_api::task::{
-    FinishResponse, PendingResult, TaskEvent, TaskEventList, TaskListOption, Tasks,
+    FinishResponse, PendingResult, TaskEvent, TaskEventList, TaskList, TaskListOption,
 };
 use toy_api_http_common::{auth::Auth, request};
 use toy_core::prelude::TaskId;
@@ -51,7 +51,7 @@ where
             .map_err(|e| e.into())
     }
 
-    async fn list(&self, opt: TaskListOption) -> Result<Tasks, ApiClientError> {
+    async fn list(&self, opt: TaskListOption) -> Result<TaskList, ApiClientError> {
         request::list(&self.inner, Some(&self.auth), &self.root, PATH, opt)
             .await
             .map_err(|e| e.into())

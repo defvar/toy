@@ -86,11 +86,13 @@ where
                     .delete(rbac::role_binding::delete),
             )
             .route("/rbac/roleBindings", get(rbac::role_binding::list))
-            .route("/tasks", get(task::list).post(task::post))
+            .route("/tasks", get(task::list_task).post(task::post))
             .route("/tasks/:key", get(task::find))
             .route("/tasks/:key/finish", post(task::finish))
-            .route("/tasks/events", post(task::post_task_event))
-            .route("/tasks/events/:key", get(task::find_task_event))
+            .route(
+                "/tasks/events",
+                get(task::list_task_event).post(task::post_task_event),
+            )
             .layer(CorsLayer::very_permissive())
             .layer(TraceLayer::new_for_http())
             .with_state(WrappedState::new(state));

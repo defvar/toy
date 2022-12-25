@@ -3,7 +3,7 @@ use crate::store::kv;
 use crate::task::handlers;
 use crate::{common, ApiError};
 use toy_api::common::{FindOption, PostOption};
-use toy_api::task::{PendingTask, TaskListOption};
+use toy_api::task::{PendingTask, TaskEventListOption, TaskListOption};
 use toy_api_http_common::axum::extract::{Path, Query, State};
 use toy_api_http_common::axum::response::IntoResponse;
 use toy_api_http_common::bytes::Bytes;
@@ -52,7 +52,7 @@ where
     handlers::finish(ctx, state.raw().kv_store(), key, api_opt).await
 }
 
-pub async fn list<S>(
+pub async fn list_task<S>(
     ctx: Context,
     State(state): State<WrappedState<S>>,
     Query(api_opt): Query<TaskListOption>,
@@ -60,7 +60,7 @@ pub async fn list<S>(
 where
     S: ServerState,
 {
-    handlers::list(ctx, api_opt, state.raw().task_event_store()).await
+    handlers::list_task(ctx, api_opt, state.raw().task_event_store()).await
 }
 
 pub async fn post_task_event<S>(
@@ -75,14 +75,13 @@ where
     handlers::post_task_event(ctx, api_opt, request, state.raw().task_event_store()).await
 }
 
-pub async fn find_task_event<S>(
+pub async fn list_task_event<S>(
     ctx: Context,
     State(state): State<WrappedState<S>>,
-    Path(key): Path<String>,
-    Query(api_opt): Query<FindOption>,
+    Query(api_opt): Query<TaskEventListOption>,
 ) -> Result<impl IntoResponse, ApiError>
 where
     S: ServerState,
 {
-    handlers::find_task_event(ctx, key, api_opt, state.raw().task_event_store()).await
+    handlers::list_task_event(ctx, api_opt, state.raw().task_event_store()).await
 }

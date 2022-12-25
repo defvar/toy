@@ -108,7 +108,7 @@ impl TaskClient for NoopApiClient {
         unimplemented!()
     }
 
-    async fn list(&self, _opt: TaskListOption) -> Result<toy_api::task::Tasks, ApiClientError> {
+    async fn list(&self, _opt: TaskListOption) -> Result<toy_api::task::TaskList, ApiClientError> {
         unimplemented!()
     }
 

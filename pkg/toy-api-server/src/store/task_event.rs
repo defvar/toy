@@ -2,10 +2,10 @@
 
 use crate::store::error::StoreError;
 use crate::store::StoreConnection;
+use chrono::{DateTime, Utc};
 use std::fmt;
-use toy_api::selection::selector::Selector;
-use toy_api::task::{TaskEvent, TaskEventList, Tasks};
-use toy_core::task::TaskId;
+use toy_api::selection::selector::Predicate;
+use toy_api::task::{TaskEvent, TaskEventList, TaskList};
 
 /// This trait represents the concept of a task event Store.
 ///
@@ -28,16 +28,15 @@ pub trait TaskEventStoreOps: Send + Sync {
     type Con: StoreConnection;
     type Err: fmt::Debug + Send;
 
-    /// Find task events by specified task id.
-    async fn find(
+    /// List task events by specified task id.
+    async fn list_event(
         &self,
         con: Self::Con,
-        task_id: TaskId,
-        opt: FindOption,
-    ) -> Result<Option<TaskEventList>, Self::Err>;
+        opt: ListEventOption,
+    ) -> Result<TaskEventList, Self::Err>;
 
     /// List task info by time span.
-    async fn list(&self, con: Self::Con, opt: ListOption) -> Result<Tasks, Self::Err>;
+    async fn list_task(&self, con: Self::Con, opt: ListTaskOption) -> Result<TaskList, Self::Err>;
 
     /// create task events.
     async fn create(
@@ -49,35 +48,85 @@ pub trait TaskEventStoreOps: Send + Sync {
 }
 
 #[derive(Clone, Debug)]
-pub struct FindOption {}
+pub struct ListEventOption {
+    name: Option<Predicate>,
+    start: Option<DateTime<Utc>>,
+    stop: Option<DateTime<Utc>>,
+    limit: Option<usize>,
+}
 
 #[derive(Clone, Debug)]
-pub struct ListOption {
-    selection: Selector,
+pub struct ListTaskOption {
+    name: Option<Predicate>,
+    start: Option<DateTime<Utc>>,
+    stop: Option<DateTime<Utc>>,
+    limit: Option<usize>,
 }
 
 #[derive(Clone, Debug)]
 pub struct CreateOption {}
 
-impl FindOption {
-    pub fn new() -> Self {
-        Self {}
-    }
-}
-
-impl ListOption {
-    pub fn new() -> Self {
+impl ListEventOption {
+    pub fn with(
+        name: Option<Predicate>,
+        start: Option<DateTime<Utc>>,
+        stop: Option<DateTime<Utc>>,
+        limit: Option<usize>,
+    ) -> Self {
         Self {
-            selection: Selector::default(),
+            name,
+            start,
+            stop,
+            limit,
         }
     }
 
-    pub fn with_field_selection(self, selection: Selector) -> Self {
-        Self { selection, ..self }
+    pub fn name(&self) -> Option<&Predicate> {
+        self.name.as_ref()
     }
 
-    pub fn selection(&self) -> &Selector {
-        &self.selection
+    pub fn start(&self) -> Option<&DateTime<Utc>> {
+        self.start.as_ref()
+    }
+
+    pub fn stop(&self) -> Option<&DateTime<Utc>> {
+        self.stop.as_ref()
+    }
+
+    pub fn limit(&self) -> Option<usize> {
+        self.limit.clone()
+    }
+}
+
+impl ListTaskOption {
+    pub fn with(
+        name: Option<Predicate>,
+        start: Option<DateTime<Utc>>,
+        stop: Option<DateTime<Utc>>,
+        limit: Option<usize>,
+    ) -> Self {
+        Self {
+            name,
+            start,
+            stop,
+            limit,
+        }
+    }
+
+    pub fn name(&self) -> Option<&Predicate> {
+        self.name.as_ref()
+    }
+
+    pub fn start(&self) -> Option<&DateTime<Utc>> {
+        self.start.as_ref()
+    }
+
+    pub fn stop(&self) -> Option<&DateTime<Utc>> {
+        self.stop.as_ref()
+    }
+
+    pub fn limit(&self) -> Option<usize> {
+        self.limit.clone()
     }
 }
 

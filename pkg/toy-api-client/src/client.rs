@@ -11,7 +11,7 @@ use toy_api::services::{ServiceSpec, ServiceSpecList, ServiceSpecListOption};
 use toy_api::supervisors::{
     Supervisor, SupervisorBeatResponse, SupervisorList, SupervisorListOption,
 };
-use toy_api::task::{self, FinishResponse, PendingResult, TaskEvent, TaskEventList, Tasks};
+use toy_api::task::{self, FinishResponse, PendingResult, TaskEvent, TaskEventList, TaskList};
 use toy_core::task::TaskId;
 
 /// Composit All Api Client
@@ -77,7 +77,7 @@ pub trait TaskClient: Send + Sync {
         opt: common::PostOption,
     ) -> Result<FinishResponse, ApiClientError>;
 
-    async fn list(&self, opt: task::TaskListOption) -> Result<Tasks, ApiClientError>;
+    async fn list(&self, opt: task::TaskListOption) -> Result<TaskList, ApiClientError>;
 
     async fn find_event(
         &self,

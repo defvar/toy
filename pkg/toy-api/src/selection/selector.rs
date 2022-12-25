@@ -4,6 +4,7 @@ use crate::common::SelectionCandidate;
 use crate::selection::candidate::CandidatePart;
 use crate::selection::operator::operator_strings;
 use crate::selection::Operator;
+use regex::Regex;
 use serde::de::{Error, Visitor};
 use serde::{Deserialize, Deserializer, Serialize};
 use std::fmt::Formatter;
@@ -52,6 +53,20 @@ impl Selector {
         }
     }
 
+    pub fn validation_fields_by_names<'a>(&self, fileds: &'a [&'a str]) -> Result<(), Vec<String>> {
+        let unknowns = self
+            .predicate_fields()
+            .into_iter()
+            .filter(|x| !fileds.contains(x))
+            .map(|x| x.to_owned())
+            .collect::<Vec<_>>();
+        if !unknowns.is_empty() {
+            Err(unknowns)
+        } else {
+            Ok(())
+        }
+    }
+
     pub fn preds(&self) -> &[Predicate] {
         &self.preds
     }
@@ -71,6 +86,10 @@ impl Selector {
             };
         }
         Ok(true)
+    }
+
+    pub fn get(&self, field: &str) -> Option<&Predicate> {
+        self.preds.iter().filter(|x| x.field == field).nth(0)
     }
 
     pub fn add(
@@ -105,14 +124,6 @@ impl Selector {
     pub fn less_than(mut self, field: impl Into<String>, value: impl Into<Value>) -> Self {
         self.preds
             .push(Predicate::new(field, Operator::LessThan, value));
-        self
-    }
-
-    pub fn contains(mut self, field: impl Into<String>, value: Option<impl Into<Value>>) -> Self {
-        if value.is_some() {
-            self.preds
-                .push(Predicate::new(field, Operator::Contains, value.unwrap()));
-        }
         self
     }
 }
@@ -165,10 +176,27 @@ impl Predicate {
             Operator::Eq => Ok(l == r),
             Operator::NotEq => Ok(l != r),
             Operator::LessThan => Ok(l > r),
+            Operator::LessThanOrEqual => Ok(l >= r),
             Operator::GreaterThan => Ok(l < r),
-            Operator::Contains => {
+            Operator::GreaterThanOrEqual => Ok(l <= r),
+            Operator::Match => {
                 if l.is_string() && r.is_string() {
-                    Ok(r.as_str().unwrap().contains(l.as_str().unwrap()))
+                    if let Ok(reg) = Regex::new(l.as_str().unwrap()) {
+                        Ok(reg.is_match(r.as_str().unwrap()))
+                    } else {
+                        Err(())
+                    }
+                } else {
+                    Err(())
+                }
+            }
+            Operator::Unmatch => {
+                if l.is_string() && r.is_string() {
+                    if let Ok(reg) = Regex::new(l.as_str().unwrap()) {
+                        Ok(!reg.is_match(r.as_str().unwrap()))
+                    } else {
+                        Err(())
+                    }
                 } else {
                     Err(())
                 }
@@ -184,9 +212,9 @@ impl Predicate {
         for t in operator_strings() {
             if v.contains(t) {
                 let vec: Vec<&str> = v.split(t).collect();
-                left = vec.get(0).copied();
+                left = vec.get(0).map(|x| x.trim());
                 op = Operator::try_from(t);
-                right = vec.get(1).copied();
+                right = vec.get(1).map(|x| x.trim());
                 break;
             }
         }
@@ -269,19 +297,52 @@ impl<'de> Visitor<'de> for SelectionVisitor {
 
 #[cfg(test)]
 mod tests {
+    use crate::selection::candidate::CandidatePart;
     use crate::selection::selector::{Predicate, Selector};
     use crate::selection::Operator;
     use serde::{Deserialize, Serialize};
     use toy_core::data::Value;
 
     #[derive(Clone, Eq, PartialEq, Debug, Serialize, Deserialize)]
-    struct Test {
+    struct TestPredicateHolder {
         p: Predicate,
     }
 
     #[derive(Clone, Eq, PartialEq, Debug, Serialize, Deserialize)]
     struct TestSelection {
         s: Selector,
+    }
+
+    #[test]
+    fn predicate_match() {
+        let p = Predicate {
+            field: "hoge".to_string(),
+            op: Operator::Match,
+            value: Value::from("^abc"),
+        };
+        let cp = CandidatePart::new("hoge", Value::String("abcdef".to_string()));
+        let r = p.is_match(&cp);
+        assert_eq!(r, Ok(true));
+
+        let cp = CandidatePart::new("hoge", Value::String("fedcba".to_string()));
+        let r = p.is_match(&cp);
+        assert_eq!(r, Ok(false));
+    }
+
+    #[test]
+    fn predicate_unmatch() {
+        let p = Predicate {
+            field: "hoge".to_string(),
+            op: Operator::Unmatch,
+            value: Value::from("^abc"),
+        };
+        let cp = CandidatePart::new("hoge", Value::String("fedcba".to_string()));
+        let r = p.is_match(&cp);
+        assert_eq!(r, Ok(true));
+
+        let cp = CandidatePart::new("hoge", Value::String("abcdef".to_string()));
+        let r = p.is_match(&cp);
+        assert_eq!(r, Ok(false));
     }
 
     #[test]
@@ -306,7 +367,8 @@ mod tests {
 
     #[test]
     fn deser_predicate_eq() {
-        let t: Test = toy_pack_json::unpack("{ \"p\": \"hoge=abc\" } ".as_bytes()).unwrap();
+        let t: TestPredicateHolder =
+            toy_pack_json::unpack("{ \"p\": \"hoge=abc\" } ".as_bytes()).unwrap();
         assert_eq!(
             t.p,
             Predicate {
@@ -316,7 +378,8 @@ mod tests {
             }
         );
 
-        let t: Test = toy_pack_json::unpack("{ \"p\": \"hoge==abc\" } ".as_bytes()).unwrap();
+        let t: TestPredicateHolder =
+            toy_pack_json::unpack("{ \"p\": \"hoge==abc\" } ".as_bytes()).unwrap();
         assert_eq!(
             t.p,
             Predicate {
@@ -329,7 +392,8 @@ mod tests {
 
     #[test]
     fn deser_predicate_not_eq() {
-        let t: Test = toy_pack_json::unpack("{ \"p\": \"hoge!=abc\" } ".as_bytes()).unwrap();
+        let t: TestPredicateHolder =
+            toy_pack_json::unpack("{ \"p\": \"hoge!=abc\" } ".as_bytes()).unwrap();
         assert_eq!(
             t.p,
             Predicate {
@@ -339,12 +403,63 @@ mod tests {
             }
         );
 
-        let t: Test = toy_pack_json::unpack("{ \"p\": \"hoge!==abc\" } ".as_bytes()).unwrap();
+        let t: TestPredicateHolder =
+            toy_pack_json::unpack("{ \"p\": \"hoge!==abc\" } ".as_bytes()).unwrap();
         assert_eq!(
             t.p,
             Predicate {
                 field: "hoge".to_string(),
                 op: Operator::NotEq,
+                value: Value::from("abc")
+            }
+        );
+    }
+
+    #[test]
+    fn deser_predicate_less() {
+        let t: TestPredicateHolder =
+            toy_pack_json::unpack("{ \"p\": \"hoge<abc\" } ".as_bytes()).unwrap();
+        assert_eq!(
+            t.p,
+            Predicate {
+                field: "hoge".to_string(),
+                op: Operator::LessThan,
+                value: Value::from("abc")
+            }
+        );
+
+        let t: TestPredicateHolder =
+            toy_pack_json::unpack("{ \"p\": \"hoge<=abc\" } ".as_bytes()).unwrap();
+        assert_eq!(
+            t.p,
+            Predicate {
+                field: "hoge".to_string(),
+                op: Operator::LessThanOrEqual,
+                value: Value::from("abc")
+            }
+        );
+    }
+
+    #[test]
+    fn deser_predicate_greater() {
+        let t: TestPredicateHolder =
+            toy_pack_json::unpack("{ \"p\": \"hoge>abc\" } ".as_bytes()).unwrap();
+        assert_eq!(
+            t.p,
+            Predicate {
+                field: "hoge".to_string(),
+                op: Operator::GreaterThan,
+                value: Value::from("abc")
+            }
+        );
+
+        let t: TestPredicateHolder =
+            toy_pack_json::unpack("{ \"p\": \"hoge>=abc\" } ".as_bytes()).unwrap();
+        assert_eq!(
+            t.p,
+            Predicate {
+                field: "hoge".to_string(),
+                op: Operator::GreaterThanOrEqual,
                 value: Value::from("abc")
             }
         );

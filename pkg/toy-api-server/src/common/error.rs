@@ -64,10 +64,10 @@ pub enum ApiError {
     #[error("store operation failed. {:?}", inner)]
     StoreOperationFailed { inner: String },
 
-    #[error("task id invalid format. id:{:?}", id)]
+    #[error("task id invalid format. id:{id}")]
     TaskIdInvalidFormat { id: String },
 
-    #[error("server initialize failed. {:?}", inner)]
+    #[error("server initialize failed. {inner}")]
     ServerInitializeFailed { inner: String },
 
     #[error("validation failed. {}", inner)]
@@ -79,7 +79,7 @@ pub enum ApiError {
     #[error("invalid selector {:?}", fields)]
     InvalidSelector { fields: Vec<String> },
 
-    #[error("invalid field {:?}", field)]
+    #[error("invalid field {field}")]
     InvalidField { field: String },
 
     #[error("{:?}", inner)]
