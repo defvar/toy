@@ -1,7 +1,7 @@
-use clap::{ArgEnum, Parser, ValueHint};
+use clap::{Parser, ValueEnum, ValueHint};
 use std::path::PathBuf;
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ArgEnum)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
 pub enum LogFormat {
     Text,
     Json,
@@ -21,7 +21,7 @@ pub struct LogOption {
         long,
         env = "TOY_LOG_FORMAT",
         default_value = "text",
-        arg_enum,
+        value_enum,
         value_parser
     )]
     pub format: LogFormat,
