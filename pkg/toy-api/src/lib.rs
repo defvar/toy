@@ -1,10 +1,10 @@
 //! The api model for managing toy.
-//!
 
 pub mod authentication;
 pub mod common;
 pub mod error;
 pub mod graph;
+pub mod metrics;
 pub mod role;
 pub mod role_binding;
 pub mod services;
