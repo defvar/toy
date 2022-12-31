@@ -1,5 +1,5 @@
 use crate::client::{
-    ApiClient, GraphClient, Rbaclient, RoleBindingClient, RoleClient, ServiceClient,
+    ApiClient, GraphClient, MetricsClient, Rbaclient, RoleBindingClient, RoleClient, ServiceClient,
     SupervisorClient, TaskClient,
 };
 use crate::error::ApiClientError;
@@ -8,6 +8,7 @@ use toy_api::common::{
     CommonPostResponse, CommonPutResponse, DeleteOption, FindOption, ListOption, PostOption,
     PutOption,
 };
+use toy_api::metrics::Metrics;
 use toy_api::role::{Role, RoleList};
 use toy_api::role_binding::{RoleBinding, RoleBindingList};
 use toy_api::services::{ServiceSpec, ServiceSpecList, ServiceSpecListOption};
@@ -27,6 +28,7 @@ impl ApiClient for NoopApiClient {
     type Supervisor = NoopApiClient;
     type Service = NoopApiClient;
     type Rbac = NoopRbacClient;
+    type Metrics = NoopApiClient;
 
     fn graph(&self) -> &Self::Graph {
         unimplemented!()
@@ -45,6 +47,10 @@ impl ApiClient for NoopApiClient {
     }
 
     fn rbac(&self) -> &Self::Rbac {
+        unimplemented!()
+    }
+
+    fn metrics(&self) -> &Self::Metrics {
         unimplemented!()
     }
 }
@@ -240,6 +246,17 @@ impl RoleBindingClient for NoopApiClient {
     }
 
     async fn delete(&self, _key: String, _opt: DeleteOption) -> Result<(), ApiClientError> {
+        unimplemented!()
+    }
+}
+
+#[async_trait]
+impl MetricsClient for NoopApiClient {
+    async fn post(
+        &self,
+        _v: Metrics,
+        _opt: PostOption,
+    ) -> Result<CommonPostResponse, ApiClientError> {
         unimplemented!()
     }
 }

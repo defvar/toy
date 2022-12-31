@@ -1,6 +1,7 @@
 //! # toy-api-client Implementation for http
 
 mod graph;
+mod metrics;
 mod role;
 mod role_binding;
 mod service;
@@ -15,6 +16,7 @@ pub use task::HttpTaskClient;
 use crate::client::{ApiClient, Rbaclient};
 use crate::error::ApiClientError;
 
+use crate::http::metrics::HttpMetricsClient;
 use crate::http::role::HttpRoleClient;
 use crate::http::role_binding::HttpRoleBindingClient;
 use std::sync::Arc;
@@ -28,6 +30,7 @@ pub struct HttpApiClient {
     sv: HttpSupervisorClient<ReqwestClient>,
     service: HttpServiceClient<ReqwestClient>,
     rbac: HttpRbacClient,
+    metrics: HttpMetricsClient<ReqwestClient>,
 }
 
 #[derive(Debug, Clone)]
@@ -55,6 +58,7 @@ impl HttpApiClient {
             sv: HttpSupervisorClient::new(root.as_ref(), Arc::clone(&auth), inner.clone()),
             service: HttpServiceClient::new(root.as_ref(), Arc::clone(&auth), inner.clone()),
             rbac,
+            metrics: HttpMetricsClient::new(root.as_ref(), Arc::clone(&auth), inner.clone()),
         })
     }
 }
@@ -82,6 +86,7 @@ impl ApiClient for HttpApiClient {
     type Supervisor = HttpSupervisorClient<ReqwestClient>;
     type Service = HttpServiceClient<ReqwestClient>;
     type Rbac = HttpRbacClient;
+    type Metrics = HttpMetricsClient<ReqwestClient>;
 
     fn graph(&self) -> &Self::Graph {
         &self.graph
@@ -101,6 +106,10 @@ impl ApiClient for HttpApiClient {
 
     fn rbac(&self) -> &Self::Rbac {
         &self.rbac
+    }
+
+    fn metrics(&self) -> &Self::Metrics {
+        &self.metrics
     }
 }
 

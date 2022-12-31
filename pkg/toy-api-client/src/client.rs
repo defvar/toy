@@ -5,6 +5,7 @@ use async_trait::async_trait;
 use toy_api::common;
 use toy_api::common::{CommonPostResponse, CommonPutResponse};
 use toy_api::graph::{Graph, GraphList};
+use toy_api::metrics::Metrics;
 use toy_api::role::{Role, RoleList};
 use toy_api::role_binding::{RoleBinding, RoleBindingList};
 use toy_api::services::{ServiceSpec, ServiceSpecList, ServiceSpecListOption};
@@ -21,6 +22,7 @@ pub trait ApiClient: Send + Sync {
     type Supervisor: SupervisorClient + 'static;
     type Service: ServiceClient + 'static;
     type Rbac: Rbaclient + 'static;
+    type Metrics: MetricsClient + 'static;
 
     fn graph(&self) -> &Self::Graph;
 
@@ -31,6 +33,8 @@ pub trait ApiClient: Send + Sync {
     fn service(&self) -> &Self::Service;
 
     fn rbac(&self) -> &Self::Rbac;
+
+    fn metrics(&self) -> &Self::Metrics;
 }
 
 /// Composit Rbac Api Client
@@ -172,4 +176,13 @@ pub trait RoleBindingClient: Send + Sync {
     ) -> Result<CommonPutResponse, ApiClientError>;
 
     async fn delete(&self, key: String, opt: common::DeleteOption) -> Result<(), ApiClientError>;
+}
+
+#[async_trait]
+pub trait MetricsClient: Send + Sync {
+    async fn post(
+        &self,
+        v: Metrics,
+        opt: common::PostOption,
+    ) -> Result<CommonPostResponse, ApiClientError>;
 }
