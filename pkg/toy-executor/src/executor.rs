@@ -5,7 +5,7 @@ use toy_core::data::{self, Frame};
 use toy_core::error::ServiceError;
 use toy_core::executor::{ServiceExecutor, TaskExecutor, TaskExecutorFactory};
 use toy_core::graph::Graph;
-use toy_core::metrics::MetricsEvent;
+use toy_core::metrics::MetricsEventKind;
 use toy_core::mpsc::{Incoming, Outgoing};
 use toy_core::node_channel::{self, Awaiter, Incomings, Outgoings, SignalOutgoings, Starters};
 use toy_core::registry::{App, Registry};
@@ -121,7 +121,9 @@ impl Executor {
                 }
             }
         }
-        awaiter_ctx.push_task_event(MetricsEvent::FinishTask).await;
+        awaiter_ctx
+            .push_task_event(MetricsEventKind::FinishTask)
+            .await;
         Ok(())
     }
 }
@@ -209,7 +211,7 @@ impl TaskExecutor for Executor {
             "{}",
             Operation::StartTask.as_message()
         );
-        self.ctx.push_task_event(MetricsEvent::StartTask).await;
+        self.ctx.push_task_event(MetricsEventKind::StartTask).await;
         // need to reverse ....
         let nodes = self
             .graph
@@ -271,7 +273,7 @@ where
     );
 
     task_ctx
-        .push_service_event(&uri, &service_type, MetricsEvent::StartService)
+        .push_service_event(&uri, &service_type, MetricsEventKind::StartService)
         .await;
 
     sc = service.started(task_ctx.clone(), sc.into());
@@ -285,14 +287,14 @@ where
         };
 
         task_ctx
-            .push_service_event(&uri, &service_type, MetricsEvent::ReceiveRequest)
+            .push_service_event(&uri, &service_type, MetricsEventKind::ReceiveRequest)
             .await;
 
         match item {
             Some(Ok(req)) if req.is_stop() => {
                 tracing::info!(parent: &info_span, ?uri, "receive stop signal.");
                 task_ctx
-                    .push_service_event(&uri, &service_type, MetricsEvent::ReceiveStop)
+                    .push_service_event(&uri, &service_type, MetricsEventKind::ReceiveStop)
                     .await;
                 break;
             }
@@ -306,14 +308,22 @@ where
                     "receive upstream finish signal."
                 );
                 task_ctx
-                    .push_service_event(&uri, &service_type, MetricsEvent::ReceiveUpstreamFinish)
+                    .push_service_event(
+                        &uri,
+                        &service_type,
+                        MetricsEventKind::ReceiveUpstreamFinish,
+                    )
                     .await;
                 {
                     let tx = tx.clone();
                     let ctx = task_ctx.clone();
                     sc = service.upstream_finish(ctx, sc.into(), req, tx).await?;
                     task_ctx
-                        .push_service_event(&uri, &service_type, MetricsEvent::FinishUpstreamFinish)
+                        .push_service_event(
+                            &uri,
+                            &service_type,
+                            MetricsEventKind::FinishUpstreamFinish,
+                        )
                         .await;
                 }
                 if finish_count >= upstream_count {
@@ -325,7 +335,7 @@ where
                         .push_service_event(
                             &uri,
                             &service_type,
-                            MetricsEvent::FinishUpstreamFinishAll,
+                            MetricsEventKind::FinishUpstreamFinishAll,
                         )
                         .await;
                 }
@@ -337,10 +347,13 @@ where
                     service.handle(task_ctx, sc.into(), req, tx).await?
                 };
                 task_ctx
-                    .push_service_event(&uri, &service_type, MetricsEvent::SendRequest)
+                    .push_service_event(&uri, &service_type, MetricsEventKind::SendRequest)
                     .await;
             }
             Some(Err(e)) => {
+                task_ctx
+                    .push_service_event(&uri, &service_type, MetricsEventKind::ReceiveError)
+                    .await;
                 tracing::error!(parent: &info_span, ?uri, err=?e, "node receive message error");
                 return Err(e);
             }
@@ -359,7 +372,7 @@ where
         Operation::FinishService,
     );
     task_ctx
-        .push_service_event(&uri, &service_type, MetricsEvent::FinishService)
+        .push_service_event(&uri, &service_type, MetricsEventKind::FinishService)
         .await;
     Ok(())
 }

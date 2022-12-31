@@ -1,4 +1,3 @@
-use crate::metrics::{EventCache, SupervisorMetrics};
 use crate::task::RunningTask;
 use crate::{Request, SupervisorError};
 use chrono::{DateTime, Utc};
@@ -20,12 +19,11 @@ pub struct SupervisorContext<C> {
     started_at: Option<DateTime<Utc>>,
     last_event_exported_at: Arc<Mutex<Option<DateTime<Utc>>>>,
     last_task_executed_at: Arc<Mutex<Option<DateTime<Utc>>>>,
+    last_metrics_exported_at: Arc<Mutex<Option<DateTime<Utc>>>>,
     /// send any request.
     tx: Outgoing<Request, ServiceError>,
     schemas: Arc<Vec<ServiceSchema>>,
     tx_http_server_shutdown: Option<Outgoing<(), SupervisorError>>,
-    metrics: SupervisorMetrics,
-    events: EventCache,
 }
 
 impl<C> SupervisorContext<C> {
@@ -44,11 +42,10 @@ impl<C> SupervisorContext<C> {
             started_at: None,
             last_event_exported_at: Arc::new(Mutex::new(None)),
             last_task_executed_at: Arc::new(Mutex::new(None)),
+            last_metrics_exported_at: Arc::new(Mutex::new(None)),
             tx,
             schemas: Arc::new(schemas),
             tx_http_server_shutdown: None,
-            metrics: SupervisorMetrics::new(),
-            events: EventCache::new(),
         }
     }
 
@@ -104,14 +101,6 @@ impl<C> SupervisorContext<C> {
         self.tx_http_server_shutdown.clone()
     }
 
-    pub fn events(&self) -> &EventCache {
-        &self.events
-    }
-
-    pub fn metrics(&self) -> &SupervisorMetrics {
-        &self.metrics
-    }
-
     pub async fn last_task_executed_at(&self) -> Option<DateTime<Utc>> {
         let lock = self.last_task_executed_at.lock().await;
         lock.clone()
@@ -129,6 +118,16 @@ impl<C> SupervisorContext<C> {
 
     pub async fn event_exported(&self) {
         let mut lock = self.last_event_exported_at.lock().await;
+        *lock = Some(Utc::now());
+    }
+
+    pub async fn last_metrics_exported_at(&self) -> Option<DateTime<Utc>> {
+        let lock = self.last_metrics_exported_at.lock().await;
+        lock.clone()
+    }
+
+    pub async fn metrics_exported(&self) {
+        let mut lock = self.last_metrics_exported_at.lock().await;
         *lock = Some(Utc::now());
     }
 }

@@ -14,10 +14,5 @@ pub struct Status {
     pub(crate) running_tasks: Vec<(TaskId, String)>,
     pub(crate) last_task_executed_at: Option<DateTime<Utc>>,
     pub(crate) last_event_exported_at: Option<DateTime<Utc>>,
-}
-
-#[derive(Serialize)]
-pub struct Metrics {
-    pub(crate) name: String,
-    pub(crate) task_start_count: u64,
+    pub(crate) last_metrics_exported_at: Option<DateTime<Utc>>,
 }

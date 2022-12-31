@@ -1,7 +1,9 @@
 use crate::context::SupervisorContext;
-use crate::http::{Metrics, Status};
+use crate::http::Status;
 use crate::{Request, RunTaskResponse, SupervisorError};
+use chrono::Utc;
 use toy_api::common::{ListOptionLike, PostOption};
+use toy_api::metrics::{Metrics, MetricsEntry};
 use toy_api::services::{ServiceSpec, ServiceSpecListOption};
 use toy_api::task::{AllocateResponse, PendingTask};
 use toy_api_client::ApiClient;
@@ -11,6 +13,7 @@ use toy_api_http_common::axum::response::IntoResponse;
 use toy_api_http_common::bytes::Bytes;
 use toy_core::error::ServiceError;
 use toy_core::graph::Graph;
+use toy_core::metrics;
 
 pub async fn index() -> impl IntoResponse {
     "Hello"
@@ -28,6 +31,7 @@ where
         running_tasks: ctx.task_id_and_graph_name().await,
         last_task_executed_at: ctx.last_task_executed_at().await,
         last_event_exported_at: ctx.last_event_exported_at().await,
+        last_metrics_exported_at: ctx.last_metrics_exported_at().await,
     };
     match toy_pack_json::pack_to_string(&st) {
         Ok(v) => Ok(v),
@@ -105,14 +109,14 @@ where
 }
 
 pub async fn event_buffers<C>(
-    State(ctx): State<SupervisorContext<C>>,
+    State(_ctx): State<SupervisorContext<C>>,
     Query(opt): Query<PostOption>,
 ) -> Result<impl IntoResponse, SupervisorError>
 where
     C: ApiClient + Clone + Send + Sync + 'static,
 {
     let format = opt.format();
-    let events = ctx.events().records().await;
+    let events = metrics::context::events().records().await;
     Ok(toy_api_http_common::reply::into_response(
         &events,
         format,
@@ -128,10 +132,22 @@ where
     C: ApiClient + Clone + Send + Sync + 'static,
 {
     let format = opt.format();
-    let r = Metrics {
-        name: ctx.name().to_string(),
-        task_start_count: ctx.metrics().task_start_count(),
-    };
+    let now = Utc::now();
+    let counters = metrics::context::metrics().get_counters().await;
+    let gauges = metrics::context::metrics().get_gauges().await;
+
+    let mut counters = counters
+        .iter()
+        .map(|(k, v)| MetricsEntry::counter(k.as_kind_text(), v.get().unwrap_or(0)))
+        .collect::<Vec<_>>();
+
+    let mut gauges = gauges
+        .iter()
+        .map(|(k, v)| MetricsEntry::gauge(k.as_kind_text(), v.get().unwrap_or(0f64)))
+        .collect::<Vec<_>>();
+
+    counters.append(&mut gauges);
+    let r = Metrics::with(ctx.name(), now, counters);
 
     Ok(toy_api_http_common::reply::into_response(
         &r,

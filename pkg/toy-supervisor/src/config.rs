@@ -3,6 +3,10 @@ pub trait SupervisorConfig {
 
     fn event_export_interval_mills(&self) -> u64;
 
+    fn metrics_export_interval_mills(&self) -> u64 {
+        self.event_export_interval_mills()
+    }
+
     fn cert_path(&self) -> String;
 
     fn key_path(&self) -> String;

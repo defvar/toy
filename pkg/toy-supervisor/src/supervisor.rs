@@ -1,15 +1,15 @@
-use crate::beat::beat;
 use crate::context::SupervisorContext;
-use crate::event_export::event_export;
 use crate::exporters::ToyExporter;
 use crate::msg::Request;
 use crate::task::RunningTask;
+use crate::workers::beat::beat;
+use crate::workers::event_export::event_export;
+use crate::workers::metrics_export::metrics_export;
 use crate::{Response, RunTaskResponse, SupervisorConfig, SupervisorError, TaskResponse};
 use chrono::Utc;
 use core::future::Future;
 use core::pin::Pin;
 use core::task::{Context, Poll};
-use futures_util::FutureExt;
 use std::collections::HashMap;
 use std::fmt::Formatter;
 use std::net::SocketAddr;
@@ -24,6 +24,7 @@ use toy_core::data::Frame;
 use toy_core::error::ServiceError;
 use toy_core::executor::{TaskExecutor, TaskExecutorFactory};
 use toy_core::graph::Graph;
+use toy_core::metrics;
 use toy_core::mpsc::{self, Incoming, Outgoing};
 use toy_core::registry::{App, Registry, ServiceSchema};
 use toy_core::task::{TaskContext, TaskId};
@@ -133,7 +134,7 @@ where
             return Err(());
         }
 
-        self.spawn_server();
+        self.spawn_workers();
 
         // main
         while let Some(r) = self.rx.next().await {
@@ -142,14 +143,12 @@ where
                     Request::RunTask(id, g, tx) => {
                         tracing::info!(name=?self.ctx.name(), "receive run task request.");
 
-                        self.ctx.metrics().inc_task_start_count();
-
                         let app = Arc::clone(&self.app);
                         let ctx = self.ctx.clone();
                         let _ = toy_rt::spawn_named(
                             async move {
                                 let tasks = ctx.tasks();
-                                let events = ctx.events().new_task_events(id).await;
+                                let events = metrics::context::events_by_task_id(id).await;
                                 let task_ctx = TaskContext::with_parts(id, g, events);
 
                                 let (e, tx_signal) = TF::new(task_ctx.clone());
@@ -246,36 +245,73 @@ where
         Ok(())
     }
 
-    fn spawn_server(&mut self) {
+    fn spawn_workers(&mut self) {
         if self.ctx.addr().is_none() {
             return;
         }
 
         let ctx = self.ctx.clone();
         let addr = ctx.addr().unwrap().clone();
+        let name = ctx.name().to_string();
+        let client = ctx.client().clone().unwrap();
         let config = self.config.clone();
         let (tx, rx) = mpsc::channel::<(), SupervisorError>(10);
         self.ctx.set_tx_http_server_shutdown(Some(tx));
+        let beat_interval = config.heart_beat_interval_mills();
+        let event_interval = config.event_export_interval_mills();
+        let metrics_interval = config.metrics_export_interval_mills();
 
-        toy_rt::spawn_named(
-            async move {
-                let name = ctx.name().to_string();
-                let c = ctx.client().clone().unwrap();
-                let beat_interval = config.heart_beat_interval_mills();
-                let event_interval = config.event_export_interval_mills();
-                tracing::info!(?name, "start server.");
-                let server = crate::http::Server::new(ctx.clone());
-                let f1 = server.run(addr, config.clone(), rx);
-                let f2 = beat(c.clone(), name.clone(), beat_interval);
-                let f3 = event_export(&ctx, Some(ToyExporter::new(c)), event_interval);
-                futures_util::pin_mut!(f1);
-                futures_util::pin_mut!(f2);
-                futures_util::pin_mut!(f3);
-                futures_util::future::select_all(vec![f1.boxed(), f2.boxed(), f3.boxed()]).await;
-                tracing::info!(?name, "shutdown server.");
-            },
-            "supervisor-api-serve",
-        );
+        {
+            let ctx = ctx.clone();
+            let n = name.clone();
+            toy_rt::spawn_named(
+                async move {
+                    tracing::info!(name=?n, "start server.");
+                    let server = crate::http::Server::new(ctx);
+                    server.run(addr, config, rx).await;
+                    tracing::info!(name=?n, "stop server.");
+                },
+                "supervisor-api-serve",
+            );
+        }
+        {
+            let c = client.clone();
+            let n = name.clone();
+            toy_rt::spawn_named(
+                async move {
+                    tracing::info!(name=?n, "start beater.");
+                    beat(c, &n, beat_interval).await;
+                    tracing::info!(name=?n, "stop beater.");
+                },
+                "supervisor-beat",
+            );
+        }
+        {
+            let ctx = ctx.clone();
+            let c = client.clone();
+            let n = name.clone();
+            toy_rt::spawn_named(
+                async move {
+                    tracing::info!(name=?n, "start event exporter.");
+                    event_export(ctx, Some(ToyExporter::<C>::new(c)), event_interval).await;
+                    tracing::info!(name=?n, "stop event exporter.");
+                },
+                "supervisor-event-exporter",
+            );
+        }
+        {
+            let ctx = ctx.clone();
+            let c = client.clone();
+            let n = name.clone();
+            toy_rt::spawn_named(
+                async move {
+                    tracing::info!(name=?n, "start metrics exporter.");
+                    metrics_export(ctx, Some(ToyExporter::<C>::new(c)), metrics_interval).await;
+                    tracing::info!(name=?n, "stop metrics exporter.");
+                },
+                "supervisor-metrics-exporter",
+            );
+        }
     }
 
     async fn register(&self, schemas: Vec<ServiceSchema>) -> Result<(), ()> {

@@ -67,6 +67,12 @@ pub struct Subscribe {
         default_value = "10000"
     )]
     pub event_export_interval_mills: u64,
+    #[clap(
+        long,
+        env = "TOY_SUPERVISOR_METRICS_EXPORT_INTERVAL",
+        default_value = "10000"
+    )]
+    pub metrics_export_interval_mills: u64,
 }
 
 #[derive(Parser, Debug)]

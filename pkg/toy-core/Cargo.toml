@@ -16,6 +16,7 @@ ryu = "1.0"
 uuid = { version = "0.8", features = ["v4"] }
 serde = { version = "1.0", features = ["derive"]  }
 chrono = { version = "0.4", features = ["serde"] }
+once_cell = { version = "1.16.0"}
 
 toy-pack = { path = "../../shared/toy-pack", features = ["derive"] }
 toy-map = { path = "../../shared/toy-map" }
@@ -23,4 +24,5 @@ toy-map = { path = "../../shared/toy-map" }
 [dev-dependencies]
 toy-pack = { path = "../../shared/toy-pack", features = ["derive"] }
 toy-pack-json = { path = "../../shared/toy-pack-json" }
-tokio = { version = "1.19.2", features = ["rt-multi-thread"] }
+tokio = { version = "1.19.2", features = ["full", "test-util"] }
+tokio-test = "0.4.2"

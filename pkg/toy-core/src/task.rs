@@ -2,7 +2,7 @@
 //!
 
 use crate::graph::Graph;
-use crate::metrics::{EventRecord, Events, MetricsEvent};
+use crate::metrics::{EventRecord, MetricsEventKind, MetricsEvents};
 use crate::{ServiceType, Uri};
 use chrono::Utc;
 use serde::{de::Visitor, Deserialize, Deserializer, Serialize, Serializer};
@@ -28,7 +28,7 @@ pub struct TaskContext {
     inner: Arc<Inner>,
     uri: Uri,
     current_span: Option<tracing::Span>,
-    events: Arc<Mutex<Events>>,
+    events: Arc<Mutex<MetricsEvents>>,
 }
 
 struct Inner {
@@ -106,11 +106,11 @@ impl TaskContext {
             }),
             uri: Uri::from(task_name),
             current_span: None,
-            events: Arc::new(Mutex::new(Events::new())),
+            events: Arc::new(Mutex::new(MetricsEvents::new())),
         }
     }
 
-    pub fn with_parts(id: TaskId, graph: Graph, events: Arc<Mutex<Events>>) -> Self {
+    pub fn with_parts(id: TaskId, graph: Graph, events: Arc<Mutex<MetricsEvents>>) -> Self {
         let task_name = graph.name().to_owned();
         Self {
             inner: Arc::new(Inner {
@@ -167,12 +167,8 @@ impl TaskContext {
     task_span!(debug_span, DEBUG);
     task_span!(info_span, INFO);
 
-    pub async fn push_event(&self, e: EventRecord) {
-        let mut lock = self.events.lock().await;
-        lock.push(e);
-    }
-
-    pub async fn push_task_event(&self, event: MetricsEvent) {
+    pub async fn push_task_event(&self, event: MetricsEventKind) {
+        event.apply_metrics().await;
         let mut lock = self.events.lock().await;
         lock.push(EventRecord::with_task(
             self.id(),
@@ -187,8 +183,9 @@ impl TaskContext {
         &self,
         uri: &Uri,
         service_type: &ServiceType,
-        event: MetricsEvent,
+        event: MetricsEventKind,
     ) {
+        event.apply_metrics().await;
         let mut lock = self.events.lock().await;
         lock.push(EventRecord::with_service(
             self.id(),

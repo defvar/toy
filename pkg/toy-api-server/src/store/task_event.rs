@@ -47,6 +47,10 @@ pub trait TaskEventStoreOps: Send + Sync {
     ) -> Result<(), Self::Err>;
 }
 
+//////////////////////////
+// option
+//////////////////////////
+
 #[derive(Clone, Debug)]
 pub struct ListEventOption {
     name: Option<Predicate>,

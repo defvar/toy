@@ -1,14 +1,12 @@
-mod beat;
 mod config;
 mod context;
 mod error;
-mod event_export;
 mod exporters;
 mod http;
-mod metrics;
 mod msg;
 mod supervisor;
 mod task;
+mod workers;
 
 pub use self::config::SupervisorConfig;
 pub use self::error::SupervisorError;

@@ -15,6 +15,7 @@ mod server;
 
 pub mod config;
 pub mod graph;
+pub mod metrics;
 pub mod services;
 pub mod store;
 pub mod supervisors;
@@ -33,6 +34,7 @@ pub mod api {
     //! The `toy-api-server` apis.
 
     pub use super::graph;
+    pub use super::metrics;
     pub use super::rbac;
     pub use super::services;
     pub use super::supervisors;

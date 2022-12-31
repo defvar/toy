@@ -1,7 +1,8 @@
-use crate::api::{graph, rbac, services, supervisors, task};
+use crate::api::{graph, metrics, rbac, services, supervisors, task};
 use crate::config::ServerConfig;
 use crate::context::{ServerState, WrappedState};
 use crate::store::kv::KvStore;
+use crate::store::metrics::MetricsStore;
 use crate::store::task_event::TaskEventStore;
 use std::net::SocketAddr;
 use tower_http::cors::CorsLayer;
@@ -33,17 +34,20 @@ where
     ) {
         let c = state.client().clone();
         if let Err(e) = state.kv_store_mut().establish(c.clone()) {
-            tracing::error!("kv store connection failed. error:{:?}", e);
+            tracing::error!("kv store connection failed. error:{}", e);
         }
         if let Err(e) = state.task_event_store_mut().establish(c.clone()) {
-            tracing::error!("task log store connection failed. error:{:?}", e);
+            tracing::error!("task log store connection failed. error:{}", e);
+        }
+        if let Err(e) = state.metrics_store_mut().establish(c.clone()) {
+            tracing::error!("metrics store connection failed. error:{}", e);
         }
 
         if let Err(e) =
             crate::initializer::initialize(&self.config, state.kv_store(), state.client().clone())
                 .await
         {
-            tracing::error!("{:?}", e);
+            tracing::error!("{}", e);
             return;
         }
 
@@ -93,6 +97,7 @@ where
                 "/tasks/events",
                 get(task::list_task_event).post(task::post_task_event),
             )
+            .route("/metrics", post(metrics::post))
             .layer(CorsLayer::very_permissive())
             .layer(TraceLayer::new_for_http())
             .with_state(WrappedState::new(state));

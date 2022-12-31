@@ -1,6 +1,7 @@
 use crate::async_trait::async_trait;
 use crate::authentication::{Auth, AuthUser};
 use crate::store::kv::KvStore;
+use crate::store::metrics::MetricsStore;
 use crate::store::task_event::TaskEventStore;
 use crate::ApiError;
 use toy_api_http_common::axum::{extract::FromRequestParts, http::request::Parts};
@@ -16,6 +17,7 @@ pub trait ServerState: Clone + Send + Sync {
     type Auth: Auth<Self::Client> + 'static;
     type KvStore: KvStore<Self::Client> + 'static;
     type TaskEventStore: TaskEventStore<Self::Client> + 'static;
+    type MetricsStore: MetricsStore<Self::Client> + 'static;
 
     fn client(&self) -> &Self::Client;
 
@@ -28,6 +30,10 @@ pub trait ServerState: Clone + Send + Sync {
     fn task_event_store(&self) -> &Self::TaskEventStore;
 
     fn task_event_store_mut(&mut self) -> &mut Self::TaskEventStore;
+
+    fn metrics_store(&self) -> &Self::MetricsStore;
+
+    fn metrics_store_mut(&mut self) -> &mut Self::MetricsStore;
 }
 
 #[derive(Debug, Clone)]

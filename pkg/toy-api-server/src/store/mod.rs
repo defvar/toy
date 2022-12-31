@@ -4,6 +4,7 @@ pub mod error;
 pub mod kv;
 pub mod memory;
 pub mod memory_task_log;
+pub mod metrics;
 pub mod task_event;
 
 /// Marker Trait for Connection.

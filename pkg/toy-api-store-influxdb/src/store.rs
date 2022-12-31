@@ -1,8 +1,10 @@
 use std::fmt::{Debug, Formatter};
 use std::marker::PhantomData;
+use toy_api::metrics::{Metrics, MetricsEntry};
 use toy_api::selection::Operator;
 use toy_api::task::{TaskEvent, TaskEventList};
 use toy_api_server::store::error::StoreError;
+use toy_api_server::store::metrics::{MetricsStore, MetricsStoreOps};
 use toy_api_server::store::task_event::{
     CreateOption, ListEventOption, ListTaskOption, TaskEventStore, TaskEventStoreOps,
 };
@@ -115,6 +117,26 @@ where
     }
 }
 
+impl<T> MetricsStore<T> for InfluxdbStore<T>
+where
+    T: HttpClient,
+{
+    type Con = InfluxdbConnection<T>;
+    type Ops = InfluxdbStoreOps<T>;
+
+    fn con(&self) -> Option<Self::Con> {
+        self.con.clone()
+    }
+
+    fn ops(&self) -> Self::Ops {
+        InfluxdbStoreOps { _t: PhantomData }
+    }
+
+    fn establish(&mut self, client: T) -> Result<(), StoreError> {
+        self.establish_influxdb(client, "metrics store")
+    }
+}
+
 #[toy_api_server::async_trait::async_trait]
 impl<T> TaskEventStoreOps for InfluxdbStoreOps<T>
 where
@@ -195,7 +217,7 @@ where
         let mut builder = LineProtocolBuilder::new();
         for e in &events {
             builder
-                .start_record("toy", e.timestamp().clone())
+                .start_record("event", e.timestamp().clone())
                 .tag("name", e.name())
                 .tag("supervisor", e.supervisor())
                 .tag("service_type", e.service_type().full_name())
@@ -222,5 +244,41 @@ fn to_field_value(value: &Value) -> FieldValue {
         Value::TimeStamp(v) => FieldValue::Timestamp(v.clone()),
         Value::None => FieldValue::Nil,
         _ => FieldValue::Nil,
+    }
+}
+
+#[toy_api_server::async_trait::async_trait]
+impl<T> MetricsStoreOps for InfluxdbStoreOps<T>
+where
+    T: HttpClient,
+{
+    type Con = InfluxdbConnection<T>;
+    type Err = StoreError;
+
+    async fn create(
+        &self,
+        con: Self::Con,
+        metrics: Metrics,
+        _opt: toy_api_server::store::metrics::CreateOption,
+    ) -> Result<(), Self::Err> {
+        let mut builder = LineProtocolBuilder::new();
+        builder
+            .start_record("metrics", metrics.timestamp().clone())
+            .tag("supervisor", metrics.supervisor());
+        for item in metrics.items() {
+            match item {
+                MetricsEntry::Counter(v) => {
+                    builder.field(v.name(), FieldValue::UInteger(v.value()))
+                }
+                MetricsEntry::Gauge(v) => builder.field(v.name(), FieldValue::Float(v.value())),
+            };
+        }
+        builder.end_record();
+        let records = builder.build();
+        con.client
+            .write(&con.token, &con.bucket, &con.org, records)
+            .await
+            .map_err(|e| StoreError::error(e))?;
+        Ok(())
     }
 }

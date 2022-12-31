@@ -22,6 +22,7 @@ mod opts;
 struct Config {
     heart_beat_interval_mills: u64,
     event_export_interval_mills: u64,
+    metrics_export_interval_mills: u64,
 }
 
 impl SupervisorConfig for Config {
@@ -31,6 +32,10 @@ impl SupervisorConfig for Config {
 
     fn event_export_interval_mills(&self) -> u64 {
         self.event_export_interval_mills
+    }
+
+    fn metrics_export_interval_mills(&self) -> u64 {
+        self.metrics_export_interval_mills
     }
 
     fn cert_path(&self) -> String {
@@ -51,6 +56,7 @@ impl Default for Config {
         Self {
             heart_beat_interval_mills: 0,
             event_export_interval_mills: 0,
+            metrics_export_interval_mills: 0,
         }
     }
 }
@@ -117,6 +123,7 @@ fn go() -> Result<(), Error> {
             let config = Config {
                 heart_beat_interval_mills: c.heart_beat_interval_mills,
                 event_export_interval_mills: c.event_export_interval_mills,
+                metrics_export_interval_mills: c.metrics_export_interval_mills,
             };
             let (sv, _, _) =
                 toy::supervisor::subscribe(&c.name, ExecutorFactory, app, api_client, addr, config);

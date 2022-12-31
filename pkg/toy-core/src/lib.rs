@@ -34,6 +34,7 @@ pub mod prelude {
     pub use super::data::{self, Frame, Value};
     pub use super::error::ServiceError;
     pub use super::graph::Graph;
+    pub use super::metrics;
     pub use super::mpsc::{Incoming, Outgoing};
     pub use super::registry::{app, layer, App, Layered, NoopEntry, Plugin, PortType, Registry};
     pub use super::service::{

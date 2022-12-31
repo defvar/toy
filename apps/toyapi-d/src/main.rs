@@ -32,6 +32,7 @@ struct ToyState {
     auth: CommonAuths<JWTAuth, JWTAuth>,
     kv_store: EtcdStore<ReqwestClient>,
     task_log_store: InfluxdbStore<ReqwestClient>,
+    metrics_store: InfluxdbStore<ReqwestClient>,
 }
 
 impl ServerConfig for ToyConfig {
@@ -65,6 +66,7 @@ impl ServerState for ToyState {
     type Auth = CommonAuths<JWTAuth, JWTAuth>;
     type KvStore = EtcdStore<ReqwestClient>;
     type TaskEventStore = InfluxdbStore<ReqwestClient>;
+    type MetricsStore = InfluxdbStore<ReqwestClient>;
 
     fn client(&self) -> &Self::Client {
         &self.client
@@ -88,6 +90,14 @@ impl ServerState for ToyState {
 
     fn task_event_store_mut(&mut self) -> &mut Self::TaskEventStore {
         &mut self.task_log_store
+    }
+
+    fn metrics_store(&self) -> &Self::MetricsStore {
+        &self.metrics_store
+    }
+
+    fn metrics_store_mut(&mut self) -> &mut Self::MetricsStore {
+        &mut self.metrics_store
     }
 }
 
@@ -130,6 +140,7 @@ fn go() -> Result<(), Error> {
         auth: CommonAuths::new(JWTAuth::new(), JWTAuth::new()),
         kv_store: EtcdStore::new(),
         task_log_store: InfluxdbStore::new(),
+        metrics_store: InfluxdbStore::new(),
     };
 
     let server = toy::api_server::Server::new(config);
