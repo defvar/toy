@@ -74,7 +74,7 @@ async fn sort(data: &Vec<Value>, key: SortKey) -> Vec<Frame> {
     drop(tx);
 
     let mut result = vec![];
-    while let Some(Ok(item)) = rx.next().await {
+    while let Some(item) = rx.next().await {
         result.push(item);
     }
 

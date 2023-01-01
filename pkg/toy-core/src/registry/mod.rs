@@ -1,15 +1,14 @@
 //! Registry for services.
 //! Register a service that can be defined as a Graph.
-//!
 
 use crate::data::schema::visitors::JsonSchemaVisitor;
 use crate::data::schema::JsonSchema;
 use crate::data::Frame;
-use crate::error::ServiceError;
 use crate::executor::ServiceExecutor;
 use crate::service::ServiceFactory;
 use crate::service_type::ServiceType;
 use crate::service_uri::Uri;
+use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use toy_pack::schema::{to_schema, Schema};
 
@@ -22,17 +21,12 @@ pub use app::App;
 pub use layered::Layered;
 pub use plugin::Plugin;
 pub use port_type::PortType;
-use serde::de::DeserializeOwned;
 
 /// Create layer.
 /// Register a single service in a layered structure to compose a plugin.
 pub fn layer<F>(layer: (&str, &str, F)) -> Layered<NoopEntry, F>
 where
-    F: ServiceFactory<Request = Frame, Error = ServiceError, InitError = ServiceError>
-        + Send
-        + Sync
-        + Clone
-        + 'static,
+    F: ServiceFactory<Request = Frame> + Send + Sync + Clone + 'static,
     F::Service: Send,
     F::Context: Send,
     F::Config: DeserializeOwned + Send,
@@ -49,19 +43,20 @@ where
     Plugin::new(NoopEntry, registry)
 }
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum ExecuteResult {
+    Done,
+    NotFound,
+}
+
 pub trait Registry: Clone + Send + Sync {
     fn service_types(&self) -> Vec<ServiceType>;
 
     fn schemas(&self) -> Vec<ServiceSchema>;
 
-    fn delegate<T>(
-        &self,
-        tp: &ServiceType,
-        uri: &Uri,
-        executor: &mut T,
-    ) -> Result<(), ServiceError>
+    fn delegate<T>(&self, tp: &ServiceType, uri: &Uri, executor: &mut T) -> ExecuteResult
     where
-        T: ServiceExecutor<Request = Frame, Error = ServiceError, InitError = ServiceError>;
+        T: ServiceExecutor<Request = Frame>;
 }
 
 /// ServiceSchema (json schema format) for front-end api.
@@ -113,15 +108,10 @@ impl Registry for NoopEntry {
         Vec::new()
     }
 
-    fn delegate<T>(
-        &self,
-        tp: &ServiceType,
-        _uri: &Uri,
-        _executor: &mut T,
-    ) -> Result<(), ServiceError>
+    fn delegate<T>(&self, _tp: &ServiceType, _uri: &Uri, _executor: &mut T) -> ExecuteResult
     where
-        T: ServiceExecutor<Request = Frame, Error = ServiceError, InitError = ServiceError>,
+        T: ServiceExecutor<Request = Frame>,
     {
-        Err(ServiceError::service_not_found(tp))
+        ExecuteResult::NotFound
     }
 }

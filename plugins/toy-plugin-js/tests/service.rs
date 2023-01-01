@@ -29,6 +29,6 @@ async fn test_js_function() {
 
     let r = js_function(task_ctx, c, frame, tx).await;
     assert!(r.is_ok());
-    let r = rx.next().await.unwrap().unwrap().value().cloned().unwrap();
+    let r = rx.next().await.unwrap().value().cloned().unwrap();
     assert_eq!(r, expected);
 }

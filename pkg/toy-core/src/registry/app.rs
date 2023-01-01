@@ -1,7 +1,6 @@
 use crate::data::Frame;
-use crate::error::ServiceError;
 use crate::executor::ServiceExecutor;
-use crate::registry::{Registry, ServiceSchema};
+use crate::registry::{ExecuteResult, Registry, ServiceSchema};
 use crate::service_type::ServiceType;
 use crate::service_uri::Uri;
 use std::fmt::{self, Debug};
@@ -38,14 +37,11 @@ where
         self.schemas.clone()
     }
 
-    fn delegate<T>(&self, tp: &ServiceType, uri: &Uri, executor: &mut T) -> Result<(), ServiceError>
+    fn delegate<T>(&self, tp: &ServiceType, uri: &Uri, executor: &mut T) -> ExecuteResult
     where
-        T: ServiceExecutor<Request = Frame, Error = ServiceError, InitError = ServiceError>,
+        T: ServiceExecutor<Request = Frame>,
     {
-        match self.plugin.delegate(tp, uri, executor) {
-            Ok(()) => Ok(()),
-            Err(_) => Err(ServiceError::service_not_found(tp)),
-        }
+        self.plugin.delegate(tp, uri, executor)
     }
 }
 

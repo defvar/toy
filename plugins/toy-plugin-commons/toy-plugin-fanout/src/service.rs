@@ -35,7 +35,7 @@ impl Service for Broadcast {
         _task_ctx: TaskContext,
         ctx: Self::Context,
         req: Self::Request,
-        mut tx: Outgoing<Self::Request, Self::Error>,
+        mut tx: Outgoing<Self::Request>,
     ) -> Self::Future {
         async move {
             for p in tx.ports() {
@@ -50,7 +50,7 @@ impl Service for Broadcast {
         _task_ctx: TaskContext,
         ctx: Self::Context,
         _req: Self::Request,
-        _tx: Outgoing<Self::Request, Self::Error>,
+        _tx: Outgoing<Self::Request>,
     ) -> Self::UpstreamFinishFuture {
         async move { Ok(ServiceContext::Ready(ctx)) }
     }
@@ -59,7 +59,7 @@ impl Service for Broadcast {
         &mut self,
         _task_ctx: TaskContext,
         ctx: Self::Context,
-        _tx: Outgoing<Self::Request, Self::Error>,
+        _tx: Outgoing<Self::Request>,
     ) -> Self::UpstreamFinishAllFuture {
         async move { Ok(ServiceContext::Complete(ctx)) }
     }

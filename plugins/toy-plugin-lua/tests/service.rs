@@ -32,7 +32,7 @@ async fn test_lua_function() {
 
     let r = service.handle(task_ctx, c, frame, tx).await;
     assert!(r.is_ok());
-    let r = rx.next().await.unwrap().unwrap().value().cloned().unwrap();
+    let r = rx.next().await.unwrap().value().cloned().unwrap();
     assert_eq!(r.path("message"), expected.path("message"));
     assert_eq!(
         r.path("number").unwrap().parse_integer::<i64>(),

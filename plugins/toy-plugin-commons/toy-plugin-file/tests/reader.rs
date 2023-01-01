@@ -65,7 +65,7 @@ async fn read(root: &TempDir, file_name: &str) -> Vec<Value> {
     drop(tx);
 
     let mut result = vec![];
-    while let Some(Ok(item)) = rx.next().await {
+    while let Some(item) = rx.next().await {
         result.push(item.value().unwrap().clone());
     }
     result

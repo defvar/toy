@@ -11,7 +11,6 @@ use toy_api_http_common::axum::extract::{Query, State};
 use toy_api_http_common::axum::http::StatusCode;
 use toy_api_http_common::axum::response::IntoResponse;
 use toy_api_http_common::bytes::Bytes;
-use toy_core::error::ServiceError;
 use toy_core::graph::Graph;
 use toy_core::metrics;
 
@@ -83,7 +82,7 @@ where
         .map_err(|e| Into::<toy_api_http_common::Error>::into(e))?;
     let g = Graph::from(v).map_err(|e| Into::<SupervisorError>::into(e))?;
     tracing::debug!("{:?}", g);
-    let (o_tx, _) = toy_core::oneshot::channel::<RunTaskResponse, ServiceError>();
+    let (o_tx, _) = toy_core::oneshot::channel::<RunTaskResponse>();
     let req = Request::RunTask(pending.task_id(), g, o_tx);
     let _ = ctx.tx_mut().send_ok(req).await;
     Ok(toy_api_http_common::reply::into_response(

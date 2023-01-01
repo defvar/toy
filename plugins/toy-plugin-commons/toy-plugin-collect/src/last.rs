@@ -32,7 +32,7 @@ impl Service for Last {
         _task_ctx: TaskContext,
         ctx: Self::Context,
         req: Self::Request,
-        _tx: Outgoing<Self::Request, Self::Error>,
+        _tx: Outgoing<Self::Request>,
     ) -> Self::Future {
         async move {
             Ok(ServiceContext::Ready(LastContext {
@@ -47,7 +47,7 @@ impl Service for Last {
         _task_ctx: TaskContext,
         ctx: Self::Context,
         _req: Self::Request,
-        _tx: Outgoing<Self::Request, Self::Error>,
+        _tx: Outgoing<Self::Request>,
     ) -> Self::UpstreamFinishFuture {
         async move { Ok(ServiceContext::Ready(ctx)) }
     }
@@ -56,7 +56,7 @@ impl Service for Last {
         &mut self,
         task_ctx: TaskContext,
         ctx: Self::Context,
-        mut tx: Outgoing<Self::Request, Self::Error>,
+        mut tx: Outgoing<Self::Request>,
     ) -> Self::UpstreamFinishAllFuture {
         async move {
             let _ = match ctx.v.clone() {

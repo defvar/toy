@@ -2,7 +2,7 @@
 //!
 
 use crate::data::Frame;
-use crate::error::ServiceError;
+use crate::error::Error;
 use crate::node_channel::SignalOutgoings;
 use crate::registry::{App, Registry};
 use crate::service::ServiceFactory;
@@ -17,18 +17,10 @@ use serde::de::DeserializeOwned;
 /// Create and run a service using "factory".
 pub trait ServiceExecutor {
     type Request;
-    type Error;
-    type InitError;
 
     fn spawn<F>(&mut self, service_type: &ServiceType, uri: &Uri, factory: F)
     where
-        F: ServiceFactory<
-                Request = Self::Request,
-                Error = Self::Error,
-                InitError = Self::InitError,
-            > + Send
-            + Sync
-            + 'static,
+        F: ServiceFactory<Request = Self::Request> + Send + Sync + 'static,
         F::Service: Send,
         F::Context: Send,
         F::Config: DeserializeOwned + Send;
@@ -40,7 +32,9 @@ pub trait ServiceExecutor {
 /// This trait called from `Supervisor`.
 #[async_trait]
 pub trait TaskExecutor {
-    async fn run<T>(self, app: &App<T>, start_frame: Frame) -> Result<(), ServiceError>
+    type Error: Error + Send;
+
+    async fn run<T>(self, app: &App<T>, start_frame: Frame) -> Result<(), Self::Error>
     where
         T: Registry;
 }
@@ -48,5 +42,6 @@ pub trait TaskExecutor {
 /// Create a `TaskExecutor`.
 pub trait TaskExecutorFactory {
     type Executor: TaskExecutor + Send;
+
     fn new(ctx: TaskContext) -> (Self::Executor, SignalOutgoings);
 }

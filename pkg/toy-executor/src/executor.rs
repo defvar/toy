@@ -1,14 +1,16 @@
 use async_trait::async_trait;
 use serde::de::DeserializeOwned;
+use std::sync::Arc;
 use std::time::SystemTime;
+use tokio::sync::Mutex;
 use toy_core::data::{self, Frame};
-use toy_core::error::ServiceError;
+use toy_core::error::{Error, OutgoingError, ServiceError};
 use toy_core::executor::{ServiceExecutor, TaskExecutor, TaskExecutorFactory};
 use toy_core::graph::Graph;
 use toy_core::metrics::MetricsEventKind;
 use toy_core::mpsc::{Incoming, Outgoing};
 use toy_core::node_channel::{self, Awaiter, Incomings, Outgoings, SignalOutgoings, Starters};
-use toy_core::registry::{App, Registry};
+use toy_core::registry::{App, ExecuteResult, Registry};
 use toy_core::service::{Service, ServiceContext, ServiceFactory};
 use toy_core::task::TaskContext;
 use toy_core::ServiceType;
@@ -48,6 +50,7 @@ pub struct Executor {
     incomings: Incomings,
     outgoings: Outgoings,
     ctx: TaskContext,
+    errors: Arc<Mutex<Vec<ServiceError>>>,
 }
 
 /// Common implementation `TaskExecutorFactory`.
@@ -65,18 +68,13 @@ impl Executor {
                 incomings,
                 outgoings,
                 ctx,
+                errors: Arc::new(Mutex::new(Vec::new())),
             },
             signals,
         )
     }
 
-    fn pop_channels(
-        &mut self,
-        uri: &Uri,
-    ) -> (
-        Outgoing<Frame, ServiceError>,
-        (Incoming<Frame, ServiceError>, u32),
-    ) {
+    fn pop_channels(&mut self, uri: &Uri) -> (Outgoing<Frame>, (Incoming<Frame>, u32)) {
         if let Some(tx) = self.outgoings.pop(uri) {
             if let Some(rx) = self.incomings.pop(uri) {
                 return (tx, rx);
@@ -85,39 +83,32 @@ impl Executor {
         panic!("invalid channel stack...");
     }
 
-    async fn run_0(mut self, start_frame: Frame) -> Result<(), ServiceError> {
+    async fn run_0(mut self, start_frame: Frame) -> Result<(), OutgoingError> {
         for (_, tx) in &mut self.starters.iter_mut() {
-            tx.send(Ok(start_frame.clone())).await?
+            tx.send(start_frame.clone()).await?
         }
 
         let uri: Uri = "awaiter".into();
         let awaiter_ctx = self.ctx.with_uri(&uri);
         let span = awaiter_ctx.info_span();
         let mut finish_count = 0;
-        while let Some(x) = self.awaiter.next().await {
-            match x {
-                Err(e) => {
-                    tracing::error!(parent: &span, ?uri, err=?e, "an error occured.");
-                }
-                Ok(req) => {
-                    if req.is_stop() {
-                        tracing::info!(parent: &span, ?uri, "receive stop signal.");
-                        break;
-                    }
-                    if req.is_upstream_finish() {
-                        finish_count += 1;
-                        tracing::info!(
-                            parent: &span,
-                            ?uri,
-                            finish_count,
-                            upstream_count= ?self.awaiter.upstream_count(),
-                            "receive upstream finish signal."
-                        );
-                        if finish_count >= self.awaiter.upstream_count() {
-                            tracing::info!(parent: &span, ?uri, "all upstream finish.");
-                            break;
-                        }
-                    }
+        while let Some(req) = self.awaiter.next().await {
+            if req.is_stop() {
+                tracing::info!(parent: &span, ?uri, "receive stop signal.");
+                break;
+            }
+            if req.is_upstream_finish() {
+                finish_count += 1;
+                tracing::info!(
+                    parent: &span,
+                    ?uri,
+                    finish_count,
+                    upstream_count= ?self.awaiter.upstream_count(),
+                    "receive upstream finish signal."
+                );
+                if finish_count >= self.awaiter.upstream_count() {
+                    tracing::info!(parent: &span, ?uri, "all upstream finish.");
+                    break;
                 }
             }
         }
@@ -130,18 +121,10 @@ impl Executor {
 
 impl ServiceExecutor for Executor {
     type Request = Frame;
-    type Error = ServiceError;
-    type InitError = ServiceError;
 
     fn spawn<F>(&mut self, service_type: &ServiceType, uri: &Uri, factory: F)
     where
-        F: ServiceFactory<
-                Request = Self::Request,
-                Error = Self::Error,
-                InitError = Self::InitError,
-            > + Send
-            + Sync
-            + 'static,
+        F: ServiceFactory<Request = Self::Request> + Send + Sync + 'static,
         F::Service: Send,
         F::Context: Send,
         F::Config: DeserializeOwned + Send,
@@ -158,6 +141,7 @@ impl ServiceExecutor for Executor {
 
         let task_ctx = self.ctx.clone();
         let task_ctx = task_ctx.with_uri(&uri);
+        let errors = Arc::clone(&self.errors);
         match data::unpack::<F::Config>(&config_value.unwrap().config()) {
             Ok(config) => {
                 let task_name = uri.to_string();
@@ -173,18 +157,39 @@ impl ServiceExecutor for Executor {
                                     upstream_count,
                                     tx,
                                     service,
-                                    service_type,
+                                    service_type.clone(),
                                     ctx,
                                 )
                                 .await
                                 {
-                                    tracing::error!(?uri, err=?e, "an error occured;");
+                                    push_error(
+                                        Arc::clone(&errors),
+                                        &uri,
+                                        &service_type,
+                                        ServiceError::error(e),
+                                    )
+                                    .await;
                                 }
                             }
                             (s, c) => {
-                                let e1 = s.err();
-                                let e2 = c.err();
-                                tracing::error!(?uri, err1 = ?e1, err2 = ?e2, "an error occured;");
+                                if let Some(e) = s.err() {
+                                    push_error(
+                                        Arc::clone(&errors),
+                                        &uri,
+                                        &service_type,
+                                        ServiceError::service_init_failed(&uri, &service_type, e),
+                                    )
+                                    .await;
+                                }
+                                if let Some(e) = c.err() {
+                                    push_error(
+                                        Arc::clone(&errors),
+                                        &uri,
+                                        &service_type,
+                                        ServiceError::context_init_failed(&uri, &service_type, e),
+                                    )
+                                    .await;
+                                }
                             }
                         }
                     },
@@ -198,7 +203,9 @@ impl ServiceExecutor for Executor {
 
 #[async_trait]
 impl TaskExecutor for Executor {
-    async fn run<T>(mut self, app: &App<T>, start_frame: Frame) -> Result<(), ServiceError>
+    type Error = ServiceError;
+
+    async fn run<T>(mut self, app: &App<T>, start_frame: Frame) -> Result<(), Self::Error>
     where
         T: Registry,
     {
@@ -220,16 +227,35 @@ impl TaskExecutor for Executor {
             .map(|x| (x.service_type(), x.uri()))
             .collect::<Vec<_>>();
 
-        for (stype, uri) in &nodes {
-            if let Err(e) = app.delegate(stype, uri, &mut self) {
-                tracing::error!(parent: &span, err=?e, "an error occured;");
-                return Err(e);
+        for (tp, uri) in &nodes {
+            if app.delegate(tp, uri, &mut self) == ExecuteResult::NotFound {
+                tracing::error!(parent: &span, ?uri, "service not found.");
+                return Err(Error::service_not_found(tp.clone()));
             }
         }
 
+        let errors = Arc::clone(&self.errors);
         let r = self.run_0(start_frame).await;
+        if let Err(e) = r {
+            let mut lock = errors.lock().await;
+            lock.push(e.into());
+        }
+
         log_total_time(started_at, &span, None, Operation::FinishTask);
-        r
+
+        {
+            let lock = errors.lock().await;
+            if lock.is_empty() {
+                Ok(())
+            } else {
+                let msg = lock
+                    .iter()
+                    .map(|x| x.to_string())
+                    .collect::<Vec<_>>()
+                    .join(",");
+                Err(ServiceError::error(format!("[{}]", msg)))
+            }
+        }
     }
 }
 
@@ -243,15 +269,15 @@ impl TaskExecutorFactory for ExecutorFactory {
 
 async fn process<S, Ctx>(
     mut task_ctx: TaskContext,
-    mut rx: Incoming<Frame, ServiceError>,
+    mut rx: Incoming<Frame>,
     upstream_count: u32,
-    tx: Outgoing<Frame, ServiceError>,
+    tx: Outgoing<Frame>,
     mut service: S,
     service_type: ServiceType,
     context: Ctx,
-) -> Result<(), ServiceError>
+) -> Result<(), S::Error>
 where
-    S: Service<Request = Frame, Error = ServiceError, Context = Ctx>,
+    S: Service<Request = Frame, Context = Ctx>,
 {
     let service_starded_at = SystemTime::now();
     let tx_signal = tx.clone();
@@ -283,7 +309,7 @@ where
         let item = match sc {
             ServiceContext::Ready(_) => rx.next().await,
             ServiceContext::Complete(_) => None,
-            ServiceContext::Next(_) => Some(Ok(Frame::default())),
+            ServiceContext::Next(_) => Some(Frame::default()),
         };
 
         task_ctx
@@ -291,14 +317,14 @@ where
             .await;
 
         match item {
-            Some(Ok(req)) if req.is_stop() => {
+            Some(req) if req.is_stop() => {
                 tracing::info!(parent: &info_span, ?uri, "receive stop signal.");
                 task_ctx
                     .push_service_event(&uri, &service_type, MetricsEventKind::ReceiveStop)
                     .await;
                 break;
             }
-            Some(Ok(req)) if req.is_upstream_finish() => {
+            Some(req) if req.is_upstream_finish() => {
                 finish_count += 1;
                 tracing::info!(
                     parent: &info_span,
@@ -340,7 +366,7 @@ where
                         .await;
                 }
             }
-            Some(Ok(req)) => {
+            Some(req) => {
                 let tx = tx.clone();
                 sc = {
                     let task_ctx = task_ctx.clone();
@@ -349,13 +375,6 @@ where
                 task_ctx
                     .push_service_event(&uri, &service_type, MetricsEventKind::SendRequest)
                     .await;
-            }
-            Some(Err(e)) => {
-                task_ctx
-                    .push_service_event(&uri, &service_type, MetricsEventKind::ReceiveError)
-                    .await;
-                tracing::error!(parent: &info_span, ?uri, err=?e, "node receive message error");
-                return Err(e);
             }
             None => {
                 on_finish(tx_signal, task_ctx.uri().clone()).await;
@@ -377,14 +396,14 @@ where
     Ok(())
 }
 
-async fn on_finish(mut tx: Outgoing<Frame, ServiceError>, uri: Uri) {
+async fn on_finish(mut tx: Outgoing<Frame>, uri: Uri) {
     let results = tx.send_ok_all(Frame::upstream_finish()).await;
-    let results = results
+    let errors = results
         .iter()
         .filter_map(|x| x.as_ref().err())
-        .collect::<Vec<&ServiceError>>();
-    if results.len() > 0 {
-        tracing::error!(?uri, ?results, "send upstream finish signal.",);
+        .collect::<Vec<&OutgoingError>>();
+    if errors.len() > 0 {
+        tracing::error!(?uri, ?errors, "error, send upstream finish signal.",);
     }
 }
 
@@ -411,5 +430,18 @@ fn log_total_time(
     } else {
         tracing::error!(parent: parent, ?operation, "error, calc total time.");
         None
+    }
+}
+
+async fn push_error(
+    errors: Arc<Mutex<Vec<ServiceError>>>,
+    uri: &Uri,
+    tp: &ServiceType,
+    e: ServiceError,
+) {
+    tracing::error!(?uri, service=?tp, err = ?e, "{}", e);
+    {
+        let mut lock = errors.lock().await;
+        lock.push(e);
     }
 }

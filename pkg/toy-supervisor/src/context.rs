@@ -1,11 +1,10 @@
 use crate::task::RunningTask;
-use crate::{Request, SupervisorError};
+use crate::Request;
 use chrono::{DateTime, Utc};
 use std::collections::HashMap;
 use std::net::SocketAddr;
 use std::sync::Arc;
 use tokio::sync::Mutex;
-use toy_core::error::ServiceError;
 use toy_core::mpsc::Outgoing;
 use toy_core::registry::ServiceSchema;
 use toy_core::task::TaskId;
@@ -21,9 +20,9 @@ pub struct SupervisorContext<C> {
     last_task_executed_at: Arc<Mutex<Option<DateTime<Utc>>>>,
     last_metrics_exported_at: Arc<Mutex<Option<DateTime<Utc>>>>,
     /// send any request.
-    tx: Outgoing<Request, ServiceError>,
+    tx: Outgoing<Request>,
     schemas: Arc<Vec<ServiceSchema>>,
-    tx_http_server_shutdown: Option<Outgoing<(), SupervisorError>>,
+    tx_http_server_shutdown: Option<Outgoing<()>>,
 }
 
 impl<C> SupervisorContext<C> {
@@ -31,7 +30,7 @@ impl<C> SupervisorContext<C> {
         name: impl Into<String>,
         addr: Option<SocketAddr>,
         client: Option<C>,
-        tx: Outgoing<Request, ServiceError>,
+        tx: Outgoing<Request>,
         schemas: Vec<ServiceSchema>,
     ) -> SupervisorContext<C> {
         Self {
@@ -85,7 +84,7 @@ impl<C> SupervisorContext<C> {
         self.started_at = v;
     }
 
-    pub fn tx_mut(&mut self) -> &mut Outgoing<Request, ServiceError> {
+    pub fn tx_mut(&mut self) -> &mut Outgoing<Request> {
         &mut self.tx
     }
 
@@ -93,11 +92,11 @@ impl<C> SupervisorContext<C> {
         &self.schemas
     }
 
-    pub fn set_tx_http_server_shutdown(&mut self, tx: Option<Outgoing<(), SupervisorError>>) {
+    pub fn set_tx_http_server_shutdown(&mut self, tx: Option<Outgoing<()>>) {
         self.tx_http_server_shutdown = tx;
     }
 
-    pub fn tx_http_server_shutdown(&self) -> Option<Outgoing<(), SupervisorError>> {
+    pub fn tx_http_server_shutdown(&self) -> Option<Outgoing<()>> {
         self.tx_http_server_shutdown.clone()
     }
 

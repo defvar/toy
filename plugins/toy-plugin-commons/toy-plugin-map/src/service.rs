@@ -28,7 +28,7 @@ pub async fn typed(
     _task_ctx: TaskContext,
     ctx: TypedContext,
     mut req: Frame,
-    mut tx: Outgoing<Frame, ServiceError>,
+    mut tx: Outgoing<Frame>,
 ) -> Result<ServiceContext<TypedContext>, ServiceError> {
     match req.value_mut() {
         Some(v) => {
@@ -107,7 +107,7 @@ macro_rules! transform_service {
                 _task_ctx: TaskContext,
                 ctx: Self::Context,
                 mut req: Self::Request,
-                mut tx: Outgoing<Self::Request, Self::Error>,
+                mut tx: Outgoing<Self::Request>,
             ) -> Self::Future {
                 async move {
                     match req.value_mut() {
@@ -126,7 +126,7 @@ macro_rules! transform_service {
                 _task_ctx: TaskContext,
                 ctx: Self::Context,
                 _req: Self::Request,
-                _tx: Outgoing<Self::Request, Self::Error>,
+                _tx: Outgoing<Self::Request>,
             ) -> Self::UpstreamFinishFuture {
                 async move { Ok(ServiceContext::Ready(ctx)) }
             }
@@ -135,7 +135,7 @@ macro_rules! transform_service {
                 &mut self,
                 _task_ctx: TaskContext,
                 ctx: Self::Context,
-                _tx: Outgoing<Self::Request, Self::Error>,
+                _tx: Outgoing<Self::Request>,
             ) -> Self::UpstreamFinishAllFuture {
                 async move { Ok(ServiceContext::Complete(ctx)) }
             }

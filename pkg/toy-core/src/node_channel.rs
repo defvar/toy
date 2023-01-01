@@ -1,7 +1,6 @@
 //! Channel for node communication.
 
 use crate::data::Frame;
-use crate::error::ServiceError;
 use crate::graph::{Graph, InputWire, OutputWire};
 use crate::mpsc::{self, Incoming, Outgoing};
 use crate::Uri;
@@ -11,7 +10,7 @@ const DEFAULT_CHANNEL_BUFFER_SIZE: usize = 128;
 
 #[derive(Debug)]
 struct IncomingInner {
-    rx: Incoming<Frame, ServiceError>,
+    rx: Incoming<Frame>,
     upstream_count: u32,
 }
 
@@ -24,7 +23,7 @@ pub struct Incomings {
 /// Sending channel for each URI.
 #[derive(Debug)]
 pub struct Outgoings {
-    map: HashMap<Uri, Outgoing<Frame, ServiceError>>,
+    map: HashMap<Uri, Outgoing<Frame>>,
 }
 
 /// Receive channel for auto created last node of task.
@@ -36,52 +35,49 @@ pub struct Awaiter {
 /// Sending channel for auto created first node of task.
 #[derive(Debug)]
 pub struct Starters {
-    map: HashMap<Uri, Outgoing<Frame, ServiceError>>,
+    map: HashMap<Uri, Outgoing<Frame>>,
 }
 
 /// Sending channel for all node. (`Outgoings` + `Starters`)
 #[derive(Debug)]
 pub struct SignalOutgoings {
-    map: HashMap<Uri, Outgoing<Frame, ServiceError>>,
+    map: HashMap<Uri, Outgoing<Frame>>,
 }
 
 impl IncomingInner {
-    pub fn from_rx(rx: Incoming<Frame, ServiceError>) -> IncomingInner {
+    pub fn from_rx(rx: Incoming<Frame>) -> IncomingInner {
         IncomingInner::from_rx_and_count(rx, 1)
     }
 
-    pub fn from_rx_and_count(
-        rx: Incoming<Frame, ServiceError>,
-        upstream_count: u32,
-    ) -> IncomingInner {
+    pub fn from_rx_and_count(rx: Incoming<Frame>, upstream_count: u32) -> IncomingInner {
         IncomingInner { rx, upstream_count }
     }
 
-    fn into_tuple(self) -> (Incoming<Frame, ServiceError>, u32) {
+    fn into_tuple(self) -> (Incoming<Frame>, u32) {
         (self.rx, self.upstream_count)
     }
 }
 
 impl Incomings {
-    pub fn pop(&mut self, uri: &Uri) -> Option<(Incoming<Frame, ServiceError>, u32)> {
+    pub fn pop(&mut self, uri: &Uri) -> Option<(Incoming<Frame>, u32)> {
         self.map.remove(uri).map(|x| x.into_tuple())
     }
 }
 
 impl Outgoings {
-    pub fn pop(&mut self, uri: &Uri) -> Option<Outgoing<Frame, ServiceError>> {
+    pub fn pop(&mut self, uri: &Uri) -> Option<Outgoing<Frame>> {
         self.map.remove(uri)
     }
 }
 
 impl Starters {
-    pub fn iter_mut(&mut self) -> impl Iterator<Item = (&Uri, &mut Outgoing<Frame, ServiceError>)> {
+    pub fn iter_mut(&mut self) -> impl Iterator<Item = (&Uri, &mut Outgoing<Frame>)> {
         self.map.iter_mut()
     }
 }
 
 impl Awaiter {
-    pub async fn next(&mut self) -> Option<Result<Frame, ServiceError>> {
+    pub async fn next(&mut self) -> Option<Frame> {
         self.inner.rx.next().await
     }
 
@@ -91,7 +87,7 @@ impl Awaiter {
 }
 
 impl SignalOutgoings {
-    pub fn iter_mut(&mut self) -> impl Iterator<Item = (&Uri, &mut Outgoing<Frame, ServiceError>)> {
+    pub fn iter_mut(&mut self) -> impl Iterator<Item = (&Uri, &mut Outgoing<Frame>)> {
         self.map.iter_mut()
     }
 }
@@ -99,13 +95,12 @@ impl SignalOutgoings {
 /// Create channels from `Graph`.
 pub fn from_graph(graph: &Graph) -> (Incomings, Outgoings, Awaiter, Starters, SignalOutgoings) {
     let mut incomings: HashMap<Uri, IncomingInner> = HashMap::new();
-    let mut outgoings: HashMap<Uri, Outgoing<Frame, ServiceError>> = HashMap::new();
+    let mut outgoings: HashMap<Uri, Outgoing<Frame>> = HashMap::new();
 
-    let mut starters: HashMap<Uri, Outgoing<Frame, ServiceError>> = HashMap::new();
+    let mut starters: HashMap<Uri, Outgoing<Frame>> = HashMap::new();
 
     let mut awaiter_upsteram_count = 0;
-    let (awaiter_tx, awaiter_rx) =
-        mpsc::channel::<Frame, ServiceError>(DEFAULT_CHANNEL_BUFFER_SIZE);
+    let (awaiter_tx, awaiter_rx) = mpsc::channel::<Frame>(DEFAULT_CHANNEL_BUFFER_SIZE);
 
     // first channel
     graph
@@ -113,7 +108,7 @@ pub fn from_graph(graph: &Graph) -> (Incomings, Outgoings, Awaiter, Starters, Si
         .iter()
         .filter(|(_, w)| **w == InputWire::None)
         .for_each(|(uri, _)| {
-            let (tx, rx) = mpsc::channel::<Frame, ServiceError>(DEFAULT_CHANNEL_BUFFER_SIZE);
+            let (tx, rx) = mpsc::channel::<Frame>(DEFAULT_CHANNEL_BUFFER_SIZE);
             incomings.insert(uri.clone(), IncomingInner::from_rx(rx));
             starters.insert(uri.clone(), tx);
         });
@@ -132,7 +127,7 @@ pub fn from_graph(graph: &Graph) -> (Incomings, Outgoings, Awaiter, Starters, Si
         });
 
     for (_, wire) in graph.inputs() {
-        let (tx, rx) = mpsc::channel::<Frame, ServiceError>(DEFAULT_CHANNEL_BUFFER_SIZE);
+        let (tx, rx) = mpsc::channel::<Frame>(DEFAULT_CHANNEL_BUFFER_SIZE);
         match wire {
             InputWire::Single(o, i) => {
                 incomings.insert(i.clone(), IncomingInner::from_rx(rx));

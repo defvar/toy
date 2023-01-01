@@ -1,7 +1,6 @@
 use crate::data::Frame;
-use crate::error::ServiceError;
 use crate::executor::ServiceExecutor;
-use crate::registry::{Registry, ServiceSchema};
+use crate::registry::{ExecuteResult, Registry, ServiceSchema};
 use crate::service::{Service, ServiceFactory};
 use crate::service_uri::Uri;
 use crate::ServiceType;
@@ -20,11 +19,7 @@ impl<L, R> Layered<L, R>
 where
     Self: Sized,
     L: Registry,
-    R: ServiceFactory<Request = Frame, Error = ServiceError, InitError = ServiceError>
-        + Send
-        + Sync
-        + Clone
-        + 'static,
+    R: ServiceFactory<Request = Frame> + Send + Sync + Clone + 'static,
     R::Service: Send,
     R::Context: Send,
     R::Config: DeserializeOwned + Send,
@@ -44,11 +39,7 @@ where
 
     pub fn layer<F>(self, layer: (&str, &str, F)) -> Layered<Self, F>
     where
-        F: ServiceFactory<Request = Frame, Error = ServiceError, InitError = ServiceError>
-            + Send
-            + Sync
-            + Clone
-            + 'static,
+        F: ServiceFactory<Request = Frame> + Send + Sync + Clone + 'static,
         F::Service: Send,
         F::Context: Send,
         F::Config: DeserializeOwned + Send,
@@ -61,11 +52,7 @@ where
 impl<S, F> Registry for Layered<S, F>
 where
     S: Registry,
-    F: ServiceFactory<Request = Frame, Error = ServiceError, InitError = ServiceError>
-        + Send
-        + Sync
-        + Clone
-        + 'static,
+    F: ServiceFactory<Request = Frame> + Send + Sync + Clone + 'static,
     F::Service: Send,
     F::Context: Send,
     F::Config: DeserializeOwned + Send,
@@ -81,19 +68,19 @@ where
         self.schemas.clone()
     }
 
-    fn delegate<T>(&self, tp: &ServiceType, uri: &Uri, executor: &mut T) -> Result<(), ServiceError>
+    fn delegate<T>(&self, tp: &ServiceType, uri: &Uri, executor: &mut T) -> ExecuteResult
     where
-        T: ServiceExecutor<Request = Frame, Error = ServiceError, InitError = ServiceError>,
+        T: ServiceExecutor<Request = Frame>,
     {
         match self.other.delegate(tp, uri, executor) {
-            Ok(_) => Ok(()),
-            Err(_) => {
+            ExecuteResult::Done => ExecuteResult::Done,
+            ExecuteResult::NotFound => {
                 if self.schema.service_type == *tp {
                     let f = self.factory.clone();
                     executor.spawn(tp, uri, f);
-                    Ok(())
+                    ExecuteResult::Done
                 } else {
-                    Err(ServiceError::service_not_found(tp))
+                    ExecuteResult::NotFound
                 }
             }
         }
@@ -103,11 +90,7 @@ where
 impl<S, F> Debug for Layered<S, F>
 where
     S: Registry,
-    F: ServiceFactory<Request = Frame, Error = ServiceError, InitError = ServiceError>
-        + Send
-        + Sync
-        + Clone
-        + 'static,
+    F: ServiceFactory<Request = Frame> + Send + Sync + Clone + 'static,
     F::Service: Send,
     F::Context: Send,
     F::Config: DeserializeOwned + Send,

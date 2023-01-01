@@ -5,7 +5,7 @@ use crate::task::RunningTask;
 use crate::workers::beat::beat;
 use crate::workers::event_export::event_export;
 use crate::workers::metrics_export::metrics_export;
-use crate::{Response, RunTaskResponse, SupervisorConfig, SupervisorError, TaskResponse};
+use crate::{Response, RunTaskResponse, SupervisorConfig, TaskResponse};
 use chrono::Utc;
 use core::future::Future;
 use core::pin::Pin;
@@ -21,7 +21,6 @@ use toy_api::services::ServiceSpec;
 use toy_api_client::client::{ServiceClient, SupervisorClient, TaskClient};
 use toy_api_client::{ApiClient, NoopApiClient};
 use toy_core::data::Frame;
-use toy_core::error::ServiceError;
 use toy_core::executor::{TaskExecutor, TaskExecutorFactory};
 use toy_core::graph::Graph;
 use toy_core::metrics;
@@ -35,8 +34,8 @@ pub fn local<TF, P, Config>(
     config: Config,
 ) -> (
     Supervisor<TF, P, NoopApiClient, Config>,
-    Outgoing<Request, ServiceError>,
-    Incoming<(), ServiceError>,
+    Outgoing<Request>,
+    Incoming<()>,
 )
 where
     TF: TaskExecutorFactory + Send + 'static,
@@ -55,8 +54,8 @@ pub fn subscribe<S, TF, P, C, Config>(
     config: Config,
 ) -> (
     Supervisor<TF, P, C, Config>,
-    Outgoing<Request, ServiceError>,
-    Incoming<(), ServiceError>,
+    Outgoing<Request>,
+    Incoming<()>,
 )
 where
     S: Into<String>,
@@ -72,9 +71,9 @@ pub struct Supervisor<TF, P, C, Config> {
     _factory: TF,
     app: Arc<App<P>>,
     /// receive any request.
-    rx: Incoming<Request, ServiceError>,
+    rx: Incoming<Request>,
     /// send shutdown.
-    tx_shutdown: Outgoing<(), ServiceError>,
+    tx_shutdown: Outgoing<()>,
     ctx: SupervisorContext<C>,
     config: Config,
 }
@@ -95,11 +94,11 @@ where
         config: Config,
     ) -> (
         Supervisor<TF, P, C, Config>,
-        Outgoing<Request, ServiceError>,
-        Incoming<(), ServiceError>,
+        Outgoing<Request>,
+        Incoming<()>,
     ) {
-        let (tx_req, rx_req) = mpsc::channel::<Request, ServiceError>(1024);
-        let (tx_shutdown, rx_shutdown) = mpsc::channel::<(), ServiceError>(16);
+        let (tx_req, rx_req) = mpsc::channel::<Request>(1024);
+        let (tx_shutdown, rx_shutdown) = mpsc::channel::<()>(16);
         let schemas = app.schemas();
         (
             Supervisor {
@@ -115,7 +114,11 @@ where
         )
     }
 
-    pub async fn oneshot(self, g: Graph) -> Result<RunTaskResponse, ServiceError> {
+    pub async fn oneshot(
+        self,
+        g: Graph,
+    ) -> Result<RunTaskResponse, <<TF as TaskExecutorFactory>::Executor as TaskExecutor>::Error>
+    {
         tracing::info!(name=?self.ctx.name(), "oneshot supervisor");
 
         let id = TaskId::new();
@@ -139,98 +142,96 @@ where
         // main
         while let Some(r) = self.rx.next().await {
             match r {
-                Ok(m) => match m {
-                    Request::RunTask(id, g, tx) => {
-                        tracing::info!(name=?self.ctx.name(), "receive run task request.");
+                Request::RunTask(id, g, tx) => {
+                    tracing::info!(name=?self.ctx.name(), "receive run task request.");
 
-                        let app = Arc::clone(&self.app);
-                        let ctx = self.ctx.clone();
-                        let _ = toy_rt::spawn_named(
-                            async move {
-                                let tasks = ctx.tasks();
-                                let events = metrics::context::events_by_task_id(id).await;
-                                let task_ctx = TaskContext::with_parts(id, g, events);
+                    let app = Arc::clone(&self.app);
+                    let ctx = self.ctx.clone();
+                    let _ = toy_rt::spawn_named(
+                        async move {
+                            let tasks = ctx.tasks();
+                            let events = metrics::context::events_by_task_id(id).await;
+                            let task_ctx = TaskContext::with_parts(id, g, events);
 
-                                let (e, tx_signal) = TF::new(task_ctx.clone());
-                                let task = RunningTask::new(&task_ctx, tx_signal);
-                                {
-                                    let mut tasks = tasks.lock().await;
-                                    let _ = tasks.insert(task_ctx.id(), task);
-                                }
-                                let _ = e.run(&app, Frame::default()).await;
-                                {
-                                    let mut tasks = tasks.lock().await;
-                                    let _ = tasks.remove(&task_ctx.id());
-                                }
-                                ctx.task_executed().await;
-                                if let Err(e) = ctx
-                                    .client()
-                                    .unwrap()
-                                    .task()
-                                    .finish(task_ctx.id(), PostOption::new())
-                                    .await
-                                {
-                                    tracing::error!(name=?task_ctx.name(), err = %e, "an error occured; supervisor.")
-                                }
-                                ()
-                            },
-                            "supervisor-runTask",
-                        );
-                        let _ = tx.send_ok(RunTaskResponse(id)).await;
+                            let (executor, tx_signal) = TF::new(task_ctx.clone());
+                            let task = RunningTask::new(&task_ctx, tx_signal);
+                            {
+                                let mut tasks = tasks.lock().await;
+                                let _ = tasks.insert(task_ctx.id(), task);
+                            }
+                            let task_execution_error = executor.run(&app, Frame::default()).await;
+                            if let Err(e) = task_execution_error {
+                                tracing::error!(name=?task_ctx.name(), err = %e, "an error occured while task execution.")
+                            }
+                            if let Err(e) = ctx
+                                .client()
+                                .unwrap()
+                                .task()
+                                .finish(task_ctx.id(), PostOption::new())
+                                .await
+                            {
+                                tracing::error!(name=?task_ctx.name(), err = %e, "an error occurred while change the status of a task to \"Finish\".")
+                            }
+                            {
+                                let mut tasks = tasks.lock().await;
+                                let _ = tasks.remove(&task_ctx.id());
+                            }
+                            ctx.task_executed().await;
+                            ()
+                        },
+                        "supervisor-runTask",
+                    );
+                    let _ = tx.send(RunTaskResponse(id)).await;
+                }
+                Request::Tasks(tx) => {
+                    let r = {
+                        let tasks = self.ctx.tasks();
+                        let tasks = tasks.lock().await;
+                        tasks
+                            .iter()
+                            .map(|(_, v)| TaskResponse {
+                                id: v.id(),
+                                started_at: v.started_at(),
+                                graph: v.graph().clone(),
+                            })
+                            .collect::<Vec<_>>()
+                    };
+                    let _ = tx.send(r).await;
+                }
+                Request::Stop(uuid) => {
+                    let tasks = self.ctx.tasks();
+                    let mut tasks = tasks.lock().await;
+                    if let Some(t) = tasks.get_mut(&uuid) {
+                        send_stop_signal(t).await;
                     }
-                    Request::Tasks(tx) => {
-                        let r = {
-                            let tasks = self.ctx.tasks();
-                            let tasks = tasks.lock().await;
-                            tasks
-                                .iter()
-                                .map(|(_, v)| TaskResponse {
-                                    id: v.id(),
-                                    started_at: v.started_at(),
-                                    graph: v.graph().clone(),
-                                })
-                                .collect::<Vec<_>>()
-                        };
-                        let _ = tx.send_ok(r).await;
+                }
+                Request::Services(tx) => {
+                    let m = Response::Services(self.app.schemas());
+                    let _ = tx.send(m).await;
+                }
+                Request::Shutdown => {
+                    tracing::info!(name=?self.ctx.name(), "receive shutdown request.");
+
+                    if let Some(mut tx) = self.ctx.tx_http_server_shutdown() {
+                        tracing::info!(name=?self.ctx.name(), "shutdown api server...");
+                        let _ = tx.send_ok(()).await;
                     }
-                    Request::Stop(uuid) => {
+
+                    tracing::info!(name=?self.ctx.name(), "send stop signal all tasks.");
+                    {
                         let tasks = self.ctx.tasks();
                         let mut tasks = tasks.lock().await;
-                        if let Some(t) = tasks.get_mut(&uuid) {
+                        for (_, t) in tasks.iter_mut() {
                             send_stop_signal(t).await;
                         }
                     }
-                    Request::Services(tx) => {
-                        let m = Response::Services(self.app.schemas());
-                        let _ = tx.send_ok(m).await;
-                    }
-                    Request::Shutdown => {
-                        tracing::info!(name=?self.ctx.name(), "receive shutdown request.");
-
-                        if let Some(mut tx) = self.ctx.tx_http_server_shutdown() {
-                            tracing::info!(name=?self.ctx.name(), "shutdown api server...");
-                            let _ = tx.send_ok(()).await;
-                        }
-
-                        tracing::info!(name=?self.ctx.name(), "send stop signal all tasks.");
-                        {
-                            let tasks = self.ctx.tasks();
-                            let mut tasks = tasks.lock().await;
-                            for (_, t) in tasks.iter_mut() {
-                                send_stop_signal(t).await;
-                            }
-                        }
-                        tracing::info!(name=?self.ctx.name(), "waiting all task stop....");
-                        let sd = Shutdown {
-                            tasks: Arc::clone(&self.ctx.tasks()),
-                        };
-                        sd.await;
-                        tracing::info!(name=?self.ctx.name(), "all task stopped.");
-                        break;
-                    }
-                },
-                Err(e) => {
-                    tracing::error!(name=?self.ctx.name(), err = %e, "an error occured; supervisor.")
+                    tracing::info!(name=?self.ctx.name(), "waiting all task stop....");
+                    let sd = Shutdown {
+                        tasks: Arc::clone(&self.ctx.tasks()),
+                    };
+                    sd.await;
+                    tracing::info!(name=?self.ctx.name(), "all task stopped.");
+                    break;
                 }
             }
         }
@@ -255,7 +256,7 @@ where
         let name = ctx.name().to_string();
         let client = ctx.client().clone().unwrap();
         let config = self.config.clone();
-        let (tx, rx) = mpsc::channel::<(), SupervisorError>(10);
+        let (tx, rx) = mpsc::channel::<()>(10);
         self.ctx.set_tx_http_server_shutdown(Some(tx));
         let beat_interval = config.heart_beat_interval_mills();
         let event_interval = config.event_export_interval_mills();

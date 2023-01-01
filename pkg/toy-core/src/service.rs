@@ -1,12 +1,13 @@
 //! Traits for Service.
 //!
 
+use crate::error::{Error, ServiceError};
 use crate::mpsc::Outgoing;
 use crate::registry::PortType;
 use crate::service_type::ServiceType;
 use crate::task::TaskContext;
 use std::any;
-use std::fmt::{Debug, Error, Formatter};
+use std::fmt::{self, Debug, Formatter};
 use std::future::Future;
 use std::marker::PhantomData;
 use std::pin::Pin;
@@ -19,8 +20,9 @@ pub fn fn_service<F, Ctx, Req, Fut, Err, Pt>(
     port: Pt,
 ) -> FnService<F, Ctx, Req, Fut, Err, Pt>
 where
-    F: FnMut(TaskContext, Ctx, Req, Outgoing<Req, Err>) -> Fut,
+    F: FnMut(TaskContext, Ctx, Req, Outgoing<Req>) -> Fut,
     Fut: Future<Output = Result<ServiceContext<Ctx>, Err>> + Send,
+    Err: Error + Send,
     Pt: FnPortType,
 {
     let _ = port;
@@ -44,6 +46,7 @@ where
     CtxFut: Future<Output = Result<S::Context, InitErr>> + Send,
     Cfg: Schema,
     Pt: FnPortType,
+    InitErr: Error,
 {
     FnServiceFactory {
         f,
@@ -60,8 +63,8 @@ pub trait ServiceFactory {
     type Context;
     type Config: Schema;
     type Request;
-    type Error;
-    type InitError;
+    type Error: Error + Send;
+    type InitError: Error + Send;
 
     fn new_service(&self, tp: ServiceType) -> Self::Future;
 
@@ -99,7 +102,7 @@ pub trait Service {
         + Send;
     type UpstreamFinishAllFuture: Future<Output = Result<ServiceContext<Self::Context>, Self::Error>>
         + Send;
-    type Error;
+    type Error: Error;
 
     fn port_type() -> PortType {
         PortType::flow()
@@ -110,7 +113,7 @@ pub trait Service {
         task_ctx: TaskContext,
         ctx: Self::Context,
         req: Self::Request,
-        tx: Outgoing<Self::Request, Self::Error>,
+        tx: Outgoing<Self::Request>,
     ) -> Self::Future;
 
     fn started(
@@ -132,21 +135,22 @@ pub trait Service {
         task_ctx: TaskContext,
         ctx: Self::Context,
         req: Self::Request,
-        tx: Outgoing<Self::Request, Self::Error>,
+        tx: Outgoing<Self::Request>,
     ) -> Self::UpstreamFinishFuture;
 
     fn upstream_finish_all(
         &mut self,
         task_ctx: TaskContext,
         ctx: Self::Context,
-        tx: Outgoing<Self::Request, Self::Error>,
+        tx: Outgoing<Self::Request>,
     ) -> Self::UpstreamFinishAllFuture;
 }
 
 pub struct FnService<F, Ctx, Req, Fut, Err, Pt>
 where
-    F: FnMut(TaskContext, Ctx, Req, Outgoing<Req, Err>) -> Fut,
+    F: FnMut(TaskContext, Ctx, Req, Outgoing<Req>) -> Fut,
     Fut: Future<Output = Result<ServiceContext<Ctx>, Err>> + Send,
+    Err: Error + Send,
     Pt: FnPortType,
 {
     tp: ServiceType,
@@ -156,10 +160,10 @@ where
 
 impl<F, Ctx, Req, Fut, Err, Pt> Service for FnService<F, Ctx, Req, Fut, Err, Pt>
 where
-    F: FnMut(TaskContext, Ctx, Req, Outgoing<Req, Err>) -> Fut,
+    F: FnMut(TaskContext, Ctx, Req, Outgoing<Req>) -> Fut,
     Fut: Future<Output = Result<ServiceContext<Ctx>, Err>> + Send,
     Ctx: Send,
-    Err: Send,
+    Err: Error + Send,
     Pt: FnPortType,
 {
     type Context = Ctx;
@@ -178,7 +182,7 @@ where
         task_ctx: TaskContext,
         ctx: Self::Context,
         req: Self::Request,
-        tx: Outgoing<Self::Request, Self::Error>,
+        tx: Outgoing<Self::Request>,
     ) -> Self::Future {
         (self.f)(task_ctx, ctx, req, tx)
     }
@@ -188,7 +192,7 @@ where
         _task_ctx: TaskContext,
         ctx: Self::Context,
         _req: Self::Request,
-        _tx: Outgoing<Self::Request, Self::Error>,
+        _tx: Outgoing<Self::Request>,
     ) -> Self::UpstreamFinishFuture {
         ok(ServiceContext::Ready(ctx))
     }
@@ -197,7 +201,7 @@ where
         &mut self,
         _task_ctx: TaskContext,
         ctx: Self::Context,
-        _tx: Outgoing<Self::Request, Self::Error>,
+        _tx: Outgoing<Self::Request>,
     ) -> Self::UpstreamFinishAllFuture {
         ok(ServiceContext::Complete(ctx))
     }
@@ -205,11 +209,12 @@ where
 
 impl<F, Ctx, Req, Fut, Err, Pt> Debug for FnService<F, Ctx, Req, Fut, Err, Pt>
 where
-    F: FnMut(TaskContext, Ctx, Req, Outgoing<Req, Err>) -> Fut,
+    F: FnMut(TaskContext, Ctx, Req, Outgoing<Req>) -> Fut,
     Fut: Future<Output = Result<ServiceContext<Ctx>, Err>> + Send,
+    Err: Error + Send,
     Pt: FnPortType,
 {
-    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), Error> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), fmt::Error> {
         write!(f, "FnService {{ service_type:{:?} }}", self.tp)
     }
 }
@@ -223,6 +228,7 @@ where
     CtxFut: Future<Output = Result<S::Context, InitErr>> + Send,
     Cfg: Schema,
     Pt: FnPortType,
+    InitErr: Error,
 {
     f: F,
     ctx_f: CtxF,
@@ -236,10 +242,12 @@ where
     F: Fn(ServiceType, Pt) -> Fut,
     Fut: Future<Output = Result<S, InitErr>> + Send,
     S: Service,
+    S::Error: Send,
     CtxF: Fn(ServiceType, Cfg) -> CtxFut,
     CtxFut: Future<Output = Result<S::Context, InitErr>> + Send,
     Cfg: Schema,
     Pt: FnPortType,
+    InitErr: Error + Send,
 {
     type Future = Fut;
     type Service = S;
@@ -270,6 +278,7 @@ where
     CtxFut: Future<Output = Result<S::Context, InitErr>> + Send,
     Cfg: Schema,
     Pt: FnPortType,
+    InitErr: Error,
 {
     fn clone(&self) -> Self {
         FnServiceFactory {
@@ -291,8 +300,9 @@ where
     CtxFut: Future<Output = Result<S::Context, InitErr>> + Send,
     Cfg: Schema,
     Pt: FnPortType,
+    InitErr: Error,
 {
-    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), Error> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), fmt::Error> {
         write!(
             f,
             "FnServiceFactory {{ S:{:?} }}",
@@ -310,17 +320,17 @@ pub struct NoopService;
 impl Service for NoopService {
     type Context = NoopContext;
     type Request = ();
-    type Future = Ready<Result<ServiceContext<NoopContext>, ()>>;
-    type UpstreamFinishFuture = Ready<Result<ServiceContext<NoopContext>, ()>>;
-    type UpstreamFinishAllFuture = Ready<Result<ServiceContext<NoopContext>, ()>>;
-    type Error = ();
+    type Future = Ready<Result<ServiceContext<NoopContext>, ServiceError>>;
+    type UpstreamFinishFuture = Ready<Result<ServiceContext<NoopContext>, ServiceError>>;
+    type UpstreamFinishAllFuture = Ready<Result<ServiceContext<NoopContext>, ServiceError>>;
+    type Error = ServiceError;
 
     fn handle(
         &mut self,
         _task_ctx: TaskContext,
         _ctx: Self::Context,
         _req: Self::Request,
-        _tx: Outgoing<Self::Request, Self::Error>,
+        _tx: Outgoing<Self::Request>,
     ) -> Self::Future {
         ok(ServiceContext::Complete(NoopContext))
     }
@@ -330,7 +340,7 @@ impl Service for NoopService {
         _task_ctx: TaskContext,
         _ctx: Self::Context,
         _req: Self::Request,
-        _tx: Outgoing<Self::Request, Self::Error>,
+        _tx: Outgoing<Self::Request>,
     ) -> Self::UpstreamFinishFuture {
         ok(ServiceContext::Ready(NoopContext))
     }
@@ -339,7 +349,7 @@ impl Service for NoopService {
         &mut self,
         _task_ctx: TaskContext,
         _ctx: Self::Context,
-        _tx: Outgoing<Self::Request, Self::Error>,
+        _tx: Outgoing<Self::Request>,
     ) -> Self::UpstreamFinishAllFuture {
         ok(ServiceContext::Complete(NoopContext))
     }
@@ -361,14 +371,14 @@ impl Schema for NoopServiceConfig {
 pub struct NoopServiceFactory;
 
 impl ServiceFactory for NoopServiceFactory {
-    type Future = Ready<Result<NoopService, ()>>;
+    type Future = Ready<Result<NoopService, ServiceError>>;
     type Service = NoopService;
-    type CtxFuture = Ready<Result<NoopContext, ()>>;
+    type CtxFuture = Ready<Result<NoopContext, ServiceError>>;
     type Context = NoopContext;
     type Config = NoopServiceConfig;
     type Request = ();
-    type Error = ();
-    type InitError = ();
+    type Error = ServiceError;
+    type InitError = ServiceError;
 
     fn new_service(&self, tp: ServiceType) -> Self::Future {
         tracing::warn!(

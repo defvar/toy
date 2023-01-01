@@ -1,50 +1,43 @@
-use crate::error::Error;
+use crate::error::OutgoingError;
 use tokio::sync::oneshot::{self, Receiver, Sender};
 
-pub fn channel<T, Err>() -> (Outgoing<T, Err>, Incoming<T, Err>) {
+pub fn channel<T>() -> (Outgoing<T>, Incoming<T>) {
     let (tx, rx) = oneshot::channel();
     (Outgoing::new(tx), Incoming::new(rx))
 }
 
 #[derive(Debug)]
-pub struct Incoming<T, Err> {
-    inner: Receiver<Result<T, Err>>,
+pub struct Incoming<T> {
+    inner: Receiver<T>,
 }
 
-impl<T, Err> Incoming<T, Err> {
-    pub fn new(rx: Receiver<Result<T, Err>>) -> Incoming<T, Err> {
+impl<T> Incoming<T> {
+    pub fn new(rx: Receiver<T>) -> Incoming<T> {
         Incoming { inner: rx }
     }
 
-    pub async fn recv(self) -> Option<Result<T, Err>> {
+    pub async fn recv(self) -> Option<T> {
         self.inner.await.ok()
     }
 }
 
 #[derive(Debug)]
-pub struct Outgoing<T, Err> {
-    inner: Sender<Result<T, Err>>,
+pub struct Outgoing<T> {
+    inner: Sender<T>,
 }
 
-impl<T, Err> Outgoing<T, Err> {
-    pub fn new(tx: Sender<Result<T, Err>>) -> Outgoing<T, Err> {
+impl<T> Outgoing<T> {
+    pub fn new(tx: Sender<T>) -> Outgoing<T> {
         Outgoing { inner: tx }
     }
 }
 
-impl<T, Err> Outgoing<T, Err>
-where
-    Err: Error,
-{
-    pub async fn send(self, v: Result<T, Err>) -> Result<(), Err> {
-        if let Result::Err(_) = self.inner.send(v) {
-            Result::Err(Error::custom("the receiver dropped"))
+impl<T> Outgoing<T> {
+    pub async fn send(self, v: T) -> Result<(), OutgoingError> {
+        if let Err(_) = self.inner.send(v) {
+            Err(OutgoingError::receiver_dropped())
         } else {
             Ok(())
         }
-    }
-
-    pub async fn send_ok(self, v: T) -> Result<(), Err> {
-        self.send(Ok(v)).await
     }
 }

@@ -1,7 +1,6 @@
 use crate::data::Frame;
-use crate::error::ServiceError;
 use crate::executor::ServiceExecutor;
-use crate::registry::{App, Registry, ServiceSchema};
+use crate::registry::{App, ExecuteResult, Registry, ServiceSchema};
 use crate::{ServiceType, Uri};
 
 #[derive(Clone)]
@@ -49,13 +48,13 @@ where
         vec
     }
 
-    fn delegate<T>(&self, tp: &ServiceType, uri: &Uri, executor: &mut T) -> Result<(), ServiceError>
+    fn delegate<T>(&self, tp: &ServiceType, uri: &Uri, executor: &mut T) -> ExecuteResult
     where
-        T: ServiceExecutor<Request = Frame, Error = ServiceError, InitError = ServiceError>,
+        T: ServiceExecutor<Request = Frame>,
     {
         match self.other.delegate(tp, uri, executor) {
-            Ok(_) => Ok(()),
-            Err(_) => self.layer.delegate(tp, uri, executor),
+            ExecuteResult::Done => ExecuteResult::Done,
+            ExecuteResult::NotFound => self.layer.delegate(tp, uri, executor),
         }
     }
 }

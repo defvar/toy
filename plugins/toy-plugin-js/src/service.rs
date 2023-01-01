@@ -52,7 +52,7 @@ pub async fn js_function(
     _task_ctx: TaskContext,
     ctx: FunctionContext,
     mut req: Frame,
-    mut tx: Outgoing<Frame, ServiceError>,
+    mut tx: Outgoing<Frame>,
 ) -> Result<ServiceContext<FunctionContext>, ServiceError> {
     let new_value = {
         let mut c = match current() {

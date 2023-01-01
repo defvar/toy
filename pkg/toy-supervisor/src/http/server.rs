@@ -1,6 +1,6 @@
 use crate::context::SupervisorContext;
 use crate::http::handler;
-use crate::{SupervisorConfig, SupervisorError};
+use crate::SupervisorConfig;
 use std::net::SocketAddr;
 use toy_api_client::ApiClient;
 use toy_api_http_common::axum::routing::{get, post, put};
@@ -25,7 +25,7 @@ where
         self,
         addr: impl Into<SocketAddr> + 'static,
         config: impl SupervisorConfig,
-        mut _shutdown_receiver: Incoming<(), SupervisorError>,
+        mut _shutdown_receiver: Incoming<()>,
     ) {
         let config = RustlsConfig::from_pem_file(config.cert_path(), config.key_path())
             .await

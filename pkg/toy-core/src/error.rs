@@ -1,42 +1,66 @@
 //! Error returned from the Executed Service by Node.
 //!
 
-use crate::ServiceType;
+use crate::{ServiceType, Uri};
 use std::backtrace::Backtrace;
 use std::fmt::Display;
 use std::io;
 use std::str::Utf8Error;
 use thiserror::Error as ThisError;
 
-pub trait Error: Sized {
+pub trait Error: Sized + std::error::Error {
     fn custom<T>(msg: T) -> Self
     where
         T: Display;
+
+    fn service_not_found(tp: ServiceType) -> Self {
+        Error::custom(format_args!("not found service. service_type: {}", tp))
+    }
+
+    fn context_init_failed<T>(uri: &Uri, tp: &ServiceType, cause: T) -> Self
+    where
+        T: Display,
+    {
+        Error::custom(format_args!(
+            "an error occured while context initialization uri:{}, service_type: {}, cause: {}",
+            uri, tp, cause
+        ))
+    }
+
+    fn service_init_failed<T>(uri: &Uri, tp: &ServiceType, cause: T) -> Self
+    where
+        T: Display,
+    {
+        Error::custom(format_args!(
+            "an error occured while service initialization uri:{}, service_type: {}, cause: {}",
+            uri, tp, cause
+        ))
+    }
 }
 
 #[derive(Debug, ThisError)]
 pub enum ServiceError {
-    #[error("config initialization failed. error: {:?}", source)]
+    #[error("config initialization failed. {}", source)]
     ConfigInitFailed {
         #[from]
         source: ConfigError,
     },
 
-    #[error("error: {:?}", source)]
+    #[error(transparent)]
+    OutgoingError {
+        #[from]
+        source: OutgoingError,
+    },
+
+    #[error("error: {}", source)]
     IOError {
         #[from]
         source: io::Error,
         backtrace: Backtrace,
     },
 
-    #[error("error: {:?}", inner)]
+    #[error("error: {}", inner)]
     Error { inner: String },
-
-    #[error("error: {:?}", inner)]
-    ContextInitFailed { inner: String },
-
-    #[error("not found service. service_type: {:?}", st)]
-    ServiceNotFound { st: ServiceType },
 }
 
 impl ServiceError {
@@ -47,22 +71,6 @@ impl ServiceError {
         ServiceError::Error {
             inner: msg.to_string(),
         }
-    }
-
-    pub fn context_init_failed<T>(msg: T) -> ServiceError
-    where
-        T: Display,
-    {
-        ServiceError::ContextInitFailed {
-            inner: msg.to_string(),
-        }
-    }
-
-    pub fn service_not_found<T>(st: T) -> ServiceError
-    where
-        ServiceType: From<T>,
-    {
-        ServiceError::ServiceNotFound { st: From::from(st) }
     }
 }
 
@@ -166,6 +174,48 @@ impl ConfigError {
             name_space: name_space.to_string(),
             service_name: service_name.to_string(),
             msg: msg.to_string(),
+        }
+    }
+}
+
+#[derive(Debug, ThisError)]
+pub enum OutgoingError {
+    #[error("send error. {}", inner)]
+    SendError { inner: String },
+
+    #[error("not found output port:{}", port)]
+    NotFoundOutputPort { port: u8 },
+
+    #[error("send error. the receiver dropped.")]
+    ReceiverDropped,
+
+    #[error("error: {}", inner)]
+    Error { inner: String },
+}
+
+impl OutgoingError {
+    pub fn send_error<T>(source: tokio::sync::mpsc::error::SendError<T>) -> OutgoingError {
+        OutgoingError::SendError {
+            inner: source.to_string(),
+        }
+    }
+
+    pub fn not_found_output_port(port: u8) -> OutgoingError {
+        OutgoingError::NotFoundOutputPort { port }
+    }
+
+    pub fn receiver_dropped() -> OutgoingError {
+        OutgoingError::ReceiverDropped
+    }
+}
+
+impl Error for OutgoingError {
+    fn custom<T>(msg: T) -> Self
+    where
+        T: Display,
+    {
+        OutgoingError::Error {
+            inner: msg.to_string(),
         }
     }
 }

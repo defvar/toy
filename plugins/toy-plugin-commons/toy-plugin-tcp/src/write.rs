@@ -42,7 +42,7 @@ impl Service for TcpWrite {
         _task_ctx: TaskContext,
         mut ctx: Self::Context,
         req: Self::Request,
-        _tx: Outgoing<Self::Request, Self::Error>,
+        _tx: Outgoing<Self::Request>,
     ) -> Self::Future {
         async move {
             match req.value() {
@@ -68,7 +68,7 @@ impl Service for TcpWrite {
         _task_ctx: TaskContext,
         ctx: Self::Context,
         _req: Self::Request,
-        _tx: Outgoing<Self::Request, Self::Error>,
+        _tx: Outgoing<Self::Request>,
     ) -> Self::UpstreamFinishFuture {
         async move { Ok(ServiceContext::Ready(ctx)) }
     }
@@ -77,7 +77,7 @@ impl Service for TcpWrite {
         &mut self,
         _task_ctx: TaskContext,
         mut ctx: Self::Context,
-        _tx: Outgoing<Self::Request, Self::Error>,
+        _tx: Outgoing<Self::Request>,
     ) -> Self::UpstreamFinishAllFuture {
         async move {
             ctx.raw.flush().await?;

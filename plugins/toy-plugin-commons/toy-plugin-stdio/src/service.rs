@@ -39,7 +39,7 @@ impl Service for Stdin {
         _task_ctx: TaskContext,
         mut ctx: Self::Context,
         _req: Self::Request,
-        mut tx: Outgoing<Self::Request, Self::Error>,
+        mut tx: Outgoing<Self::Request>,
     ) -> Self::Future {
         async move {
             let v = ctx.reader.next().await;
@@ -61,7 +61,7 @@ impl Service for Stdin {
         _task_ctx: TaskContext,
         ctx: Self::Context,
         _req: Self::Request,
-        _tx: Outgoing<Self::Request, Self::Error>,
+        _tx: Outgoing<Self::Request>,
     ) -> Self::UpstreamFinishFuture {
         async move { Ok(ServiceContext::Ready(ctx)) }
     }
@@ -70,7 +70,7 @@ impl Service for Stdin {
         &mut self,
         _task_ctx: TaskContext,
         ctx: Self::Context,
-        _tx: Outgoing<Self::Request, Self::Error>,
+        _tx: Outgoing<Self::Request>,
     ) -> Self::UpstreamFinishAllFuture {
         async move { Ok(ServiceContext::Complete(ctx)) }
     }
@@ -120,7 +120,7 @@ impl Service for Stdout {
         _task_ctx: TaskContext,
         mut ctx: Self::Context,
         req: Self::Request,
-        mut tx: Outgoing<Self::Request, Self::Error>,
+        mut tx: Outgoing<Self::Request>,
     ) -> Self::Future {
         async move {
             match req.value() {
@@ -133,7 +133,7 @@ impl Service for Stdout {
                 },
                 None => (),
             };
-            tx.send(Ok(Frame::none())).await?;
+            tx.send(Frame::none()).await?;
             Ok(ServiceContext::Ready(ctx))
         }
     }
@@ -143,7 +143,7 @@ impl Service for Stdout {
         _task_ctx: TaskContext,
         ctx: Self::Context,
         _req: Self::Request,
-        _tx: Outgoing<Self::Request, Self::Error>,
+        _tx: Outgoing<Self::Request>,
     ) -> Self::UpstreamFinishFuture {
         async move { Ok(ServiceContext::Ready(ctx)) }
     }
@@ -152,7 +152,7 @@ impl Service for Stdout {
         &mut self,
         _task_ctx: TaskContext,
         ctx: Self::Context,
-        _tx: Outgoing<Self::Request, Self::Error>,
+        _tx: Outgoing<Self::Request>,
     ) -> Self::UpstreamFinishAllFuture {
         async move { Ok(ServiceContext::Complete(ctx)) }
     }

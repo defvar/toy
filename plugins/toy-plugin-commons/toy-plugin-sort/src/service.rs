@@ -63,7 +63,7 @@ impl SortContext {
     pub async fn flush_if_needed(
         &mut self,
         task_ctx: &TaskContext,
-        tx: &mut Outgoing<Frame, ServiceError>,
+        tx: &mut Outgoing<Frame>,
     ) -> Result<(), ServiceError> {
         if self.buffer.len() > (self.config.buffer_capacity() as usize) {
             self.flush0(task_ctx, tx).await
@@ -75,7 +75,7 @@ impl SortContext {
     pub async fn force_flush(
         &mut self,
         task_ctx: &TaskContext,
-        tx: &mut Outgoing<Frame, ServiceError>,
+        tx: &mut Outgoing<Frame>,
     ) -> Result<(), ServiceError> {
         if self.buffer.len() > 0 {
             self.flush0(task_ctx, tx).await
@@ -87,7 +87,7 @@ impl SortContext {
     async fn flush0(
         &mut self,
         task_ctx: &TaskContext,
-        tx: &mut Outgoing<Frame, ServiceError>,
+        tx: &mut Outgoing<Frame>,
     ) -> Result<(), ServiceError> {
         match self.config.buffer_full_strategy() {
             BufferFullStrategy::Flush => {
@@ -132,7 +132,7 @@ impl Service for Sort {
         task_ctx: TaskContext,
         mut ctx: Self::Context,
         req: Self::Request,
-        mut tx: Outgoing<Self::Request, Self::Error>,
+        mut tx: Outgoing<Self::Request>,
     ) -> Self::Future {
         async move {
             match req.value() {
@@ -159,7 +159,7 @@ impl Service for Sort {
         _task_ctx: TaskContext,
         ctx: Self::Context,
         _req: Self::Request,
-        _tx: Outgoing<Self::Request, Self::Error>,
+        _tx: Outgoing<Self::Request>,
     ) -> Self::UpstreamFinishFuture {
         async move { Ok(ServiceContext::Ready(ctx)) }
     }
@@ -168,7 +168,7 @@ impl Service for Sort {
         &mut self,
         task_ctx: TaskContext,
         mut ctx: Self::Context,
-        mut tx: Outgoing<Self::Request, Self::Error>,
+        mut tx: Outgoing<Self::Request>,
     ) -> Self::UpstreamFinishAllFuture {
         async move {
             ctx.force_flush(&task_ctx, &mut tx).await?;

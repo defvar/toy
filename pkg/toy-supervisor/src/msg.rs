@@ -1,19 +1,15 @@
 use std::time::SystemTime;
 use toy_core::mpsc::OutgoingMessage;
 use toy_core::oneshot;
-use toy_core::prelude::{Graph, ServiceError, TaskId};
+use toy_core::prelude::{Graph, TaskId};
 use toy_core::registry::ServiceSchema;
 
 #[derive(Debug)]
 pub enum Request {
-    RunTask(
-        TaskId,
-        Graph,
-        oneshot::Outgoing<RunTaskResponse, ServiceError>,
-    ),
-    Tasks(oneshot::Outgoing<Vec<TaskResponse>, ServiceError>),
+    RunTask(TaskId, Graph, oneshot::Outgoing<RunTaskResponse>),
+    Tasks(oneshot::Outgoing<Vec<TaskResponse>>),
     Stop(TaskId),
-    Services(oneshot::Outgoing<Response, ServiceError>),
+    Services(oneshot::Outgoing<Response>),
     Shutdown,
 }
 

@@ -58,7 +58,7 @@ impl Service for Read {
         task_ctx: TaskContext,
         ctx: Self::Context,
         req: Self::Request,
-        tx: Outgoing<Self::Request, Self::Error>,
+        tx: Outgoing<Self::Request>,
     ) -> Self::Future {
         async move { read(task_ctx, ctx, req, tx).await }
     }
@@ -68,7 +68,7 @@ impl Service for Read {
         _task_ctx: TaskContext,
         ctx: Self::Context,
         _req: Self::Request,
-        _tx: Outgoing<Self::Request, Self::Error>,
+        _tx: Outgoing<Self::Request>,
     ) -> Self::UpstreamFinishFuture {
         async move { Ok(ServiceContext::Ready(ctx)) }
     }
@@ -77,7 +77,7 @@ impl Service for Read {
         &mut self,
         _task_ctx: TaskContext,
         ctx: Self::Context,
-        _tx: Outgoing<Self::Request, Self::Error>,
+        _tx: Outgoing<Self::Request>,
     ) -> Self::UpstreamFinishAllFuture {
         async move { Ok(ServiceContext::Complete(ctx)) }
     }
@@ -132,7 +132,7 @@ impl Service for Write {
         task_ctx: TaskContext,
         ctx: Self::Context,
         req: Self::Request,
-        tx: Outgoing<Self::Request, Self::Error>,
+        tx: Outgoing<Self::Request>,
     ) -> Self::Future {
         async move { write(task_ctx, ctx, req, tx).await }
     }
@@ -142,7 +142,7 @@ impl Service for Write {
         _task_ctx: TaskContext,
         ctx: Self::Context,
         _req: Self::Request,
-        _tx: Outgoing<Self::Request, Self::Error>,
+        _tx: Outgoing<Self::Request>,
     ) -> Self::UpstreamFinishFuture {
         async move { Ok(ServiceContext::Ready(ctx)) }
     }
@@ -151,7 +151,7 @@ impl Service for Write {
         &mut self,
         _task_ctx: TaskContext,
         ctx: Self::Context,
-        _tx: Outgoing<Self::Request, Self::Error>,
+        _tx: Outgoing<Self::Request>,
     ) -> Self::UpstreamFinishAllFuture {
         async move { Ok(ServiceContext::Complete(ctx)) }
     }
@@ -187,7 +187,7 @@ async fn read(
     _task_ctx: TaskContext,
     mut ctx: ReadContext,
     _req: Frame,
-    mut tx: Outgoing<Frame, ServiceError>,
+    mut tx: Outgoing<Frame>,
 ) -> Result<ServiceContext<ReadContext>, ServiceError> {
     while ctx.reader.read(&mut ctx.buf)? {
         let v = if ctx.reader.has_headers() {
@@ -203,7 +203,7 @@ async fn read(
             let v = ctx.buf.iter().map(|c| Value::from(c)).collect::<Vec<_>>();
             Frame::from(v)
         };
-        tx.send(Ok(v)).await?;
+        tx.send(v).await?;
         ctx.line += 1;
     }
     Ok(ServiceContext::Complete(ctx))
@@ -213,13 +213,13 @@ async fn write(
     _task_ctx: TaskContext,
     mut ctx: WriteContext,
     req: Frame,
-    mut tx: Outgoing<Frame, ServiceError>,
+    mut tx: Outgoing<Frame>,
 ) -> Result<ServiceContext<WriteContext>, ServiceError> {
     match req.value() {
         Some(v) => {
             ctx.writer.write_value(v)?;
             ctx.line += 1;
-            tx.send(Ok(Frame::none())).await?;
+            tx.send(Frame::none()).await?;
         }
         None => (),
     }
