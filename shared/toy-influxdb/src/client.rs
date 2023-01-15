@@ -1,9 +1,8 @@
 use crate::error::InfluxDBError;
-use crate::models::flux_table::FluxTable;
 use crate::models::line_protocol::{LineProtocolRecord, ToLineProtocol};
 use crate::models::query_param::QueryParam;
 use crate::models::ErrorInfo;
-use crate::query::decode;
+use crate::query::{Decoder, QueryResponse};
 use toy_h::bytes::Buf;
 use toy_h::{HttpClient, InvalidUri, RequestBuilder, Response, Uri};
 
@@ -77,7 +76,7 @@ where
         token: &str,
         org: &str,
         param: &QueryParam,
-    ) -> Result<Vec<FluxTable>, InfluxDBError> {
+    ) -> Result<QueryResponse, InfluxDBError> {
         let uri = Uri::try_from(&format!("{}{}?org={}", self.root, "api/v2/query", org))?;
 
         let json = toy_pack_json::pack_to_string(param)?;
@@ -95,7 +94,9 @@ where
             .await?;
         if res.status().is_success() {
             let bytes = res.bytes().await?;
-            decode(bytes.reader())
+            Decoder::with(bytes.reader(), 40, 128, 1024)
+                .decode()
+                .map(QueryResponse::with)
         } else {
             let bytes = res.bytes().await?;
             let e = toy_pack_json::unpack::<ErrorInfo>(&bytes)?;

@@ -1,7 +1,7 @@
 use crate::query::builder::from::From;
 use crate::query::builder::pivot::Pivot;
 use crate::query::builder::rename::Rename;
-use crate::query::builder::{Filter, FluxPart, Group, Limit, Range, Sort};
+use crate::query::builder::{Drop, Filter, FluxPart, Group, Limit, Range, Sort};
 use crate::InfluxDBError;
 use chrono::{DateTime, Utc};
 use std::fmt;
@@ -57,44 +57,41 @@ impl<L> FluxBuilder<L> {
         }
     }
 
-    pub fn group<'a>(
-        self,
-        columns: impl Iterator<Item = &'a str>,
-    ) -> FluxBuilder<Layer<Group<'a>, L>> {
+    pub fn group<'a>(self, columns: &[&'a str]) -> FluxBuilder<Layer<Group<'a>, L>> {
         FluxBuilder {
-            parts: Layer::new(Group::with(columns.collect()), self.parts),
+            parts: Layer::new(Group::with(Vec::from(columns)), self.parts),
         }
     }
 
     pub fn pivot<'a>(
         self,
-        row_key: impl Iterator<Item = &'a str>,
-        column_key: impl Iterator<Item = &'a str>,
+        row_key: &[&'a str],
+        column_key: &[&'a str],
         value_column: &'a str,
     ) -> FluxBuilder<Layer<Pivot<'a>, L>> {
         FluxBuilder {
             parts: Layer::new(
-                Pivot::with(row_key.collect(), column_key.collect(), value_column),
+                Pivot::with(Vec::from(row_key), Vec::from(column_key), value_column),
                 self.parts,
             ),
         }
     }
 
-    pub fn sort<'a>(
-        self,
-        columns: impl Iterator<Item = &'a str>,
-    ) -> FluxBuilder<Layer<Sort<'a>, L>> {
+    pub fn sort<'a>(self, columns: &[&'a str]) -> FluxBuilder<Layer<Sort<'a>, L>> {
         FluxBuilder {
-            parts: Layer::new(Sort::with(columns.collect()), self.parts),
+            parts: Layer::new(Sort::with(Vec::from(columns)), self.parts),
         }
     }
 
-    pub fn rename<'a>(
-        self,
-        map: impl Iterator<Item = (&'a str, &'a str)>,
-    ) -> FluxBuilder<Layer<Rename<'a>, L>> {
+    pub fn rename<'a>(self, map: &[(&'a str, &'a str)]) -> FluxBuilder<Layer<Rename<'a>, L>> {
         FluxBuilder {
             parts: Layer::new(Rename::with(map), self.parts),
+        }
+    }
+
+    pub fn drop<'a>(self, columns: &[&'a str]) -> FluxBuilder<Layer<Drop<'a>, L>> {
+        FluxBuilder {
+            parts: Layer::new(Drop::with(Vec::from(columns)), self.parts),
         }
     }
 

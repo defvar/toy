@@ -182,7 +182,7 @@ pub trait RoleBindingClient: Send + Sync {
 pub trait MetricsClient: Send + Sync {
     async fn post(
         &self,
-        v: Metrics,
+        v: Vec<Metrics>,
         opt: common::PostOption,
     ) -> Result<CommonPostResponse, ApiClientError>;
 }

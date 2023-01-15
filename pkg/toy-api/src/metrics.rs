@@ -5,9 +5,17 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Metrics {
+    measurement: String,
     supervisor: String,
     timestamp: DateTime<Utc>,
+    tags: Vec<MetricsTag>,
     items: Vec<MetricsEntry>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct MetricsTag {
+    key: String,
+    value: String,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -30,15 +38,23 @@ pub struct Gauge {
 
 impl Metrics {
     pub fn with(
+        measurement: impl Into<String>,
         supervisor: impl Into<String>,
         timestamp: DateTime<Utc>,
+        tags: Vec<MetricsTag>,
         items: Vec<MetricsEntry>,
     ) -> Self {
         Self {
+            measurement: measurement.into(),
             supervisor: supervisor.into(),
             timestamp,
+            tags,
             items,
         }
+    }
+
+    pub fn measurement(&self) -> &str {
+        &self.measurement
     }
 
     pub fn supervisor(&self) -> &str {
@@ -49,8 +65,29 @@ impl Metrics {
         &self.timestamp
     }
 
+    pub fn tags(&self) -> &[MetricsTag] {
+        &self.tags
+    }
+
     pub fn items(&self) -> &[MetricsEntry] {
         &self.items
+    }
+}
+
+impl MetricsTag {
+    pub fn with(key: impl Into<String>, value: impl Into<String>) -> Self {
+        Self {
+            key: key.into(),
+            value: value.into(),
+        }
+    }
+
+    pub fn key(&self) -> &str {
+        &self.key
+    }
+
+    pub fn value(&self) -> &str {
+        &self.value
     }
 }
 

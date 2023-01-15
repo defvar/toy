@@ -146,7 +146,13 @@ where
         .collect::<Vec<_>>();
 
     counters.append(&mut gauges);
-    let r = Metrics::with(ctx.name(), now, counters);
+    let r = Metrics::with(
+        "supervisor",
+        ctx.name(),
+        now,
+        Vec::with_capacity(0),
+        counters,
+    );
 
     Ok(toy_api_http_common::reply::into_response(
         &r,

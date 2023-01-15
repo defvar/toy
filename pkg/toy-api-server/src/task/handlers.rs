@@ -5,7 +5,7 @@ use crate::store::task_event::{
     CreateOption, ListEventOption, ListTaskOption, TaskEventStore, TaskEventStoreOps,
 };
 use crate::ApiError;
-use chrono::Utc;
+use chrono::{Duration, Utc};
 use toy_api::common::{self as api_common, CommonPostResponse, ListOptionLike};
 use toy_api::graph::Graph;
 use toy_api::selection::Operator;
@@ -107,16 +107,46 @@ where
     T: HttpClient,
 {
     tracing::debug!("handle: {:?}", ctx);
+    opt.common()
+        .selection()
+        .validation_fields_by_names(&["name", "start", "stop"])
+        .map_err(|e| ApiError::invalid_selectors(e))?;
 
-    let store_opt = ListTaskOption::with(None, None, None, None);
+    let name = opt.common().selection().get("name").map(|x| x.clone());
+    let start = opt.common().selection().get("start").map(|x| x.clone());
+    let stop = opt.common().selection().get("stop").map(|x| x.clone());
 
-    let format = opt.common().format();
+    let now = Utc::now();
+    let start = if let Some(start) = start {
+        match start.op() {
+            Operator::Eq => Ok(start.value().as_timestamp()),
+            _ => Err(ApiError::error("selector: [start] must be eq.")),
+        }
+    } else {
+        Ok(Some(now - Duration::hours(1)))
+    }?;
+
+    let stop = if let Some(stop) = stop {
+        match stop.op() {
+            Operator::Eq => Ok(stop.value().as_timestamp()),
+            _ => Err(ApiError::error("selector: [stop] must be eq.")),
+        }
+    } else {
+        Ok(Some(now))
+    }?;
+
+    let store_opt = ListTaskOption::with(name, start, stop, opt.common().limit());
+
     match log_store
         .ops()
         .list_task(log_store.con().unwrap(), store_opt)
         .await
     {
-        Ok(v) => Ok(reply::into_response(&v, format, None)),
+        Ok(v) => Ok(reply::into_response(
+            &v,
+            opt.common().format(),
+            opt.common().indent(),
+        )),
         Err(e) => {
             tracing::error!("error:{:?}", e);
             Err(ApiError::store_operation_failed(e))
@@ -174,13 +204,14 @@ where
     let start = opt.common().selection().get("start").map(|x| x.clone());
     let stop = opt.common().selection().get("stop").map(|x| x.clone());
 
+    let now = Utc::now();
     let start = if let Some(start) = start {
         match start.op() {
             Operator::Eq => Ok(start.value().as_timestamp()),
             _ => Err(ApiError::error("selector: [start] must be eq.")),
         }
     } else {
-        Ok(None)
+        Ok(Some(now - Duration::hours(1)))
     }?;
 
     let stop = if let Some(stop) = stop {
@@ -189,7 +220,7 @@ where
             _ => Err(ApiError::error("selector: [stop] must be eq.")),
         }
     } else {
-        Ok(None)
+        Ok(Some(now))
     }?;
 
     match event_store

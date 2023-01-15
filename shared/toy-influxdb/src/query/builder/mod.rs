@@ -1,6 +1,7 @@
 use crate::InfluxDBError;
 use std::io::Write;
 
+mod drop;
 mod filter;
 mod flux_builder;
 mod from;
@@ -11,6 +12,7 @@ mod range;
 mod rename;
 mod sort;
 
+pub use drop::Drop;
 pub use filter::Filter;
 pub use flux_builder::{FluxBuilder, Identity, Layer};
 pub use from::From;

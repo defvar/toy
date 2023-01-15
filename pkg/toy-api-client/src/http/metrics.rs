@@ -36,7 +36,7 @@ where
 {
     async fn post(
         &self,
-        v: Metrics,
+        v: Vec<Metrics>,
         opt: PostOption,
     ) -> Result<CommonPostResponse, ApiClientError> {
         request::post(&self.inner, Some(&self.auth), &self.root, PATH, &v, opt)

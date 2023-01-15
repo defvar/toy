@@ -8,8 +8,10 @@ pub struct Rename<'a> {
 }
 
 impl<'a> Rename<'a> {
-    pub fn with(map: impl Iterator<Item = (&'a str, &'a str)>) -> Rename<'a> {
-        Rename { map: map.collect() }
+    pub fn with(map: &[(&'a str, &'a str)]) -> Rename<'a> {
+        Rename {
+            map: map.to_vec().into_iter().collect(),
+        }
     }
 }
 

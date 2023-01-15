@@ -254,7 +254,7 @@ impl RoleBindingClient for NoopApiClient {
 impl MetricsClient for NoopApiClient {
     async fn post(
         &self,
-        _v: Metrics,
+        _v: Vec<Metrics>,
         _opt: PostOption,
     ) -> Result<CommonPostResponse, ApiClientError> {
         unimplemented!()

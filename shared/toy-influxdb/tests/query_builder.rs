@@ -65,7 +65,7 @@ fn ungroup() {
 #[test]
 fn group() {
     let r = FluxBuilder::from("toy")
-        .group(vec!["a", "b"].into_iter())
+        .group(&["a", "b"])
         .to_flux()
         .unwrap();
 
@@ -73,13 +73,19 @@ fn group() {
 }
 
 #[test]
+fn drop() {
+    let r = FluxBuilder::from("toy")
+        .drop(&["a", "b"])
+        .to_flux()
+        .unwrap();
+
+    assert_eq!(r, "from(bucket: \"toy\") |> drop(columns: [\"a\",\"b\"])");
+}
+
+#[test]
 fn pivot() {
     let r = FluxBuilder::from("toy")
-        .pivot(
-            vec!["a", "b"].into_iter(),
-            vec!["_field"].into_iter(),
-            "_value",
-        )
+        .pivot(&["a", "b"], &["_field"], "_value")
         .to_flux()
         .unwrap();
 
@@ -92,7 +98,7 @@ fn pivot() {
 #[test]
 fn rename() {
     let r = FluxBuilder::from("toy")
-        .rename([("_a", "a"), ("_b", "b")].into_iter())
+        .rename(&[("_a", "a"), ("_b", "b")])
         .to_flux()
         .unwrap();
 
@@ -105,7 +111,7 @@ fn rename() {
 #[test]
 fn sort() {
     let r = FluxBuilder::from("toy")
-        .sort(vec!["a", "b"].into_iter())
+        .sort(&["a", "b"])
         .to_flux()
         .unwrap();
 

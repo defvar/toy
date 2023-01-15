@@ -89,6 +89,8 @@ pub struct Task {
     task_id: TaskId,
     name: String,
     supervisor: String,
+    event: String,
+    timestamp: DateTime<Utc>,
 }
 
 impl Default for PendingStatus {
@@ -331,6 +333,8 @@ impl Task {
         task_id: T,
         name: S,
         supervisor: S,
+        event: S,
+        timestamp: DateTime<Utc>,
     ) -> Result<Self, ()> {
         let id = match TaskId::parse_str(task_id.as_ref()) {
             Ok(id) => id,
@@ -340,7 +344,29 @@ impl Task {
             task_id: id,
             name: name.into(),
             supervisor: supervisor.into(),
+            event: event.into(),
+            timestamp,
         })
+    }
+
+    pub fn task_id(&self) -> TaskId {
+        self.task_id
+    }
+
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
+    pub fn supervisor(&self) -> &str {
+        &self.supervisor
+    }
+
+    pub fn event(&self) -> &str {
+        &self.event
+    }
+
+    pub fn timestamp(&self) -> &DateTime<Utc> {
+        &self.timestamp
     }
 }
 

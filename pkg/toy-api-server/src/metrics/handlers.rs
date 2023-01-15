@@ -21,21 +21,22 @@ where
     tracing::debug!("handle: {:?}", ctx);
 
     let format = opt.format();
-    let v = codec::decode::<_, Metrics>(request, format)?;
+    let vec = codec::decode::<_, Vec<Metrics>>(request, format)?;
 
-    match store
-        .ops()
-        .create(store.con().unwrap(), v, CreateOption::new())
-        .await
-    {
-        Ok(()) => {
-            let r = CommonPostResponse::with_code(StatusCode::CREATED.as_u16());
-            let r = reply::into_response(&r, format, opt.indent());
-            Ok((StatusCode::CREATED, r))
-        }
-        Err(e) => {
-            tracing::error!("error:{:?}", e);
-            Err(ApiError::store_operation_failed(e))
+    for v in vec.into_iter().filter(|x| x.items().len() > 0) {
+        match store
+            .ops()
+            .create(store.con().unwrap(), v, CreateOption::new())
+            .await
+        {
+            Ok(()) => {}
+            Err(e) => {
+                tracing::error!("error:{:?}", e);
+                return Err(ApiError::store_operation_failed(e));
+            }
         }
     }
+    let r = CommonPostResponse::with_code(StatusCode::CREATED.as_u16());
+    let r = reply::into_response(&r, format, opt.indent());
+    Ok((StatusCode::CREATED, r))
 }

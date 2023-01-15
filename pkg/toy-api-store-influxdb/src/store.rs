@@ -1,8 +1,9 @@
 use std::fmt::{Debug, Formatter};
 use std::marker::PhantomData;
 use toy_api::metrics::{Metrics, MetricsEntry};
+use toy_api::selection::selector::Predicate;
 use toy_api::selection::Operator;
-use toy_api::task::{TaskEvent, TaskEventList};
+use toy_api::task::{TaskEvent, TaskEventList, TaskList};
 use toy_api_server::store::error::StoreError;
 use toy_api_server::store::metrics::{MetricsStore, MetricsStoreOps};
 use toy_api_server::store::task_event::{
@@ -11,12 +12,11 @@ use toy_api_server::store::task_event::{
 use toy_api_server::store::StoreConnection;
 use toy_api_server::toy_h::HttpClient;
 use toy_core::data::Value;
-use toy_influxdb::models::flux_table::FluxTable;
 use toy_influxdb::models::line_protocol::LineProtocolBuilder;
 use toy_influxdb::models::query_param::QueryParam;
 use toy_influxdb::models::FieldValue;
 use toy_influxdb::query::builder::{Filter, FluxBuilder};
-use toy_influxdb::{Client, InfluxDBError};
+use toy_influxdb::Client;
 
 #[derive(Clone, Debug)]
 pub struct InfluxdbStore<T> {
@@ -150,51 +150,31 @@ where
         con: Self::Con,
         opt: ListEventOption,
     ) -> Result<TaskEventList, Self::Err> {
-        let name_filter = if let Some(name) = opt.name() {
-            let v = to_field_value(name.value());
-            match name.op() {
-                Operator::Eq => Filter::eq(name.field(), v),
-                Operator::NotEq => Filter::ne(name.field(), v),
-                Operator::LessThan => Filter::less_than(name.field(), v),
-                Operator::LessThanOrEqual => Filter::less_than_or_equal(name.field(), v),
-                Operator::GreaterThan => Filter::greater_than(name.field(), v),
-                Operator::GreaterThanOrEqual => Filter::greater_than_or_equal(name.field(), v),
-                Operator::Match => Filter::regex_match(name.field(), v),
-                Operator::Unmatch => Filter::regex_not_match(name.field(), v),
-            }
-        } else {
-            Filter::none()
-        };
-
+        let name_filter = to_name_filter(opt.name());
         let query = FluxBuilder::from("toy")
             .range(opt.start().copied(), opt.stop().copied())
-            .filter(Filter::eq("_measurement", "toy".into()))
+            .filter(Filter::eq("_measurement", "event".into()))
             .filter(name_filter)
             .ungroup()
             .pivot(
-                vec!["_time", "name", "supervisor", "service_type", "uri"].into_iter(),
-                vec!["_field"].into_iter(),
+                &["_time", "name", "supervisor", "service_type", "uri"],
+                &["_field"],
                 "_value",
             )
-            .sort(vec!["_time"].into_iter())
-            .rename(vec![("_time", "timestamp")].into_iter())
+            .sort(&["_time"])
+            .rename(&[("_time", "timestamp")])
             .limit(opt.limit().unwrap_or_else(|| 0))
             .to_flux()
             .map_err(|e| StoreError::error(e))?;
 
         let param = QueryParam::with(query);
-        let mut tables: Vec<FluxTable> = con
+
+        let result = con
             .client
             .query(&con.token, &con.org, &param)
             .await
-            .map_err(|e| StoreError::error(e))?;
-        let result = tables
-            .iter_mut()
-            .try_fold(Vec::<TaskEvent>::new(), |mut acc, x| {
-                let v: Vec<TaskEvent> = toy_influxdb::models::flux_table::unpack(x)?;
-                acc.extend_from_slice(&v);
-                Ok::<_, InfluxDBError>(acc)
-            })
+            .map_err(|e| StoreError::error(e))?
+            .unpack()
             .map_err(|e| StoreError::error(e))?;
 
         Ok(TaskEventList::new(result))
@@ -202,10 +182,38 @@ where
 
     async fn list_task(
         &self,
-        _con: Self::Con,
-        _opt: ListTaskOption,
+        con: Self::Con,
+        opt: ListTaskOption,
     ) -> Result<toy_api::task::TaskList, Self::Err> {
-        todo!()
+        let name_filter = to_name_filter(opt.name());
+        let query = FluxBuilder::from("toy")
+            .range(opt.start().copied(), opt.stop().copied())
+            .filter(Filter::eq("_measurement", "event".into()))
+            .filter(name_filter)
+            .ungroup()
+            .pivot(
+                &["_time", "name", "supervisor", "service_type", "uri"],
+                &["_field"],
+                "_value",
+            )
+            .filter(Filter::regex_match("event", "Task".into()))
+            .drop(&["uri", "service_type"])
+            .sort(&["task_id", "_time"])
+            .rename(&[("_time", "timestamp")])
+            .limit(opt.limit().unwrap_or_else(|| 0))
+            .to_flux()
+            .map_err(|e| StoreError::error(e))?;
+
+        let param = QueryParam::with(query);
+        let result = con
+            .client
+            .query(&con.token, &con.org, &param)
+            .await
+            .map_err(|e| StoreError::error(e))?
+            .unpack()
+            .map_err(|e| StoreError::error(e))?;
+
+        Ok(TaskList::new(result))
     }
 
     async fn create(
@@ -247,6 +255,24 @@ fn to_field_value(value: &Value) -> FieldValue {
     }
 }
 
+fn to_name_filter(predicate: Option<&Predicate>) -> Filter {
+    if let Some(name) = predicate {
+        let v = to_field_value(name.value());
+        match name.op() {
+            Operator::Eq => Filter::eq(name.field(), v),
+            Operator::NotEq => Filter::ne(name.field(), v),
+            Operator::LessThan => Filter::less_than(name.field(), v),
+            Operator::LessThanOrEqual => Filter::less_than_or_equal(name.field(), v),
+            Operator::GreaterThan => Filter::greater_than(name.field(), v),
+            Operator::GreaterThanOrEqual => Filter::greater_than_or_equal(name.field(), v),
+            Operator::Match => Filter::regex_match(name.field(), v),
+            Operator::Unmatch => Filter::regex_not_match(name.field(), v),
+        }
+    } else {
+        Filter::none()
+    }
+}
+
 #[toy_api_server::async_trait::async_trait]
 impl<T> MetricsStoreOps for InfluxdbStoreOps<T>
 where
@@ -263,8 +289,13 @@ where
     ) -> Result<(), Self::Err> {
         let mut builder = LineProtocolBuilder::new();
         builder
-            .start_record("metrics", metrics.timestamp().clone())
+            .start_record(metrics.measurement(), metrics.timestamp().clone())
             .tag("supervisor", metrics.supervisor());
+
+        for tag in metrics.tags() {
+            builder.tag(tag.key(), tag.value());
+        }
+
         for item in metrics.items() {
             match item {
                 MetricsEntry::Counter(v) => {
