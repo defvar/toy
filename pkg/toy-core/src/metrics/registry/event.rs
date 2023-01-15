@@ -15,12 +15,6 @@ impl EventRegistry {
         }
     }
 
-    pub async fn new_task_events(&self, id: TaskId) -> Arc<Mutex<MetricsEvents>> {
-        let mut lock = self.events.lock().await;
-        lock.insert(id, Arc::new(Mutex::new(MetricsEvents::new())));
-        lock.get(&id).map(|x| Arc::clone(x)).unwrap()
-    }
-
     pub async fn get_or_create(&self, id: TaskId) -> Arc<Mutex<MetricsEvents>> {
         let mut lock = self.events.lock().await;
         if let Some(entry) = lock.get(&id) {
