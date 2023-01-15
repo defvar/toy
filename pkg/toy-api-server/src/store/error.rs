@@ -15,32 +15,35 @@ pub enum StoreError {
     #[error("store initialize error: {:?}", inner)]
     InitializeError { inner: String },
 
-    #[error("error: {:?}", source)]
+    #[error("error: {}", source)]
     IO {
         #[from]
         source: std::io::Error,
         backtrace: Backtrace,
     },
 
-    #[error("json deserialize error: {:?}", source)]
+    #[error("json deserialize error: {}", source)]
     DeserializeJsonValue {
         #[from]
         source: DecodeError,
     },
 
-    #[error("json serialize error: {:?}", source)]
+    #[error("json deserialize error. key:{}, error:{}", key, source)]
+    DeserializeJsonValueWithKey { key: String, source: DecodeError },
+
+    #[error("json serialize error: {}", source)]
     SerializeJsonValue {
         #[from]
         source: EncodeError,
     },
 
-    #[error("deserialize error: {:?}", source)]
+    #[error("deserialize error: {}", source)]
     DeserializeValue {
         #[from]
         source: toy_core::data::error::DeserializeError,
     },
 
-    #[error("serialize error: {:?}", source)]
+    #[error("serialize error: {}", source)]
     SerializeValue {
         #[from]
         source: toy_core::data::error::SerializeError,
@@ -131,6 +134,13 @@ impl StoreError {
             ops: ops.to_string(),
             key: key.to_string(),
             msg: message.to_string(),
+        }
+    }
+
+    pub fn deserialize_json_value_with_key(key: impl Into<String>, e: DecodeError) -> StoreError {
+        StoreError::DeserializeJsonValueWithKey {
+            key: key.into(),
+            source: e,
         }
     }
 }

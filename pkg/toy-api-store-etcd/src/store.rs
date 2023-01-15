@@ -135,10 +135,11 @@ where
         tracing::debug!("list prefix:{:?}", prefix);
         con.client.list(&prefix).await?.unpack(|x| {
             let version = x.version();
+            let key = x.key().to_owned();
             let v = toy_pack_json::unpack::<V>(&x.into_data()).map_err(|e| e.into());
             match v {
                 Ok(data) => Ok(KvResponse::with_version(data, version)),
-                Err(e) => Err(e),
+                Err(e) => Err(StoreError::deserialize_json_value_with_key(key, e)),
             }
         })
     }
