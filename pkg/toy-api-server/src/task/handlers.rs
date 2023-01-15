@@ -5,9 +5,10 @@ use crate::store::task_event::{
     CreateOption, ListEventOption, ListTaskOption, TaskEventStore, TaskEventStoreOps,
 };
 use crate::ApiError;
-use chrono::{Duration, Utc};
+use chrono::{DateTime, Duration, Utc};
 use toy_api::common::{self as api_common, CommonPostResponse, ListOptionLike};
 use toy_api::graph::Graph;
+use toy_api::selection::selector::Predicate;
 use toy_api::selection::Operator;
 use toy_api::task::{
     FinishResponse, PendingResult, PendingTask, TaskEvent, TaskEventListOption, TaskListOption,
@@ -116,36 +117,21 @@ where
     let start = opt.common().selection().get("start").map(|x| x.clone());
     let stop = opt.common().selection().get("stop").map(|x| x.clone());
 
-    let now = Utc::now();
-    let start = if let Some(start) = start {
-        match start.op() {
-            Operator::Eq => Ok(start.value().as_timestamp()),
-            _ => Err(ApiError::error("selector: [start] must be eq.")),
-        }
-    } else {
-        Ok(Some(now - Duration::hours(1)))
-    }?;
-
-    let stop = if let Some(stop) = stop {
-        match stop.op() {
-            Operator::Eq => Ok(stop.value().as_timestamp()),
-            _ => Err(ApiError::error("selector: [stop] must be eq.")),
-        }
-    } else {
-        Ok(Some(now))
-    }?;
-
-    let store_opt = ListTaskOption::with(name, start, stop, opt.common().limit());
+    let (start, stop) = to_time_predicate(start, stop)?;
 
     match log_store
         .ops()
-        .list_task(log_store.con().unwrap(), store_opt)
+        .list_task(
+            log_store.con().unwrap(),
+            ListTaskOption::with(name, start, stop, opt.common().limit()),
+        )
         .await
     {
-        Ok(v) => Ok(reply::into_response(
+        Ok(v) => Ok(reply::into_list_item_response_with_fields(
             &v,
             opt.common().format(),
             opt.common().indent(),
+            opt.common().fields(),
         )),
         Err(e) => {
             tracing::error!("error:{:?}", e);
@@ -204,6 +190,33 @@ where
     let start = opt.common().selection().get("start").map(|x| x.clone());
     let stop = opt.common().selection().get("stop").map(|x| x.clone());
 
+    let (start, stop) = to_time_predicate(start, stop)?;
+
+    match event_store
+        .ops()
+        .list_event(
+            event_store.con().unwrap(),
+            ListEventOption::with(name, start, stop, opt.common().limit()),
+        )
+        .await
+    {
+        Ok(v) => Ok(reply::into_list_item_response_with_fields(
+            &v,
+            opt.common().format(),
+            opt.common().indent(),
+            opt.common().fields(),
+        )),
+        Err(e) => {
+            tracing::error!("error:{:?}", e);
+            Err(ApiError::store_operation_failed(e))
+        }
+    }
+}
+
+fn to_time_predicate(
+    start: Option<Predicate>,
+    stop: Option<Predicate>,
+) -> Result<(Option<DateTime<Utc>>, Option<DateTime<Utc>>), ApiError> {
     let now = Utc::now();
     let start = if let Some(start) = start {
         match start.op() {
@@ -223,22 +236,5 @@ where
         Ok(Some(now))
     }?;
 
-    match event_store
-        .ops()
-        .list_event(
-            event_store.con().unwrap(),
-            ListEventOption::with(name, start, stop, opt.common().limit()),
-        )
-        .await
-    {
-        Ok(v) => Ok(reply::into_response(
-            &v,
-            opt.common().format(),
-            opt.common().indent(),
-        )),
-        Err(e) => {
-            tracing::error!("error:{:?}", e);
-            Err(ApiError::store_operation_failed(e))
-        }
-    }
+    Ok((start, stop))
 }

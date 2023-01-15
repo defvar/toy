@@ -38,19 +38,13 @@ where
     {
         Ok(v) => match v {
             Some(v) => {
-                let format = api_opt.format();
-                let indent = api_opt.indent();
-                let fields = api_opt.fields();
                 let r = f(v.into_value());
-                if fields.is_empty() {
-                    Ok(reply::into_response(&r, format, indent))
-                } else {
-                    let value = toy_core::data::pack(r)?;
-                    let applied_value = fields
-                        .apply(&value)
-                        .map_err(|e| ApiError::invalid_field(e))?;
-                    Ok(reply::into_response(&applied_value, format, indent))
-                }
+                Ok(reply::into_response_with_fields(
+                    &r,
+                    api_opt.format(),
+                    api_opt.indent(),
+                    api_opt.fields(),
+                ))
             }
             None => Err(ApiError::error("not found")),
         },
@@ -90,9 +84,6 @@ where
     {
         Ok(mut vec) => {
             let selector = api_opt.common().selection();
-            let fields = api_opt.common().fields();
-            let format = api_opt.common().format();
-            let indent = api_opt.common().indent();
 
             if !selector.preds().is_empty() {
                 // check fields
@@ -117,24 +108,12 @@ where
             }
 
             let r = f(vec.into_iter().map(|x| x.into_value()).collect());
-            if fields.is_empty() {
-                Ok(reply::into_response(&r, format, indent))
-            } else {
-                let result_list = r.items().iter().try_fold(
-                    Vec::with_capacity(r.count() as usize),
-                    |mut acc, item| {
-                        let value = toy_core::data::pack(item)?;
-                        match fields.apply(&value) {
-                            Ok(applied_value) => {
-                                acc.push(applied_value);
-                                Ok(acc)
-                            }
-                            Err(f) => Err(ApiError::invalid_field(f)),
-                        }
-                    },
-                )?;
-                Ok(reply::into_response(&result_list, format, indent))
-            }
+            Ok(reply::into_list_item_response_with_fields(
+                &r,
+                api_opt.common().format(),
+                api_opt.common().indent(),
+                api_opt.common().fields(),
+            ))
         }
         Err(e) => {
             tracing::error!("error:{:?}", e);

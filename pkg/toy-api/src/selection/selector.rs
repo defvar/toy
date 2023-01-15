@@ -71,6 +71,21 @@ impl Selector {
         &self.preds
     }
 
+    /// Check candidate fields.
+    ///
+    /// # Example
+    /// ```
+    /// use toy_api::selection::candidate::CandidatePart;
+    /// use toy_api::selection::Operator;
+    /// use toy_api::selection::selector::Predicate;
+    /// use toy_core::data::Value;
+    ///
+    /// let p = Predicate::new("name", Operator::Eq, "hoge");
+    /// let cp = CandidatePart::new("name", "fuga");
+    /// let result = p.is_match(&cp);
+    /// assert_eq!(result, Ok(false));
+    /// ```
+    ///
     pub fn is_match(&self, candidate: &impl SelectionCandidate) -> Result<bool, String> {
         let map = candidate.candidates();
         if map.is_empty() {

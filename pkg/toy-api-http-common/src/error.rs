@@ -69,6 +69,9 @@ pub enum Error {
     #[error("code: {}, message: {}", inner.code(), inner.message())]
     ApiError { inner: ErrorMessage },
 
+    #[error("invalid field {field}")]
+    InvalidField { field: String },
+
     #[error("{:?}", inner)]
     Error { inner: String },
 }
@@ -88,6 +91,7 @@ impl Error {
             Error::ApiError { inner } => {
                 StatusCode::from_u16(inner.code()).unwrap_or(StatusCode::INTERNAL_SERVER_ERROR)
             }
+            Error::InvalidField { .. } => StatusCode::BAD_REQUEST,
             _ => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
@@ -96,6 +100,12 @@ impl Error {
         match self {
             Error::ApiError { inner } => inner.message().to_string(),
             _ => self.to_string(),
+        }
+    }
+
+    pub fn invalid_field(field: impl Into<String>) -> Error {
+        Error::InvalidField {
+            field: field.into(),
         }
     }
 }

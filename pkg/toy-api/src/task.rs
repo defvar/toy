@@ -6,7 +6,7 @@ use crate::selection::candidate::Candidates;
 use crate::supervisors::SupervisorName;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use toy_core::prelude::{TaskId, Value};
+use toy_core::prelude::TaskId;
 use toy_core::{ServiceType, Uri};
 
 #[derive(Debug, Copy, Clone, Serialize, Deserialize)]
@@ -306,8 +306,8 @@ impl SelectionCandidate for TaskEvent {
 
     fn candidates(&self) -> Candidates {
         Candidates::default()
-            .with_candidate("name", Value::String(self.name.to_string()))
-            .with_candidate("timestamp", Value::TimeStamp(self.timestamp))
+            .with_candidate("name", self.name.to_string())
+            .with_candidate("timestamp", self.timestamp)
     }
 }
 

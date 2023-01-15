@@ -3,7 +3,7 @@ use thiserror::Error;
 use toy_api::common::Format;
 use toy_api::error::ErrorMessage;
 use toy_api_http_common::axum::response::{IntoResponse, Response};
-use toy_api_http_common::{reply, Error};
+use toy_api_http_common::reply;
 use toy_core::error::ConfigError;
 use toy_h::error::HError;
 use toy_h::{InvalidUri, StatusCode};
@@ -99,10 +99,7 @@ impl ApiError {
     pub fn status_code(&self) -> StatusCode {
         match self {
             ApiError::ValidationFailed { .. } => StatusCode::BAD_REQUEST,
-            ApiError::ApiHttpCommonError { source } => match source {
-                Error::QueryParse { .. } => StatusCode::BAD_REQUEST,
-                _ => StatusCode::INTERNAL_SERVER_ERROR,
-            },
+            ApiError::ApiHttpCommonError { source } => source.status_code(),
             ApiError::AllreadyExists { .. } => StatusCode::CONFLICT,
             ApiError::InvalidSelector { .. } => StatusCode::BAD_REQUEST,
             ApiError::InvalidField { .. } => StatusCode::BAD_REQUEST,

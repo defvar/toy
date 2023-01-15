@@ -6,7 +6,6 @@ use crate::supervisors::SupervisorStatus::Ready;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::net::SocketAddr;
-use toy_core::data::Value;
 
 pub type SupervisorName = String;
 
@@ -135,8 +134,8 @@ impl SelectionCandidate for Supervisor {
 
     fn candidates(&self) -> Candidates {
         Candidates::default()
-            .with_candidate("name", Value::from(&self.name))
-            .with_candidate("start_time", Value::from(&self.start_time))
+            .with_candidate("name", &self.name)
+            .with_candidate("start_time", &self.start_time)
     }
 }
 

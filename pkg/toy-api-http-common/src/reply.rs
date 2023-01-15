@@ -6,7 +6,56 @@ use http::header::{HeaderValue, CACHE_CONTROL, CONTENT_TYPE, TRANSFER_ENCODING};
 use http::StatusCode;
 use serde::Serialize;
 use std::marker::PhantomData;
-use toy_api::common::{Format, Indent};
+use toy_api::common::{Format, Indent, ListObject};
+use toy_api::selection::fields::Fields;
+
+pub fn into_response_with_fields<T>(
+    v: &T,
+    format: Option<Format>,
+    indent: Option<Indent>,
+    fields: &Fields,
+) -> Result<axum::response::Response, Error>
+where
+    T: Serialize,
+{
+    if fields.is_empty() {
+        Ok(into_response(v, format, indent))
+    } else {
+        let value = toy_core::data::pack(v)?;
+        let applied_value = fields.apply(&value).map_err(|e| Error::invalid_field(e))?;
+        Ok(into_response(&applied_value, format, indent))
+    }
+}
+
+pub fn into_list_item_response_with_fields<T, V>(
+    list: &T,
+    format: Option<Format>,
+    indent: Option<Indent>,
+    fields: &Fields,
+) -> Result<axum::response::Response, Error>
+where
+    T: Serialize + ListObject<V>,
+    V: Serialize,
+{
+    if fields.is_empty() {
+        Ok(into_response(list, format, indent))
+    } else {
+        let applied_list = list.items().iter().try_fold(
+            Vec::with_capacity(list.count() as usize),
+            |mut acc, item| {
+                let value = toy_core::data::pack(item)?;
+                match fields.apply(&value) {
+                    Ok(applied_value) => {
+                        acc.push(applied_value);
+                        Ok(acc)
+                    }
+                    Err(f) => Err(Error::invalid_field(f)),
+                }
+            },
+        )?;
+        Ok(into_response(&applied_list, format, indent))
+    }
+}
 
 pub fn into_response<T>(
     v: &T,

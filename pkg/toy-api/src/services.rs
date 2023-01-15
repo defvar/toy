@@ -4,7 +4,6 @@ use crate::common::{KVObject, ListObject, ListOption, ListOptionLike, SelectionC
 use crate::selection::candidate::Candidates;
 use serde::{Deserialize, Serialize};
 use toy_core::data::schema::JsonSchema;
-use toy_core::data::Value;
 use toy_core::prelude::{PortType, ServiceType};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -62,8 +61,8 @@ impl SelectionCandidate for ServiceSpec {
             PortType::Sink(_) => "Sink",
         };
         Candidates::default()
-            .with_candidate("name_space", Value::from(self.service_type.name_space()))
-            .with_candidate("port_type", Value::from(p))
+            .with_candidate("name_space", self.service_type.name_space())
+            .with_candidate("port_type", p)
     }
 }
 

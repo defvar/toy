@@ -32,7 +32,7 @@ impl Candidates {
         }
     }
 
-    pub fn with_candidate(mut self, name: impl Into<String>, value: Value) -> Self {
+    pub fn with_candidate(mut self, name: impl Into<String>, value: impl Into<Value>) -> Self {
         let key = name.into();
         self.map.insert(key.clone(), CandidatePart::new(key, value));
         self
@@ -54,10 +54,10 @@ impl Default for Candidates {
 }
 
 impl CandidatePart {
-    pub fn new(name: impl Into<String>, value: Value) -> Self {
+    pub fn new(name: impl Into<String>, value: impl Into<Value>) -> Self {
         Self {
             name: name.into(),
-            value,
+            value: value.into(),
         }
     }
 
