@@ -1,3 +1,4 @@
+use crate::metrics::RuntimeMetrics;
 use std::future::Future;
 use std::io;
 use tokio::runtime::{Builder, Runtime as TokioRuntime};
@@ -34,6 +35,10 @@ impl Runtime {
         let _ = tokio::task::Builder::new()
             .name(name)
             .spawn_on(future, self.rt.handle());
+    }
+
+    pub fn metrics(&self) -> RuntimeMetrics {
+        RuntimeMetrics::with(&self.rt.metrics())
     }
 }
 

@@ -6,3 +6,5 @@ edition = "2021"
 
 [dependencies]
 tokio = { version = "1.19.2", features = ["rt-multi-thread", "sync", "time", "tracing"] }
+
+toy-core = {path="../toy-core"}

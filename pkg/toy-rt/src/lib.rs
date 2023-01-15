@@ -1,9 +1,13 @@
+extern crate core;
+
 use std::future::Future;
 use std::time::Duration;
 
 mod async_rt;
 mod join_handle;
+mod metrics;
 
+use crate::metrics::RuntimeMetrics;
 pub use async_rt::{Runtime, RuntimeBuilder};
 use join_handle::JoinHandle;
 
@@ -34,4 +38,8 @@ where
 
 pub fn sleep(millis: u64) -> impl Future<Output = ()> {
     tokio::time::sleep(Duration::from_millis(millis))
+}
+
+pub fn metrics() -> RuntimeMetrics {
+    RuntimeMetrics::with(&tokio::runtime::Handle::current().metrics())
 }
