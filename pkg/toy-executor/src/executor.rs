@@ -83,13 +83,14 @@ impl Executor {
         panic!("invalid channel stack...");
     }
 
-    async fn run_0(mut self, start_frame: Frame) -> Result<(), OutgoingError> {
+    async fn run_0(&mut self, start_frame: Frame) -> Result<(), OutgoingError> {
         for (_, tx) in &mut self.starters.iter_mut() {
             tx.send(start_frame.clone()).await?
         }
 
         let uri: Uri = "awaiter".into();
-        let awaiter_ctx = self.ctx.with_uri(&uri);
+        let awaiter_ctx = self.ctx.clone();
+        let awaiter_ctx = awaiter_ctx.with_uri(&uri);
         let span = awaiter_ctx.info_span();
         let mut finish_count = 0;
         while let Some(req) = self.awaiter.next().await {
@@ -112,9 +113,6 @@ impl Executor {
                 }
             }
         }
-        awaiter_ctx
-            .push_task_event(MetricsEventKind::FinishTask)
-            .await;
         Ok(())
     }
 }
@@ -242,6 +240,7 @@ impl TaskExecutor for Executor {
         }
 
         log_total_time(started_at, &span, None, Operation::FinishTask);
+        self.ctx.push_task_event(MetricsEventKind::FinishTask).await;
 
         {
             let lock = errors.lock().await;
