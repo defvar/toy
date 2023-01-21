@@ -15,6 +15,8 @@ pub struct ServiceSpecList {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ServiceSpec {
     service_type: ServiceType,
+    name_space: String,
+    service_name: String,
     port_type: PortType,
     schema: Option<JsonSchema>,
 }
@@ -37,8 +39,12 @@ impl ListObject<ServiceSpec> for ServiceSpecList {
 
 impl ServiceSpec {
     pub fn new(service_type: ServiceType, port_type: PortType, schema: Option<JsonSchema>) -> Self {
+        let name_space = service_type.name_space().to_owned();
+        let service_name = service_type.service_name().to_owned();
         Self {
             service_type,
+            name_space,
+            service_name,
             port_type,
             schema,
         }
