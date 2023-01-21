@@ -18,7 +18,7 @@ import TabContext from "@mui/lab/TabContext";
 import TabPanel from "@mui/lab/TabPanel";
 import { Chart } from "./chart";
 import { reducer, initialState } from "../../modules/graphEdit";
-import { fetchGraph } from "../../modules/api/toy-api";
+import { GraphClient } from "../../modules/api";
 import CircularProgress from "../../components/progress/CircularProgress";
 import { Resizable } from "react-resizable";
 import { NodeEditor } from "./NodeEditor";
@@ -73,7 +73,7 @@ const BottomPane = styled(Box)(({ theme }) => ({
 export const GraphEdit = () => {
     const { name } = useParams<{ name: string }>();
     const [graphResource, setGraphResource] = React.useState(() =>
-        fetchGraph(name)
+        GraphClient.fetchGraph(name)
     );
     const [state, dispatch] = React.useReducer(reducer, initialState);
     const [tabNumber, setTabNumber] = React.useState(0);
@@ -81,7 +81,7 @@ export const GraphEdit = () => {
     const [serviceListOpen, setServiceListOpen] = React.useState(false);
 
     const onChartRefleshClick = React.useCallback(() => {
-        setGraphResource(() => fetchGraph(name));
+        setGraphResource(() => GraphClient.fetchGraph(name));
     }, []);
 
     const onAddClick = React.useCallback(() => {

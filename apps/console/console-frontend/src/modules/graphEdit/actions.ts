@@ -1,9 +1,9 @@
-import { GraphResponse } from "../api/toy-api";
+import { Graph } from "../api";
 import { NodeData, LinkData } from "./types";
 
 export interface GetGraph {
     type: "GetGraph";
-    payload: GraphResponse;
+    payload: Graph;
 }
 
 export interface AddLink {

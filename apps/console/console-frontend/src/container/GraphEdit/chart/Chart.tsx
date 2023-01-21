@@ -16,12 +16,12 @@ import ReactFlow, {
     applyNodeChanges,
 } from "reactflow";
 import "reactflow/dist/style.css";
-import { Resource } from "../../../modules/common";
-import { GraphResponse } from "../../../modules/api/toy-api";
+import { Resource, Result } from "../../../modules/common";
+import { ErrorMessage, Graph } from "../../../modules/api";
 
 export interface ChartProps {
     data: ChartData;
-    graphResource: Resource<GraphResponse>;
+    graphResource: Resource<Result<Graph, ErrorMessage>>;
     dispatch: React.Dispatch<Actions>;
     height?: string | number;
 }
@@ -58,10 +58,12 @@ export const Chart = (props: ChartProps) => {
 
     const graph = graphResource.read();
     React.useEffect(() => {
-        dispatch({
-            type: "GetGraph",
-            payload: graph,
-        });
+        if (graph.isSuccess()) {
+            dispatch({
+                type: "GetGraph",
+                payload: graph.value,
+            });
+        }
     }, [graph]);
 
     const [reactFlowInstance, setReactFlowInstance] = useState(null);

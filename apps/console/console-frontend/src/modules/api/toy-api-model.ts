@@ -31,6 +31,12 @@ export interface ServiceSpecList {
 //////////////////////////////////////
 // graph
 //////////////////////////////////////
+export interface Graph {
+    readonly name: string;
+    readonly services?: GraphNode[];
+    readonly labels?: string[];
+}
+
 export interface GraphNode {
     type: string;
     uri: string;
@@ -44,9 +50,9 @@ export interface GraphNode {
     wires: string[];
 }
 
-export interface GraphResponse {
-    name: string;
-    services: GraphNode[];
+export interface GraphNodeList {
+    readonly count: number;
+    readonly items: Graph[];
 }
 
 //////////////////////////////////////

@@ -6,7 +6,9 @@ import {
     Role,
     ServiceSpecList,
     ErrorMessage,
-    GraphResponse,
+    GraphNodeList,
+    GraphNode,
+    Graph,
 } from "./toy-api-model";
 
 async function commonRequest<T>(
@@ -62,36 +64,12 @@ export const ToyApi = {
         return commonRequest<ServiceSpecList>("services", "GET", null);
     },
 
-    getGraph: async (name: string): Promise<GraphResponse> => {
-        await new Promise((resolve) => setTimeout(resolve, 3000));
+    getGraphs: async (): Promise<Result<GraphNodeList, ErrorMessage>> => {
+        return commonRequest<GraphNodeList>("graphs", "GET", null);
+    },
 
-        const key = await getIdToken();
-        return fetch(`${config.root}/graphs/${name}`, {
-            method: "GET",
-            mode: "cors",
-            headers: {
-                Authorization: `Bearer ${key}`,
-            },
-        })
-            .then((res) => {
-                if (res.ok) {
-                    return res.json();
-                }
-                throw new Error("response was not ok.");
-            })
-            .then((json) => {
-                return json as GraphResponse;
-            })
-            .catch((error) => {
-                console.log(
-                    "There has been a problem with your fetch operation: ",
-                    error.message
-                );
-                return {
-                    name: "",
-                    services: [],
-                };
-            });
+    getGraph: async (name: string): Promise<Result<Graph, ErrorMessage>> => {
+        return commonRequest<Graph>(`graphs/${name}`, "GET", null);
     },
 };
 
@@ -99,8 +77,14 @@ export const fetchServices = () => {
     return toResource(ToyApi.getServices);
 };
 
-export const fetchGraph = (name: string) => {
-    return toResource(() => ToyApi.getGraph(name));
+export const GraphClient = {
+    fetchGraphs: () => {
+        return toResource(ToyApi.getGraphs);
+    },
+
+    fetchGraph: (name: string) => {
+        return toResource(() => ToyApi.getGraph(name));
+    },
 };
 
 export const RbacClient = {

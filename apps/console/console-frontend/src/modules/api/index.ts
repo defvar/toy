@@ -9,7 +9,9 @@ export {
     ServiceSpecList,
     ErrorMessage,
     PortType,
+    Graph,
     GraphNode,
+    GraphNodeList,
 } from "./toy-api-model";
 
-export { fetchGraph, fetchServices, RbacClient } from "./toy-api";
+export { GraphClient, fetchServices, RbacClient } from "./toy-api";
