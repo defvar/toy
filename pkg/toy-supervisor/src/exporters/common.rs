@@ -9,7 +9,7 @@ pub trait EventExporter: Sync + Send {
     async fn export<C>(
         &self,
         ctx: &SupervisorContext<C>,
-        events: Vec<EventRecord>,
+        events: &[EventRecord],
     ) -> Result<(), SupervisorError>
     where
         C: ApiClient + Clone + Send + Sync + 'static;
@@ -33,7 +33,7 @@ impl EventExporter for NoopExporter {
     async fn export<C>(
         &self,
         _ctx: &SupervisorContext<C>,
-        _events: Vec<EventRecord>,
+        _events: &[EventRecord],
     ) -> Result<(), SupervisorError>
     where
         C: ApiClient + Clone + Send + Sync + 'static,

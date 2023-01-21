@@ -230,6 +230,7 @@ where
                 .tag("supervisor", e.supervisor())
                 .tag("service_type", e.service_type().full_name())
                 .tag("uri", e.uri().as_ref())
+                .field("event_id", FieldValue::String(e.event_id().to_string()))
                 .field("task_id", FieldValue::String(e.task_id().to_string()))
                 .field("event", FieldValue::String(e.event().to_string()))
                 .end_record();

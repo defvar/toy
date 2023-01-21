@@ -14,8 +14,10 @@ pub async fn event_export<C>(
         tracing::debug!("event export...");
         let vec = metrics::context::events().drain().await;
         if let Some(ex) = exporter.as_ref() {
-            if let Err(e) = ex.export(&ctx, vec).await {
+            if let Err(e) = ex.export(&ctx, &vec).await {
                 tracing::error!("{:?}", e);
+                //recover
+                metrics::context::events().extend(vec).await;
             }
         }
         ctx.event_exported().await;

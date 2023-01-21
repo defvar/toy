@@ -32,15 +32,16 @@ where
     async fn export<C>(
         &self,
         ctx: &SupervisorContext<C>,
-        events: Vec<EventRecord>,
+        events: &[EventRecord],
     ) -> Result<(), SupervisorError>
     where
         C: ApiClient + Clone + Send + Sync + 'static,
     {
         let mut body = vec![];
-        for item in &events {
+        for item in events {
             body.push(TaskEvent::new(
-                item.id(),
+                item.event_id(),
+                item.task_id(),
                 item.task_name(),
                 item.service_type().clone(),
                 item.uri().clone(),

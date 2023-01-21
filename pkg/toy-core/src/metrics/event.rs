@@ -1,3 +1,4 @@
+use crate::metrics::event_id::EventId;
 use crate::metrics::kind::MetricsEventKind;
 use crate::prelude::TaskId;
 use crate::{ServiceType, Uri};
@@ -21,6 +22,10 @@ impl MetricsEvents {
         self.raw.push_back(r);
     }
 
+    pub fn extend<I: IntoIterator<Item = EventRecord>>(&mut self, iter: I) {
+        self.raw.extend(iter);
+    }
+
     pub fn records(&self) -> Vec<EventRecord> {
         self.raw.iter().cloned().collect()
     }
@@ -30,7 +35,8 @@ impl MetricsEvents {
 /// "Start of Task", "Start of Service", etc.
 #[derive(Debug, Clone, Serialize)]
 pub struct EventRecord {
-    id: TaskId,
+    event_id: EventId,
+    task_id: TaskId,
     task_name: String,
     service_type: ServiceType,
     uri: Uri,
@@ -40,14 +46,15 @@ pub struct EventRecord {
 
 impl EventRecord {
     pub fn with_task(
-        id: TaskId,
+        task_id: TaskId,
         task_name: impl Into<String>,
         uri: impl Into<Uri>,
         event: MetricsEventKind,
         timestamp: DateTime<Utc>,
     ) -> EventRecord {
         Self {
-            id,
+            event_id: EventId::new(),
+            task_id,
             task_name: task_name.into(),
             service_type: ServiceType::noop(),
             uri: uri.into(),
@@ -57,7 +64,7 @@ impl EventRecord {
     }
 
     pub fn with_service(
-        id: TaskId,
+        task_id: TaskId,
         task_name: impl Into<String>,
         service_type: impl Into<ServiceType>,
         uri: impl Into<Uri>,
@@ -65,7 +72,8 @@ impl EventRecord {
         timestamp: DateTime<Utc>,
     ) -> EventRecord {
         Self {
-            id,
+            event_id: EventId::new(),
+            task_id,
             task_name: task_name.into(),
             service_type: service_type.into(),
             uri: uri.into(),
@@ -74,8 +82,12 @@ impl EventRecord {
         }
     }
 
-    pub fn id(&self) -> TaskId {
-        self.id
+    pub fn event_id(&self) -> EventId {
+        self.event_id
+    }
+
+    pub fn task_id(&self) -> TaskId {
+        self.task_id
     }
 
     pub fn task_name(&self) -> &str {

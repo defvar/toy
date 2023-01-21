@@ -46,4 +46,18 @@ impl EventRegistry {
         }
         r
     }
+
+    pub async fn extend<I: IntoIterator<Item = EventRecord>>(&self, iter: I) {
+        let mut map = HashMap::new();
+        iter.into_iter().for_each(|x| {
+            map.entry(x.task_id()).or_insert_with(|| vec![]).push(x);
+        });
+        for (k, v) in map {
+            {
+                let r = self.get_or_create(k).await;
+                let mut r = r.lock().await;
+                r.extend(v);
+            }
+        }
+    }
 }

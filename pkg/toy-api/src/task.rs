@@ -6,6 +6,7 @@ use crate::selection::candidate::Candidates;
 use crate::supervisors::SupervisorName;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use toy_core::metrics::EventId;
 use toy_core::prelude::TaskId;
 use toy_core::{ServiceType, Uri};
 
@@ -69,6 +70,7 @@ pub struct TaskEventList {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TaskEvent {
+    event_id: EventId,
     task_id: TaskId,
     name: String,
     service_type: ServiceType,
@@ -251,6 +253,7 @@ impl ListObject<TaskEvent> for TaskEventList {
 
 impl TaskEvent {
     pub fn new<S: Into<String>>(
+        event_id: EventId,
         task_id: TaskId,
         name: S,
         service_type: ServiceType,
@@ -260,6 +263,7 @@ impl TaskEvent {
         timestamp: DateTime<Utc>,
     ) -> Self {
         Self {
+            event_id,
             task_id,
             name: name.into(),
             service_type,
@@ -268,6 +272,10 @@ impl TaskEvent {
             supervisor: supervisor.into(),
             timestamp,
         }
+    }
+
+    pub fn event_id(&self) -> EventId {
+        self.event_id
     }
 
     pub fn task_id(&self) -> TaskId {
