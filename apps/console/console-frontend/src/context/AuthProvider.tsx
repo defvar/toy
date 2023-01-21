@@ -4,7 +4,6 @@ import * as auth from "../modules/auth";
 export type AuthContextData = {
     login: () => void;
     signup: () => void;
-    signinWithGoogle: () => void;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     currentUser?: auth.AuthUser;
     isProgress: boolean;
@@ -15,9 +14,6 @@ export const AuthContext = React.createContext({
         return;
     },
     signup: () => {
-        return;
-    },
-    signinWithGoogle: () => {
         return;
     },
     currentUser: null,
@@ -52,18 +48,11 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         return;
     };
 
-    const signinWithGoogle = async () => {
-        const r = await auth.signinWithPopupToGoogle();
-        console.debug(r);
-        setCurrentUser(r);
-    };
-
     return (
         <AuthContext.Provider
             value={{
                 login,
                 signup,
-                signinWithGoogle,
                 currentUser,
                 isProgress,
             }}
