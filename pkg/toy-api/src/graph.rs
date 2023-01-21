@@ -32,7 +32,7 @@ pub struct GraphNode {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct GraphList {
-    graphs: Vec<Graph>,
+    items: Vec<Graph>,
     count: u32,
 }
 
@@ -54,7 +54,7 @@ impl KVObject for Graph {
 
 impl ListObject<Graph> for GraphList {
     fn items(&self) -> &[Graph] {
-        &self.graphs
+        &self.items
     }
 
     fn count(&self) -> u32 {
@@ -100,9 +100,9 @@ impl GraphNode {
 }
 
 impl GraphList {
-    pub fn new(graphs: Vec<Graph>) -> Self {
-        let count = graphs.len() as u32;
-        Self { graphs, count }
+    pub fn new(items: Vec<Graph>) -> Self {
+        let count = items.len() as u32;
+        Self { items, count }
     }
 }
 
