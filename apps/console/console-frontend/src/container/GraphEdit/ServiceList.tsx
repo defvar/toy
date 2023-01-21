@@ -17,15 +17,16 @@ import {
 import { fetchServices } from "../../modules/api/toy-api";
 import { CircularProgress } from "../../components/progress/CircularProgress";
 import { SearchTextBox } from "../../components/SearchTextBox";
-import { Resource } from "../../modules/common";
+import { Resource, Result } from "../../modules/common";
 import {
-    ServiceResponse,
-    ServiceResponseItem,
+    ErrorMessage,
+    ServiceSpec,
+    ServiceSpecList,
     PortType,
-} from "../../modules/api/toy-api";
+} from "../../modules/api";
 
 interface ServiceGridProps {
-    resource: Resource<ServiceResponse>;
+    resource: Resource<Result<ServiceSpecList, ErrorMessage>>;
 }
 
 function portTypeString(v: PortType): string {
@@ -40,14 +41,19 @@ function portTypeString(v: PortType): string {
 
 const ServiceGrid = (props: ServiceGridProps) => {
     const r = props.resource.read();
-    const namespaces = r.items.reduce((acc, v) => {
-        if (acc[v.service_type.name_space]) {
-            acc[v.service_type.name_space].push(v);
-        } else {
-            acc[v.service_type.name_space] = [v];
-        }
-        return acc;
-    }, {} as { [key: string]: ServiceResponseItem[] });
+    let namespaces: { [key: string]: ServiceSpec[] } = {};
+
+    if (r.isSuccess()) {
+        namespaces = r.value.items.reduce((acc, v) => {
+            const ns = v.name_space;
+            if (acc[ns]) {
+                acc[ns].push(v);
+            } else {
+                acc[ns] = [v];
+            }
+            return acc;
+        }, {});
+    }
 
     return (
         <Box>
@@ -62,18 +68,11 @@ const ServiceGrid = (props: ServiceGridProps) => {
                         <Grid key={namespace} container spacing={2} m={1}>
                             {entry.map((item) => {
                                 return (
-                                    <Grid
-                                        key={item.service_type.full_name}
-                                        item
-                                        xs={4}
-                                    >
+                                    <Grid key={item.service_type} item xs={4}>
                                         <Card sx={{ maxWidth: 250 }}>
                                             <CardContent>
                                                 <Typography variant="h6">
-                                                    {
-                                                        item.service_type
-                                                            .service_name
-                                                    }
+                                                    {item.service_name}
                                                 </Typography>
                                                 <Typography
                                                     sx={{ mb: 1.5 }}

@@ -67,14 +67,3 @@ export interface GraphEditState {
         configSchema: JsonSchema;
     };
 }
-
-export interface ServiceState {
-    fullName: string;
-    name: string;
-    namespace: string;
-    description: string;
-    inPort: number;
-    outPort: number;
-    configSchema: JsonSchema;
-    portType: PortType;
-}

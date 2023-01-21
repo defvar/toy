@@ -146,12 +146,12 @@ function toItems(role: Role): Row[] {
     return Object.values(r);
 }
 
-function toModel(name: string, items: Row[]): Role {
+function toModel(prev: Role, items: Row[]): Role {
     if (!items) return null;
 
     const r = {
-        name,
-        note: null,
+        name: prev.name,
+        note: prev.note,
         rules: [],
     } as Role;
 
@@ -183,7 +183,7 @@ const style = {
     top: "50%",
     left: "50%",
     transform: "translate(-50%, -50%)",
-    height: "450px",
+    height: "500px",
     width: "100%",
     maxWidth: "1000px",
     bgcolor: "background.paper",
@@ -255,7 +255,7 @@ export const RuleList = (props: RuleListProps) => {
         },
     });
 
-    const role = resource ? resource.read() : null;
+    const role = resource?.read();
     React.useEffect(() => {
         const items = toItems(role);
         setRows(items);
@@ -311,7 +311,7 @@ export const RuleList = (props: RuleListProps) => {
             const results = rows.map((row) =>
                 row.id === newRow.id ? updatedRow : row
             );
-            const m = toModel(name, results);
+            const m = toModel(role, results);
             setPostResource(RbacClient.putRole(name, m));
             return results;
         });
@@ -349,7 +349,8 @@ export const RuleList = (props: RuleListProps) => {
         >
             <Box sx={style}>
                 <Stack sx={{ flexGrow: 1 }} direction="column" spacing={2}>
-                    <Typography>{name}</Typography>
+                    <Typography variant="h6">{name}</Typography>
+                    <Typography variant="body2">{role?.note}</Typography>
                     <Box sx={{ flexGrow: 1 }}>
                         <DataGrid
                             rows={rows}
@@ -372,7 +373,7 @@ export const RuleList = (props: RuleListProps) => {
                             experimentalFeatures={{ newEditingApi: true }}
                         />
                     </Box>
-                    <Stack sx={{ width: "100%", height: 50 }} spacing={1}>
+                    <Stack sx={{ width: "100%", height: 30 }} spacing={1}>
                         <PostResult
                             resource={postResource}
                             snackOpen={snackOpen}

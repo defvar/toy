@@ -1,2 +1,2 @@
 export { toResource, Resource } from "./resource";
-export { JsonSchema } from "./types";
+export { JsonSchema, Result, Success, Failure } from "./types";

@@ -6,8 +6,8 @@ import {
     GridActionsCellItem,
 } from "@mui/x-data-grid";
 import CircularProgress from "../../components/progress/CircularProgress";
-import { RbacClient, Role, RoleList } from "../../modules/api";
-import { Resource } from "../../modules/common";
+import { RbacClient, Role, RoleList, ErrorMessage } from "../../modules/api";
+import { Resource, Result } from "../../modules/common";
 import { Box, Tab, Tabs, Stack, Link } from "@mui/material";
 import { RuleList } from "./RuleList";
 
@@ -58,7 +58,7 @@ const roleColumns = (props: GridProps): GridColumns<Role> => {
 type TabType = "User" | "Role";
 
 interface GridProps {
-    rolesResource: Resource<RoleList>;
+    rolesResource: Resource<Result<RoleList, ErrorMessage>>;
     tp: TabType;
 
     onShowRules: (id: GridRowId) => () => void;
@@ -79,7 +79,7 @@ const Grid = (prop: GridProps): JSX.Element => {
             );
         case "Role":
             const roles = rolesResource.read();
-            const items = roles ? roles.items : [];
+            const items = roles && roles.isSuccess() ? roles.value.items : [];
             const columns = roleColumns(prop);
             return (
                 <DataGrid

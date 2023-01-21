@@ -1,59 +1,19 @@
 import { getIdToken } from "../auth";
-import { JsonSchema, toResource } from "../common";
+import { toResource, Result, Success, Failure } from "../common";
 import { config } from "./config";
-import { RoleList, Role } from "./toy-api-model";
-
-export type PortTypeValue = number;
-export type PortType = {
-    Source?: PortTypeValue;
-    Flow?: PortTypeValue[];
-    Sink?: PortTypeValue;
-};
-
-export interface ServiceResponseItem {
-    service_type: {
-        full_name: string;
-        name_space: string;
-        service_name: string;
-    };
-    port_type: PortType;
-    schema: JsonSchema;
-}
-
-export interface ServiceResponse {
-    readonly count: number;
-    readonly items: ServiceResponseItem[];
-}
-
-export interface GraphNode {
-    type: string;
-    uri: string;
-    position: {
-        x: number;
-        y: number;
-    };
-    port_type?: PortType;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    config: any;
-    wires: string[];
-}
-
-export interface GraphResponse {
-    name: string;
-    services: GraphNode[];
-}
-
-export interface ErrorMessage {
-    code: number;
-    message: string;
-}
+import {
+    RoleList,
+    Role,
+    ServiceSpecList,
+    ErrorMessage,
+    GraphResponse,
+} from "./toy-api-model";
 
 async function commonRequest<T>(
     resource: string,
     method: string,
-    body: string,
-    defaultFunc: () => T
-): Promise<T | ErrorMessage> {
+    body: string
+): Promise<Result<T, ErrorMessage>> {
     const key = await getIdToken();
     return fetch(`${config.root}/${resource}?format=json`, {
         method,
@@ -68,9 +28,9 @@ async function commonRequest<T>(
         })
         .then(({ json, ok }) => {
             if (ok) {
-                return json as T;
+                return new Success(json as T);
             } else {
-                return json as ErrorMessage;
+                return new Failure(json as ErrorMessage);
             }
         })
         .catch((error) => {
@@ -78,40 +38,28 @@ async function commonRequest<T>(
                 "There has been a problem with your fetch operation: ",
                 error.message
             );
-            return { code: -1, message: error.message };
+            return new Failure({ code: -1, message: error.message });
         });
 }
 
 export const ToyApi = {
-    getRoles: async (): Promise<RoleList | ErrorMessage> => {
-        return commonRequest<RoleList>("rbac/roles", "GET", null, () => ({
-            count: 0,
-            items: [],
-        }));
+    getRoles: async (): Promise<Result<RoleList, ErrorMessage>> => {
+        return commonRequest<RoleList>("rbac/roles", "GET", null);
     },
 
-    getRole: async (name: string): Promise<Role | ErrorMessage> => {
-        return commonRequest<Role>(`rbac/roles/${name}`, "GET", null, () => ({
-            name: "",
-            rules: [],
-        }));
+    getRole: async (name: string): Promise<Result<Role, ErrorMessage>> => {
+        return commonRequest<Role>(`rbac/roles/${name}`, "GET", null);
     },
 
     putRole: async (
         name: string,
         body: string
-    ): Promise<Role | ErrorMessage> => {
-        return commonRequest<Role>(`rbac/roles/${name}`, "PUT", body, () => ({
-            name: "",
-            rules: [],
-        }));
+    ): Promise<Result<Role, ErrorMessage>> => {
+        return commonRequest<Role>(`rbac/roles/${name}`, "PUT", body);
     },
 
-    getServices: async (): Promise<ServiceResponse | ErrorMessage> => {
-        return commonRequest<ServiceResponse>("services", "GET", null, () => ({
-            count: 0,
-            items: [],
-        }));
+    getServices: async (): Promise<Result<ServiceSpecList, ErrorMessage>> => {
+        return commonRequest<ServiceSpecList>("services", "GET", null);
     },
 
     getGraph: async (name: string): Promise<GraphResponse> => {

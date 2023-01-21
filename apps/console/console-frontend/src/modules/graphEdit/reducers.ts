@@ -1,13 +1,12 @@
 import {
     GraphEditState,
-    ServiceState,
     ChartData,
     LinkData,
     NodeData,
     PortType,
 } from "./types";
 import { Actions } from "./actions";
-import { ServiceResponseItem, GraphNode } from "../api/toy-api";
+import { GraphNode } from "../api";
 import { nextState } from "../../utils/immutable";
 
 export const initialState: GraphEditState = {
@@ -20,34 +19,6 @@ export const initialState: GraphEditState = {
         config: {},
         configSchema: {},
     },
-};
-
-const toServiceState = (item: ServiceResponseItem): ServiceState => {
-    let inPort = 0;
-    let outPort = 0;
-    let portType: PortType = "Flow";
-    if (item.port_type.Source) {
-        outPort = item.port_type.Source;
-        portType = "Source";
-    } else if (item.port_type.Flow) {
-        inPort = item.port_type.Flow[0];
-        outPort = item.port_type.Flow[1];
-        portType = "Flow";
-    } else if (item.port_type.Sink) {
-        inPort = item.port_type.Sink;
-        portType = "Sink";
-    }
-
-    return {
-        fullName: item.service_type.full_name,
-        name: item.service_type.service_name,
-        namespace: item.service_type.name_space,
-        description: "",
-        inPort,
-        outPort,
-        configSchema: item.schema,
-        portType,
-    };
 };
 
 const toLinks = (graph: { [uri: string]: GraphNode }): LinkData[] => {
