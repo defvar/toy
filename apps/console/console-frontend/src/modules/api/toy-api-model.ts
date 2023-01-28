@@ -12,6 +12,11 @@ export interface ErrorMessage {
     message: string;
 }
 
+export interface Label {
+    key: string;
+    value: string;
+}
+
 //////////////////////////////////////
 // service
 //////////////////////////////////////
@@ -33,8 +38,9 @@ export interface ServiceSpecList {
 //////////////////////////////////////
 export interface Graph {
     readonly name: string;
-    readonly services?: GraphNode[];
-    readonly labels?: string[];
+    readonly disabled: boolean;
+    readonly services: GraphNode[];
+    readonly labels: Label[];
 }
 
 export interface GraphNode {

@@ -4,7 +4,7 @@ import Paper from "@mui/material/Paper";
 import { styled } from "@mui/material/styles";
 
 export interface LabelsProps {
-    labels: { key: string; display: string }[];
+    labels: { key: string; value: string }[];
 }
 
 const StyledPaper = styled(Paper)(({ theme }) => ({
@@ -19,17 +19,15 @@ const StyledPaper = styled(Paper)(({ theme }) => ({
 
 const StyledChip = styled(Chip)(({ theme }) => ({
     margin: theme.spacing(0.5),
+    whiteSpace: "nowrap",
+    maxWidth: "200px",
 }));
 
 export const LabelChips = (props: LabelsProps) => {
     return (
         <StyledPaper elevation={0}>
             {props.labels.map((data) => {
-                return (
-                    <li key={data.key}>
-                        <StyledChip label={data.display} />
-                    </li>
-                );
+                return <StyledChip label={`${data.key}:${data.value}`} />;
             })}
         </StyledPaper>
     );

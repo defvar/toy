@@ -1,6 +1,6 @@
 //! Model for graph api.
 
-use crate::common::{KVObject, ListObject, ListOption, ListOptionLike, SelectionCandidate};
+use crate::common::{KVObject, Label, ListObject, ListOption, ListOptionLike, SelectionCandidate};
 use crate::selection::candidate::Candidates;
 use serde::{Deserialize, Serialize};
 use toy_core::prelude::Value;
@@ -15,7 +15,11 @@ pub struct Position {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Graph {
     name: String,
+    #[serde(default)]
+    disabled: bool,
     services: Vec<GraphNode>,
+    #[serde(default = "Vec::new")]
+    labels: Vec<Label>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -63,10 +67,17 @@ impl ListObject<Graph> for GraphList {
 }
 
 impl Graph {
-    pub fn new(name: impl Into<String>, services: Vec<GraphNode>) -> Self {
+    pub fn new(
+        name: impl Into<String>,
+        disabled: bool,
+        services: Vec<GraphNode>,
+        labels: Vec<Label>,
+    ) -> Self {
         Self {
             name: name.into(),
+            disabled,
             services,
+            labels,
         }
     }
 
@@ -74,8 +85,16 @@ impl Graph {
         &self.name
     }
 
+    pub fn disabled(&self) -> bool {
+        self.disabled
+    }
+
     pub fn services(&self) -> &[GraphNode] {
         &self.services
+    }
+
+    pub fn labels(&self) -> &[Label] {
+        &self.labels
     }
 }
 

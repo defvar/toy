@@ -35,6 +35,29 @@ impl Default for Indent {
     }
 }
 
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct Label {
+    key: String,
+    value: String,
+}
+
+impl Label {
+    pub fn new(key: impl Into<String>, value: impl Into<String>) -> Self {
+        Self {
+            key: key.into(),
+            value: value.into(),
+        }
+    }
+
+    pub fn key(&self) -> &str {
+        &self.key
+    }
+
+    pub fn value(&self) -> &str {
+        &self.value
+    }
+}
+
 /// Traits that should be implemented by Key-Value object.
 pub trait KVObject {
     fn key(&self) -> &str;
