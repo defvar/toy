@@ -18,8 +18,8 @@ import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/DeleteOutlined";
 import SaveIcon from "@mui/icons-material/Save";
 import CancelIcon from "@mui/icons-material/Close";
-import { Role, RbacClient } from "../../modules/api";
-import { Resource } from "../../modules/common";
+import { Role, RbacClient, ErrorMessage } from "../../modules/api";
+import { Resource, Result } from "../../modules/common";
 
 const columns = (
     rowModesModel: GridRowModesModel,
@@ -120,7 +120,6 @@ function toItems(role: Role): Row[] {
     if (!role.rules) return [];
 
     let r = {};
-
     for (const rule of role.rules) {
         for (const resource of rule.resources) {
             if (!r[resource]) {
@@ -195,7 +194,7 @@ const style = {
 
 export interface RuleListProps {
     name: string;
-    resource: Resource<Role>;
+    resource: Resource<Result<Role, ErrorMessage>>;
     open: boolean;
     onClose: () => void;
 }
@@ -208,7 +207,8 @@ interface EditToolbarProps {
 }
 
 const PostResult = ({ resource, snackOpen, onSnackClose, onSnackOpen }) => {
-    const r = resource.read();
+    const response = resource.read();
+    const r = response && response.isSuccess() ? response.value : null;
     if (r) {
         onSnackOpen();
     }
@@ -255,7 +255,9 @@ export const RuleList = (props: RuleListProps) => {
         },
     });
 
-    const role = resource?.read();
+    const roleOrError = resource?.read();
+    const role =
+        roleOrError && roleOrError.isSuccess() ? roleOrError.value : null;
     React.useEffect(() => {
         const items = toItems(role);
         setRows(items);
@@ -318,15 +320,15 @@ export const RuleList = (props: RuleListProps) => {
         return updatedRow;
     };
 
-    const handleSnackClose = (
+    const onSnackClose = (
         event?: React.SyntheticEvent | Event,
         reason?: string
     ) => {
         if (reason === "clickaway") {
             return;
         }
+        setSnackOpen(false);
         setPostResource((prev) => {
-            setSnackOpen(false);
             return {
                 read() {
                     return null;
@@ -378,7 +380,7 @@ export const RuleList = (props: RuleListProps) => {
                             resource={postResource}
                             snackOpen={snackOpen}
                             onSnackOpen={onSnackOpen}
-                            onSnackClose={handleSnackClose}
+                            onSnackClose={onSnackClose}
                         />
                     </Stack>
                 </Stack>

@@ -1,5 +1,4 @@
 import * as React from "react";
-import { SimpleMenu, SimpleMenuProps } from "../../components/SimpleMenu";
 import { LabelChips } from "../../components/LabelChips";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import DeleteIcon from "@mui/icons-material/Delete";
@@ -10,10 +9,10 @@ import {
     GridActionsCellItem,
     GridRenderCellParams,
 } from "@mui/x-data-grid";
-import { Box } from "@mui/material";
+import Box from "@mui/material/Box";
+import Switch from "@mui/material/Switch";
 import { Actions } from "../../modules/graphs";
 import { useNavigate } from "react-router-dom";
-import { NavigateFunction } from "react-router";
 import CircularProgress from "../../components/progress/CircularProgress";
 import { Result, Resource } from "../../modules/common";
 import {
@@ -21,33 +20,25 @@ import {
     Graph,
     ErrorMessage,
     GraphClient,
+    Label,
 } from "../../modules/api";
-import { Label } from "../../modules/api/toy-api-model";
 
 export interface GraphListProps {
     dispatch: React.Dispatch<Actions>;
 }
 
-const menuOptions = (navigate: NavigateFunction, name): SimpleMenuProps => {
-    return {
-        options: [
-            {
-                display: "Edit",
-                onClick: () => {
-                    navigate(`/graphs/${name}/edit`, { replace: true });
-                },
-            },
-            {
-                display: "Log",
-                onClick: () => {
-                    console.log("log");
-                },
-            },
-        ],
-    };
-};
-
 const gridColumns = (props: GridProps): GridColumns<Graph> => [
+    {
+        field: "disabled",
+        width: 100,
+        renderCell: (params: GridRenderCellParams<boolean>) => (
+            <Switch
+                checked={!params.value}
+                name={params.row.name}
+                onChange={props.onChangeDisabled}
+            />
+        ),
+    },
     { field: "name", headerName: "name", width: 150 },
     {
         field: "labels",
@@ -82,6 +73,7 @@ const gridColumns = (props: GridProps): GridColumns<Graph> => [
 
 interface GridProps {
     resource: Resource<Result<GraphNodeList, ErrorMessage>>;
+    onChangeDisabled: (event: React.ChangeEvent<HTMLInputElement>) => void;
     onEdit: (id: GridRowId) => () => void;
     onPlay: (id: GridRowId) => () => void;
     onDelete: (id: GridRowId) => () => void;
@@ -110,6 +102,7 @@ export const GraphList = (props: GraphListProps) => {
     const [graphsResource, _setGraphsResource] = React.useState(() =>
         GraphClient.fetchGraphs()
     );
+
     const onEdit = React.useCallback(
         (id: GridRowId) => () => {
             const name = id.toString();
@@ -132,11 +125,22 @@ export const GraphList = (props: GraphListProps) => {
         []
     );
 
+    const onChangeDisabled = React.useCallback(
+        (event: React.ChangeEvent<HTMLInputElement>) => {
+            const name = event.target.name;
+            // update disabled
+
+            // refresh
+        },
+        []
+    );
+
     return (
         <Box sx={{ height: 500, width: "100%", display: "flex" }}>
             <React.Suspense fallback={<CircularProgress />}>
                 <Grid
                     resource={graphsResource}
+                    onChangeDisabled={onChangeDisabled}
                     onEdit={onEdit}
                     onPlay={onPlay}
                     onDelete={onDelete}

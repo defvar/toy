@@ -1,5 +1,4 @@
 import * as React from "react";
-import { Theme } from "@mui/material/styles";
 import Container from "@mui/material/Container";
 import Paper from "@mui/material/Paper";
 import TextField from "@mui/material/TextField";
@@ -27,19 +26,13 @@ export interface LoginProps {
 }
 
 export const Login = ({ redirectTo }: LoginProps) => {
-    const { login, signinWithGoogle, isProgress, currentUser } =
-        React.useContext(AuthContext);
+    const { login, isProgress, currentUser } = React.useContext(AuthContext);
     const navigate = useNavigate();
 
     const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         login();
         // sueccess ?
-        navigate(redirectTo);
-    };
-
-    const handleSigninWithGoogle = () => {
-        signinWithGoogle();
         navigate(redirectTo);
     };
 
@@ -85,16 +78,6 @@ export const Login = ({ redirectTo }: LoginProps) => {
                         </FormButton>
                     </FormRow>
                 </form>
-                <FormRow>
-                    <FormButton
-                        onClick={handleSigninWithGoogle}
-                        variant="contained"
-                        size="large"
-                        color="primary"
-                    >
-                        Sign in with Google
-                    </FormButton>
-                </FormRow>
             </Paper>
         </Container>
     );

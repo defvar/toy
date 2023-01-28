@@ -12,6 +12,7 @@ export {
     Graph,
     GraphNode,
     GraphNodeList,
+    Label,
 } from "./toy-api-model";
 
 export { GraphClient, fetchServices, RbacClient } from "./toy-api";
