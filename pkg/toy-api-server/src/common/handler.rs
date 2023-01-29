@@ -33,7 +33,7 @@ where
 
     match store
         .ops()
-        .find::<V>(store.con().unwrap(), key, store_opt)
+        .find::<V>(store.con().unwrap(), key.clone(), store_opt)
         .await
     {
         Ok(v) => match v {
@@ -44,9 +44,10 @@ where
                     api_opt.format(),
                     api_opt.indent(),
                     api_opt.fields(),
-                ))
+                )
+                .into_response())
             }
-            None => Err(ApiError::error("not found")),
+            None => Err(ApiError::not_found(&key)),
         },
         Err(e) => {
             tracing::error!("error:{:?}", e);

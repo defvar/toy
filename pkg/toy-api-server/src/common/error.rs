@@ -82,6 +82,9 @@ pub enum ApiError {
     #[error("invalid field {field}")]
     InvalidField { field: String },
 
+    #[error("not found. key:{key}")]
+    NotFound { key: String },
+
     #[error("{:?}", inner)]
     Error { inner: String },
 }
@@ -104,6 +107,7 @@ impl ApiError {
             ApiError::InvalidSelector { .. } => StatusCode::BAD_REQUEST,
             ApiError::InvalidField { .. } => StatusCode::BAD_REQUEST,
             ApiError::AuthorizationFailed { .. } => StatusCode::FORBIDDEN,
+            ApiError::NotFound { .. } => StatusCode::NOT_FOUND,
             _ => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
@@ -187,6 +191,10 @@ impl ApiError {
         ApiError::InvalidField {
             field: field.into(),
         }
+    }
+
+    pub fn not_found(key: impl Into<String>) -> ApiError {
+        ApiError::NotFound { key: key.into() }
     }
 }
 
