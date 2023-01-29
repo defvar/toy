@@ -14,3 +14,4 @@ regex = { version = "1" }
 
 [dev-dependencies]
 toy-pack-json = {path = "../../shared/toy-pack-json"}
+toy-pack-urlencoded = {path = "../../shared/toy-pack-urlencoded"}

@@ -66,6 +66,21 @@ impl TryFrom<&&str> for Operator {
     }
 }
 
+impl Operator {
+    pub fn as_str(&self) -> &str {
+        match self {
+            Operator::Eq => "==",
+            Operator::NotEq => "!=",
+            Operator::GreaterThan => ">",
+            Operator::GreaterThanOrEqual => ">=",
+            Operator::LessThan => "<",
+            Operator::LessThanOrEqual => "<=",
+            Operator::Match => "=~",
+            Operator::Unmatch => "!~",
+        }
+    }
+}
+
 impl<'de> Deserialize<'de> for Operator {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where

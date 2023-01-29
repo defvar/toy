@@ -6,18 +6,18 @@ use crate::selection::operator::operator_strings;
 use crate::selection::Operator;
 use regex::Regex;
 use serde::de::{Error, Visitor};
-use serde::{Deserialize, Deserializer, Serialize};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::fmt::Formatter;
 use toy_core::data::Value;
 
 /// Selection infomation.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Selector {
     preds: Vec<Predicate>,
 }
 
 /// A single predicate to be selection. It consists of a field name, an operator, and a value.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Predicate {
     field: String,
     op: Operator,
@@ -243,6 +243,25 @@ impl Predicate {
             _ => Err(()),
         }
     }
+
+    pub fn to_string(&self) -> String {
+        let qs = format!(
+            "{}{}{}",
+            &self.field,
+            self.op.as_str(),
+            self.value.as_str().unwrap_or("")
+        );
+        qs
+    }
+}
+
+impl Serialize for Predicate {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(&self.to_string())
+    }
 }
 
 impl<'de> Deserialize<'de> for Predicate {
@@ -274,6 +293,21 @@ impl<'de> Visitor<'de> for PredicateVisitor {
     }
 }
 
+impl Serialize for Selector {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let qs = self
+            .preds
+            .iter()
+            .map(|x| x.to_string())
+            .collect::<Vec<_>>()
+            .join(",");
+        serializer.serialize_str(&qs)
+    }
+}
+
 impl<'de> Deserialize<'de> for Selector {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
@@ -298,7 +332,7 @@ impl<'de> Visitor<'de> for SelectionVisitor {
     {
         let vec: Vec<&str> = v.split(",").collect();
         let mut r = Selector::empty();
-        for part in vec {
+        for part in vec.iter().filter(|x| !x.is_empty()) {
             match Predicate::from_str(part) {
                 Ok(p) => {
                     r = r.add(p.field, p.op, Some(p.value));
@@ -312,9 +346,11 @@ impl<'de> Visitor<'de> for SelectionVisitor {
 
 #[cfg(test)]
 mod tests {
+    use crate::common::{Format, Indent};
     use crate::selection::candidate::CandidatePart;
     use crate::selection::selector::{Predicate, Selector};
     use crate::selection::Operator;
+    use crate::services::ServiceSpecListOption;
     use serde::{Deserialize, Serialize};
     use toy_core::data::Value;
 

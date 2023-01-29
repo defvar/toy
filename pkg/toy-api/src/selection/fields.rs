@@ -1,13 +1,13 @@
 //! Function to narrow down the structure to only the necessary items.
 
 use serde::de::{Error, Visitor};
-use serde::{Deserialize, Deserializer, Serialize};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::collections::HashSet;
 use std::fmt::Formatter;
 use toy_core::data::{Map, Value};
 
 /// Fields infomation.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Fields {
     fields: HashSet<String>,
 }
@@ -45,6 +45,21 @@ impl Default for Fields {
     }
 }
 
+impl Serialize for Fields {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let fields = self
+            .fields
+            .iter()
+            .map(|x| x.clone())
+            .collect::<Vec<_>>()
+            .join(",");
+        serializer.serialize_str(&fields)
+    }
+}
+
 impl<'de> Deserialize<'de> for Fields {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
@@ -67,7 +82,11 @@ impl<'de> Visitor<'de> for FieldsVisitor {
     where
         E: Error,
     {
-        let fields: HashSet<_> = v.split(",").map(|x| x.to_string()).collect();
+        let fields: HashSet<_> = v
+            .split(",")
+            .filter(|x| !x.is_empty())
+            .map(|x| x.to_string())
+            .collect();
         Ok(Fields { fields })
     }
 }
