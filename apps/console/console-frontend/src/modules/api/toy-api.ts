@@ -1,5 +1,5 @@
 import { getIdToken } from "../auth";
-import { toResource, Result, Success, Failure } from "../common";
+import { toResource, Resource, Result, Success, Failure } from "../common";
 import { config } from "./config";
 import {
     RoleList,

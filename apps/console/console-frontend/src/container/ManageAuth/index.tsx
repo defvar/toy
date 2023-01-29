@@ -6,8 +6,13 @@ import {
     GridActionsCellItem,
 } from "@mui/x-data-grid";
 import CircularProgress from "../../components/progress/CircularProgress";
-import { RbacClient, Role, RoleList, ErrorMessage } from "../../modules/api";
-import { Resource, Result } from "../../modules/common";
+import {
+    RbacClient,
+    Role,
+    RoleList,
+    ErrorMessage,
+    useFetch,
+} from "../../modules/api";
 import { Box, Tab, Tabs, Stack, Link } from "@mui/material";
 import { RuleList } from "./RuleList";
 
@@ -58,51 +63,45 @@ const roleColumns = (props: GridProps): GridColumns<Role> => {
 type TabType = "User" | "Role";
 
 interface GridProps {
-    rolesResource: Resource<Result<RoleList, ErrorMessage>>;
     tp: TabType;
-
     onShowRules: (id: GridRowId) => () => void;
 }
-const Grid = (prop: GridProps): JSX.Element => {
-    const { rolesResource, tp } = prop;
-    switch (tp) {
-        case "User":
-            return (
-                <DataGrid
-                    getRowId={(r) => r.name}
-                    rows={[]}
-                    columns={userColumns}
-                    checkboxSelection
-                    disableSelectionOnClick
-                    experimentalFeatures={{ newEditingApi: true }}
-                />
-            );
-        case "Role":
-            const roles = rolesResource.read();
-            const items = roles && roles.isSuccess() ? roles.value.items : [];
-            const columns = roleColumns(prop);
-            return (
-                <DataGrid
-                    getRowId={(r) => r.name}
-                    rows={items}
-                    columns={columns}
-                    checkboxSelection
-                    disableSelectionOnClick
-                    experimentalFeatures={{ newEditingApi: true }}
-                />
-            );
-    }
+
+const UserGrid = (prop: GridProps): JSX.Element => {
+    const { tp } = prop;
+    return (
+        <DataGrid
+            getRowId={(r) => r.name}
+            rows={[]}
+            columns={userColumns}
+            checkboxSelection
+            disableSelectionOnClick
+            experimentalFeatures={{ newEditingApi: true }}
+        />
+    );
+};
+
+const RoleGrid = (prop: GridProps): JSX.Element => {
+    const columns = roleColumns(prop);
+    const roles = useFetch(["fetchRoles"], RbacClient.fetchRoles);
+    const items = roles && roles.isSuccess() ? roles.value.items : [];
+    return (
+        <DataGrid
+            getRowId={(r) => r.name}
+            rows={items}
+            columns={columns}
+            checkboxSelection
+            disableSelectionOnClick
+            experimentalFeatures={{ newEditingApi: true }}
+        />
+    );
 };
 
 export const ManageAuth = () => {
     const [tabLabel, setTabLabel] = React.useState<TabType>("User");
-    const [rolesResource, setRolesResource] = React.useState(() =>
-        RbacClient.fetchRoles()
-    );
     const [ruleListOpen, setRuleListOpen] = React.useState({
         open: false,
         name: null,
-        resource: null,
     });
 
     const onTabChange = React.useCallback(
@@ -114,13 +113,12 @@ export const ManageAuth = () => {
 
     const onShowRules = React.useCallback(
         (id: GridRowId) => () => {
-            const resource = RbacClient.fetchRole(id.toString());
-            setRuleListOpen({ open: true, name: id, resource });
+            setRuleListOpen({ open: true, name: id });
         },
         []
     );
     const onRuleListClose = React.useCallback(() => {
-        setRuleListOpen({ open: false, name: null, resource: null });
+        setRuleListOpen({ open: false, name: null });
     }, []);
 
     return (
@@ -139,15 +137,14 @@ export const ManageAuth = () => {
 
                 <Box sx={{ width: "100%", flexGrow: 1 }}>
                     <React.Suspense fallback={<CircularProgress />}>
-                        <Grid
-                            rolesResource={rolesResource}
-                            tp={tabLabel}
-                            onShowRules={onShowRules}
-                        />
+                        {tabLabel == "Role" ? (
+                            <RoleGrid tp={tabLabel} onShowRules={onShowRules} />
+                        ) : (
+                            <UserGrid tp={tabLabel} onShowRules={onShowRules} />
+                        )}
                     </React.Suspense>
                     <React.Suspense fallback={<CircularProgress />}>
                         <RuleList
-                            resource={ruleListOpen.resource}
                             name={ruleListOpen.name}
                             open={ruleListOpen.open}
                             onClose={onRuleListClose}

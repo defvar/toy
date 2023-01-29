@@ -18,8 +18,7 @@ import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/DeleteOutlined";
 import SaveIcon from "@mui/icons-material/Save";
 import CancelIcon from "@mui/icons-material/Close";
-import { Role, RbacClient, ErrorMessage } from "../../modules/api";
-import { Resource, Result } from "../../modules/common";
+import { Role, RbacClient, ErrorMessage, useFetch } from "../../modules/api";
 
 const columns = (
     rowModesModel: GridRowModesModel,
@@ -194,19 +193,11 @@ const style = {
 
 export interface RuleListProps {
     name: string;
-    resource: Resource<Result<Role, ErrorMessage>>;
     open: boolean;
     onClose: () => void;
 }
 
-interface EditToolbarProps {
-    setRows: (newRows: (oldRows: GridRowsProp) => GridRowsProp) => void;
-    setRowModesModel: (
-        newModel: (oldModel: GridRowModesModel) => GridRowModesModel
-    ) => void;
-}
-
-const PostResult = ({ resource, snackOpen, onSnackClose, onSnackOpen }) => {
+const PutResult = ({ resource, snackOpen, onSnackClose, onSnackOpen }) => {
     const response = resource.read();
     const r = response && response.isSuccess() ? response.value : null;
     if (r) {
@@ -243,7 +234,7 @@ const PostResult = ({ resource, snackOpen, onSnackClose, onSnackOpen }) => {
 };
 
 export const RuleList = (props: RuleListProps) => {
-    const { name, resource, open, onClose } = props;
+    const { name, open, onClose } = props;
     const [rows, setRows] = React.useState([]);
     const [snackOpen, setSnackOpen] = React.useState(false);
     const [rowModesModel, setRowModesModel] = React.useState<GridRowModesModel>(
@@ -255,13 +246,15 @@ export const RuleList = (props: RuleListProps) => {
         },
     });
 
-    const roleOrError = resource?.read();
+    const roleOrError = useFetch(["RuleList", name], () =>
+        RbacClient.fetchRole(name)
+    );
     const role =
         roleOrError && roleOrError.isSuccess() ? roleOrError.value : null;
     React.useEffect(() => {
         const items = toItems(role);
         setRows(items);
-    }, [resource]);
+    }, [role]);
 
     const handleRowEditStart = (
         params: GridRowParams,
@@ -376,7 +369,7 @@ export const RuleList = (props: RuleListProps) => {
                         />
                     </Box>
                     <Stack sx={{ width: "100%", height: 30 }} spacing={1}>
-                        <PostResult
+                        <PutResult
                             resource={postResource}
                             snackOpen={snackOpen}
                             onSnackOpen={onSnackOpen}
