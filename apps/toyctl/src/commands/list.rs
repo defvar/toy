@@ -4,7 +4,8 @@ use crate::output::Output;
 use serde::de::DeserializeOwned;
 use std::io::Write;
 use toy::api_client::client::{
-    Rbaclient, RoleBindingClient, RoleClient, ServiceClient, SupervisorClient, TaskClient,
+    GraphClient, Rbaclient, RoleBindingClient, RoleClient, ServiceClient, SupervisorClient,
+    TaskClient,
 };
 use toy::api_client::http::HttpApiClient;
 use toy::api_client::toy_api::common::ListOption;
@@ -34,6 +35,14 @@ where
             client
                 .service()
                 .list(opt.unwrap_or(ServiceSpecListOption::new()))
+                .await
+                .write(writer, pretty)
+        }
+        ListResources::Graphs(c) => {
+            let opt = parse_opt(c.opt.as_ref())?;
+            client
+                .graph()
+                .list(opt.unwrap_or(ListOption::new()))
                 .await
                 .write(writer, pretty)
         }

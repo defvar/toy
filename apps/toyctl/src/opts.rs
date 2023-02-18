@@ -98,6 +98,7 @@ pub struct FindResourceCommand {
 pub enum ListResources {
     Supervisors(ListResourceCommand),
     Services(ListResourceCommand),
+    Graphs(ListResourceCommand),
     Roles(ListResourceCommand),
     RoleBindings(ListResourceCommand),
     Tasks(ListResourceCommand),
