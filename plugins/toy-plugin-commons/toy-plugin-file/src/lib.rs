@@ -1,6 +1,6 @@
 //! Toy Plugin for File read and write.
 
-#![feature(type_alias_impl_trait)]
+#![feature(type_alias_impl_trait, impl_trait_in_assoc_type)]
 
 use serde::{Deserialize, Serialize};
 use toy_pack::Schema;

@@ -21,9 +21,15 @@ impl Client {
         })
     }
 
-    pub fn iter(&self) -> Result<impl Iterator<Item = (Box<[u8]>, Box<[u8]>)> + '_, RocksError> {
+    pub fn iter(
+        &self,
+    ) -> Result<impl Iterator<Item = Result<(Box<[u8]>, Box<[u8]>), RocksError>> + '_, RocksError>
+    {
         match self.db.cf_handle(&self.current_cf) {
-            Some(ref h) => Ok(self.db.iterator_cf(h, IteratorMode::Start)),
+            Some(ref h) => Ok(self
+                .db
+                .iterator_cf(h, IteratorMode::Start)
+                .map(|x| x.map_err(|e| e.into()))),
             None => Err(RocksError::error("column family handle not found.")),
         }
     }

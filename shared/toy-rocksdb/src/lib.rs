@@ -1,4 +1,8 @@
-#![feature(type_alias_impl_trait, error_generic_member_access, provide_any)]
+#![feature(
+    type_alias_impl_trait,
+    error_generic_member_access,
+    impl_trait_in_assoc_type
+)]
 
 mod client;
 mod error;

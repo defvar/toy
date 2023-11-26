@@ -1,4 +1,8 @@
-#![feature(error_generic_member_access, provide_any, type_alias_impl_trait)]
+#![feature(
+    error_generic_member_access,
+    type_alias_impl_trait,
+    impl_trait_in_assoc_type
+)]
 
 mod error;
 mod function;

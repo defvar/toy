@@ -1,6 +1,6 @@
 //! Toy Plugin for Transform Object.
 
-#![feature(type_alias_impl_trait)]
+#![feature(type_alias_impl_trait, impl_trait_in_assoc_type)]
 
 pub mod config;
 mod plugin;

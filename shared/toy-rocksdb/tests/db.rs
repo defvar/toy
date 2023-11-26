@@ -22,7 +22,8 @@ fn iterator() {
 
     let r = c.iter().unwrap();
 
-    for (idx, (k, v)) in r.enumerate() {
+    for (idx, r) in r.enumerate() {
+        let (k, v) = r.unwrap();
         assert_eq!(k.as_ref(), &data[idx].0[..]);
         assert_eq!(v.as_ref(), &data[idx].1[..]);
     }
