@@ -7,7 +7,7 @@ edition = "2021"
 
 [dependencies]
 thiserror = "1.0"
-rocksdb = { version = "0.17.0", features = ["multi-threaded-cf"] }
+rocksdb = { version = "0.21.0", features = ["multi-threaded-cf"] }
 
 [dev-dependencies]
 tempdir = { version = "0.3.7" }

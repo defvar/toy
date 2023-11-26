@@ -11,7 +11,7 @@ mod token;
 pub use self::decoder::Decoder;
 pub use self::error::DecodeError;
 pub use self::reader::Position;
-pub use self::reader::{IoReader, Reader, SliceReader};
+pub use self::reader::Reader;
 pub use self::token::Token;
 
 pub type Result<T> = std::result::Result<T, DecodeError>;

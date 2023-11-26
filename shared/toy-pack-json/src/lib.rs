@@ -1,6 +1,6 @@
 //! # toy-pack Implementation for Json
 
-#![feature(type_alias_impl_trait, error_generic_member_access, provide_any)]
+#![feature(type_alias_impl_trait, error_generic_member_access)]
 
 pub use self::de::{unpack, unpack_from_reader};
 pub use self::decode::{

@@ -273,7 +273,7 @@ pub(crate) fn decode<T: AsRef<[u8]>>(input: T) -> Result<Vec<u8>, base64::Decode
 }
 
 pub(crate) fn get_range_end(key: &str) -> Vec<u8> {
-    let mut end = key.clone().as_bytes().to_vec();
+    let mut end = key.as_bytes().to_vec();
     for i in (0..end.len()).rev() {
         if end[i] < 0xff {
             end[i] += 1;

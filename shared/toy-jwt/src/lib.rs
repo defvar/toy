@@ -1,6 +1,6 @@
 //! # toy JWT Library
 
-#![feature(error_generic_member_access, provide_any)]
+#![feature(error_generic_member_access)]
 
 mod algorithm;
 pub mod error;

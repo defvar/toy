@@ -5,7 +5,7 @@ use std::{io, result};
 pub use self::encoder::Encoder;
 pub use self::encoder_ops::EncoderOps;
 pub use self::error::EncodeError;
-pub use self::writer::{IoWriter, Writer};
+pub use self::writer::Writer;
 
 mod encoder;
 mod encoder_ops;

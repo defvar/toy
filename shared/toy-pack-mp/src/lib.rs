@@ -1,6 +1,6 @@
 //! # toy-pack Implementation for MessagePack
 
-#![feature(type_alias_impl_trait, error_generic_member_access, provide_any)]
+#![feature(type_alias_impl_trait, error_generic_member_access)]
 
 #[macro_use]
 extern crate lazy_static;
