@@ -9,5 +9,6 @@ members = [
     "toy-plugin-collect",
     "toy-plugin-stdio",
     "toy-plugin-tcp",
-    "toy-plugin-sort"
-]
+    "toy-plugin-sort",
+    "toy-plugin-buffer"]
+resolver = "2"

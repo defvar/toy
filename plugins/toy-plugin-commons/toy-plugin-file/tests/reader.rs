@@ -2,7 +2,7 @@ use std::fs::File;
 use std::io::Write;
 use tempdir::TempDir;
 use toy_core::prelude::*;
-use toy_plugin_file::config::ReadConfig;
+use toy_plugin_file::config::{ReadConfig, ReadOption};
 use toy_plugin_file::service::Read;
 
 #[tokio::test]
@@ -31,12 +31,15 @@ async fn read(root: &TempDir, file_name: &str) -> Vec<Value> {
     let mut service = Read;
     let (tx, mut rx) = toy_core::mpsc::channel(100);
     let task_ctx = toy_plugin_test::dummy_task_context();
-    let config = ReadConfig::new(format!(
-        "{}{}{}",
-        root.path().display(),
-        std::path::MAIN_SEPARATOR,
-        file_name
-    ));
+    let config = ReadConfig::with(
+        format!(
+            "{}{}{}",
+            root.path().display(),
+            std::path::MAIN_SEPARATOR,
+            file_name
+        ),
+        ReadOption::common_csv(),
+    );
 
     let mut c = service
         .new_context(toy_plugin_test::dummy_service_type(), config)

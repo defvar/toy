@@ -1,11 +1,32 @@
-#![feature(test, type_alias_impl_trait)]
+#![feature(test, type_alias_impl_trait, impl_trait_in_assoc_type)]
 
 extern crate test;
 
 use async_trait::async_trait;
+use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use test::black_box;
 use test::test::Bencher;
+
+#[bench]
+fn test_deser_json(b: &mut Bencher) {
+    let data = get_clone_data();
+    let json = toy_pack_json::pack_to_string(&data).unwrap();
+    b.iter(|| {
+        let r = toy_pack_json::unpack::<Vec<Record>>(&json.as_bytes()).unwrap();
+        black_box(r);
+    });
+}
+
+#[bench]
+fn test_deser_value(b: &mut Bencher) {
+    let data = get_clone_data();
+    let value = toy_core::data::pack(&data).unwrap();
+    b.iter(|| {
+        let r = toy_core::data::unpack::<Vec<Record>>(&value).unwrap();
+        black_box(r);
+    });
+}
 
 #[bench]
 fn test_clone_no_arc(b: &mut Bencher) {
@@ -170,7 +191,7 @@ impl AsyncAddStatic for CounterStatic {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 struct Record {
     a: u64,
     b: String,
@@ -178,11 +199,13 @@ struct Record {
     d: f64,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone)]
 struct DummyArc {
     v: Arc<Vec<Record>>,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone)]
 struct DummyNonArc {
     v: Vec<Record>,

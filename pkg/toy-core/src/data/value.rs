@@ -20,6 +20,10 @@ pub enum Value {
 }
 
 impl Value {
+    pub fn now() -> Value {
+        Value::TimeStamp(Utc::now())
+    }
+
     pub fn is_map(&self) -> bool {
         self.as_map().is_some()
     }

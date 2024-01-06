@@ -1,6 +1,7 @@
 use std::io::Read;
 use toy::core::prelude::*;
 use toy::executor::ExecutorFactory;
+use toy::supervisor::exporters::NoopExporter;
 use toy::supervisor::SupervisorConfig;
 
 static CONFIG: &'static str = "./examples/file.yml";
@@ -9,6 +10,9 @@ static CONFIG: &'static str = "./examples/file.yml";
 struct SVConfig;
 
 impl SupervisorConfig for SVConfig {
+    type EventExporter = NoopExporter;
+    type MetricsExporter = NoopExporter;
+
     fn heart_beat_interval_mills(&self) -> u64 {
         todo!()
     }
@@ -26,6 +30,14 @@ impl SupervisorConfig for SVConfig {
     }
 
     fn pub_path(&self) -> String {
+        todo!()
+    }
+
+    fn metrics_exporter(&self) -> Self::MetricsExporter {
+        todo!()
+    }
+
+    fn event_exporter(&self) -> Self::EventExporter {
         todo!()
     }
 }

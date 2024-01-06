@@ -2,7 +2,7 @@ use std::fs::File;
 use std::io::{self, BufWriter, Error};
 use std::path::Path;
 
-use super::config::{self, char_to_u8, WriteConfig};
+use super::config::{self, char_to_u8, char_to_u8_opt, WriteConfig};
 use super::file_writer::FileWriter;
 use crate::QuoteStyle;
 use toy_text_parser::Terminator;
@@ -11,7 +11,7 @@ use toy_text_parser::Terminator;
 pub struct FileWriterBuilder {
     capacity: usize,
     has_headers: bool,
-    delimiter: u8,
+    delimiter: Option<u8>,
     quote: u8,
     quote_style: QuoteStyle,
     double_quote: bool,
@@ -23,11 +23,11 @@ impl FileWriterBuilder {
     pub fn configure(config: &WriteConfig) -> Result<FileWriter<Box<dyn io::Write + Send>>, Error> {
         let b = FileWriterBuilder::default()
             .has_headers(config.option.has_headers)
-            .delimiter(char_to_u8(config.option.delimiter))
+            .delimiter(char_to_u8_opt(config.option.delimiter))
             .quote(char_to_u8(config.option.quote))
             .quote_style(config.option.quote_style)
             .terminator(config.option.terminator)
-            .escape(config.option.escape)
+            .escape(char_to_u8(config.option.escape))
             .double_quote(config.option.double_quote)
             .capacity(config.option.capacity)
             .clone();
@@ -47,7 +47,7 @@ impl FileWriterBuilder {
         self
     }
 
-    pub fn delimiter(&mut self, c: u8) -> &mut Self {
+    pub fn delimiter(&mut self, c: Option<u8>) -> &mut Self {
         self.delimiter = c;
         self
     }
@@ -100,7 +100,7 @@ impl Default for FileWriterBuilder {
         Self {
             capacity: config::default_capacity(),
             has_headers: true,
-            delimiter: b',',
+            delimiter: Some(b','),
             quote: b'"',
             quote_style: QuoteStyle::default(),
             terminator: Terminator::default(),

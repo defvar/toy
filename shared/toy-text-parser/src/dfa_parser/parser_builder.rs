@@ -14,8 +14,8 @@ pub struct ByteParserBuilder {
 }
 
 impl ByteParserBuilder {
-    pub fn delimiter(&mut self, c: u8) -> &mut Self {
-        self.delimiter = Some(c);
+    pub fn delimiter(&mut self, c: Option<u8>) -> &mut Self {
+        self.delimiter = c;
         self
     }
 

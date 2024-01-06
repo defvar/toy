@@ -1,4 +1,4 @@
-use super::config::{char_to_u8, default_capacity, ReadConfig};
+use super::config::{char_to_u8, char_to_u8_opt, default_capacity, ReadConfig};
 use super::file_reader::{FileReader, FileReaderState};
 use std::cmp::Ordering;
 use std::fs::File;
@@ -31,7 +31,7 @@ impl FileReaderBuilder {
         paths.sort_by(|a, b| a.partial_cmp(b).unwrap_or(Ordering::Equal));
 
         let b = FileReaderBuilder::default()
-            .delimiter(char_to_u8(config.option.delimiter))
+            .delimiter(char_to_u8_opt(config.option.delimiter))
             .quote(char_to_u8(config.option.quote))
             .quoting(config.option.quoting)
             .terminator(config.option.terminator)
@@ -65,7 +65,7 @@ impl FileReaderBuilder {
 
     // wrap parser builder //
 
-    pub fn delimiter(&mut self, c: u8) -> &mut Self {
+    pub fn delimiter(&mut self, c: Option<u8>) -> &mut Self {
         self.parser_builder.delimiter(c);
         self
     }

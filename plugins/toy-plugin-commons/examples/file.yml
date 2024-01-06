@@ -4,6 +4,8 @@ services:
     uri: "reader"
     config:
         path: "./examples/file*.csv"
+        option:
+            delimiter: ","
     wires: mapper
   - type: plugin.common.map.mapping
     uri: "mapper"
@@ -16,6 +18,7 @@ services:
   - type: plugin.common.file.write
     uri: "writer"
     config:
-        kind: File
         path: "/tmp/file.out"
+        option:
+            delimiter: ","
     wires: []

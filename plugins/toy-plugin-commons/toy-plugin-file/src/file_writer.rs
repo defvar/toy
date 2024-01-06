@@ -7,7 +7,7 @@ use toy_text_parser::{Line, Terminator};
 
 pub struct FileWriter<W: Write> {
     raw: BufWriter<W>,
-    delimiter: u8,
+    delimiter: Option<u8>,
     requires_quotes: [bool; 256],
     quote: u8,
     quote_style: QuoteStyle,
@@ -28,7 +28,7 @@ impl<W: Write> FileWriter<W> {
     pub fn new(
         raw: BufWriter<W>,
         has_headers: bool,
-        delimiter: u8,
+        delimiter: Option<u8>,
         quote: u8,
         quote_style: QuoteStyle,
         terminator: Terminator,
@@ -36,7 +36,9 @@ impl<W: Write> FileWriter<W> {
         double_quote: bool,
     ) -> FileWriter<W> {
         let mut requires_quotes = [false; 256];
-        requires_quotes[delimiter as usize] = true;
+        if delimiter.is_some() {
+            requires_quotes[delimiter.unwrap() as usize] = true;
+        }
         requires_quotes[quote as usize] = true;
         if !double_quote {
             requires_quotes[escape as usize] = true;
@@ -210,8 +212,8 @@ impl<W: Write> FileWriter<W> {
     fn write_column(&mut self, col: &[u8], need_delimiter: bool) -> Result<(), Error> {
         let mut s = 0u64;
 
-        if need_delimiter {
-            self.raw.write(&[self.delimiter])?;
+        if need_delimiter && self.delimiter.is_some() {
+            self.raw.write(&[self.delimiter.unwrap()])?;
             s += 1u64;
         }
 
