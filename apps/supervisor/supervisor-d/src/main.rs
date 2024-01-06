@@ -1,4 +1,4 @@
-#![feature(error_generic_member_access, provide_any)]
+#![feature(error_generic_member_access)]
 
 use crate::error::Error;
 use crate::opts::*;
@@ -10,6 +10,7 @@ use std::path::PathBuf;
 use toy::api_client::http::HttpApiClient;
 use toy::core::prelude::*;
 use toy::executor::ExecutorFactory;
+use toy::supervisor::exporters::NoopExporter;
 use toy::supervisor::SupervisorConfig;
 use toy_api::authentication::Claims;
 use toy_jwt::Algorithm;
@@ -26,6 +27,9 @@ struct Config {
 }
 
 impl SupervisorConfig for Config {
+    type EventExporter = NoopExporter;
+    type MetricsExporter = NoopExporter;
+
     fn heart_beat_interval_mills(&self) -> u64 {
         self.heart_beat_interval_mills
     }
@@ -48,6 +52,14 @@ impl SupervisorConfig for Config {
 
     fn pub_path(&self) -> String {
         std::env::var("TOY_SUPERVISOR_API_TLS_PUB_PATH").expect("config not found.")
+    }
+
+    fn metrics_exporter(&self) -> Self::MetricsExporter {
+        NoopExporter
+    }
+
+    fn event_exporter(&self) -> Self::EventExporter {
+        NoopExporter
     }
 }
 

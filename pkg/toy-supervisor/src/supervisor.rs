@@ -1,10 +1,9 @@
 use crate::context::SupervisorContext;
-use crate::exporters::ToyExporter;
 use crate::msg::Request;
 use crate::task::RunningTask;
 use crate::workers::beat::beat;
-use crate::workers::event_export::event_export;
-use crate::workers::metrics_export::metrics_export;
+use crate::workers::event_export::start_event_exporter;
+use crate::workers::metrics_export::start_metrics_exporter;
 use crate::{Response, RunTaskResponse, SupervisorConfig, TaskResponse};
 use chrono::Utc;
 use core::future::Future;
@@ -261,6 +260,8 @@ where
         let beat_interval = config.heart_beat_interval_mills();
         let event_interval = config.event_export_interval_mills();
         let metrics_interval = config.metrics_export_interval_mills();
+        let event_exporter = config.event_exporter();
+        let metrics_exporer = config.metrics_exporter();
 
         {
             let ctx = ctx.clone();
@@ -289,12 +290,11 @@ where
         }
         {
             let ctx = ctx.clone();
-            let c = client.clone();
             let n = name.clone();
             toy_rt::spawn_named(
                 async move {
                     tracing::info!(name=?n, "start event exporter.");
-                    event_export(ctx, Some(ToyExporter::<C>::new(c)), event_interval).await;
+                    start_event_exporter(ctx, event_exporter, event_interval).await;
                     tracing::info!(name=?n, "stop event exporter.");
                 },
                 "supervisor-event-exporter",
@@ -302,12 +302,11 @@ where
         }
         {
             let ctx = ctx.clone();
-            let c = client.clone();
             let n = name.clone();
             toy_rt::spawn_named(
                 async move {
                     tracing::info!(name=?n, "start metrics exporter.");
-                    metrics_export(ctx, Some(ToyExporter::<C>::new(c)), metrics_interval).await;
+                    start_metrics_exporter(ctx, metrics_exporer, metrics_interval).await;
                     tracing::info!(name=?n, "stop metrics exporter.");
                 },
                 "supervisor-metrics-exporter",

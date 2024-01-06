@@ -1,12 +1,13 @@
 mod config;
 mod context;
 mod error;
-mod exporters;
 mod http;
 mod msg;
 mod supervisor;
 mod task;
 mod workers;
+
+pub mod exporters;
 
 pub use self::config::SupervisorConfig;
 pub use self::error::SupervisorError;

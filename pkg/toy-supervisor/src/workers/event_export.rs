@@ -3,9 +3,9 @@ use crate::exporters::EventExporter;
 use toy_api_client::ApiClient;
 use toy_core::metrics;
 
-pub async fn event_export<C>(
+pub async fn start_event_exporter<C>(
     ctx: SupervisorContext<C>,
-    exporter: Option<impl EventExporter>,
+    exporter: impl EventExporter,
     interval: u64,
 ) where
     C: ApiClient + Clone + Send + Sync + 'static,
@@ -13,13 +13,13 @@ pub async fn event_export<C>(
     loop {
         tracing::debug!("event export...");
         let vec = metrics::context::events().drain().await;
-        if let Some(ex) = exporter.as_ref() {
-            if let Err(e) = ex.export(&ctx, &vec).await {
-                tracing::error!("{:?}", e);
-                //recover
-                metrics::context::events().extend(vec).await;
-            }
+
+        if let Err(e) = exporter.export(&ctx, &vec).await {
+            tracing::error!("{:?}", e);
+            //recover
+            metrics::context::events().extend(vec).await;
         }
+
         ctx.event_exported().await;
 
         toy_rt::sleep(interval).await;
