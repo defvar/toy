@@ -17,8 +17,8 @@ fn bench_function(b: &mut Bencher) {
     let frame = Frame::from_value(value);
 
     let code = r#"
-    toy["message"] = "lua"
-    toy["number"] = 1
+    request["message"] = "lua"
+    request["number"] = 1
     "#;
     let config = LuaFunctionConfig {
         code: code.to_string(),
@@ -35,7 +35,7 @@ fn bench_function(b: &mut Bencher) {
                 .await
                 .unwrap();
             let mut c = ServiceContext::Ready(c);
-            for _ in 0..100 {
+            for _ in 0..1000 {
                 let tx2 = tx.clone();
                 let frame2 = frame.clone();
                 let task_ctx2 = task_ctx.clone();

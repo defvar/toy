@@ -20,11 +20,11 @@ pub struct LuaFunction;
 impl Service for LuaFunction {
     type Context = LuaFunctionContext;
     type Request = Frame;
-    type Future = impl Future<Output = Result<ServiceContext<Self::Context>, Self::Error>> + Send;
+    type Future = impl Future<Output=Result<ServiceContext<Self::Context>, Self::Error>> + Send;
     type UpstreamFinishFuture =
-        impl Future<Output = Result<ServiceContext<Self::Context>, Self::Error>> + Send;
+    impl Future<Output=Result<ServiceContext<Self::Context>, Self::Error>> + Send;
     type UpstreamFinishAllFuture =
-        impl Future<Output = Result<ServiceContext<Self::Context>, Self::Error>> + Send;
+    impl Future<Output=Result<ServiceContext<Self::Context>, Self::Error>> + Send;
     type Error = ServiceError;
 
     fn handle(
@@ -78,9 +78,9 @@ impl Service for LuaFunction {
 }
 
 impl ServiceFactory for LuaFunction {
-    type Future = impl Future<Output = Result<Self::Service, Self::InitError>> + Send;
+    type Future = impl Future<Output=Result<Self::Service, Self::InitError>> + Send;
     type Service = LuaFunction;
-    type CtxFuture = impl Future<Output = Result<Self::Context, Self::InitError>> + Send;
+    type CtxFuture = impl Future<Output=Result<Self::Context, Self::InitError>> + Send;
     type Context = LuaFunctionContext;
     type Config = LuaFunctionConfig;
     type Request = Frame;
@@ -138,7 +138,7 @@ fn encode_and_set(lua_ctx: &rlua::Context, f: Frame) -> Result<(), LuaFunctionEr
     }
     toy.set("header", header)?;
     toy.set("payload", payload)?;
-    lua_ctx.globals().set("toy", toy)?;
+    lua_ctx.globals().set("request", toy)?;
     Ok(())
 }
 
@@ -174,7 +174,7 @@ fn get_and_decode(lua_ctx: &rlua::Context) -> Result<Value, LuaFunctionError> {
             _ => Value::None,
         })
     }
-    let lua_value = lua_ctx.globals().get::<_, rlua::Value>("toy")?;
+    let lua_value = lua_ctx.globals().get::<_, rlua::Value>("request")?;
     let candidate = match &lua_value {
         rlua::Value::Table(rv) => {
             if let Ok(true) = rv.contains_key("payload") {
@@ -201,7 +201,7 @@ mod tests {
                 let table = ctx.create_table()?;
                 table.set("number", 1)?;
                 table.set("message", "hello")?;
-                ctx.globals().set("toy", table)?;
+                ctx.globals().set("request", table)?;
 
                 let v = get_and_decode(&ctx).unwrap();
                 Result::<_, rlua::Error>::Ok(v)
@@ -221,7 +221,7 @@ mod tests {
                 inner.set("number", 1)?;
                 table.set("message", "hello")?;
                 table.set("inner", inner)?;
-                ctx.globals().set("toy", table)?;
+                ctx.globals().set("request", table)?;
 
                 let v = get_and_decode(&ctx).unwrap();
                 Result::<_, rlua::Error>::Ok(v)
@@ -239,7 +239,7 @@ mod tests {
                 let table = ctx.create_table()?;
                 table.set(1, "a")?;
                 table.set(2, "b")?;
-                ctx.globals().set("toy", table)?;
+                ctx.globals().set("request", table)?;
 
                 let v = get_and_decode(&ctx).unwrap();
                 Result::<_, rlua::Error>::Ok(v)
