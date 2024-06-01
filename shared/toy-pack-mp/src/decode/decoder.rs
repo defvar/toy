@@ -1,5 +1,4 @@
 use std::str;
-use std::{mem, slice};
 
 use crate::marker::{marker_from_byte_fixx, Marker};
 
@@ -14,8 +13,8 @@ pub struct Decoder<B> {
 }
 
 impl<'toy, B> Decoder<B>
-where
-    B: Reader<'toy>,
+    where
+        B: Reader<'toy>,
 {
     pub fn new(reader: B) -> Decoder<B> {
         Decoder {
@@ -32,8 +31,8 @@ where
 }
 
 impl<'toy, B> DecoderOps<'toy> for Decoder<B>
-where
-    B: Reader<'toy>,
+    where
+        B: Reader<'toy>,
 {
     #[inline]
     fn remaining(&self) -> usize {
@@ -41,14 +40,48 @@ where
     }
 
     #[inline]
-    fn get<T: Sized>(&mut self) -> Result<&T> {
-        let s = mem::size_of::<T>();
-        assert!(self.remaining() >= s);
-        let r = self
-            .reader
-            .get_bytes(s)
-            .map(|x| unsafe { slice::from_raw_parts(x.as_ptr() as *const T, s) })?;
-        Ok(&r[0])
+    fn get_raw_u16(&mut self) -> Result<u16> {
+        self.reader.get_raw_u16()
+    }
+
+    #[inline]
+    fn get_raw_u32(&mut self) -> Result<u32> {
+        self.reader.get_raw_u32()
+    }
+
+    #[inline]
+    fn get_raw_u64(&mut self) -> Result<u64> {
+        self.reader.get_raw_u64()
+    }
+
+    #[inline]
+    fn get_raw_i8(&mut self) -> Result<i8> {
+        self.reader.get_raw_i8()
+    }
+
+    #[inline]
+    fn get_raw_i16(&mut self) -> Result<i16> {
+        self.reader.get_raw_i16()
+    }
+
+    #[inline]
+    fn get_raw_i32(&mut self) -> Result<i32> {
+        self.reader.get_raw_i32()
+    }
+
+    #[inline]
+    fn get_raw_i64(&mut self) -> Result<i64> {
+        self.reader.get_raw_i64()
+    }
+
+    #[inline]
+    fn get_raw_f32(&mut self) -> Result<f32> {
+        self.reader.get_raw_f32()
+    }
+
+    #[inline]
+    fn get_raw_f64(&mut self) -> Result<f64> {
+        self.reader.get_raw_f64()
     }
 
     #[inline]

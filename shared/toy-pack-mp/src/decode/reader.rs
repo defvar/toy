@@ -1,4 +1,6 @@
 use std::io;
+use std::mem;
+use crate::DecodeError;
 
 use super::{Reference, Result};
 
@@ -10,6 +12,24 @@ pub trait Reader<'toy> {
     fn get_byte(&mut self) -> Result<u8>;
 
     fn get_bytes<'a>(&'a mut self, len: usize) -> Result<Reference<'toy, 'a, [u8]>>;
+
+    fn get_raw_u16(&mut self) -> Result<u16>;
+
+    fn get_raw_u32(&mut self) -> Result<u32>;
+
+    fn get_raw_u64(&mut self) -> Result<u64>;
+
+    fn get_raw_i8(&mut self) -> Result<i8>;
+
+    fn get_raw_i16(&mut self) -> Result<i16>;
+
+    fn get_raw_i32(&mut self) -> Result<i32>;
+
+    fn get_raw_i64(&mut self) -> Result<i64>;
+
+    fn get_raw_f32(&mut self) -> Result<f32>;
+
+    fn get_raw_f64(&mut self) -> Result<f64>;
 
     fn discard(&mut self, len: usize) -> Result<()>;
 }
@@ -39,6 +59,32 @@ impl<'a> SliceReader<'a> {
     }
 }
 
+macro_rules! get_raw_slice {
+    ($t: ident, $variant: ident, $slice_fun: ident) => {
+        #[inline]
+        fn $variant(&mut self) -> Result<$t> {
+            let p = self.position;
+            const LEN: usize = mem::size_of::<$t>();
+            self.advance(LEN);
+            $slice_fun(&self.raw[p..p + LEN])
+        }
+    };
+}
+
+macro_rules! get_raw_io {
+    ($t: ident, $variant: ident, $slice_fun: ident) => {
+        #[inline]
+        fn $variant(&mut self) -> Result<$t> {
+            const LEN: usize = mem::size_of::<$t>();
+            if self.buffer.capacity() < LEN {
+                self.buffer.resize(LEN, 0u8);
+            }
+            self.raw.read_exact(&mut self.buffer[..LEN])?;
+            $slice_fun(&self.buffer[..LEN])
+        }
+    };
+}
+
 impl<'toy> Reader<'toy> for SliceReader<'toy> {
     #[inline]
     fn remaining(&self) -> usize {
@@ -66,6 +112,18 @@ impl<'toy> Reader<'toy> for SliceReader<'toy> {
         Ok(Reference::Borrowed(&self.raw[p..p + len]))
     }
 
+    get_raw_slice!(u16, get_raw_u16, read_slice_u16);
+    get_raw_slice!(u32, get_raw_u32, read_slice_u32);
+    get_raw_slice!(u64, get_raw_u64, read_slice_u64);
+
+    get_raw_slice!(i8, get_raw_i8, read_slice_i8);
+    get_raw_slice!(i16, get_raw_i16, read_slice_i16);
+    get_raw_slice!(i32, get_raw_i32, read_slice_i32);
+    get_raw_slice!(i64, get_raw_i64, read_slice_i64);
+
+    get_raw_slice!(f32, get_raw_f32, read_slice_f32);
+    get_raw_slice!(f64, get_raw_f64, read_slice_f64);
+
     #[inline]
     fn discard(&mut self, len: usize) -> Result<()> {
         self.advance(len);
@@ -90,8 +148,8 @@ impl<R: io::Read> IoReader<R> {
 }
 
 impl<'toy, R> Reader<'toy> for IoReader<R>
-where
-    R: io::Read,
+    where
+        R: io::Read,
 {
     #[inline]
     fn remaining(&self) -> usize {
@@ -114,6 +172,18 @@ where
         Ok(Reference::Copied(&self.buffer[..len]))
     }
 
+    get_raw_io!(u16, get_raw_u16, read_slice_u16);
+    get_raw_io!(u32, get_raw_u32, read_slice_u32);
+    get_raw_io!(u64, get_raw_u64, read_slice_u64);
+
+    get_raw_io!(i8, get_raw_i8, read_slice_i8);
+    get_raw_io!(i16, get_raw_i16, read_slice_i16);
+    get_raw_io!(i32, get_raw_i32, read_slice_i32);
+    get_raw_io!(i64, get_raw_i64, read_slice_i64);
+
+    get_raw_io!(f32, get_raw_f32, read_slice_f32);
+    get_raw_io!(f64, get_raw_f64, read_slice_f64);
+
     #[inline]
     fn discard(&mut self, len: usize) -> Result<()> {
         for _ in 0..len {
@@ -127,3 +197,23 @@ where
         Ok(())
     }
 }
+
+macro_rules! read_slice {
+    ($t: ident, $variant: ident) => {
+        fn $variant(slice: &[u8]) -> Result<$t> {
+            slice.try_into().map(|x| $t::from_be_bytes(x)).map_err(|e| DecodeError::error(e))
+        }
+    };
+}
+
+read_slice!(u16, read_slice_u16);
+read_slice!(u32, read_slice_u32);
+read_slice!(u64, read_slice_u64);
+
+read_slice!(i8, read_slice_i8);
+read_slice!(i16, read_slice_i16);
+read_slice!(i32, read_slice_i32);
+read_slice!(i64, read_slice_i64);
+
+read_slice!(f32, read_slice_f32);
+read_slice!(f64, read_slice_f64);

@@ -28,7 +28,23 @@ impl<'b, 'c, T: ?Sized + 'static> Deref for Reference<'b, 'c, T> {
 pub trait DecoderOps<'toy> {
     fn remaining(&self) -> usize;
 
-    fn get<T: Sized>(&mut self) -> Result<&T>;
+    fn get_raw_u16(&mut self) -> Result<u16>;
+
+    fn get_raw_u32(&mut self) -> Result<u32>;
+
+    fn get_raw_u64(&mut self) -> Result<u64>;
+
+    fn get_raw_i8(&mut self) -> Result<i8>;
+
+    fn get_raw_i16(&mut self) -> Result<i16>;
+
+    fn get_raw_i32(&mut self) -> Result<i32>;
+
+    fn get_raw_i64(&mut self) -> Result<i64>;
+
+    fn get_raw_f32(&mut self) -> Result<f32>;
+
+    fn get_raw_f64(&mut self) -> Result<f64>;
 
     fn get_byte(&mut self) -> Result<u8>;
 
@@ -97,92 +113,86 @@ pub trait DecoderOps<'toy> {
 
     #[inline]
     fn get_u16(&mut self) -> Result<u16> {
-        Ok(u16::from_be(*self.get::<u16>()?))
+        Ok(self.get_raw_u16()?)
     }
 
     fn decode_u32(&mut self) -> Result<u32> {
         match self.get_marker()? {
-            Marker::U32 => self.get_u32(),
+            Marker::U32 => self.get_raw_u32(),
             other => Err(DecodeError::from(other)),
         }
     }
 
     #[inline]
     fn get_u32(&mut self) -> Result<u32> {
-        Ok(u32::from_be(*self.get::<u32>()?))
+        Ok(self.get_raw_u32()?)
     }
 
     fn decode_u64(&mut self) -> Result<u64> {
         match self.get_marker()? {
-            Marker::U64 => Ok(u64::from_be(*self.get::<u64>()?)),
+            Marker::U64 => Ok(self.get_raw_u64()?),
             other => Err(DecodeError::from(other)),
         }
     }
 
     fn decode_i8(&mut self) -> Result<i8> {
         match self.get_marker()? {
-            Marker::I8 => Ok(i8::from_be(*self.get::<i8>()?)),
+            Marker::I8 => Ok(self.get_raw_i8()?),
             other => Err(DecodeError::from(other)),
         }
     }
 
     fn decode_i16(&mut self) -> Result<i16> {
         match self.get_marker()? {
-            Marker::I16 => Ok(i16::from_be(*self.get::<i16>()?)),
+            Marker::I16 => Ok(self.get_raw_i16()?),
             other => Err(DecodeError::from(other)),
         }
     }
 
     fn decode_i32(&mut self) -> Result<i32> {
         match self.get_marker()? {
-            Marker::I32 => Ok(i32::from_be(*self.get::<i32>()?)),
+            Marker::I32 => Ok(self.get_raw_i32()?),
             other => Err(DecodeError::from(other)),
         }
     }
 
     fn decode_i64(&mut self) -> Result<i64> {
         match self.get_marker()? {
-            Marker::I64 => Ok(i64::from_be(*self.get::<i64>()?)),
+            Marker::I64 => Ok(self.get_raw_i64()?),
             other => Err(DecodeError::from(other)),
         }
     }
 
     fn decode_f32(&mut self) -> Result<f32> {
         match self.get_marker()? {
-            Marker::Float32 => {
-                Ok(unsafe { *(&u32::from_be(*self.get::<u32>()?) as *const u32 as *const f32) })
-            }
+            Marker::Float32 => Ok(self.get_raw_f32()?),
             other => Err(DecodeError::from(other)),
         }
     }
 
     fn decode_f64(&mut self) -> Result<f64> {
         match self.get_marker()? {
-            Marker::Float64 => {
-                Ok(unsafe { *(&u64::from_be(*self.get::<u64>()?) as *const u64 as *const f64) })
-            }
+            Marker::Float64 => Ok(self.get_raw_f64()?),
             other => Err(DecodeError::from(other)),
         }
     }
 
     fn decode_integer<T: FromPrimitive>(&mut self) -> Result<T> {
-        let r = match self.peek_marker_and_byte()? {
+        let r = match self.get_marker_and_byte()? {
             (Marker::FixPos, fb) => {
-                let _ = self.get_marker()?; //consume
                 T::from_u8(fb)
             }
             (Marker::FixNeg, fb) => {
-                let _ = self.get_marker()?; //consume
                 T::from_i8(fb as i8)
             }
-            (Marker::U8, _) => T::from_u8(self.decode_u8()?),
-            (Marker::U16, _) => T::from_u16(self.decode_u16()?),
-            (Marker::U32, _) => T::from_u32(self.decode_u32()?),
-            (Marker::U64, _) => T::from_u64(self.decode_u64()?),
-            (Marker::I8, _) => T::from_i8(self.decode_i8()?),
-            (Marker::I16, _) => T::from_i16(self.decode_i16()?),
-            (Marker::I32, _) => T::from_i32(self.decode_i32()?),
-            (Marker::I64, _) => T::from_i64(self.decode_i64()?),
+            (Marker::U8, _) => T::from_u8(self.get_byte()?),
+            (Marker::U16, _) => T::from_u16(self.get_raw_u16()?),
+            (Marker::U32, _) => T::from_u32(self.get_raw_u32()?),
+            (Marker::U64, _) => T::from_u64(self.get_raw_u64()?),
+            (Marker::I8, _) => T::from_i8(self.get_raw_i8()?),
+            (Marker::I16, _) => T::from_i16(self.get_raw_i16()?),
+            (Marker::I32, _) => T::from_i32(self.get_raw_i32()?),
+            (Marker::I64, _) => T::from_i64(self.get_raw_i64()?),
             (other, _) => return Err(DecodeError::invalid_type(other, "integer")),
         };
         r.ok_or_else(|| DecodeError::OutOfRange)
