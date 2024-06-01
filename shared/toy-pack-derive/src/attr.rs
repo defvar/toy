@@ -18,6 +18,7 @@ pub enum RenameExpr {
     Lit(String),
 }
 
+#[allow(dead_code)]
 pub struct ModelAttr {
     pub deny_unknown_fields: bool,
     pub ignore_pack_if_none: bool,
@@ -52,6 +53,7 @@ impl ModelAttr {
     }
 }
 
+#[allow(dead_code)]
 pub struct FieldAttr {
     /// skip ser and deser
     pub ignore: bool,
@@ -119,6 +121,7 @@ impl FieldAttr {
     }
 }
 
+#[allow(dead_code)]
 pub struct VariantAttr {
     /// skip ser and deser
     pub ignore: bool,
@@ -284,8 +287,8 @@ fn get_lit_str<'a>(
 }
 
 fn parse_lit_str<T>(s: &syn::LitStr) -> parse::Result<T>
-where
-    T: Parse,
+    where
+        T: Parse,
 {
     let tokens = spanned_tokens(s)?;
     syn::parse2(tokens)

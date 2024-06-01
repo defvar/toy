@@ -39,6 +39,7 @@ pub enum Style {
     Unit,
 }
 
+#[allow(dead_code)]
 pub struct Field<'a> {
     pub member: syn::Member,
     pub ty: &'a syn::Type,
@@ -71,6 +72,7 @@ impl<'a> Field<'a> {
     }
 }
 
+#[allow(dead_code)]
 pub struct Variant<'a> {
     pub ident: syn::Ident,
     pub attrs: VariantAttr,
@@ -202,7 +204,7 @@ fn field_from_ast(fields: &Punctuated<syn::Field, Token![,]>) -> Result<Vec<Fiel
 }
 
 fn borrowed_lifetimes<'a>(
-    fields: Box<dyn Iterator<Item = &'a Field<'a>> + 'a>,
+    fields: Box<dyn Iterator<Item=&'a Field<'a>> + 'a>,
 ) -> BorrowedLifetimes {
     let mut lifetimes = BTreeSet::new();
     for field in fields {
