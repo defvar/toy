@@ -111,7 +111,7 @@ impl<'a> ToLineProtocol for LineProtocolRecord<'a> {
         size += writer.write(DELIMITER_SET)?;
 
         let mut buf = itoa::Buffer::new();
-        let bytes = buf.format(self.timestamp.timestamp_nanos()).as_bytes();
+        let bytes = buf.format(self.timestamp.timestamp_nanos_opt().unwrap()).as_bytes();
         size += writer.write(bytes)?;
         Ok(size)
     }
@@ -128,8 +128,8 @@ impl<'a> TagSet<'a> {
     }
 
     pub fn with<I>(items: I) -> Self
-    where
-        I: Iterator<Item = Tag<'a>>,
+        where
+            I: Iterator<Item=Tag<'a>>,
     {
         Self {
             items: items.collect(),
@@ -188,8 +188,8 @@ impl<'a> FieldSet<'a> {
     }
 
     pub fn with<I>(fields: I) -> FieldSet<'a>
-    where
-        I: Iterator<Item = Field<'a>>,
+        where
+            I: Iterator<Item=Field<'a>>,
     {
         FieldSet {
             items: fields.collect(),

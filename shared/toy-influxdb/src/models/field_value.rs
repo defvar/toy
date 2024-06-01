@@ -103,7 +103,7 @@ impl FieldValue {
                     Ok(text.len())
                 } else {
                     let mut buf = itoa::Buffer::new();
-                    let bytes = buf.format(v.timestamp_nanos()).as_bytes();
+                    let bytes = buf.format(v.timestamp_nanos_opt().unwrap()).as_bytes();
                     writer.write(bytes)?;
                     Ok(bytes.len())
                 }
