@@ -25,10 +25,7 @@ pub fn derive_schema_core(input: DeriveInput) -> Result<TokenStream, Vec<syn::Er
 
     // impl block wrap const, unique name. //
     let const_name = Ident::new(
-        &format!(
-            "_TOY_IMPL_SCHEMA_FOR_{}",
-            name.to_string().trim_start_matches("r#").to_owned()
-        ),
+        "_",
         Span::call_site(),
     );
     let r = quote! {
@@ -131,7 +128,7 @@ fn body_enum(target: &Model) -> Result<TokenStream, syn::Error> {
                         };
                         enum_visitor.variant(#name_str, #variant_name_str, #member_name)?;
                     }
-                },
+                }
             }
         })
         .collect();
