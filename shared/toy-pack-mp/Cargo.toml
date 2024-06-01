@@ -7,11 +7,11 @@ edition = "2021"
 [dependencies]
 lazy_static = "1.2.0"
 thiserror = "1.0"
-toy-pack = {path = "../toy-pack"}
+toy-pack = { path = "../toy-pack" }
 serde = { version = "1.0" }
 
 [dev-dependencies]
 rmp = "^0.8"
-rmpv = "0.4.0"
-rmp-serde = "^0.13"
+rmpv = "1.3"
+rmp-serde = "1.3"
 serde = { version = "1.0", features = ["derive"] }

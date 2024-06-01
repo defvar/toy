@@ -79,10 +79,10 @@ fn ser_toy(b: &mut Bencher) {
 fn ser_rmp(b: &mut Bencher) {
     let src = get_data();
     b.bytes = std::mem::size_of_val(&src) as u64;
-    let vec = rmp_serde::to_vec(&src).unwrap();
+    let vec = rmp_serde::to_vec_named(&src).unwrap();
     println!("{:?}", vec);
     b.iter(|| {
-        let vec = rmp_serde::to_vec(&src).unwrap();
+        let vec = rmp_serde::to_vec_named(&src).unwrap();
         black_box(vec)
     })
 }
