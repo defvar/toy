@@ -257,8 +257,8 @@ impl Predicate {
 
 impl Serialize for Predicate {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
+        where
+            S: Serializer,
     {
         serializer.serialize_str(&self.to_string())
     }
@@ -266,8 +266,8 @@ impl Serialize for Predicate {
 
 impl<'de> Deserialize<'de> for Predicate {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
+        where
+            D: Deserializer<'de>,
     {
         deserializer.deserialize_any(PredicateVisitor)
     }
@@ -283,8 +283,8 @@ impl<'de> Visitor<'de> for PredicateVisitor {
     }
 
     fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
-    where
-        E: Error,
+        where
+            E: Error,
     {
         match Predicate::from_str(v) {
             Ok(p) => Ok(p),
@@ -295,8 +295,8 @@ impl<'de> Visitor<'de> for PredicateVisitor {
 
 impl Serialize for Selector {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
+        where
+            S: Serializer,
     {
         let qs = self
             .preds
@@ -310,8 +310,8 @@ impl Serialize for Selector {
 
 impl<'de> Deserialize<'de> for Selector {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
+        where
+            D: Deserializer<'de>,
     {
         deserializer.deserialize_any(SelectionVisitor)
     }
@@ -327,8 +327,8 @@ impl<'de> Visitor<'de> for SelectionVisitor {
     }
 
     fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
-    where
-        E: Error,
+        where
+            E: Error,
     {
         let vec: Vec<&str> = v.split(",").collect();
         let mut r = Selector::empty();
@@ -346,11 +346,9 @@ impl<'de> Visitor<'de> for SelectionVisitor {
 
 #[cfg(test)]
 mod tests {
-    use crate::common::{Format, Indent};
     use crate::selection::candidate::CandidatePart;
     use crate::selection::selector::{Predicate, Selector};
     use crate::selection::Operator;
-    use crate::services::ServiceSpecListOption;
     use serde::{Deserialize, Serialize};
     use toy_core::data::Value;
 
@@ -425,7 +423,7 @@ mod tests {
             Predicate {
                 field: "hoge".to_string(),
                 op: Operator::Eq,
-                value: Value::from("abc")
+                value: Value::from("abc"),
             }
         );
 
@@ -436,7 +434,7 @@ mod tests {
             Predicate {
                 field: "hoge".to_string(),
                 op: Operator::Eq,
-                value: Value::from("abc")
+                value: Value::from("abc"),
             }
         );
     }
@@ -450,7 +448,7 @@ mod tests {
             Predicate {
                 field: "hoge".to_string(),
                 op: Operator::NotEq,
-                value: Value::from("abc")
+                value: Value::from("abc"),
             }
         );
 
@@ -461,7 +459,7 @@ mod tests {
             Predicate {
                 field: "hoge".to_string(),
                 op: Operator::NotEq,
-                value: Value::from("abc")
+                value: Value::from("abc"),
             }
         );
     }
@@ -475,7 +473,7 @@ mod tests {
             Predicate {
                 field: "hoge".to_string(),
                 op: Operator::LessThan,
-                value: Value::from("abc")
+                value: Value::from("abc"),
             }
         );
 
@@ -486,7 +484,7 @@ mod tests {
             Predicate {
                 field: "hoge".to_string(),
                 op: Operator::LessThanOrEqual,
-                value: Value::from("abc")
+                value: Value::from("abc"),
             }
         );
     }
@@ -500,7 +498,7 @@ mod tests {
             Predicate {
                 field: "hoge".to_string(),
                 op: Operator::GreaterThan,
-                value: Value::from("abc")
+                value: Value::from("abc"),
             }
         );
 
@@ -511,7 +509,7 @@ mod tests {
             Predicate {
                 field: "hoge".to_string(),
                 op: Operator::GreaterThanOrEqual,
-                value: Value::from("abc")
+                value: Value::from("abc"),
             }
         );
     }
