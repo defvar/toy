@@ -16,3 +16,4 @@ toy-plugin-collect = { path = "../toy-plugin-collect" }
 toy-plugin-stdio = { path = "../toy-plugin-stdio" }
 toy-plugin-tcp = { path = "../toy-plugin-tcp" }
 toy-plugin-sort = { path = "../toy-plugin-sort" }
+toy-plugin-filter = { path = "../toy-plugin-filter" }

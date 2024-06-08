@@ -31,3 +31,7 @@ pub mod timer {
 pub mod sort {
     pub use toy_plugin_sort::*;
 }
+
+pub mod filter {
+    pub use toy_plugin_filter::*;
+}
