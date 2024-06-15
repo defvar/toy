@@ -1,5 +1,5 @@
 use crate::error::OutgoingError;
-use std::collections::HashMap;
+use std::collections::{BTreeMap};
 use tokio::sync::mpsc::{self, Receiver, Sender};
 
 pub fn channel<T>(buffer: usize) -> (Outgoing<T>, Incoming<T>) {
@@ -26,19 +26,19 @@ impl<T> Incoming<T> {
 pub struct Outgoing<T> {
     inner: Vec<Sender<T>>,
     /// key = self output port, value = target input port.
-    port_map: HashMap<u8, u8>,
+    port_map: BTreeMap<u8, u8>,
 }
 
 impl<T> Outgoing<T> {
     pub fn empty() -> Outgoing<T> {
         Outgoing {
             inner: vec![],
-            port_map: HashMap::new(),
+            port_map: BTreeMap::new(),
         }
     }
 
     pub fn new(tx: Sender<T>) -> Outgoing<T> {
-        let mut port_map = HashMap::new();
+        let mut port_map = BTreeMap::new();
         port_map.insert(0, 0);
         Outgoing {
             inner: vec![tx],
@@ -126,6 +126,10 @@ where
     pub fn ports(&self) -> OutgoingPortIter {
         let ports = self.port_map.keys().into_iter().map(|x| *x).collect();
         OutgoingPortIter { ports, idx: 0 }
+    }
+
+    pub fn ports_len(&self) -> usize {
+        self.port_map.keys().len()
     }
 
     pub fn is_closed_at(&self, port: u8) -> Result<bool, ()> {
