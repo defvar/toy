@@ -2,7 +2,7 @@ use std::future::Future;
 use toy_core::data::{Frame, Value};
 use toy_core::error::ServiceError;
 use toy_core::mpsc::Outgoing;
-use toy_core::prelude::{Service, ServiceContext, ServiceFactory, TaskContext};
+use toy_core::prelude::{PortType, Service, ServiceContext, ServiceFactory, TaskContext};
 use toy_core::ServiceType;
 use crate::config::FilterConfig;
 
@@ -23,6 +23,10 @@ impl Service for Filter {
     impl Future<Output=Result<ServiceContext<FilterContext>, ServiceError>> + Send;
     type Error = ServiceError;
 
+    fn port_type() -> PortType {
+        PortType::fan_out_flow(2)
+    }
+
     fn handle(&mut self, task_ctx: TaskContext, ctx: Self::Context, req: Self::Request, mut tx: Outgoing<Self::Request>) -> Self::Future {
         async move {
             let span = task_ctx.span();
@@ -41,10 +45,14 @@ impl Service for Filter {
                 });
 
                 if all_match {
-                    tx.send_ok(req).await?
+                    tx.send_ok_to(0, req).await?
+                } else {
+                    if tx.ports_len() > 1 {
+                        tx.send_ok_to(1, req).await?
+                    }
                 }
             }
-            Ok(ServiceContext::Next(ctx))
+            Ok(ServiceContext::Ready(ctx))
         }
     }
 

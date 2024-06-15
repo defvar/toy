@@ -8,7 +8,7 @@ mod filter;
 pub mod config;
 pub mod predicate;
 
-pub use plugin::{filter};
+pub use plugin::{filter, all};
 
 pub mod service {
     pub use super::filter::{Filter, FilterContext};
