@@ -218,7 +218,7 @@ impl PutValueTransformer {
             .clone()
             .map(|x| Value::from(x))
             .unwrap_or(Value::None);
-        typed::cast(&v, self.tp).unwrap_or(Value::None)
+        typed::cast(&v, self.tp, self.value.as_ref().map(|x| x.as_str())).unwrap_or(Value::None)
     }
 }
 

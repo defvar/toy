@@ -17,3 +17,4 @@ toy-pack = { path = "../../../shared/toy-pack", features = ["derive"] }
 toy-plugin-test = { path = "../../toy-plugin-test" }
 tokio = { version = "1.19.2", features = ["full", "test-util"] }
 tokio-test = "0.4.2"
+chrono = { version = "0.4", features = ["serde"] }

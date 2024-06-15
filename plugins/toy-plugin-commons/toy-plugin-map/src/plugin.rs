@@ -1,5 +1,6 @@
-use super::service::*;
+use super::transform_service::*;
 use toy_core::prelude::{layer, Layered, NoopEntry};
+use crate::typed::Typed;
 
 const NAME_SPACE: &str = &"plugin.common.map";
 
@@ -47,6 +48,10 @@ pub fn to_seq() -> (&'static str, &'static str, ToSeq) {
     (NAME_SPACE, "toSeq", ToSeq)
 }
 
+pub fn typed() -> (&'static str, &'static str, Typed) {
+    (NAME_SPACE, "typed", Typed)
+}
+
 pub fn all() -> Layered<
     Layered<
         Layered<
@@ -55,23 +60,25 @@ pub fn all() -> Layered<
                     Layered<
                         Layered<
                             Layered<
-                                Layered<Layered<Layered<NoopEntry, Mapping>, Indexing>, Reindexing>,
-                                Naming,
+                                Layered<
+                                    Layered<Layered<Layered<NoopEntry, Mapping>, Indexing>, Reindexing>,
+                                    Naming,
+                                >,
+                                Rename,
                             >,
-                            Rename,
+                            Put,
                         >,
-                        Put,
+                        RemoveByIndex,
                     >,
-                    RemoveByIndex,
+                    RemoveByName,
                 >,
-                RemoveByName,
+                SingleValue,
             >,
-            SingleValue,
+            ToMap,
         >,
-        ToMap,
+        ToSeq,
     >,
-    ToSeq,
-> {
+    Typed> {
     layer(mapping())
         .layer(indexing())
         .layer(reindexing())
@@ -83,4 +90,5 @@ pub fn all() -> Layered<
         .layer(single_value())
         .layer(to_map())
         .layer(to_seq())
+        .layer(typed())
 }

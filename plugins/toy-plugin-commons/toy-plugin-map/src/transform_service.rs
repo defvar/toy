@@ -1,45 +1,14 @@
 use crate::config::{
     IndexingConfig, MappingConfig, NamingConfig, PutConfig, ReindexingConfig, RemoveByIndexConfig,
     RemoveByNameConfig, RenameConfig, SingleValueConfig, ToMapConfig, ToSeqConfig, ToTransform,
-    TypedConfig,
 };
 use crate::transform::{
     IndexingTransformer, MappingTransformer, NamingTransformer, PutTransformer,
     ReindexingTransformer, RemoveByIndexTransformer, RemoveByNameTransformer, RenameTransformer,
     SingleValueTransformer, ToMapTransformer, ToSeqTransformer, Transformer,
 };
-use crate::typed::convert;
 use std::future::Future;
 use toy_core::prelude::*;
-
-// typed
-pub struct TypedContext {
-    config: TypedConfig,
-}
-
-pub fn new_typed_context(
-    _tp: ServiceType,
-    config: TypedConfig,
-) -> Result<TypedContext, ServiceError> {
-    Ok(TypedContext { config })
-}
-
-pub async fn typed(
-    _task_ctx: TaskContext,
-    ctx: TypedContext,
-    mut req: Frame,
-    mut tx: Outgoing<Frame>,
-) -> Result<ServiceContext<TypedContext>, ServiceError> {
-    match req.value_mut() {
-        Some(v) => {
-            convert(v, &ctx.config);
-            tx.send_ok(req).await?;
-        }
-        None => (),
-    }
-
-    Ok(ServiceContext::Ready(ctx))
-}
 
 // transformer
 #[derive(Clone, Debug)]
