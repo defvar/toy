@@ -8,16 +8,16 @@ use crate::data::Value;
 use crate::error::ConfigError;
 use crate::service_type::ServiceType;
 use crate::service_uri::Uri;
-use std::collections::HashMap;
 use std::sync::Arc;
+use toy_map::Map;
 
 /// Workflow definition information
 #[derive(Debug, Clone)]
 pub struct Graph {
     name: String,
     nodes: Vec<Arc<Node>>,
-    outputs: HashMap<Uri, OutputWire>,
-    inputs: HashMap<Uri, InputWire>,
+    outputs: Map<Uri, OutputWire>,
+    inputs: Map<Uri, InputWire>,
     config_value: Value,
     original: Value,
 }
@@ -63,8 +63,8 @@ impl Graph {
         Ok(Graph {
             name: name.to_string(),
             nodes: Vec::<Arc<Node>>::from(seq.0),
-            outputs: HashMap::<Uri, OutputWire>::from(seq.1),
-            inputs: HashMap::<Uri, InputWire>::from(seq.2),
+            outputs: Map::<Uri, OutputWire>::from(seq.1),
+            inputs: Map::<Uri, InputWire>::from(seq.2),
             config_value,
             original: v.clone(),
         })
@@ -96,11 +96,11 @@ impl Graph {
         }
     }
 
-    pub fn outputs(&self) -> &HashMap<Uri, OutputWire> {
+    pub fn outputs(&self) -> &Map<Uri, OutputWire> {
         &self.outputs
     }
 
-    pub fn inputs(&self) -> &HashMap<Uri, InputWire> {
+    pub fn inputs(&self) -> &Map<Uri, InputWire> {
         &self.inputs
     }
 
@@ -117,19 +117,19 @@ impl Graph {
     ) -> Result<
         (
             Vec<Arc<Node>>,
-            HashMap<Uri, OutputWire>,
-            HashMap<Uri, InputWire>,
+            Map<Uri, OutputWire>,
+            Map<Uri, InputWire>,
         ),
         ConfigError,
     > {
         let mut nodes: Vec<Arc<Node>> = Vec::new();
-        let mut output_wires: HashMap<Uri, OutputWire> = HashMap::new();
-        let mut input_wires: HashMap<Uri, InputWire> = HashMap::new();
+        let mut output_wires: Map<Uri, OutputWire> = Map::new();
+        let mut input_wires: Map<Uri, InputWire> = Map::new();
 
         fn push_input_wire_from_output(
             me: &Uri,
             other: Uri,
-            input_wires: &mut HashMap<Uri, InputWire>,
+            input_wires: &mut Map<Uri, InputWire>,
         ) {
             let new_wire = if input_wires.contains_key(&other) {
                 let v = input_wires.get(&other).unwrap();
@@ -163,7 +163,9 @@ impl Graph {
         };
 
         for (uri, _) in &output_wires {
-            input_wires.entry(uri.clone()).or_insert(InputWire::None);
+            if !input_wires.contains_key(uri) {
+                input_wires.insert(uri.clone(), InputWire::None);
+            }
         }
 
         Ok((nodes, output_wires, input_wires))
@@ -207,7 +209,7 @@ impl Graph {
                                     "String or Seq(element:String) or None",
                                 )),
                             })
-                            .ok()
+                                .ok()
                         })
                         .collect::<Vec<_>>();
                     if wires.len() == 1 {
