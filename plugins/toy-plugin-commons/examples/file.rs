@@ -48,6 +48,7 @@ fn main() {
     let app = app(toy_plugin_commons::map::all())
         .with(toy_plugin_commons::file::all())
         .with(toy_plugin_commons::fanout::all())
+        .with(toy_plugin_commons::filter::all())
         .build();
 
     let mut f = std::fs::File::open(CONFIG).unwrap();

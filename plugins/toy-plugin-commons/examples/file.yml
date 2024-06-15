@@ -3,22 +3,47 @@ services:
   - type: plugin.common.file.read
     uri: "reader"
     config:
-        path: "./examples/file*.csv"
-        option:
-            delimiter: ","
+      path: "./examples/file*.csv"
+      option:
+        delimiter: ","
     wires: mapper
   - type: plugin.common.map.mapping
     uri: "mapper"
     config:
-        mappings:
-            gameid: "game_id"
-            qtr: "qtr"
-            description: "description"
-    wires: writer
-  - type: plugin.common.file.write
-    uri: "writer"
+      mappings:
+        gameid: "game_id"
+        qtr: "qtr"
+        description: "description"
+    wires: typed
+  - type: plugin.common.map.typed
+    uri: "typed"
     config:
-        path: "/tmp/file.out"
-        option:
-            delimiter: ","
-    wires: []
+      typed:
+        gameid:
+          tp: "STR"
+        qtr:
+          tp: "STR"
+        description:
+          tp: "STR"
+    wires: filter
+  - type: plugin.common.filter.filter
+    uri: "filter"
+    config:
+      preds: [
+        "qtr > 1"
+      ]
+    wires: [ matchWriter, unmatchWriter ]
+  - type: plugin.common.file.write
+    uri: "matchWriter"
+    config:
+      path: "/tmp/file.match.out"
+      option:
+        delimiter: ","
+    wires: [ ]
+  - type: plugin.common.file.write
+    uri: "unmatchWriter"
+    config:
+      path: "/tmp/file.unmatch.out"
+      option:
+        delimiter: ","
+    wires: [ ]
