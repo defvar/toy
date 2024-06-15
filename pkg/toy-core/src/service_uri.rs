@@ -1,6 +1,7 @@
 //! The URI of Node.
 //!
 
+use std::cmp::Ordering;
 use serde::de::Visitor;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::fmt::{Debug, Display, Error, Formatter};
@@ -49,6 +50,18 @@ impl AsRef<Uri> for Uri {
 impl AsRef<str> for Uri {
     fn as_ref(&self) -> &str {
         &self.path
+    }
+}
+
+impl PartialOrd for Uri {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        self.path.partial_cmp(&other.path)
+    }
+}
+
+impl Ord for Uri {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.path.cmp(&other.path)
     }
 }
 
