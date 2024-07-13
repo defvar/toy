@@ -1,18 +1,19 @@
 use crate::context::SupervisorContext;
 use crate::http::Status;
-use crate::{Request, RunTaskResponse, SupervisorError};
+use crate::{Request, RunTaskResponse, SupervisorError, TaskResponse};
 use chrono::Utc;
-use toy_api::common::{ListOptionLike, PostOption};
+use toy_api::common::{FindOption, ListOption, ListOptionLike, PostOption};
 use toy_api::metrics::{Metrics, MetricsEntry};
 use toy_api::services::{ServiceSpec, ServiceSpecListOption};
 use toy_api::task::{AllocateResponse, PendingTask};
 use toy_api_client::ApiClient;
-use toy_api_http_common::axum::extract::{Query, State};
+use toy_api_http_common::axum::extract::{Path, Query, State};
 use toy_api_http_common::axum::http::StatusCode;
 use toy_api_http_common::axum::response::IntoResponse;
 use toy_api_http_common::bytes::Bytes;
 use toy_core::graph::Graph;
 use toy_core::metrics;
+use toy_core::task::TaskId;
 
 pub async fn index() -> impl IntoResponse {
     "Hello"
@@ -67,7 +68,7 @@ where
     ))
 }
 
-pub async fn tasks<C>(
+pub async fn tasks_post<C>(
     State(mut ctx): State<SupervisorContext<C>>,
     Query(opt): Query<PostOption>,
     request: Bytes,
@@ -90,6 +91,50 @@ where
         format,
         None,
     ))
+}
+
+pub async fn tasks_find<C>(
+    State(mut ctx): State<SupervisorContext<C>>,
+    Path(key): Path<String>,
+    Query(opt): Query<FindOption>,
+) -> Result<impl IntoResponse, SupervisorError>
+where
+    C: ApiClient + Clone + Send + Sync + 'static,
+{
+    match TaskId::parse_str(&key) {
+        Ok(id) => {
+            let (tx, rx) = toy_core::oneshot::channel::<Option<TaskResponse>>();
+            let req = Request::Task(id, tx);
+            let _ = ctx.tx_mut().send_ok(req).await;
+            match rx.recv().await {
+                Some(Some(t)) => {
+                    Ok(toy_api_http_common::reply::into_response(&t, opt.format(), opt.indent()))
+                }
+                _ => Err(SupervisorError::not_found(&key))
+            }
+        }
+        Err(_) => {
+            Err(SupervisorError::task_id_invalid_format(key))
+        }
+    }
+}
+
+pub async fn tasks_list<C>(
+    State(mut ctx): State<SupervisorContext<C>>,
+    Query(opt): Query<ListOption>,
+) -> Result<impl IntoResponse, SupervisorError>
+where
+    C: ApiClient + Clone + Send + Sync + 'static,
+{
+    let (tx, rx) = toy_core::oneshot::channel::<Vec<TaskResponse>>();
+    let req = Request::Tasks(tx);
+    let _ = ctx.tx_mut().send_ok(req).await;
+    match rx.recv().await {
+        Some(tasks) => {
+            Ok(toy_api_http_common::reply::into_response(&tasks, opt.format(), opt.indent()))
+        }
+        _ => Ok(toy_api_http_common::reply::into_response(&Vec::<TaskResponse>::new(), opt.format(), opt.indent()))
+    }
 }
 
 pub async fn shutdown<C>(

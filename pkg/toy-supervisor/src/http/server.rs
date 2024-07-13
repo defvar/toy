@@ -3,7 +3,7 @@ use crate::http::handler;
 use crate::SupervisorConfig;
 use std::net::SocketAddr;
 use toy_api_client::ApiClient;
-use toy_api_http_common::axum::routing::{get, post, put};
+use toy_api_http_common::axum::routing::{get, put};
 use toy_api_http_common::axum::Router;
 use toy_api_http_common::axum_server::tls_rustls::RustlsConfig;
 use toy_core::mpsc::Incoming;
@@ -35,7 +35,8 @@ where
             .route("/", get(handler::index))
             .route("/status", get(handler::status))
             .route("/services", get(handler::services))
-            .route("/tasks", post(handler::tasks))
+            .route("/tasks", get(handler::tasks_list).post(handler::tasks_post))
+            .route("/tasks/:key", get(handler::tasks_find))
             .route("/event_buffers", get(handler::event_buffers))
             .route("/metrics", get(handler::metrics))
             .route("/shutdown", put(handler::shutdown))

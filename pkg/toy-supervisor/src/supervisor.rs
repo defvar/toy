@@ -188,12 +188,20 @@ where
                         let tasks = tasks.lock().await;
                         tasks
                             .iter()
-                            .map(|(_, v)| TaskResponse {
-                                id: v.id(),
-                                started_at: v.started_at(),
-                                graph: v.graph().clone(),
-                            })
+                            .map(|(_, v)| TaskResponse::from(v))
                             .collect::<Vec<_>>()
+                    };
+                    let _ = tx.send(r).await;
+                }
+                Request::Task(id, tx) => {
+                    let r = {
+                        let tasks = self.ctx.tasks();
+                        let tasks = tasks.lock().await;
+                        tasks
+                            .iter()
+                            .filter(|(i, _)| id == *i)
+                            .nth(0)
+                            .map(|(_, v)| TaskResponse::from(v))
                     };
                     let _ = tx.send(r).await;
                 }
