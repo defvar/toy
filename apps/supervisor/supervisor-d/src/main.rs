@@ -85,13 +85,16 @@ fn go() -> Result<(), Error> {
     let opts: Opts = Opts::parse();
 
     let app = app(toy_plugin_commons::map::all())
+        .with(toy_plugin_commons::buffer::all())
         .with(toy_plugin_commons::collect::all())
         .with(toy_plugin_commons::fanout::all())
         .with(toy_plugin_commons::stdio::all())
         .with(toy_plugin_commons::file::all())
+        .with(toy_plugin_commons::filter::all())
         .with(toy_plugin_commons::tcp::all())
         .with(toy_plugin_commons::timer::all())
         .with(toy_plugin_commons::sort::all())
+        .with(toy_plugin_commons::stat::all())
         .build();
 
     let thread_name = format!(
