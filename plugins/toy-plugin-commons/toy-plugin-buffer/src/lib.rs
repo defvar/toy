@@ -5,7 +5,7 @@ mod plugin;
 
 mod fixed_size;
 
-pub use plugin::fixed_size;
+pub use plugin::{fixed_size, all};
 
 pub mod service {
     pub use super::fixed_size::{FixedSize, FixedSizeContext};
