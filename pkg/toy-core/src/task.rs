@@ -87,6 +87,18 @@ impl FromStr for TaskId {
     }
 }
 
+impl AsRef<TaskId> for TaskId {
+    fn as_ref(&self) -> &TaskId {
+        self
+    }
+}
+
+impl PartialEq<&TaskId> for TaskId {
+    fn eq(&self, other: &&TaskId) -> bool {
+        self.id == other.id
+    }
+}
+
 macro_rules! task_span {
     ($name: ident, $level: ident) => {
         pub fn $name(&self) -> tracing::span::Span {
