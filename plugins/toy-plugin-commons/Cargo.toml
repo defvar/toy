@@ -11,5 +11,6 @@ members = [
     "toy-plugin-tcp",
     "toy-plugin-sort",
     "toy-plugin-buffer",
-    "toy-plugin-filter"]
+    "toy-plugin-filter",
+    "toy-plugin-stat"]
 resolver = "2"

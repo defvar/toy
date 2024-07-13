@@ -4,6 +4,10 @@ pub mod map {
     pub use toy_plugin_map::*;
 }
 
+pub mod buffer {
+    pub use toy_plugin_buffer::*;
+}
+
 pub mod collect {
     pub use toy_plugin_collect::*;
 }
@@ -34,4 +38,8 @@ pub mod sort {
 
 pub mod filter {
     pub use toy_plugin_filter::*;
+}
+
+pub mod stat {
+    pub use toy_plugin_stat::*;
 }

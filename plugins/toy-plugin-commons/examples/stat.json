@@ -1,0 +1,52 @@
+{
+  "name": "test-stat",
+  "services": [
+    {
+      "type": "plugin.common.timer.tick",
+      "uri": "tick",
+      "config": {
+        "interval_millis": 1000,
+        "start": 1,
+        "end": 10
+      },
+      "wires": [
+        "broadcast"
+      ]
+    },
+    {
+      "type": "plugin.common.fanout.broadcast",
+      "uri": "broadcast",
+      "config": {
+      },
+      "wires": [
+        "cpu",
+        "memory"
+      ]
+    },
+    {
+      "type": "plugin.common.stat.cpu",
+      "uri": "cpu",
+      "config": {
+      },
+      "wires": [
+        "out"
+      ]
+    },
+    {
+      "type": "plugin.common.stat.memory",
+      "uri": "memory",
+      "config": {
+      },
+      "wires": [
+        "out"
+      ]
+    },
+    {
+      "type": "plugin.common.stdio.stdout",
+      "uri": "out",
+      "config": {
+      },
+      "wires": []
+    }
+  ]
+}
