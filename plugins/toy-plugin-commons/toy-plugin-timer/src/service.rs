@@ -25,11 +25,11 @@ pub struct Tick;
 impl Service for Tick {
     type Context = TickContext;
     type Request = Frame;
-    type Future = impl Future<Output = Result<ServiceContext<TickContext>, ServiceError>> + Send;
+    type Future = impl Future<Output=Result<ServiceContext<TickContext>, ServiceError>> + Send;
     type UpstreamFinishFuture =
-        impl Future<Output = Result<ServiceContext<TickContext>, ServiceError>> + Send;
+    impl Future<Output=Result<ServiceContext<TickContext>, ServiceError>> + Send;
     type UpstreamFinishAllFuture =
-        impl Future<Output = Result<ServiceContext<TickContext>, ServiceError>> + Send;
+    impl Future<Output=Result<ServiceContext<TickContext>, ServiceError>> + Send;
     type Error = ServiceError;
 
     fn port_type() -> PortType {
@@ -55,7 +55,13 @@ impl Service for Tick {
                     Ok(ServiceContext::Complete(ctx))
                 }
                 _ => {
-                    ctx.count += 1;
+                    match ctx.count.checked_add(1) {
+                        Some(count) => ctx.count = count,
+                        None => {
+                            tracing::info!("Count overflow! Reset to zero.");
+                            ctx.count = 0;
+                        }
+                    }
                     Ok(ServiceContext::Next(ctx))
                 }
             }
@@ -83,9 +89,9 @@ impl Service for Tick {
 }
 
 impl ServiceFactory for Tick {
-    type Future = impl Future<Output = Result<Self::Service, Self::InitError>> + Send;
+    type Future = impl Future<Output=Result<Self::Service, Self::InitError>> + Send;
     type Service = Tick;
-    type CtxFuture = impl Future<Output = Result<Self::Context, Self::InitError>> + Send;
+    type CtxFuture = impl Future<Output=Result<Self::Context, Self::InitError>> + Send;
     type Context = TickContext;
     type Config = TickConfig;
     type Request = Frame;
