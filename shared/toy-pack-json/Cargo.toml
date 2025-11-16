@@ -5,15 +5,15 @@ authors = ["defvar <def.daisuke@gmail.com>"]
 edition = "2021"
 
 [dependencies]
-thiserror = "1.0"
-toy-pack = {path = "../toy-pack"}
+thiserror = "2"
+toy-pack = { path = "../toy-pack" }
 itoa = "1.0.4"
 ryu = "1.0"
-lexical = "^5.1"
+lexical = "7.0.5"
 serde = { version = "1.0" }
 toy-map = { path = "../toy-map" }
 
 [dev-dependencies]
-toy-pack-derive = {path = "../toy-pack-derive"}
-toy-test-utils = {path = "../toy-test-utils"}
+toy-pack-derive = { path = "../toy-pack-derive" }
+toy-test-utils = { path = "../toy-test-utils" }
 serde = { version = "1.0", features = ["derive"] }

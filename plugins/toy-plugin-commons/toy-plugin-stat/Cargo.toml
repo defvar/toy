@@ -10,5 +10,5 @@ toy-core = { path = "../../../pkg/toy-core" }
 toy-pack = { path = "../../../shared/toy-pack", features = ["derive"] }
 tracing = "0.1"
 
-systemstat = "0.2.3"
-sysinfo = "0.30.13"
+systemstat = "0.2.5"
+sysinfo = "0.37.2"

@@ -256,7 +256,7 @@ fn to_field_value(value: &Value) -> FieldValue {
     }
 }
 
-fn to_name_filter(predicate: Option<&Predicate>) -> Filter {
+fn to_name_filter(predicate: Option<&'_ Predicate>) -> Filter<'_> {
     if let Some(name) = predicate {
         let v = to_field_value(name.value());
         match name.op() {

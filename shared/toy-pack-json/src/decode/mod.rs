@@ -39,7 +39,7 @@ pub enum ParseNumber {
     F64(f64),
 }
 
-pub fn decoder_from_slice(slice: &[u8]) -> Decoder<reader::SliceReader> {
+pub fn decoder_from_slice(slice: &'_ [u8]) -> Decoder<reader::SliceReader<'_>> {
     Decoder::new(reader::SliceReader::new(slice))
 }
 

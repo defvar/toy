@@ -46,6 +46,6 @@ pub fn encoder_from_writer<W: io::Write>(writer: W) -> Encoder<writer::IoWriter<
 ///
 /// ```
 ///
-pub fn encoder_from_vec(slice: &mut Vec<u8>) -> Encoder<writer::VecWriter> {
+pub fn encoder_from_vec(slice: &'_ mut Vec<u8>) -> Encoder<writer::VecWriter<'_>> {
     Encoder::new(writer::VecWriter::new(slice))
 }

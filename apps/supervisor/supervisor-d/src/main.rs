@@ -10,7 +10,7 @@ use std::path::PathBuf;
 use toy::api_client::http::HttpApiClient;
 use toy::core::prelude::*;
 use toy::executor::ExecutorFactory;
-use toy::supervisor::exporters::NoopExporter;
+use toy::supervisor::exporters::{NoopExporter, ToyExporter};
 use toy::supervisor::SupervisorConfig;
 use toy_api::authentication::Claims;
 use toy_jwt::Algorithm;
@@ -19,7 +19,7 @@ use toy_tracing::{LogGuard, CONSOLE_DEFAULT_IP, CONSOLE_DEFAULT_PORT};
 mod error;
 mod opts;
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 struct Config {
     heart_beat_interval_mills: u64,
     event_export_interval_mills: u64,
@@ -27,8 +27,8 @@ struct Config {
 }
 
 impl SupervisorConfig for Config {
-    type EventExporter = NoopExporter;
-    type MetricsExporter = NoopExporter;
+    type EventExporter = ToyExporter;
+    type MetricsExporter = ToyExporter;
 
     fn heart_beat_interval_mills(&self) -> u64 {
         self.heart_beat_interval_mills
@@ -55,21 +55,11 @@ impl SupervisorConfig for Config {
     }
 
     fn metrics_exporter(&self) -> Self::MetricsExporter {
-        NoopExporter
+        ToyExporter
     }
 
     fn event_exporter(&self) -> Self::EventExporter {
-        NoopExporter
-    }
-}
-
-impl Default for Config {
-    fn default() -> Self {
-        Self {
-            heart_beat_interval_mills: 0,
-            event_export_interval_mills: 0,
-            metrics_export_interval_mills: 0,
-        }
+        ToyExporter
     }
 }
 

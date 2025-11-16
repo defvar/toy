@@ -1,4 +1,3 @@
-use crate::async_trait::async_trait;
 use crate::authentication::{Auth, AuthUser};
 use crate::store::kv::KvStore;
 use crate::store::metrics::MetricsStore;
@@ -86,16 +85,15 @@ impl Context {
     }
 }
 
-#[async_trait]
-impl<S> FromRequestParts<WrappedState<S>> for Context
+impl<T> FromRequestParts<WrappedState<T>> for Context
 where
-    S: ServerState,
+    T: ServerState,
 {
     type Rejection = ApiError;
 
     async fn from_request_parts(
         parts: &mut Parts,
-        state: &WrappedState<S>,
+        state: &WrappedState<T>,
     ) -> Result<Self, Self::Rejection> {
         let context_or_error = crate::authentication::authenticate(parts, &state.raw).await;
         match context_or_error {

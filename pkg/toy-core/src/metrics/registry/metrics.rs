@@ -8,6 +8,12 @@ pub struct MetricsRegistry {
     gauges: RwLock<HashMap<MetricsKind, Gauge>>,
 }
 
+impl Default for MetricsRegistry {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl MetricsRegistry {
     pub fn new() -> MetricsRegistry {
         Self {

@@ -1,5 +1,5 @@
-use toy_core::data::{Value};
 use sysinfo::{CpuRefreshKind, MemoryRefreshKind, RefreshKind, System};
+use toy_core::data::Value;
 use toy_core::map_value;
 
 pub trait StatCollector {
@@ -13,14 +13,16 @@ pub struct CpuCollector {
 impl CpuCollector {
     pub fn new() -> Self {
         Self {
-            sys: System::new_with_specifics(RefreshKind::new().with_cpu(CpuRefreshKind::everything()))
+            sys: System::new_with_specifics(
+                RefreshKind::nothing().with_cpu(CpuRefreshKind::everything()),
+            ),
         }
     }
 }
 
 impl StatCollector for CpuCollector {
     fn to_stat_value(&mut self) -> Value {
-        self.sys.refresh_cpu();
+        self.sys.refresh_cpu_all();
 
         let mut usages = Vec::new();
         for c in self.sys.cpus() {
@@ -28,7 +30,7 @@ impl StatCollector for CpuCollector {
         }
         let usages = Value::Seq(usages);
         map_value! {
-            "global_usage" => self.sys.global_cpu_info().cpu_usage(),
+            "global_usage" => self.sys.global_cpu_usage(),
             "usages" => usages
         }
     }
@@ -41,7 +43,9 @@ pub struct MemoryCollector {
 impl MemoryCollector {
     pub fn new() -> Self {
         Self {
-            sys: System::new_with_specifics(RefreshKind::new().with_memory(MemoryRefreshKind::everything()))
+            sys: System::new_with_specifics(
+                RefreshKind::nothing().with_memory(MemoryRefreshKind::everything()),
+            ),
         }
     }
 }
@@ -50,11 +54,11 @@ impl StatCollector for MemoryCollector {
     fn to_stat_value(&mut self) -> Value {
         self.sys.refresh_memory();
         map_value! {
-            "total_memory" => self.sys.total_memory(),
-            "used_memory" => self.sys.used_memory(),
-            "total_swap" => self.sys.total_swap(),
-            "used_swap" => self.sys.used_swap(),
-         }
+           "total_memory" => self.sys.total_memory(),
+           "used_memory" => self.sys.used_memory(),
+           "total_swap" => self.sys.total_swap(),
+           "used_swap" => self.sys.used_swap(),
+        }
     }
 }
 

@@ -7,7 +7,5 @@ edition = "2021"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "json", "time"] }
 tracing-appender = "0.2"
-console-subscriber = { version = "0.1.6"}
+console-subscriber = { version = "0.5.0" }
 thiserror = "1.0"
-
-tokio = { version = "1.19.2", features = ["net", "io-util"] }

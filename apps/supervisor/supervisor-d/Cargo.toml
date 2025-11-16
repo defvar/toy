@@ -10,7 +10,7 @@ edition = "2021"
 tracing = "0.1"
 dotenv = "0.15.0"
 clap = { version = "4.0.32", features = ["derive", "env"] }
-thiserror = "1.0"
+thiserror = "2"
 
 toy = { path = "../../../pkg/toy", features = ["supervisor", "api-client"] }
 toy-rt = { path = "../../../pkg/toy-rt" }
@@ -18,9 +18,9 @@ toy-jwt = { path = "../../../shared/toy-jwt" }
 toy-api = { path = "../../../pkg/toy-api" }
 toy-tracing = { path = "../../../pkg/toy-tracing" }
 
-toy-pack = {path = "../../../shared/toy-pack", features = ["derive"]}
-toy-pack-yaml = {path = "../../../shared/toy-pack-yaml"}
-toy-pack-json = {path = "../../../shared/toy-pack-json"}
+toy-pack = { path = "../../../shared/toy-pack", features = ["derive"] }
+toy-pack-yaml = { path = "../../../shared/toy-pack-yaml" }
+toy-pack-json = { path = "../../../shared/toy-pack-json" }
 
 # plugins
-toy-plugin-commons = { path = "../../../plugins/toy-plugin-commons/toy-plugin-commons"}
+toy-plugin-commons = { path = "../../../plugins/toy-plugin-commons/toy-plugin-commons" }

@@ -14,5 +14,5 @@ tracing = "0.1"
 
 [dev-dependencies]
 toy-plugin-test = { path = "../../toy-plugin-test" }
-tokio = { version = "1.15", features = ["full", "test-util"] }
+tokio = { version = "1.48", features = ["full", "test-util"] }
 tokio-test = "0.4.2"

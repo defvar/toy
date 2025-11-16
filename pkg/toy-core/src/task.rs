@@ -53,7 +53,7 @@ impl TaskId {
     }
 
     pub fn encode_lower<'buf>(&self, buffer: &'buf mut [u8]) -> &'buf str {
-        self.id.to_hyphenated_ref().encode_lower(buffer)
+        self.id.as_hyphenated().encode_lower(buffer)
     }
 
     pub const fn encode_buffer() -> [u8; 45] {

@@ -116,7 +116,7 @@ impl BorrowedLifetimes {
     }
 }
 
-pub fn model_from_ast(input: &syn::DeriveInput) -> Result<Model, syn::Error> {
+pub fn model_from_ast(input: &'_ syn::DeriveInput) -> Result<Model<'_>, syn::Error> {
     let data = match input.data {
         syn::Data::Enum(ref data) => Data::Enum(enum_from_ast(data)?),
         syn::Data::Struct(ref data) => {
@@ -140,7 +140,7 @@ pub fn model_from_ast(input: &syn::DeriveInput) -> Result<Model, syn::Error> {
     })
 }
 
-fn struct_from_ast(fields: &syn::Fields) -> Result<(Style, Vec<Field>), syn::Error> {
+fn struct_from_ast(fields: &'_ Fields) -> Result<(Style, Vec<Field<'_>>), syn::Error> {
     match *fields {
         Fields::Named(ref fields) => {
             // struct
@@ -162,7 +162,7 @@ fn struct_from_ast(fields: &syn::Fields) -> Result<(Style, Vec<Field>), syn::Err
     }
 }
 
-fn enum_from_ast(data: &syn::DataEnum) -> Result<Vec<Variant>, syn::Error> {
+fn enum_from_ast(data: &'_ syn::DataEnum) -> Result<Vec<Variant<'_>>, syn::Error> {
     let r = data
         .variants
         .iter()
@@ -183,7 +183,9 @@ fn enum_from_ast(data: &syn::DataEnum) -> Result<Vec<Variant>, syn::Error> {
     r
 }
 
-fn field_from_ast(fields: &Punctuated<syn::Field, Token![,]>) -> Result<Vec<Field>, syn::Error> {
+fn field_from_ast(
+    fields: &'_ Punctuated<syn::Field, Token![,]>,
+) -> Result<Vec<Field<'_>>, syn::Error> {
     let r: Result<Vec<_>, _> = fields
         .iter()
         .enumerate()
@@ -204,7 +206,7 @@ fn field_from_ast(fields: &Punctuated<syn::Field, Token![,]>) -> Result<Vec<Fiel
 }
 
 fn borrowed_lifetimes<'a>(
-    fields: Box<dyn Iterator<Item=&'a Field<'a>> + 'a>,
+    fields: Box<dyn Iterator<Item = &'a Field<'a>> + 'a>,
 ) -> BorrowedLifetimes {
     let mut lifetimes = BTreeSet::new();
     for field in fields {

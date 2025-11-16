@@ -6,6 +6,7 @@ use toy_map::Map;
 use toy_pack::FromPrimitive;
 
 /// The value itself is represented by a scalar, key-value pair, array, etc.
+#[allow(clippy::derive_ord_xor_partial_ord)]
 #[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub enum Value {
     Bool(bool),
@@ -369,7 +370,19 @@ impl Default for Value {
 impl fmt::Display for Value {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Value::Map(map) => map.fmt(f),
+            Value::Map(map) => {
+                let mut first = true;
+                f.write_str("{")?;
+                for (k, v) in map.iter() {
+                    if first {
+                        first = false;
+                    } else {
+                        f.write_str(", ")?;
+                    }
+                    f.write_fmt(format_args!("{}: {}", k, v))?;
+                }
+                f.write_str("}")
+            }
             Value::Seq(vec) => {
                 let mut first = true;
                 f.write_str("[")?;
@@ -544,7 +557,7 @@ impl Eq for Value {}
 
 ////////////////////////////////////////////////
 // Ord
-
+#[allow(clippy::derive_ord_xor_partial_ord)]
 impl Ord for Value {
     fn cmp(&self, other: &Self) -> Ordering {
         match self {

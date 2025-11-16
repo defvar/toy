@@ -1,11 +1,11 @@
 use crate::authentication::{Auth, AuthUser};
 use crate::context::{Context, ServerState};
 use crate::ApiError;
-use toy_api_http_common::axum::headers::authorization::Bearer;
-use toy_api_http_common::axum::headers::Authorization;
 use toy_api_http_common::axum::http::request::Parts;
 use toy_api_http_common::axum::RequestPartsExt;
-use toy_api_http_common::axum::TypedHeader;
+use toy_api_http_common::headers::authorization::Bearer;
+use toy_api_http_common::headers::Authorization;
+use toy_api_http_common::typed_header::TypedHeader;
 
 pub async fn authenticate<S>(parts: &mut Parts, state: &S) -> Result<Context, ApiError>
 where

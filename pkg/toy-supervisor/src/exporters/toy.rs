@@ -10,25 +10,13 @@ use toy_api_client::client::{MetricsClient, TaskClient};
 use toy_api_client::ApiClient;
 use toy_core::metrics::registry::metrics::MetricsRegistry;
 use toy_core::metrics::{Counter, EventRecord, Gauge};
+use tracing::instrument;
 
-pub struct ToyExporter<T> {
-    client: T,
-}
-
-impl<T> ToyExporter<T>
-where
-    T: ApiClient + Clone + Send + Sync + 'static,
-{
-    pub fn new(client: T) -> Self {
-        Self { client }
-    }
-}
+pub struct ToyExporter;
 
 #[async_trait::async_trait]
-impl<T> EventExporter for ToyExporter<T>
-where
-    T: ApiClient + Clone + Send + Sync + 'static,
-{
+impl EventExporter for ToyExporter {
+    #[instrument(name = "event", level = "debug", skip_all)]
     async fn export<C>(
         &self,
         ctx: &SupervisorContext<C>,
@@ -54,7 +42,8 @@ where
             return Ok(());
         }
 
-        self.client
+        ctx.client()
+            .unwrap()
             .task()
             .post_event(body, PostOption::new())
             .await
@@ -64,10 +53,8 @@ where
 }
 
 #[async_trait::async_trait]
-impl<T> MetricsExporter for ToyExporter<T>
-where
-    T: ApiClient + Clone,
-{
+impl MetricsExporter for ToyExporter {
+    #[instrument(name = "metrics", level = "debug", skip_all)]
     async fn export<C>(
         &self,
         ctx: &SupervisorContext<C>,
@@ -116,7 +103,8 @@ where
             candidates
         });
 
-        self.client
+        ctx.client()
+            .unwrap()
             .metrics()
             .post(candidates, PostOption::new())
             .await

@@ -1,4 +1,5 @@
 use crate::error::EtcdError;
+use base64::prelude::*;
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use toy_api_server::store::error::StoreError;
@@ -265,11 +266,11 @@ impl DeleteRangeRequest {
 }
 
 pub(crate) fn encode<T: AsRef<[u8]>>(input: T) -> String {
-    base64::encode_config(input.as_ref(), base64::URL_SAFE)
+    BASE64_URL_SAFE.encode(input.as_ref())
 }
 
 pub(crate) fn decode<T: AsRef<[u8]>>(input: T) -> Result<Vec<u8>, base64::DecodeError> {
-    base64::decode_config(input.as_ref(), base64::URL_SAFE)
+    BASE64_URL_SAFE.decode(input.as_ref())
 }
 
 pub(crate) fn get_range_end(key: &str) -> Vec<u8> {

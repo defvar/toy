@@ -3,10 +3,7 @@ use toy_core::metrics::{Counter, Gauge};
 
 pub struct RuntimeMetrics {
     pub(crate) num_workers: usize,
-    //pub(crate) num_blocking_threads: usize,
-    //pub(crate) num_idle_blocking_threads: usize,
-    pub(crate) injection_queue_depth: usize,
-    //pub(crate) blocking_queue_depth: usize,
+    pub(crate) global_queue_depth: usize,
     pub(crate) io_driver_fd_registered_count: u64,
     pub(crate) io_driver_fd_deregistered_count: u64,
     pub(crate) io_driver_ready_count: u64,
@@ -36,10 +33,7 @@ impl RuntimeMetrics {
 
         Self {
             num_workers,
-            //num_blocking_threads: 0,
-            //num_idle_blocking_threads: 0,
-            injection_queue_depth: metrics.injection_queue_depth(),
-            //blocking_queue_depth: 0,
+            global_queue_depth: metrics.global_queue_depth(),
             io_driver_fd_registered_count: metrics.io_driver_fd_registered_count(),
             io_driver_fd_deregistered_count: metrics.io_driver_fd_deregistered_count(),
             io_driver_ready_count: metrics.io_driver_ready_count(),
@@ -53,8 +47,8 @@ impl RuntimeMetrics {
 
     /// Returns the number of tasks currently scheduled in the runtime's injection queue.
     /// returned value may increase or decrease as new tasks are scheduled and processed.
-    pub fn injection_queue_depth(&self) -> usize {
-        self.injection_queue_depth
+    pub fn global_queue_depth(&self) -> usize {
+        self.global_queue_depth
     }
 
     pub fn io_driver_fd_registered_count(&self) -> u64 {
@@ -93,8 +87,8 @@ impl RuntimeMetrics {
 
     pub fn get_gauges(&self) -> Vec<(&str, Gauge)> {
         vec![(
-            "injection_queue_depth",
-            Gauge::from(self.injection_queue_depth as f64),
+            "global_queue_depth",
+            Gauge::from(self.global_queue_depth as f64),
         )]
     }
 }
@@ -104,7 +98,7 @@ impl WorkerMetrics {
         Self {
             worker,
             worker_park_count: metrics.worker_park_count(worker),
-            worker_noop_count: metrics.worker_park_count(worker),
+            worker_noop_count: metrics.worker_noop_count(worker),
             worker_steal_count: metrics.worker_steal_count(worker),
             worker_poll_count: metrics.worker_poll_count(worker),
             worker_total_busy_duration: metrics.worker_total_busy_duration(worker),

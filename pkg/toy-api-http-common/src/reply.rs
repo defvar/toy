@@ -238,7 +238,7 @@ where
 {
     #[inline]
     fn into_response(self) -> axum::response::Response {
-        let mut res = IntoResponse::into_response(axum::body::StreamBody::new(self.inner));
+        let mut res = IntoResponse::into_response(axum::body::Body::from_stream(self.inner));
         res.headers_mut()
             .insert(CONTENT_TYPE, self.content_type.to_header_value());
         res.headers_mut()

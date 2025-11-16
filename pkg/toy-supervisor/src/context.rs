@@ -8,6 +8,7 @@ use tokio::sync::Mutex;
 use toy_core::mpsc::Outgoing;
 use toy_core::registry::ServiceSchema;
 use toy_core::task::TaskId;
+use tracing::instrument;
 
 #[derive(Debug, Clone)]
 pub struct SupervisorContext<C> {
@@ -115,6 +116,7 @@ impl<C> SupervisorContext<C> {
         lock.clone()
     }
 
+    #[instrument(level = "debug", skip(self))]
     pub async fn event_exported(&self) {
         let mut lock = self.last_event_exported_at.lock().await;
         *lock = Some(Utc::now());
@@ -125,6 +127,7 @@ impl<C> SupervisorContext<C> {
         lock.clone()
     }
 
+    #[instrument(level = "debug", skip(self))]
     pub async fn metrics_exported(&self) {
         let mut lock = self.last_metrics_exported_at.lock().await;
         *lock = Some(Utc::now());

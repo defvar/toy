@@ -5,11 +5,11 @@ use crate::store::kv::KvStore;
 use crate::store::metrics::MetricsStore;
 use crate::store::task_event::TaskEventStore;
 use std::net::SocketAddr;
-use tower_http::cors::CorsLayer;
-use tower_http::trace::TraceLayer;
 use toy_api_http_common::axum::routing::{get, post};
 use toy_api_http_common::axum::Router;
 use toy_api_http_common::axum_server::tls_rustls::RustlsConfig;
+use toy_api_http_common::cors::CorsLayer;
+use toy_api_http_common::trace::TraceLayer;
 use toy_h::HttpClient;
 
 /// toy-api Server.
@@ -57,42 +57,42 @@ where
 
         let app = Router::new()
             .route(
-                "/supervisors/:key",
+                "/supervisors/{key}",
                 get(supervisors::find)
                     .put(supervisors::put)
                     .delete(supervisors::delete),
             )
             .route("/supervisors", get(supervisors::list))
-            .route("/supervisors/:key/beat", post(supervisors::beat))
+            .route("/supervisors/{key}/beat", post(supervisors::beat))
             .route(
-                "/services/:key",
+                "/services/{key}",
                 get(services::find)
                     .put(services::put)
                     .delete(services::delete),
             )
             .route("/services", get(services::list))
             .route(
-                "/graphs/:key",
+                "/graphs/{key}",
                 get(graph::find).put(graph::put).delete(graph::delete),
             )
             .route("/graphs", get(graph::list))
             .route(
-                "/rbac/roles/:key",
+                "/rbac/roles/{key}",
                 get(rbac::role::find)
                     .put(rbac::role::put)
                     .delete(rbac::role::delete),
             )
             .route("/rbac/roles", get(rbac::role::list))
             .route(
-                "/rbac/roleBindings/:key",
+                "/rbac/roleBindings/{key}",
                 get(rbac::role_binding::find)
                     .put(rbac::role_binding::put)
                     .delete(rbac::role_binding::delete),
             )
             .route("/rbac/roleBindings", get(rbac::role_binding::list))
             .route("/tasks", get(task::list_task).post(task::post))
-            .route("/tasks/:key", get(task::find))
-            .route("/tasks/:key/finish", post(task::finish))
+            .route("/tasks/{key}", get(task::find))
+            .route("/tasks/{key}/finish", post(task::finish))
             .route(
                 "/tasks/events",
                 get(task::list_task_event).post(task::post_task_event),

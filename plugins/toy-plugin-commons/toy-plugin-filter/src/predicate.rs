@@ -1,7 +1,7 @@
-use std::fmt::{Display, Formatter};
 use regex::Regex;
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde::de::{Error, Visitor};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use std::fmt::{Display, Formatter};
 use toy_core::data::Value;
 use toy_pack::Schema;
 
@@ -123,16 +123,6 @@ impl Predicate {
             _ => Err(()),
         }
     }
-
-    pub fn to_string(&self) -> String {
-        let qs = format!(
-            "{}{}{}",
-            &self.field,
-            self.op.as_str(),
-            &self.value
-        );
-        qs
-    }
 }
 
 impl Display for Predicate {
@@ -143,8 +133,8 @@ impl Display for Predicate {
 
 impl Serialize for Predicate {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where
-            S: Serializer,
+    where
+        S: Serializer,
     {
         serializer.serialize_str(&self.to_string())
     }
@@ -152,8 +142,8 @@ impl Serialize for Predicate {
 
 impl<'de> Deserialize<'de> for Predicate {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-        where
-            D: Deserializer<'de>,
+    where
+        D: Deserializer<'de>,
     {
         deserializer.deserialize_any(PredicateVisitor)
     }
@@ -169,8 +159,8 @@ impl<'de> Visitor<'de> for PredicateVisitor {
     }
 
     fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
-        where
-            E: Error,
+    where
+        E: Error,
     {
         match Predicate::from_str(v) {
             Ok(p) => Ok(p),
@@ -228,8 +218,8 @@ impl Display for Operator {
 
 impl<'de> Deserialize<'de> for Operator {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-        where
-            D: Deserializer<'de>,
+    where
+        D: Deserializer<'de>,
     {
         deserializer.deserialize_any(OperatorVisitor)
     }
@@ -245,8 +235,8 @@ impl<'de> Visitor<'de> for OperatorVisitor {
     }
 
     fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
-        where
-            E: Error,
+    where
+        E: Error,
     {
         let op = Operator::try_from(v);
         if op.is_err() {
@@ -257,8 +247,8 @@ impl<'de> Visitor<'de> for OperatorVisitor {
     }
 
     fn visit_bytes<E>(self, v: &[u8]) -> Result<Self::Value, E>
-        where
-            E: Error,
+    where
+        E: Error,
     {
         match std::str::from_utf8(v) {
             Ok(s) => self.visit_str(s),

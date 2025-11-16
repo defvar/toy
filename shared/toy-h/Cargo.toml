@@ -7,18 +7,18 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-http = "0.2"
+http = "1.3"
 bytes = "1"
-http-body = "0.4"
-thiserror = "1.0"
-async-trait = "0.1.42"
-url = "2.2"
+http-body = "1.0"
+thiserror = "2"
+async-trait = "0.1.89"
+url = "2.5"
 futures-core = { version = "0.3" }
 futures-util = { version = "0.3", default-features = false }
 pin-project-lite = "0.2"
 
 # impl
-reqwest = { version = "0.11", default-features = false, features = ["stream", "rustls-tls"],  optional = true }
+reqwest = { version = "0.12", default-features = false, features = ["stream", "rustls-tls"], optional = true }
 
 [features]
 # Nothing by default

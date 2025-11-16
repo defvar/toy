@@ -9,8 +9,8 @@ use toy_core::prelude::*;
 use toy_plugin_sort::config::{BufferFullStrategy, SortConfig, SortKey};
 use toy_plugin_sort::service::Sort;
 
-const TMP_PATH: &'static str = "/tmp/toy-plugin-sort-bench";
-const TEST_FILE: &'static str = "./benches/data.txt";
+const TMP_PATH: &str = "/tmp/toy-plugin-sort-bench";
+const TEST_FILE: &str = "./benches/data.txt";
 
 #[bench]
 fn bench_sort(b: &mut Bencher) {

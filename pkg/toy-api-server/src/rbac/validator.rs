@@ -9,6 +9,7 @@ use toy_h::HttpClient;
 
 pub struct RoleValidator;
 
+#[allow(dead_code)]
 pub struct RoleBindingValidator;
 
 #[async_trait]

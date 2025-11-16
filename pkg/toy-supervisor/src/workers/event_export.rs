@@ -2,6 +2,7 @@ use crate::context::SupervisorContext;
 use crate::exporters::EventExporter;
 use toy_api_client::ApiClient;
 use toy_core::metrics;
+use tracing::instrument;
 
 pub async fn start_event_exporter<C>(
     ctx: SupervisorContext<C>,
@@ -11,7 +12,6 @@ pub async fn start_event_exporter<C>(
     C: ApiClient + Clone + Send + Sync + 'static,
 {
     loop {
-        tracing::debug!("event export...");
         let vec = metrics::context::events().drain().await;
 
         if let Err(e) = exporter.export(&ctx, &vec).await {
@@ -21,7 +21,6 @@ pub async fn start_event_exporter<C>(
         }
 
         ctx.event_exported().await;
-
         toy_rt::sleep(interval).await;
     }
 }

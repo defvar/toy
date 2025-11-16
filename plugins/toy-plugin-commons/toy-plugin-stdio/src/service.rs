@@ -23,11 +23,11 @@ pub struct Stdin;
 impl Service for Stdin {
     type Context = StdinContext;
     type Request = Frame;
-    type Future = impl Future<Output=Result<ServiceContext<StdinContext>, ServiceError>> + Send;
+    type Future = impl Future<Output = Result<ServiceContext<StdinContext>, ServiceError>> + Send;
     type UpstreamFinishFuture =
-    impl Future<Output=Result<ServiceContext<StdinContext>, ServiceError>> + Send;
+        impl Future<Output = Result<ServiceContext<StdinContext>, ServiceError>> + Send;
     type UpstreamFinishAllFuture =
-    impl Future<Output=Result<ServiceContext<StdinContext>, ServiceError>> + Send;
+        impl Future<Output = Result<ServiceContext<StdinContext>, ServiceError>> + Send;
     type Error = ServiceError;
 
     fn port_type() -> PortType {
@@ -77,9 +77,9 @@ impl Service for Stdin {
 }
 
 impl ServiceFactory for Stdin {
-    type Future = impl Future<Output=Result<Self::Service, Self::InitError>> + Send;
+    type Future = impl Future<Output = Result<Self::Service, Self::InitError>> + Send;
     type Service = Stdin;
-    type CtxFuture = impl Future<Output=Result<Self::Context, Self::InitError>> + Send;
+    type CtxFuture = impl Future<Output = Result<Self::Context, Self::InitError>> + Send;
     type Context = StdinContext;
     type Config = StdinConfig;
     type Request = Frame;
@@ -104,11 +104,11 @@ pub struct Stdout;
 impl Service for Stdout {
     type Context = StdoutContext;
     type Request = Frame;
-    type Future = impl Future<Output=Result<ServiceContext<StdoutContext>, ServiceError>> + Send;
+    type Future = impl Future<Output = Result<ServiceContext<StdoutContext>, ServiceError>> + Send;
     type UpstreamFinishFuture =
-    impl Future<Output=Result<ServiceContext<StdoutContext>, ServiceError>> + Send;
+        impl Future<Output = Result<ServiceContext<StdoutContext>, ServiceError>> + Send;
     type UpstreamFinishAllFuture =
-    impl Future<Output=Result<ServiceContext<StdoutContext>, ServiceError>> + Send;
+        impl Future<Output = Result<ServiceContext<StdoutContext>, ServiceError>> + Send;
     type Error = ServiceError;
 
     fn port_type() -> PortType {
@@ -123,18 +123,17 @@ impl Service for Stdout {
         mut tx: Outgoing<Self::Request>,
     ) -> Self::Future {
         async move {
-            match req.value() {
-                Some(v) => match v.parse_str() {
+            if let Some(v) = req.value() {
+                match v.parse_str() {
                     Some(str) => {
                         ctx.writer.write_all(str.as_bytes()).await?;
-                        ctx.writer.write(&[b'\r', b'\n']).await?;
+                        ctx.writer.write_all(&[b'\r', b'\n']).await?;
                     }
                     None => {
                         ctx.writer.write_all(format!("{}", v).as_bytes()).await?;
-                        ctx.writer.write(&[b'\r', b'\n']).await?;
+                        ctx.writer.write_all(&[b'\r', b'\n']).await?;
                     }
-                },
-                None => (),
+                }
             };
             tx.send(Frame::none()).await?;
             Ok(ServiceContext::Ready(ctx))
@@ -162,9 +161,9 @@ impl Service for Stdout {
 }
 
 impl ServiceFactory for Stdout {
-    type Future = impl Future<Output=Result<Self::Service, Self::InitError>> + Send;
+    type Future = impl Future<Output = Result<Self::Service, Self::InitError>> + Send;
     type Service = Stdout;
-    type CtxFuture = impl Future<Output=Result<Self::Context, Self::InitError>> + Send;
+    type CtxFuture = impl Future<Output = Result<Self::Context, Self::InitError>> + Send;
     type Context = StdoutContext;
     type Config = StdoutConfig;
     type Request = Frame;

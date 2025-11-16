@@ -66,45 +66,45 @@ impl FieldValue {
             FieldValue::Float(v) => {
                 let mut buf = ryu::Buffer::new();
                 let bytes = buf.format(*v).as_bytes();
-                writer.write(bytes)?;
+                writer.write_all(bytes)?;
                 Ok(bytes.len())
             }
             FieldValue::Integer(v) => {
                 let mut buf = itoa::Buffer::new();
                 let bytes = buf.format(*v).as_bytes();
-                writer.write(bytes)?;
+                writer.write_all(bytes)?;
                 Ok(bytes.len())
             }
             FieldValue::UInteger(v) => {
                 let mut buf = itoa::Buffer::new();
                 let bytes = buf.format(*v).as_bytes();
-                writer.write(bytes)?;
+                writer.write_all(bytes)?;
                 Ok(bytes.len())
             }
             FieldValue::String(v) => {
                 if quote {
-                    writer.write(&[b'\"'])?;
+                    writer.write_all(&[b'\"'])?;
                 }
-                writer.write(v.as_bytes())?;
+                writer.write_all(v.as_bytes())?;
                 if quote {
-                    writer.write(&[b'\"'])?;
+                    writer.write_all(&[b'\"'])?;
                 }
                 Ok(v.as_bytes().len())
             }
             FieldValue::Boolean(v) => {
                 let bytes = if *v { &b"true"[..] } else { &b"false"[..] };
-                writer.write(&bytes)?;
+                writer.write_all(&bytes)?;
                 Ok(bytes.len())
             }
             FieldValue::Timestamp(v) => {
                 if rfc_3399 {
                     let text = v.to_rfc3339();
-                    writer.write(text.as_bytes())?;
+                    writer.write_all(text.as_bytes())?;
                     Ok(text.len())
                 } else {
                     let mut buf = itoa::Buffer::new();
                     let bytes = buf.format(v.timestamp_nanos_opt().unwrap()).as_bytes();
-                    writer.write(bytes)?;
+                    writer.write_all(bytes)?;
                     Ok(bytes.len())
                 }
             }

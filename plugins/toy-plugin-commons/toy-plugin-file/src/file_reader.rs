@@ -52,7 +52,7 @@ impl FileReader {
 
     /// Returns Iterator all Row.
     ///
-    pub fn rows(&mut self) -> RowIterator {
+    pub fn rows(&'_ mut self) -> RowIterator<'_> {
         RowIterator::new(self)
     }
 

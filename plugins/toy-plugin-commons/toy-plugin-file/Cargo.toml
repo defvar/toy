@@ -7,17 +7,18 @@ edition = "2021"
 [dependencies]
 log = "0.4"
 serde = { version = "1.0", features = ["derive"] }
-itoa = "0.4"
+itoa = "1.0"
 ryu = "1.0"
-glob = "0.3.0"
+glob = "0.3.3"
 tracing = "0.1"
 
-toy-core = {path = "../../../pkg/toy-core"}
+toy-core = { path = "../../../pkg/toy-core" }
 toy-pack = { path = "../../../shared/toy-pack", features = ["derive"] }
-toy-text-parser = {path = "../../../shared/toy-text-parser"}
+toy-text-parser = { path = "../../../shared/toy-text-parser" }
 
 [dev-dependencies]
 tempdir = "0.3"
 toy-plugin-test = { path = "../../toy-plugin-test" }
-tokio = { version = "1.19.2", features = ["full", "test-util"] }
+tokio = { version = "1.48.0", features = ["full", "test-util"] }
 tokio-test = "0.4.2"
+csv = "1.4.0"

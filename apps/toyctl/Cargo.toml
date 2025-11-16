@@ -10,7 +10,7 @@ edition = "2021"
 tracing = "0.1"
 clap = { version = "4.0.32", features = ["derive", "env"] }
 dotenv = "0.15.0"
-thiserror = "1.0"
+thiserror = "2"
 serde = { version = "1.0", features = ["derive"] }
 dirs = "4.0"
 
@@ -19,5 +19,5 @@ toy-tracing = { path = "../../pkg/toy-tracing" }
 toy-jwt = { path = "../../shared/toy-jwt" }
 toy-rt = { path = "../../pkg/toy-rt" }
 toy-pack = { path = "../../shared/toy-pack" }
-toy-pack-json = {path = "../../shared/toy-pack-json"}
-toy-pack-urlencoded = {path = "../../shared/toy-pack-urlencoded"}
+toy-pack-json = { path = "../../shared/toy-pack-json" }
+toy-pack-urlencoded = { path = "../../shared/toy-pack-urlencoded" }

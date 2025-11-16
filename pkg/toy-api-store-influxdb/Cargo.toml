@@ -7,9 +7,9 @@ edition = "2021"
 
 [dependencies]
 tracing = { version = "0.1" }
-thiserror = "1.0"
+thiserror = "2"
 
-toy-influxdb = {path = "../../shared/toy-influxdb"}
-toy-core = { path = "../toy-core"}
-toy-api = {path = "../toy-api"}
-toy-api-server = {path = "../toy-api-server"}
+toy-influxdb = { path = "../../shared/toy-influxdb" }
+toy-core = { path = "../toy-core" }
+toy-api = { path = "../toy-api" }
+toy-api-server = { path = "../toy-api-server" }

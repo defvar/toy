@@ -11,16 +11,16 @@ log = "0.4"
 tracing = "0.1"
 dotenv = "0.15.0"
 clap = { version = "4.0.32", features = ["derive", "env"] }
-thiserror = "1.0"
+thiserror = "2"
 
 toy = { path = "../../pkg/toy", features = ["api-server"] }
-toy-rt = { path = "../../pkg/toy-rt"}
-toy-h = { path = "../../shared/toy-h", features = ["impl_reqwest"]}
+toy-rt = { path = "../../pkg/toy-rt" }
+toy-h = { path = "../../shared/toy-h", features = ["impl_reqwest"] }
 toy-tracing = { path = "../../pkg/toy-tracing" }
 
 # store
-toy-api-store-etcd = { path = "../../pkg/toy-api-store-etcd"}
-toy-api-store-influxdb = { path = "../../pkg/toy-api-store-influxdb"}
+toy-api-store-etcd = { path = "../../pkg/toy-api-store-etcd" }
+toy-api-store-influxdb = { path = "../../pkg/toy-api-store-influxdb" }
 
 # auth
 toy-api-auth-jwt = { path = "../../pkg/toy-api-auth-jwt" }

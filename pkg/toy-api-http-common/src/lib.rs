@@ -18,3 +18,19 @@ pub use axum;
 #[cfg(feature = "server")]
 #[doc(hidden)]
 pub use axum_server;
+
+#[cfg(feature = "server")]
+#[doc(hidden)]
+pub use axum_extra::headers;
+
+#[cfg(feature = "server")]
+#[doc(hidden)]
+pub use axum_extra::typed_header;
+
+#[cfg(feature = "server")]
+#[doc(hidden)]
+pub use tower_http::trace;
+
+#[cfg(feature = "server")]
+#[doc(hidden)]
+pub use tower_http::cors;

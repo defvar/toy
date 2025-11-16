@@ -3,12 +3,12 @@ use crate::InfluxDBError;
 use chrono::{DateTime, Utc};
 use std::io::Write;
 
-static DELIMITER_SET: &'static [u8] = b" ";
-static DELIMITER_MEASUREMENT: &'static [u8] = b",";
-static DELIMITER_FIELD_KV: &'static [u8] = b"=";
-static DELIMITER_FIELDS: &'static [u8] = b",";
-static DELIMITER_TAG_KV: &'static [u8] = b"=";
-static DELIMITER_TAGS: &'static [u8] = b",";
+static DELIMITER_SET: &[u8] = b" ";
+static DELIMITER_MEASUREMENT: &[u8] = b",";
+static DELIMITER_FIELD_KV: &[u8] = b"=";
+static DELIMITER_FIELDS: &[u8] = b",";
+static DELIMITER_TAG_KV: &[u8] = b"=";
+static DELIMITER_TAGS: &[u8] = b",";
 
 pub trait ToLineProtocol {
     fn to_lp<W: Write>(&self, writer: &mut W) -> Result<usize, InfluxDBError>;
@@ -17,6 +17,12 @@ pub trait ToLineProtocol {
 pub struct LineProtocolBuilder<'a> {
     records: Vec<LineProtocolRecord<'a>>,
     buf: Option<LineProtocolRecord<'a>>,
+}
+
+impl<'a> Default for LineProtocolBuilder<'a> {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl<'a> LineProtocolBuilder<'a> {
@@ -111,7 +117,9 @@ impl<'a> ToLineProtocol for LineProtocolRecord<'a> {
         size += writer.write(DELIMITER_SET)?;
 
         let mut buf = itoa::Buffer::new();
-        let bytes = buf.format(self.timestamp.timestamp_nanos_opt().unwrap()).as_bytes();
+        let bytes = buf
+            .format(self.timestamp.timestamp_nanos_opt().unwrap())
+            .as_bytes();
         size += writer.write(bytes)?;
         Ok(size)
     }
@@ -122,14 +130,20 @@ pub struct TagSet<'a> {
     items: Vec<Tag<'a>>,
 }
 
+impl<'a> Default for TagSet<'a> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<'a> TagSet<'a> {
     pub fn new() -> Self {
         Self { items: Vec::new() }
     }
 
     pub fn with<I>(items: I) -> Self
-        where
-            I: Iterator<Item=Tag<'a>>,
+    where
+        I: Iterator<Item = Tag<'a>>,
     {
         Self {
             items: items.collect(),
@@ -170,9 +184,9 @@ impl<'a> Tag<'a> {
 
 impl<'a> ToLineProtocol for Tag<'a> {
     fn to_lp<W: Write>(&self, writer: &mut W) -> Result<usize, InfluxDBError> {
-        writer.write(self.k)?;
-        writer.write(DELIMITER_TAG_KV)?;
-        writer.write(self.v)?;
+        writer.write_all(self.k)?;
+        writer.write_all(DELIMITER_TAG_KV)?;
+        writer.write_all(self.v)?;
         Ok(self.k.len() + 1 + self.v.len())
     }
 }
@@ -182,14 +196,20 @@ pub struct FieldSet<'a> {
     items: Vec<Field<'a>>,
 }
 
+impl<'a> Default for FieldSet<'a> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<'a> FieldSet<'a> {
     pub fn new() -> Self {
         Self { items: Vec::new() }
     }
 
     pub fn with<I>(fields: I) -> FieldSet<'a>
-        where
-            I: Iterator<Item=Field<'a>>,
+    where
+        I: Iterator<Item = Field<'a>>,
     {
         FieldSet {
             items: fields.collect(),
@@ -220,15 +240,15 @@ pub struct Field<'a> {
 }
 
 impl<'a> Field<'a> {
-    pub fn with(k: &str, v: FieldValue) -> Field {
+    pub fn with(k: &'_ str, v: FieldValue) -> Field<'_> {
         Field { k: k.as_bytes(), v }
     }
 }
 
 impl<'a> ToLineProtocol for Field<'a> {
     fn to_lp<W: Write>(&self, writer: &mut W) -> Result<usize, InfluxDBError> {
-        writer.write(self.k)?;
-        writer.write(DELIMITER_FIELD_KV)?;
+        writer.write_all(self.k)?;
+        writer.write_all(DELIMITER_FIELD_KV)?;
         let vlen = self.v.to_lp(writer)?;
         Ok(self.k.len() + 1 + vlen)
     }

@@ -7,16 +7,16 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-async-trait = "0.1.42"
-tokio = { version = "1.15", features = ["sync"] }
-thiserror = "1.0"
+async-trait = "0.1.89"
+tokio = { version = "1.48", features = ["sync"] }
+thiserror = "2"
 tracing = "0.1"
 itoa = "1.0.4"
 ryu = "1.0"
-uuid = { version = "0.8", features = ["v4"] }
-serde = { version = "1.0", features = ["derive"]  }
+uuid = { version = "1.18.1", features = ["v4"] }
+serde = { version = "1.0", features = ["derive"] }
 chrono = { version = "0.4", features = ["serde"] }
-once_cell = { version = "1.16.0"}
+once_cell = { version = "1.21.3" }
 
 toy-pack = { path = "../../shared/toy-pack", features = ["derive"] }
 toy-map = { path = "../../shared/toy-map" }
@@ -24,5 +24,5 @@ toy-map = { path = "../../shared/toy-map" }
 [dev-dependencies]
 toy-pack = { path = "../../shared/toy-pack", features = ["derive"] }
 toy-pack-json = { path = "../../shared/toy-pack-json" }
-tokio = { version = "1.19.2", features = ["full", "test-util"] }
+tokio = { version = "1.48.0", features = ["full", "test-util"] }
 tokio-test = "0.4.2"

@@ -87,7 +87,7 @@ impl Graph {
             .map(|x| x.clone())
     }
 
-    pub fn iter(&self) -> NodeIterator {
+    pub fn iter(&'_ self) -> NodeIterator<'_> {
         let len = self.nodes.len();
         NodeIterator {
             graph: self,
@@ -114,14 +114,7 @@ impl Graph {
 
     fn try_traverse_services(
         v: &Value,
-    ) -> Result<
-        (
-            Vec<Arc<Node>>,
-            Map<Uri, OutputWire>,
-            Map<Uri, InputWire>,
-        ),
-        ConfigError,
-    > {
+    ) -> Result<(Vec<Arc<Node>>, Map<Uri, OutputWire>, Map<Uri, InputWire>), ConfigError> {
         let mut nodes: Vec<Arc<Node>> = Vec::new();
         let mut output_wires: Map<Uri, OutputWire> = Map::new();
         let mut input_wires: Map<Uri, InputWire> = Map::new();
@@ -209,7 +202,7 @@ impl Graph {
                                     "String or Seq(element:String) or None",
                                 )),
                             })
-                                .ok()
+                            .ok()
                         })
                         .collect::<Vec<_>>();
                     if wires.len() == 1 {

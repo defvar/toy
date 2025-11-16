@@ -1,11 +1,12 @@
 #![feature(test)]
 
+extern crate csv;
 extern crate test;
 
+use std::fs::File;
 use std::io::Read;
+use std::path::PathBuf;
 use test::test::Bencher;
-
-use quick_csv::Csv;
 
 use toy_plugin_file::FileReaderBuilder;
 use toy_text_parser::dfa::*;
@@ -40,22 +41,8 @@ fn read_rust_csv(b: &mut Bencher) {
 }
 
 #[bench]
-fn read_quick_csv(b: &mut Bencher) {
-    let data = file_to_mem(CSV_DATA);
-    b.bytes = data.len() as u64;
-    let mut count = 0;
-    b.iter(|| {
-        let dec = Csv::from_reader(&*data).has_header(true);
-        for _row in dec.into_iter() {
-            count += 1;
-        }
-        assert_eq!(count, DATA_ROW_COUNT);
-        count = 0;
-    })
-}
-
-#[bench]
 fn read_toy(b: &mut Bencher) {
+    let files = vec![PathBuf::from(CSV_DATA)];
     let text = file_to_mem(CSV_DATA);
     b.bytes = text.len() as u64;
     let builder = FileReaderBuilder::default();
@@ -64,7 +51,7 @@ fn read_toy(b: &mut Bencher) {
     let mut row = Line::new();
 
     b.iter(|| {
-        let mut s = builder.from_reader(&*text);
+        let mut s = builder.from_file(File::open(CSV_DATA).unwrap(), files.clone());
         while s.read(&mut row).unwrap() {
             line += 1
         }
@@ -75,6 +62,7 @@ fn read_toy(b: &mut Bencher) {
 
 #[bench]
 fn read_toy_rows_iterator(b: &mut Bencher) {
+    let files = vec![PathBuf::from(CSV_DATA)];
     let text = file_to_mem(CSV_DATA);
     b.bytes = text.len() as u64;
     let builder = FileReaderBuilder::default();
@@ -82,7 +70,7 @@ fn read_toy_rows_iterator(b: &mut Bencher) {
     let mut line = 0u32;
 
     b.iter(|| {
-        let mut s = builder.from_reader(&*text);
+        let mut s = builder.from_file(File::open(CSV_DATA).unwrap(), files.clone());
         for r in s.rows() {
             match r {
                 Ok(_) => line += 1,

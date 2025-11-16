@@ -1,6 +1,6 @@
+use crate::DecodeError;
 use std::io;
 use std::mem;
-use crate::DecodeError;
 
 use super::{Reference, Result};
 
@@ -148,18 +148,18 @@ impl<R: io::Read> IoReader<R> {
 }
 
 impl<'toy, R> Reader<'toy> for IoReader<R>
-    where
-        R: io::Read,
+where
+    R: io::Read,
 {
     #[inline]
     fn remaining(&self) -> usize {
-        usize::max_value()
+        usize::MAX
     }
 
     #[inline]
     fn get_byte(&mut self) -> Result<u8> {
         let mut r = [0u8; 1];
-        self.raw.read(&mut r)?;
+        self.raw.read_exact(&mut r)?;
         Ok(r[0])
     }
 
@@ -201,7 +201,10 @@ impl<'toy, R> Reader<'toy> for IoReader<R>
 macro_rules! read_slice {
     ($t: ident, $variant: ident) => {
         fn $variant(slice: &[u8]) -> Result<$t> {
-            slice.try_into().map(|x| $t::from_be_bytes(x)).map_err(|e| DecodeError::error(e))
+            slice
+                .try_into()
+                .map(|x| $t::from_be_bytes(x))
+                .map_err(|e| DecodeError::error(e))
         }
     };
 }

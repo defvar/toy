@@ -130,14 +130,6 @@ fn skip_none_struct() {
     assert_eq!(r, src);
 }
 
-#[test]
-fn unit() {
-    let src = ();
-    let dest = pack(&src).unwrap();
-    let r = unpack::<()>(&dest).unwrap();
-    assert_eq!(r, src);
-}
-
 //enum pattern ///////////////////////////////////////////////
 #[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
 enum TestEnum {

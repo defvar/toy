@@ -213,14 +213,14 @@ impl<W: Write> FileWriter<W> {
         let mut s = 0u64;
 
         if need_delimiter && self.delimiter.is_some() {
-            self.raw.write(&[self.delimiter.unwrap()])?;
+            self.raw.write_all(&[self.delimiter.unwrap()])?;
             s += 1u64;
         }
 
         if self.should_quote(col) {
-            self.raw.write(&[self.quote])?;
+            self.raw.write_all(&[self.quote])?;
             s += self.write_column_should_escape(col)? as u64;
-            self.raw.write(&[self.quote])?;
+            self.raw.write_all(&[self.quote])?;
             s += 2u64;
         } else {
             s += self.write_column_should_escape(col)? as u64;

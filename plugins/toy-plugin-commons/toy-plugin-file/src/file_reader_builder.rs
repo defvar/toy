@@ -21,7 +21,7 @@ impl FileReaderBuilder {
             Err(e) => return Err(Error::new(ErrorKind::InvalidInput, e.msg)),
         };
 
-        if paths.len() == 0 {
+        if paths.is_empty() {
             return Err(Error::new(
                 ErrorKind::NotFound,
                 format!("file not found. path: {}", &config.path),
@@ -42,7 +42,7 @@ impl FileReaderBuilder {
             .capacity(config.option.capacity)
             .clone();
 
-        Ok(b.from_file(File::open(paths.get(0).unwrap())?, paths))
+        Ok(b.from_file(File::open(paths.first().unwrap())?, paths))
     }
 
     pub fn capacity(&mut self, cap: usize) -> &mut Self {

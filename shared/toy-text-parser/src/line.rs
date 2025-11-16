@@ -95,7 +95,7 @@ impl Line {
     }
 
     #[inline]
-    pub fn iter(&self) -> ColumnIterator {
+    pub fn iter(&'_ self) -> ColumnIterator<'_> {
         self.into_iter()
     }
 }

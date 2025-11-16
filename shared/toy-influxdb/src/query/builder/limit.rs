@@ -19,11 +19,11 @@ impl Limit {
 
 impl FluxPart for Limit {
     fn need(&self) -> bool {
-        return self.n > 0;
+        self.n > 0
     }
 
     fn to_flux<W: Write>(&self, writer: &mut W) -> Result<usize, InfluxDBError> {
-        if self.n <= 0 {
+        if self.n == 0 {
             return Ok(0);
         }
 
@@ -39,7 +39,7 @@ impl FluxPart for Limit {
             r += writer.write(&b", offset: "[..])?;
             r += writer.write(offset)?;
         }
-        r += writer.write(&[b')'])?;
+        r += writer.write(&b")"[..])?;
         Ok(r)
     }
 }

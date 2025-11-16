@@ -45,13 +45,6 @@ async fn sort(data: &Vec<Value>, key: SortKey) -> Vec<Frame> {
     let (tx, mut rx) = toy_core::mpsc::channel(10);
     let task_ctx = toy_plugin_test::dummy_task_context();
 
-    // let config = SortConfig::with(
-    //     5,
-    //     BufferFullStrategy::Persist {
-    //         path: TMP_PATH.into(),
-    //     },
-    //     key,
-    // );
     let config = SortConfig::with(10, BufferFullStrategy::Flush, key);
     let mut c = service
         .new_context(toy_plugin_test::dummy_service_type(), config)

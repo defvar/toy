@@ -15,6 +15,6 @@ toy-pack = { path = "../../../shared/toy-pack", features = ["derive"] }
 
 [dev-dependencies]
 toy-plugin-test = { path = "../../toy-plugin-test" }
-tokio = { version = "1.19.2", features = ["full", "test-util"] }
-tokio-test = "0.4.2"
+tokio = { version = "1.48.0", features = ["full", "test-util"] }
+tokio-test = "0.4.4"
 chrono = { version = "0.4", features = ["serde"] }

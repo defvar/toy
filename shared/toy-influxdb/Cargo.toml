@@ -7,22 +7,22 @@ edition = "2021"
 
 [dependencies]
 tracing = { version = "0.1" }
-thiserror = "1.0"
-serde = { version = "1.0", features = ["derive"]}
+thiserror = "2"
+serde = { version = "1.0", features = ["derive"] }
 chrono = { version = "0.4", features = ["serde"] }
 itoa = "1.0.4"
 ryu = "1.0"
 
 toy-map = { path = "../toy-map" }
-toy-pack-json = {path = "../toy-pack-json"}
-toy-h = {path = "../toy-h"}
-toy-text-parser = {path = "../toy-text-parser"}
+toy-pack-json = { path = "../toy-pack-json" }
+toy-h = { path = "../toy-h" }
+toy-text-parser = { path = "../toy-text-parser" }
 
 [dev-dependencies]
-tokio = { version = "1.22.0", features = ["full"] }
+tokio = { version = "1.48", features = ["full"] }
 tracing-subscriber = "0.3"
 dotenv = "0.15.0"
-toy-h = {path = "../toy-h", features = ["impl_reqwest"]}
+toy-h = { path = "../toy-h", features = ["impl_reqwest"] }
 
 [[example]]
 name = "example"

@@ -7,22 +7,20 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-base64 = "0.12"
+base64 = "0.22"
 futures-util = { version = "0.3", default-features = false }
-thiserror = "1.0"
+thiserror = "2"
 tracing = { version = "0.1", features = ["attributes"] }
-tracing-futures = "0.2.4"
 serde = { version = "1.0", features = ["derive"] }
 
-toy-pack-json = {path = "../../shared/toy-pack-json"}
-toy-h = {path = "../../shared/toy-h"}
-toy-api = {path = "../toy-api"}
-toy-api-server = {path = "../toy-api-server"}
+toy-pack-json = { path = "../../shared/toy-pack-json" }
+toy-h = { path = "../../shared/toy-h" }
+toy-api-server = { path = "../toy-api-server" }
 
 [dev-dependencies]
-tracing-subscriber = "0.2"
-tokio = { version = "1.19.2", features = ["full"] }
-toy-h = {path = "../../shared/toy-h", features = ["impl_reqwest"]}
+tracing-subscriber = "0.3"
+tokio = { version = "1.48.0", features = ["full"] }
+toy-h = { path = "../../shared/toy-h", features = ["impl_reqwest"] }
 
 [[example]]
 name = "example"

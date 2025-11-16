@@ -6,8 +6,8 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-thiserror = "1.0"
-rocksdb = { version = "0.21.0", features = ["multi-threaded-cf"] }
+thiserror = "2"
+rocksdb = { version = "0.24.0", features = ["multi-threaded-cf"] }
 
 [dev-dependencies]
 tempdir = { version = "0.3.7" }

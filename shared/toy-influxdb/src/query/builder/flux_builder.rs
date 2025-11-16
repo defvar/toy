@@ -21,7 +21,7 @@ impl Default for FluxBuilder<Identity> {
 }
 
 impl FluxBuilder<Identity> {
-    pub fn from(bucket: &str) -> FluxBuilder<Layer<From, Identity>> {
+    pub fn from(bucket: &'_ str) -> FluxBuilder<Layer<From<'_>, Identity>> {
         FluxBuilder {
             parts: Layer::new(From::with(bucket), Identity::new()),
         }

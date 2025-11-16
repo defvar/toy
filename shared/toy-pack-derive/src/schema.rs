@@ -24,13 +24,9 @@ pub fn derive_schema_core(input: DeriveInput) -> Result<TokenStream, Vec<syn::Er
     };
 
     // impl block wrap const, unique name. //
-    let const_name = Ident::new(
-        "_",
-        Span::call_site(),
-    );
+    let const_name = Ident::new("_", Span::call_site());
     let r = quote! {
         const #const_name: () = {
-            #[cfg_attr(feature = "cargo-clippy", allow(useless_attribute))]
             use toy_pack::schema as __schema;
             use toy_pack::schema::StructVisitor as __StructVisitor;
             use toy_pack::schema::EnumVisitor as __EnumVisitor;
