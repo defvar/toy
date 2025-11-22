@@ -28,9 +28,7 @@ fn tuple_variant() {
         Two(u32, u32),
     }
     let v = "
-Two:
-  - 1
-  - 2
+!Two [1 ,2]
 ";
     let r = toy_pack_yaml::unpack::<Variant>(v).unwrap();
     assert_eq!(r, Variant::Two(1, 2));

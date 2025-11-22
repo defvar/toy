@@ -5,30 +5,29 @@ use std::collections::BTreeMap;
 fn int() {
     let v = 256u32;
     let r = toy_pack_yaml::pack_to_string(v).unwrap();
-    assert_eq!(r, "---\n256\n");
+    assert_eq!(r, "256\n");
 }
 
 #[test]
 fn float() {
     let v = 25.6;
     let r = toy_pack_yaml::pack_to_string(v).unwrap();
-    assert_eq!(r, "---\n25.6\n");
+    assert_eq!(r, "25.6\n");
 
     let v = f64::INFINITY;
     let r = toy_pack_yaml::pack_to_string(v).unwrap();
-    assert_eq!(r, "---\n.inf\n");
+    assert_eq!(r, ".inf\n");
 
     let v = f64::NEG_INFINITY;
     let r = toy_pack_yaml::pack_to_string(v).unwrap();
-    assert_eq!(r, "---\n-.inf\n");
+    assert_eq!(r, "-.inf\n");
 }
 
 #[test]
 fn vec() {
     let v = vec![1, 2, 3];
     let r = toy_pack_yaml::pack_to_string(v).unwrap();
-    let expected = r#"---
-- 1
+    let expected = r#"- 1
 - 2
 - 3
 "#;
@@ -41,8 +40,7 @@ fn map() {
     v.insert(String::from("x"), 1);
     v.insert(String::from("y"), 2);
     let r = toy_pack_yaml::pack_to_string(v).unwrap();
-    let expected = r#"---
-x: 1
+    let expected = r#"x: 1
 y: 2
 "#;
     assert_eq!(r, expected);
@@ -56,8 +54,7 @@ fn unit_variant() {
     }
     let v = Variant::First;
     let r = toy_pack_yaml::pack_to_string(v).unwrap();
-    let expected = r#"---
-First
+    let expected = r#"First
 "#;
     assert_eq!(r, expected);
 }
@@ -70,8 +67,7 @@ fn newtype_variant() {
     }
     let v = Variant::Size(127);
     let r = toy_pack_yaml::pack_to_string(v).unwrap();
-    let expected = r#"---
-Size: 127
+    let expected = r#"!Size 127
 "#;
     assert_eq!(r, expected);
 }
@@ -84,10 +80,9 @@ fn tuple_variant() {
     }
     let v = Variant::Two(1, 2);
     let r = toy_pack_yaml::pack_to_string(v).unwrap();
-    let expected = r#"---
-Two:
-  - 1
-  - 2
+    let expected = r#"!Two
+- 1
+- 2
 "#;
     assert_eq!(r, expected);
 }
@@ -112,8 +107,7 @@ fn nested_struct() {
         inner: Inner { x: 123 },
     };
     let r = toy_pack_yaml::pack_to_string(v).unwrap();
-    let expected = r#"---
-x: -4
+    let expected = r#"x: -4
 y: "hi\tquoted"
 z: true
 inner:
