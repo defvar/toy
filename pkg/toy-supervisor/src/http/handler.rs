@@ -1,9 +1,9 @@
 use crate::context::SupervisorContext;
+use crate::exporters::supervisor_metrics;
 use crate::http::Status;
 use crate::{Request, RunTaskResponse, SupervisorError, TaskResponse};
 use chrono::Utc;
 use toy_api::common::{FindOption, ListOption, ListOptionLike, PostOption};
-use toy_api::metrics::{Metrics, MetricsEntry};
 use toy_api::services::{ServiceSpec, ServiceSpecListOption};
 use toy_api::task::{AllocateResponse, PendingTask};
 use toy_api_client::ApiClient;
@@ -107,15 +107,15 @@ where
             let req = Request::Task(id, tx);
             let _ = ctx.tx_mut().send_ok(req).await;
             match rx.recv().await {
-                Some(Some(t)) => {
-                    Ok(toy_api_http_common::reply::into_response(&t, opt.format(), opt.indent()))
-                }
-                _ => Err(SupervisorError::not_found(&key))
+                Some(Some(t)) => Ok(toy_api_http_common::reply::into_response(
+                    &t,
+                    opt.format(),
+                    opt.indent(),
+                )),
+                _ => Err(SupervisorError::not_found(&key)),
             }
         }
-        Err(_) => {
-            Err(SupervisorError::task_id_invalid_format(key))
-        }
+        Err(_) => Err(SupervisorError::task_id_invalid_format(key)),
     }
 }
 
@@ -130,10 +130,16 @@ where
     let req = Request::Tasks(tx);
     let _ = ctx.tx_mut().send_ok(req).await;
     match rx.recv().await {
-        Some(tasks) => {
-            Ok(toy_api_http_common::reply::into_response(&tasks, opt.format(), opt.indent()))
-        }
-        _ => Ok(toy_api_http_common::reply::into_response(&Vec::<TaskResponse>::new(), opt.format(), opt.indent()))
+        Some(tasks) => Ok(toy_api_http_common::reply::into_response(
+            &tasks,
+            opt.format(),
+            opt.indent(),
+        )),
+        _ => Ok(toy_api_http_common::reply::into_response(
+            &Vec::<TaskResponse>::new(),
+            opt.format(),
+            opt.indent(),
+        )),
     }
 }
 
@@ -177,28 +183,7 @@ where
 {
     let format = opt.format();
     let now = Utc::now();
-    let counters = metrics::context::metrics().get_counters().await;
-    let gauges = metrics::context::metrics().get_gauges().await;
-
-    let mut counters = counters
-        .iter()
-        .map(|(k, v)| MetricsEntry::counter(k.as_kind_text(), v.get().unwrap_or(0)))
-        .collect::<Vec<_>>();
-
-    let mut gauges = gauges
-        .iter()
-        .map(|(k, v)| MetricsEntry::gauge(k.as_kind_text(), v.get().unwrap_or(0f64)))
-        .collect::<Vec<_>>();
-
-    counters.append(&mut gauges);
-    let r = Metrics::with(
-        "supervisor",
-        ctx.name(),
-        now,
-        Vec::with_capacity(0),
-        counters,
-    );
-
+    let r = supervisor_metrics(now, ctx.name(), metrics::context::metrics()).await;
     Ok(toy_api_http_common::reply::into_response(
         &r,
         format,

@@ -2,7 +2,6 @@ use crate::context::SupervisorContext;
 use crate::exporters::EventExporter;
 use toy_api_client::ApiClient;
 use toy_core::metrics;
-use tracing::instrument;
 
 pub async fn start_event_exporter<C>(
     ctx: SupervisorContext<C>,

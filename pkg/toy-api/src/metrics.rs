@@ -2,6 +2,7 @@
 
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use std::fmt::{Debug, Display, Formatter};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Metrics {
@@ -12,7 +13,7 @@ pub struct Metrics {
     items: Vec<MetricsEntry>,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct MetricsTag {
     key: String,
     value: String,
@@ -24,13 +25,13 @@ pub enum MetricsEntry {
     Gauge(Gauge),
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct Counter {
     name: String,
     value: u64,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct Gauge {
     name: String,
     value: f64,
@@ -91,6 +92,18 @@ impl MetricsTag {
     }
 }
 
+impl Display for MetricsTag {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_str(format!("{:?}", self).as_str())
+    }
+}
+
+impl Debug for MetricsTag {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_str(format!("{}:{}", self.key, self.value).as_str())
+    }
+}
+
 impl MetricsEntry {
     pub fn counter(name: impl Into<String>, v: u64) -> Self {
         MetricsEntry::Counter(Counter::with(name, v))
@@ -98,6 +111,19 @@ impl MetricsEntry {
 
     pub fn gauge(name: impl Into<String>, v: f64) -> Self {
         MetricsEntry::Gauge(Gauge::with(name, v))
+    }
+
+    pub fn name(&self) -> &str {
+        match self {
+            MetricsEntry::Counter(_) => self.name(),
+            MetricsEntry::Gauge(_) => self.name(),
+        }
+    }
+}
+
+impl Display for MetricsEntry {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_str(format!("{:?}", self).as_str())
     }
 }
 
@@ -118,6 +144,18 @@ impl Counter {
     }
 }
 
+impl Display for Counter {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_str(format!("{}:{}", self.name, self.value).as_str())
+    }
+}
+
+impl Debug for Counter {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_str(format!("{}:{}", self.name, self.value).as_str())
+    }
+}
+
 impl Gauge {
     pub fn with(name: impl Into<String>, value: f64) -> Self {
         Self {
@@ -132,5 +170,17 @@ impl Gauge {
 
     pub fn value(&self) -> f64 {
         self.value
+    }
+}
+
+impl Display for Gauge {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_str(format!("{}:{}", self.name, self.value).as_str())
+    }
+}
+
+impl Debug for Gauge {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_str(format!("{}:{}", self.name, self.value).as_str())
     }
 }

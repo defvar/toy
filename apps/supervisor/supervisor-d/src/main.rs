@@ -10,7 +10,7 @@ use std::path::PathBuf;
 use toy::api_client::http::HttpApiClient;
 use toy::core::prelude::*;
 use toy::executor::ExecutorFactory;
-use toy::supervisor::exporters::{NoopExporter, ToyExporter};
+use toy::supervisor::exporters::TracingExporter;
 use toy::supervisor::SupervisorConfig;
 use toy_api::authentication::Claims;
 use toy_jwt::Algorithm;
@@ -27,8 +27,8 @@ struct Config {
 }
 
 impl SupervisorConfig for Config {
-    type EventExporter = ToyExporter;
-    type MetricsExporter = ToyExporter;
+    type EventExporter = TracingExporter;
+    type MetricsExporter = TracingExporter;
 
     fn heart_beat_interval_mills(&self) -> u64 {
         self.heart_beat_interval_mills
@@ -55,11 +55,11 @@ impl SupervisorConfig for Config {
     }
 
     fn metrics_exporter(&self) -> Self::MetricsExporter {
-        ToyExporter
+        TracingExporter
     }
 
     fn event_exporter(&self) -> Self::EventExporter {
-        ToyExporter
+        TracingExporter
     }
 }
 

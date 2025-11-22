@@ -113,7 +113,7 @@ impl<C> SupervisorContext<C> {
 
     pub async fn last_event_exported_at(&self) -> Option<DateTime<Utc>> {
         let lock = self.last_event_exported_at.lock().await;
-        lock.clone()
+        *lock
     }
 
     #[instrument(level = "debug", skip(self))]
@@ -124,7 +124,7 @@ impl<C> SupervisorContext<C> {
 
     pub async fn last_metrics_exported_at(&self) -> Option<DateTime<Utc>> {
         let lock = self.last_metrics_exported_at.lock().await;
-        lock.clone()
+        *lock
     }
 
     #[instrument(level = "debug", skip(self))]

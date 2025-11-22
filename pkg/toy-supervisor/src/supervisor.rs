@@ -259,9 +259,9 @@ where
         }
 
         let ctx = self.ctx.clone();
-        let addr = ctx.addr().unwrap().clone();
+        let addr = ctx.addr().unwrap();
         let name = ctx.name().to_string();
-        let client = ctx.client().clone().unwrap();
+        let client = ctx.client().unwrap();
         let config = self.config.clone();
         let (tx, rx) = mpsc::channel::<()>(10);
         self.ctx.set_tx_http_server_shutdown(Some(tx));
@@ -415,17 +415,14 @@ impl Future for Shutdown {
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
         {
-            match self.tasks.try_lock() {
-                Ok(tasks) => {
-                    if tasks.is_empty() {
-                        return Poll::Ready(());
-                    }
+            if let Ok(tasks) = self.tasks.try_lock() {
+                if tasks.is_empty() {
+                    return Poll::Ready(());
                 }
-                _ => (),
             }
         }
         std::thread::sleep(Duration::from_secs(1));
         cx.waker().wake_by_ref();
-        return Poll::Pending;
+        Poll::Pending
     }
 }
