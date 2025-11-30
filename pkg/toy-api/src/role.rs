@@ -53,6 +53,10 @@ impl Role {
         &self.name
     }
 
+    pub fn note(&self) -> Option<&str> {
+        self.note.as_deref()
+    }
+
     pub fn rules(&self) -> &Vec<Rule> {
         &self.rules
     }
