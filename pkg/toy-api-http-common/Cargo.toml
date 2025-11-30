@@ -7,7 +7,7 @@ edition = "2021"
 
 [features]
 default = ["toy-h/impl_reqwest"]
-server = ["axum", "axum-server"]
+server = ["axum", "axum-server", "axum-extra/typed-header", "tower-http"]
 
 [dependencies]
 tracing = "0.1"
@@ -16,8 +16,8 @@ serde = { version = "1.0", features = ["derive"] }
 futures-util = { version = "0.3", default-features = false }
 axum = { version = "0.8.7", optional = true, features = ["http2"] }
 axum-server = { version = "0.7.3", features = ["tls-rustls-no-provider"], optional = true }
-axum-extra = { version = "0.12.2", features = ["typed-header"] }
-tower-http = { version = "0.6.6", features = ["cors", "trace"] }
+axum-extra = { version = "0.12.2", features = ["typed-header"], optional = true }
+tower-http = { version = "0.6.6", features = ["cors", "trace"], optional = true }
 bytes = "1.11"
 http = "1.3"
 
