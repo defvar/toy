@@ -17,7 +17,7 @@
     "license": "MIT",
     "devDependencies": {
         "@babel/core": "^7.19.6",
-        "@pmmmwh/react-refresh-webpack-plugin": "^0.5.8",
+        "@pmmmwh/react-refresh-webpack-plugin": "^0.5.17",
         "@types/jest": "^29.2",
         "@types/node": "^18.11.7",
         "@types/react": "^18.0.24",
@@ -48,7 +48,7 @@
         "ts-node": "^10.9",
         "webpack": "^5.76",
         "webpack-cli": "^4.10",
-        "webpack-dev-server": "^4.11",
+        "webpack-dev-server": "^5.2",
         "webpack-merge": "^5.8.0"
     },
     "dependencies": {
