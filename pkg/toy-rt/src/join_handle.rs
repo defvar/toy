@@ -10,6 +10,10 @@ impl<T> JoinHandle<T> {
     pub fn abort(&self) {
         self.raw.abort()
     }
+
+    pub fn is_finished(&self) -> bool {
+        self.raw.is_finished()
+    }
 }
 
 unsafe impl<T: Send> Send for JoinHandle<T> {}
