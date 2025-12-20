@@ -70,20 +70,20 @@ pub enum StoreError {
         msg: String,
     },
 
-    #[error("invalid uri: {:?}", source)]
+    #[error("invalid uri: {}", source)]
     InvalidUri {
         #[from]
         source: InvalidUri,
         backtrace: Backtrace,
     },
 
-    #[error("failed http request: {:?}", source)]
+    #[error("failed http request: {}", source)]
     HError {
         #[from]
         source: HError,
     },
 
-    #[error("error: {:?}", inner)]
+    #[error("error: {}", inner)]
     Error { inner: String },
 }
 
