@@ -18,15 +18,11 @@ impl View for TopView {
         "Top".to_string()
     }
 
-    fn hint_text(&self) -> String {
-        "(q) to quit.".to_string()
+    fn navigation_text(&self, _app: &App) -> String {
+        "(q) quit".to_string()
     }
 
-    fn navigation_text(&self) -> String {
-        "select a resource".to_string()
-    }
-
-    fn render(&mut self, styles: &Styles, frame: &mut Frame, area: Rect, app: &mut App) {
+    fn render(&mut self, frame: &mut Frame, area: Rect, app: &mut App) {
         let menu_items: Vec<ListItem> = app
             .state()
             .top()
@@ -36,7 +32,7 @@ impl View for TopView {
             .collect();
 
         let menu_items = List::new(menu_items)
-            .block(styles.border_block().title(span(" menu ")))
+            .block(Styles::get().border_block().title(span(" menu ")))
             .highlight_style(Style::default().add_modifier(Modifier::BOLD))
             .highlight_symbol("> ");
         frame.render_stateful_widget(menu_items, area, app.state_mut().top_mut().state_mut());

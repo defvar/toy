@@ -1,5 +1,6 @@
 use ratatui::widgets::TableState;
 
+#[derive(Debug, Clone)]
 pub struct StatefulTable<T> {
     state: TableState,
     items: Vec<T>,
@@ -35,12 +36,12 @@ where
         self.state.select(None);
     }
 
-    pub fn state_mut(&mut self) -> &mut TableState {
-        &mut self.state
+    pub fn state(&self) -> &TableState {
+        &self.state
     }
 
-    pub fn select_first(&mut self) {
-        self.state.select_first();
+    pub fn state_mut(&mut self) -> &mut TableState {
+        &mut self.state
     }
 
     pub fn selected(&self) -> Option<&T> {
@@ -53,6 +54,21 @@ where
         } else {
             None
         }
+    }
+
+    pub fn select(&mut self, idx: u16) {
+        let max = self.items.len().saturating_sub(1) as u16;
+        let select = if max < idx {
+            max as usize
+        } else {
+            idx as usize
+        };
+
+        self.state.select(Some(select));
+    }
+
+    pub fn select_first(&mut self) {
+        self.state.select_first();
     }
 
     pub fn next(&mut self) {

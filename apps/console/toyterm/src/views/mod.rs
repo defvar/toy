@@ -4,14 +4,18 @@ use ratatui::crossterm::event::KeyEvent;
 use ratatui::layout::Rect;
 use std::collections::HashMap;
 
+mod list_and_detail;
+
 mod graph;
 mod role;
+mod service;
 mod styles;
 mod top;
 mod widgets;
 
 pub use graph::GraphView;
 pub use role::RoleView;
+pub use service::ServiceView;
 pub use styles::Styles;
 pub use top::TopView;
 
@@ -20,13 +24,12 @@ const TABLE_HIGHLIGHT_SYMBOL: &str = "> ";
 pub trait View {
     fn title(&self) -> String;
 
-    fn hint_text(&self) -> String {
+    fn navigation_text(&self, app: &App) -> String {
+        let _ = app;
         "(q) to back to top".to_string()
     }
 
-    fn navigation_text(&self) -> String;
-
-    fn render(&mut self, styles: &Styles, frame: &mut Frame, area: Rect, app: &mut App);
+    fn render(&mut self, frame: &mut Frame, area: Rect, app: &mut App);
 
     fn handle(&self, key: KeyEvent, app: &mut App);
 }

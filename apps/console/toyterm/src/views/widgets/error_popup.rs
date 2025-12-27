@@ -27,7 +27,7 @@ impl ErrorPopup {
             .block(popup_block)
             .wrap(Wrap { trim: false });
 
-        let popup_area = styles::center_split(60, 25, base_area);
+        let popup_area = styles::split_center(60, 25, base_area);
 
         (paragraph, popup_area)
     }

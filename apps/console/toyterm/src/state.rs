@@ -1,5 +1,6 @@
 use crate::app::CurrentView;
 use crate::states::graph::GraphState;
+use crate::states::service::ServiceState;
 use crate::states::{AppActions, role::RoleState, top::TopState};
 use tokio::sync::mpsc::UnboundedSender;
 
@@ -7,6 +8,7 @@ pub struct AppState {
     current_view: CurrentView,
     top: TopState,
     role: RoleState,
+    service: ServiceState,
     graph: GraphState,
 }
 
@@ -16,6 +18,7 @@ impl AppState {
             current_view: CurrentView::Top,
             top: TopState::new(tx.clone()),
             role: RoleState::new(tx.clone()),
+            service: ServiceState::new(tx.clone()),
             graph: GraphState::new(tx.clone()),
         }
     }
@@ -42,6 +45,14 @@ impl AppState {
 
     pub fn role_mut(&mut self) -> &mut RoleState {
         &mut self.role
+    }
+
+    pub fn service(&self) -> &ServiceState {
+        &self.service
+    }
+
+    pub fn service_mut(&mut self) -> &mut ServiceState {
+        &mut self.service
     }
 
     pub fn graph(&self) -> &GraphState {

@@ -1,5 +1,4 @@
 use crate::states::loading::LoadingState;
-use rand::Rng;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Loading<'a> {

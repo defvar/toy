@@ -19,15 +19,11 @@ impl View for RoleView {
         "Roles".to_string()
     }
 
-    fn hint_text(&self) -> String {
-        "(q) to back to top".to_string()
+    fn navigation_text(&self, _app: &App) -> String {
+        "(q) top".to_string()
     }
 
-    fn navigation_text(&self) -> String {
-        "".to_string()
-    }
-
-    fn render(&mut self, styles: &Styles, frame: &mut Frame, area: Rect, app: &mut App) {
+    fn render(&mut self, frame: &mut Frame, area: Rect, app: &mut App) {
         // error
         if let Some(e) = app.state_mut().role_mut().error() {
             let e = ErrorPopup::with(e);
@@ -72,10 +68,10 @@ impl View for RoleView {
                 })
                 .unwrap_or(vec![]);
 
-            let role_table = role_table_def.to_table(styles, role_rows);
-            let rule_table = rule_table_def.to_table(styles, rule_rows);
+            let role_table = role_table_def.to_table(Styles::get(), role_rows);
+            let rule_table = rule_table_def.to_table(Styles::get(), rule_rows);
 
-            let (left, right) = styles::horizontal_split(50, area);
+            let (left, right) = styles::split_horizontal(50, area);
             frame.render_stateful_widget(role_table, left, app.state_mut().role_mut().state_mut());
             frame.render_widget(rule_table, right);
         }

@@ -88,7 +88,6 @@ async fn run_app<B: Backend>(
     mut rx: UnboundedReceiver<AppActions>,
 ) -> io::Result<()> {
     let mut views = ViewContainer::default();
-    let styles = views::Styles {};
     let token = CancellationToken::new();
     let (event_tx, mut event_rx) = tokio::sync::mpsc::unbounded_channel::<Event>();
 
@@ -100,7 +99,7 @@ async fn run_app<B: Backend>(
     loop {
         let page = views.view_mut(app.state().current_view());
         if need_draw {
-            terminal.draw(|f| ui(&styles, f, app, &mut **page))?;
+            terminal.draw(|f| ui(f, app, &mut **page))?;
             need_draw = false;
         }
 

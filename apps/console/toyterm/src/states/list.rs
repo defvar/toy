@@ -22,6 +22,10 @@ impl<T> StatefulList<T> {
         &mut self.items
     }
 
+    pub fn state(&self) -> &ListState {
+        &self.state
+    }
+
     pub fn state_mut(&mut self) -> &mut ListState {
         &mut self.state
     }

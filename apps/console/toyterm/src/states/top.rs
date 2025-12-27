@@ -1,10 +1,11 @@
 use crate::app::CurrentView;
 use crate::states::graph::GraphAction;
+use crate::states::service::ServiceAction;
 use crate::states::{Action, AppActions, RoleAction, State, list::StatefulList};
 use ratatui::widgets::ListState;
 use tokio::sync::mpsc::UnboundedSender;
 
-const MENU_ITEMS: [&str; 2] = ["Roles", "Graphs"];
+const MENU_ITEMS: [&str; 3] = ["Roles", "Services", "Graphs"];
 
 pub struct TopState {
     raw: StatefulList<String>,
@@ -40,6 +41,10 @@ impl State for TopState {
                             self.send(AppActions::Role(RoleAction::GetRoleListStart));
                         }
                         1 => {
+                            self.send(AppActions::ChangeView(CurrentView::Service));
+                            self.send(AppActions::Service(ServiceAction::GetServiceListStart));
+                        }
+                        2 => {
                             self.send(AppActions::ChangeView(CurrentView::Graph));
                             self.send(AppActions::Graph(GraphAction::GetGraphListStart));
                         }

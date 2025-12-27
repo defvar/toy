@@ -10,6 +10,7 @@ use toy::api_client::http::HttpApiClient;
 pub enum CurrentView {
     Top,
     Role,
+    Service,
     Graph,
 }
 
@@ -18,6 +19,7 @@ impl CurrentView {
         match self {
             CurrentView::Top => Box::new(views::TopView),
             CurrentView::Role => Box::new(views::RoleView::default()),
+            CurrentView::Service => Box::new(views::ServiceView::default()),
             CurrentView::Graph => Box::new(views::GraphView::default()),
         }
     }
@@ -66,21 +68,12 @@ impl App {
             AppActions::Quit => {
                 self.should_quit = true;
             }
-            AppActions::BackToTop => {
-                self.state.change_view(CurrentView::Top);
-            }
-            AppActions::ChangeView(v) => {
-                self.state.change_view(v);
-            }
-            AppActions::Top(a) => {
-                self.state.top_mut().transition(a);
-            }
-            AppActions::Role(a) => {
-                self.state.role_mut().transition(a);
-            }
-            AppActions::Graph(a) => {
-                self.state.graph_mut().transition(a);
-            }
+            AppActions::BackToTop => self.state.change_view(CurrentView::Top),
+            AppActions::ChangeView(v) => self.state.change_view(v),
+            AppActions::Top(a) => self.state.top_mut().transition(a),
+            AppActions::Role(a) => self.state.role_mut().transition(a),
+            AppActions::Service(a) => self.state.service_mut().transition(a),
+            AppActions::Graph(a) => self.state.graph_mut().transition(a),
         }
     }
 }

@@ -3,7 +3,7 @@ use crate::views::{Styles, TABLE_HIGHLIGHT_SYMBOL};
 use ratatui::layout;
 use ratatui::prelude::{Modifier, Style};
 use ratatui::style::Color;
-use ratatui::widgets::{Cell, Row, Table};
+use ratatui::widgets::{Borders, Cell, Row, Table};
 
 pub struct Definition {
     title: Option<String>,
@@ -11,12 +11,14 @@ pub struct Definition {
     row_height: u16,
     row_highlight_symbol: String,
     border_color: Option<Color>,
+    borders: Borders,
 }
 pub struct Column {
     field: String,
     width: u16,
 }
 
+#[allow(dead_code)]
 impl Definition {
     pub fn with(title: impl Into<String>, columns: Vec<Column>) -> Definition {
         Definition {
@@ -25,6 +27,7 @@ impl Definition {
             row_height: 1,
             row_highlight_symbol: TABLE_HIGHLIGHT_SYMBOL.to_string(),
             border_color: None,
+            borders: Borders::ALL,
         }
     }
 
@@ -35,6 +38,11 @@ impl Definition {
 
     pub fn row_highlight_symbol(mut self, v: impl Into<String>) -> Self {
         self.row_highlight_symbol = v.into();
+        self
+    }
+
+    pub fn borders(mut self, v: Borders) -> Self {
+        self.borders = v;
         self
     }
 
@@ -65,7 +73,7 @@ impl Definition {
             .widths(column_layouts)
             .highlight_symbol(self.row_highlight_symbol.as_str());
 
-        let mut border_block = styles.border_block();
+        let mut border_block = styles.border_block().borders(self.borders);
         if let Some(title) = &self.title {
             border_block = border_block.title(span(title));
         }
