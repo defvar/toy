@@ -29,6 +29,10 @@ impl MetricsEvents {
     pub fn records(&self) -> Vec<EventRecord> {
         self.raw.iter().cloned().collect()
     }
+
+    pub fn drain(&mut self) -> Vec<EventRecord> {
+        self.raw.drain(..).collect()
+    }
 }
 
 /// Structure of event information that has occurred.

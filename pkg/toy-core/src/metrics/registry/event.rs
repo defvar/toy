@@ -38,10 +38,10 @@ impl EventRegistry {
 
     pub async fn drain(&self) -> Vec<EventRecord> {
         let mut r = Vec::new();
-        for (_, v) in self.events.lock().await.drain() {
+        for (_, v) in self.events.lock().await.iter() {
             {
-                let lock = v.lock().await;
-                r.extend(lock.records());
+                let mut lock = v.lock().await;
+                r.extend(lock.drain());
             }
         }
         r
@@ -50,7 +50,7 @@ impl EventRegistry {
     pub async fn extend<I: IntoIterator<Item = EventRecord>>(&self, iter: I) {
         let mut map = HashMap::new();
         iter.into_iter().for_each(|x| {
-            map.entry(x.task_id()).or_insert_with(|| vec![]).push(x);
+            map.entry(x.task_id()).or_insert_with(Vec::new).push(x);
         });
         for (k, v) in map {
             {
