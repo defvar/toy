@@ -13,5 +13,5 @@ members = [
     "toy-api-store-etcd",
     "toy-api-store-influxdb",
     "toy-api-auth-jwt",
-    "toy-tracing"
-]
+    "toy-tracing",
+    "toy-api-store-pg"]
