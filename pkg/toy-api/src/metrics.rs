@@ -115,8 +115,8 @@ impl MetricsEntry {
 
     pub fn name(&self) -> &str {
         match self {
-            MetricsEntry::Counter(_) => self.name(),
-            MetricsEntry::Gauge(_) => self.name(),
+            MetricsEntry::Counter(v) => v.name(),
+            MetricsEntry::Gauge(v) => v.name(),
         }
     }
 }
