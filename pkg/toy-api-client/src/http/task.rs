@@ -3,10 +3,7 @@ use crate::error::ApiClientError;
 use async_trait::async_trait;
 use std::sync::Arc;
 use toy_api::common::{CommonPostResponse, FindOption, PostOption};
-use toy_api::graph::Graph;
-use toy_api::task::{
-    FinishResponse, PendingResult, TaskEvent, TaskEventList, TaskList, TaskListOption,
-};
+use toy_api::task::{FinishResponse, TaskEvent, TaskEventList, TaskList, TaskListOption};
 use toy_api_http_common::{auth::Auth, request};
 use toy_core::prelude::TaskId;
 use toy_h::{HttpClient, RequestBuilder, Uri};
@@ -38,12 +35,6 @@ impl<T> TaskClient for HttpTaskClient<T>
 where
     T: HttpClient,
 {
-    async fn post(&self, v: Graph, opt: PostOption) -> Result<PendingResult, ApiClientError> {
-        request::post(&self.inner, Some(&self.auth), &self.root, PATH, &v, opt)
-            .await
-            .map_err(|e| e.into())
-    }
-
     async fn finish(&self, key: TaskId, opt: PostOption) -> Result<FinishResponse, ApiClientError> {
         let path = format!("{}/{}/finish", PATH, key);
         request::post(&self.inner, Some(&self.auth), &self.root, &path, &(), opt)

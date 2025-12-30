@@ -1,6 +1,7 @@
 //! Api for graph.
 
 mod filters;
+mod handlers;
 mod validator;
 
-pub use filters::{delete, find, list, put};
+pub use filters::{delete, dispatch, find, list, put};

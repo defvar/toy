@@ -28,18 +28,6 @@ where
     .await
 }
 
-pub async fn post<S>(
-    ctx: Context,
-    State(state): State<WrappedState<S>>,
-    Query(api_opt): Query<PostOption>,
-    request: Bytes,
-) -> Result<impl IntoResponse, ApiError>
-where
-    S: ServerState,
-{
-    handlers::post(ctx, api_opt, request, state.raw().kv_store()).await
-}
-
 pub async fn finish<S>(
     ctx: Context,
     State(state): State<WrappedState<S>>,

@@ -1,65 +1,21 @@
 use crate::common::constants;
 use crate::context::Context;
-use crate::store::kv::{KvStore, Put, PutOption, PutResult, Update, UpdateResult};
+use crate::store::kv::{KvStore, Update, UpdateResult};
 use crate::store::task_event::{
     CreateOption, ListEventOption, ListTaskOption, TaskEventStore, TaskEventStoreOps,
 };
 use crate::ApiError;
 use chrono::{DateTime, Duration, Utc};
 use toy_api::common::{self as api_common, CommonPostResponse, ListOptionLike};
-use toy_api::graph::Graph;
 use toy_api::selection::selector::Predicate;
 use toy_api::selection::Operator;
-use toy_api::task::{
-    FinishResponse, PendingResult, PendingTask, TaskEvent, TaskEventListOption, TaskListOption,
-};
+use toy_api::task::{FinishResponse, PendingTask, TaskEvent, TaskEventListOption, TaskListOption};
 use toy_api_http_common::axum::http::StatusCode;
 use toy_api_http_common::axum::response::IntoResponse;
 use toy_api_http_common::bytes::Bytes;
 use toy_api_http_common::{codec, reply};
 use toy_core::task::TaskId;
 use toy_h::HttpClient;
-
-pub async fn post<T>(
-    ctx: Context,
-    opt: api_common::PostOption,
-    request: Bytes,
-    store: &impl KvStore<T>,
-) -> Result<impl IntoResponse, ApiError>
-where
-    T: HttpClient,
-{
-    tracing::debug!("handle: {:?}", ctx);
-
-    let format = opt.format();
-    let v = codec::decode::<_, Graph>(request, format)?;
-
-    /*
-     validate...
-    */
-
-    let id = TaskId::new();
-    let pending = PendingTask::new(id, v);
-    let key = constants::pending_key(id);
-    match store
-        .ops()
-        .put(
-            store.con().unwrap(),
-            key,
-            pending,
-            PutOption::new().with_create_only(),
-        )
-        .await
-    {
-        Ok(PutResult::Create) => Ok(reply::into_response(
-            &(PendingResult::from_id(id)),
-            format,
-            None,
-        )),
-        Ok(PutResult::Update(_)) => unreachable!(),
-        Err(e) => Err(ApiError::store_operation_failed(e)),
-    }
-}
 
 pub async fn finish<T>(
     ctx: Context,

@@ -112,13 +112,13 @@ pub struct ListResourceCommand {
 
 #[derive(Debug, Parser)]
 pub enum PostResources {
-    Tasks(PostResourceCommand),
+    Graphs(PostResourceCommand),
 }
 
 #[derive(Debug, Parser)]
 pub struct PostResourceCommand {
-    #[clap(short, long, value_hint = ValueHint::FilePath)]
-    pub file: PathBuf,
+    #[clap(short, long)]
+    pub name: String,
 }
 
 #[derive(Debug, Parser)]

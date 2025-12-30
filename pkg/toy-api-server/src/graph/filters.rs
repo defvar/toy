@@ -1,9 +1,10 @@
 use crate::context::{Context, ServerState, WrappedState};
+use crate::graph::handlers;
 use crate::graph::validator::GraphPutValidator;
 use crate::store::kv;
 use crate::store::kv::ListOption;
 use crate::{common, ApiError};
-use toy_api::common::{DeleteOption, FindOption, PutOption};
+use toy_api::common::{DeleteOption, FindOption, PostOption, PutOption};
 use toy_api::graph::{Graph, GraphList, GraphListOption};
 use toy_api_http_common::axum::extract::{Path, Query, State};
 use toy_api_http_common::axum::response::IntoResponse;
@@ -88,4 +89,16 @@ where
         kv::DeleteOption::new(),
     )
     .await
+}
+
+pub async fn dispatch<S>(
+    ctx: Context,
+    State(state): State<WrappedState<S>>,
+    Path(key): Path<String>,
+    Query(api_opt): Query<PostOption>,
+) -> Result<impl IntoResponse, ApiError>
+where
+    S: ServerState,
+{
+    handlers::dispatch(ctx, state.raw().kv_store(), key, api_opt).await
 }

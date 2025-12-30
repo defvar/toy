@@ -65,16 +65,16 @@ pub trait GraphClient: Send + Sync {
     ) -> Result<CommonPutResponse, ApiClientError>;
 
     async fn delete(&self, key: String, opt: common::DeleteOption) -> Result<(), ApiClientError>;
+
+    async fn dispatch(
+        &self,
+        key: String,
+        opt: common::PostOption,
+    ) -> Result<PendingResult, ApiClientError>;
 }
 
 #[async_trait]
 pub trait TaskClient: Send + Sync {
-    async fn post(
-        &self,
-        v: Graph,
-        opt: common::PostOption,
-    ) -> Result<PendingResult, ApiClientError>;
-
     async fn finish(
         &self,
         key: TaskId,

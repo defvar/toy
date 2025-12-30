@@ -75,6 +75,7 @@ where
                 "/graphs/{key}",
                 get(graph::find).put(graph::put).delete(graph::delete),
             )
+            .route("/graphs/{key}/dispatch", post(graph::dispatch))
             .route("/graphs", get(graph::list))
             .route(
                 "/rbac/roles/{key}",
@@ -90,7 +91,7 @@ where
                     .delete(rbac::role_binding::delete),
             )
             .route("/rbac/roleBindings", get(rbac::role_binding::list))
-            .route("/tasks", get(task::list_task).post(task::post))
+            .route("/tasks", get(task::list_task))
             .route("/tasks/{key}", get(task::find))
             .route("/tasks/{key}/finish", post(task::finish))
             .route(

@@ -2,8 +2,11 @@ use crate::client::GraphClient;
 use crate::error::ApiClientError;
 use async_trait::async_trait;
 use std::sync::Arc;
-use toy_api::common::{CommonPutResponse, DeleteOption, FindOption, ListOption, PutOption};
+use toy_api::common::{
+    CommonPutResponse, DeleteOption, FindOption, ListOption, PostOption, PutOption,
+};
 use toy_api::graph::{Graph, GraphList};
+use toy_api::task::PendingResult;
 use toy_api_http_common::{auth::Auth, request};
 use toy_h::HttpClient;
 
@@ -67,6 +70,16 @@ where
 
     async fn delete(&self, key: String, opt: DeleteOption) -> Result<(), ApiClientError> {
         request::delete(&self.inner, Some(&self.auth), &self.root, PATH, &key, opt)
+            .await
+            .map_err(|e| e.into())
+    }
+
+    async fn dispatch(
+        &self,
+        key: String,
+        opt: PostOption,
+    ) -> Result<PendingResult, ApiClientError> {
+        request::post(&self.inner, Some(&self.auth), &self.root, PATH, &key, opt)
             .await
             .map_err(|e| e.into())
     }

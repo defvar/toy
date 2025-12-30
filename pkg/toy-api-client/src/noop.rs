@@ -94,18 +94,18 @@ impl GraphClient for NoopApiClient {
     async fn delete(&self, _key: String, _opt: DeleteOption) -> Result<(), ApiClientError> {
         unimplemented!()
     }
-}
 
-#[async_trait]
-impl TaskClient for NoopApiClient {
-    async fn post(
+    async fn dispatch(
         &self,
-        _v: toy_api::graph::Graph,
+        _key: String,
         _opt: PostOption,
     ) -> Result<PendingResult, ApiClientError> {
         unimplemented!()
     }
+}
 
+#[async_trait]
+impl TaskClient for NoopApiClient {
     async fn finish(
         &self,
         _key: TaskId,
