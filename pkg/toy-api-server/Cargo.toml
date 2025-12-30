@@ -5,13 +5,13 @@ authors = ["defvar <def.daisuke@gmail.com>"]
 edition = "2021"
 
 [dependencies]
-thiserror = "2"
-tracing = "0.1"
+thiserror = { workspace = true }
+tracing = { workspace = true }
 chrono = { version = "0.4.42", features = ["serde"] }
-async-trait = "0.1.89"
+async-trait = { workspace = true }
 once_cell = "1.21.3"
 futures-util = { version = "0.3.31", default-features = false }
-serde = { version = "1.0", features = ["derive"] }
+serde = { workspace = true, features = ["derive"] }
 
 toy-api = { path = "../toy-api" }
 toy-core = { path = "../toy-core" }
@@ -21,5 +21,5 @@ toy-api-http-common = { path = "../toy-api-http-common", default-features = fals
 toy-pack-json = { path = "../../shared/toy-pack-json" }
 
 [dev-dependencies]
-tokio = { version = "1.19.2", features = ["full", "test-util"] }
+tokio = { workspace = true, features = ["full", "test-util"] }
 tokio-test = "0.4.2"

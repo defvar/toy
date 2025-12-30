@@ -7,9 +7,8 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-thiserror = "2"
-tracing = "0.1"
-async-trait = "0.1.89"
+thiserror = { workspace = true }
+async-trait = { workspace = true }
 
 toy-core = { path = "../toy-core" }
 toy-api = { path = "../toy-api" }

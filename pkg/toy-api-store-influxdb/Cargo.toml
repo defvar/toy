@@ -6,8 +6,8 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-tracing = { version = "0.1" }
-thiserror = "2"
+tracing = { workspace = true }
+thiserror = { workspace = true }
 
 toy-influxdb = { path = "../../shared/toy-influxdb" }
 toy-core = { path = "../toy-core" }

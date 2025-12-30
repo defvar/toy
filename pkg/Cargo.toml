@@ -16,3 +16,10 @@ members = [
     "toy-tracing",
     "toy-api-store-pg"
 ]
+
+[workspace.dependencies]
+tracing = "0.1"
+thiserror = "2.0"
+async-trait = "0.1.89"
+serde = { version = "1.0" }
+tokio = { version = "1.48.0" }

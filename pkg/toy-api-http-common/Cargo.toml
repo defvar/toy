@@ -10,12 +10,12 @@ default = ["toy-h/impl_reqwest"]
 server = ["axum", "axum-server", "axum-extra/typed-header", "tower-http"]
 
 [dependencies]
-tracing = "0.1"
-thiserror = "2"
-serde = { version = "1.0", features = ["derive"] }
+tracing = { workspace = true }
+thiserror = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
 futures-util = { version = "0.3", default-features = false }
 axum = { version = "0.8.7", optional = true, features = ["http2"] }
-axum-server = { version = "0.7.3", features = ["tls-rustls-no-provider"], optional = true }
+axum-server = { version = "0.8", features = ["tls-rustls-no-provider"], optional = true }
 axum-extra = { version = "0.12.2", features = ["typed-header"], optional = true }
 tower-http = { version = "0.6.6", features = ["cors", "trace"], optional = true }
 bytes = "1.11"
