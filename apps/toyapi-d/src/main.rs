@@ -9,7 +9,7 @@ use toy::api_server::context::ServerState;
 use toy::api_server::ServerConfig;
 use toy_api_auth_jwt::JWTAuth;
 use toy_api_store_etcd::EtcdStore;
-use toy_api_store_influxdb::InfluxdbStore;
+use toy_api_store_pg::PgStore;
 use toy_h::impl_reqwest::ReqwestClient;
 use toy_tracing::{LogGuard, CONSOLE_DEFAULT_IP, CONSOLE_DEFAULT_PORT};
 
@@ -23,7 +23,7 @@ struct ToyConfig {
     pub_path: String,
     tls_secret_key: String,
     dispatch_interval_mills: u64,
-    clean_supervisor_interval_mills: u64,
+    clean_actor_interval_mills: u64,
 }
 
 #[derive(Clone)]
@@ -31,8 +31,8 @@ struct ToyState {
     client: ReqwestClient,
     auth: CommonAuths<JWTAuth, JWTAuth>,
     kv_store: EtcdStore<ReqwestClient>,
-    task_log_store: InfluxdbStore<ReqwestClient>,
-    metrics_store: InfluxdbStore<ReqwestClient>,
+    task_log_store: PgStore,
+    metrics_store: PgStore,
 }
 
 impl ServerConfig for ToyConfig {
@@ -56,8 +56,8 @@ impl ServerConfig for ToyConfig {
         self.dispatch_interval_mills
     }
 
-    fn clean_supervisor_interval_mills(&self) -> u64 {
-        self.clean_supervisor_interval_mills
+    fn clean_actor_interval_mills(&self) -> u64 {
+        self.clean_actor_interval_mills
     }
 }
 
@@ -65,8 +65,8 @@ impl ServerState for ToyState {
     type Client = ReqwestClient;
     type Auth = CommonAuths<JWTAuth, JWTAuth>;
     type KvStore = EtcdStore<ReqwestClient>;
-    type TaskEventStore = InfluxdbStore<ReqwestClient>;
-    type MetricsStore = InfluxdbStore<ReqwestClient>;
+    type TaskEventStore = PgStore;
+    type MetricsStore = PgStore;
 
     fn client(&self) -> &Self::Client {
         &self.client
@@ -133,14 +133,14 @@ fn go() -> Result<(), Error> {
         pub_path: opts.pub_path.to_string(),
         tls_secret_key: opts.tls_secret_key.to_string(),
         dispatch_interval_mills: opts.dispatch_interval_mills,
-        clean_supervisor_interval_mills: opts.clean_supervisor_interval_mills,
+        clean_actor_interval_mills: opts.clean_actor_interval_mills,
     };
     let state = ToyState {
         client: client.clone(),
         auth: CommonAuths::new(JWTAuth::new(), JWTAuth::new()),
         kv_store: EtcdStore::new(),
-        task_log_store: InfluxdbStore::new(),
-        metrics_store: InfluxdbStore::new(),
+        task_log_store: PgStore::new(),
+        metrics_store: PgStore::new(),
     };
 
     let server = toy::api_server::Server::new(config);

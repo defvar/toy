@@ -1,4 +1,4 @@
-use crate::api::{graph, metrics, rbac, services, supervisors, task};
+use crate::api::{actors, graph, metrics, rbac, services, task};
 use crate::config::ServerConfig;
 use crate::context::{ServerState, WrappedState};
 use crate::store::kv::KvStore;
@@ -57,13 +57,11 @@ where
 
         let app = Router::new()
             .route(
-                "/supervisors/{key}",
-                get(supervisors::find)
-                    .put(supervisors::put)
-                    .delete(supervisors::delete),
+                "/actors/{key}",
+                get(actors::find).put(actors::put).delete(actors::delete),
             )
-            .route("/supervisors", get(supervisors::list))
-            .route("/supervisors/{key}/beat", post(supervisors::beat))
+            .route("/actors", get(actors::list))
+            .route("/actors/{key}/beat", post(actors::beat))
             .route(
                 "/services/{key}",
                 get(services::find)

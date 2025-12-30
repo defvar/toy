@@ -1,15 +1,15 @@
 use std::io::Read;
+use toy::actor::exporters::NoopExporter;
+use toy::actor::ActorConfig;
 use toy::core::prelude::*;
 use toy::executor::ExecutorFactory;
-use toy::supervisor::exporters::NoopExporter;
-use toy::supervisor::SupervisorConfig;
 
 static CONFIG: &'static str = "./examples/file.yml";
 
 #[derive(Clone)]
 struct SVConfig;
 
-impl SupervisorConfig for SVConfig {
+impl ActorConfig for SVConfig {
     type EventExporter = NoopExporter;
     type MetricsExporter = NoopExporter;
 
@@ -57,14 +57,14 @@ fn main() {
 
     if let Ok(config) = toy_pack_yaml::unpack::<Value>(s.as_str()) {
         let g = Graph::from(config).unwrap();
-        // runtime for supervisor
+        // runtime for actor
         let mut rt = toy_rt::RuntimeBuilder::new()
             .worker_threads(4)
             .thread_name("toy-worker")
             .build()
             .unwrap();
 
-        let (sv, _, _) = toy::supervisor::local(ExecutorFactory, app, SVConfig);
+        let (sv, _, _) = toy::actor::local(ExecutorFactory, app, SVConfig);
 
         rt.block_on(async {
             let _ = sv.oneshot(g).await;

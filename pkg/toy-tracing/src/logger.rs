@@ -84,7 +84,7 @@ pub fn file_with(
         .rotation
         .to_rolling(fw_log_dir, fw_log_prefix)
         .with_filter(|meta| {
-            !meta.target().starts_with("toy") && !meta.target().starts_with("supervisor")
+            !meta.target().starts_with("toy") && !meta.target().starts_with("actor")
         });
 
     let appender = toy_appender.and(fw_appender);

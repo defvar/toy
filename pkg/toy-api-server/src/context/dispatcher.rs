@@ -1,8 +1,8 @@
 use crate::common;
 use crate::store::kv::{KvStore, List, ListOption, Put, PutOption, PutResult};
 use crate::ApiError;
+use toy_api::actors::Actor;
 use toy_api::common::{Format, PostOption};
-use toy_api::supervisors::Supervisor;
 use toy_api::task::{AllocateResponse, PendingTask};
 use toy_h::HttpClient;
 
@@ -103,16 +103,16 @@ where
     }
 }
 
-async fn candidate<Store, T>(store: &Store) -> Result<Option<Supervisor>, ApiError>
+async fn candidate<Store, T>(store: &Store) -> Result<Option<Actor>, ApiError>
 where
     Store: KvStore<T>,
     T: HttpClient,
 {
     match store
         .ops()
-        .list::<Supervisor>(
+        .list::<Actor>(
             store.con().unwrap(),
-            common::constants::SUPERVISORS_KEY_PREFIX.to_string(),
+            common::constants::ACTORS_KEY_PREFIX.to_string(),
             ListOption::new(),
         )
         .await
@@ -122,7 +122,7 @@ where
             if let Some(s) = s {
                 Ok(Some(s.into_value()))
             } else {
-                tracing::info!("candidate supervisor not found.");
+                tracing::info!("candidate actor not found.");
                 Ok(None)
             }
         }

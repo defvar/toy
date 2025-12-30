@@ -1,4 +1,8 @@
-#![feature(type_alias_impl_trait, error_generic_member_access, impl_trait_in_assoc_type)]
+#![feature(
+    type_alias_impl_trait,
+    error_generic_member_access,
+    impl_trait_in_assoc_type
+)]
 
 //! # toy-api-server
 //!
@@ -13,12 +17,12 @@ mod common;
 pub mod context;
 mod server;
 
+pub mod actors;
 pub mod config;
 pub mod graph;
 pub mod metrics;
 pub mod services;
 pub mod store;
-pub mod supervisors;
 pub mod task;
 
 pub mod authentication;
@@ -33,11 +37,11 @@ pub use server::Server;
 pub mod api {
     //! The `toy-api-server` apis.
 
+    pub use super::actors;
     pub use super::graph;
     pub use super::metrics;
     pub use super::rbac;
     pub use super::services;
-    pub use super::supervisors;
     pub use super::task;
 }
 

@@ -29,7 +29,7 @@ pub trait ServiceExecutor {
 /// Trait for Task Executor.
 ///
 /// Generate and execute tasks from Graph information.
-/// This trait called from `Supervisor`.
+/// This trait called from `Actor`.
 #[async_trait]
 pub trait TaskExecutor {
     type Error: Error + Send;

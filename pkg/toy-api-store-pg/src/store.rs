@@ -220,11 +220,11 @@ impl TaskEventStoreOps for PgStoreOps {
     ) -> Result<(), Self::Err> {
         for chunk in events.chunks(con.batch_size) {
             let mut builder: QueryBuilder<Postgres> =
-                QueryBuilder::new("insert into task_events(created_at, supervisor, event)");
+                QueryBuilder::new("insert into task_events(created_at, actor, event)");
 
             builder.push_values(chunk, |mut b, event| {
                 b.push_bind(event.timestamp())
-                    .push_bind(event.supervisor())
+                    .push_bind(event.actor())
                     .push_bind(Json(event));
             });
 
@@ -254,13 +254,13 @@ impl MetricsStoreOps for PgStoreOps {
         metrics: Metrics,
         _opt: toy_api_server::store::metrics::CreateOption,
     ) -> Result<(), Self::Err> {
-        let sv = metrics.supervisor();
+        let sv = metrics.actor();
         let measurement = metrics.measurement();
         let time = metrics.timestamp();
 
         for chunk in metrics.items().chunks(con.batch_size) {
             let mut builder: QueryBuilder<Postgres> = QueryBuilder::new(
-                "insert into metrics(created_at, supervisor, measurement, field, counter, gauge)",
+                "insert into metrics(created_at, actor, measurement, field, counter, gauge)",
             );
 
             builder.push_values(chunk, |mut b, metric| {

@@ -6,10 +6,10 @@ use crate::ApiError;
 use toy_api_http_common::axum::{extract::FromRequestParts, http::request::Parts};
 use toy_h::HttpClient;
 
+pub mod actor_cleaner;
 pub mod dispatcher;
 pub mod rbac;
 pub mod server;
-pub mod supervisor_cleaner;
 
 pub trait ServerState: Clone + Send + Sync {
     type Client: HttpClient;

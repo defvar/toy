@@ -12,5 +12,5 @@ pub trait ServerConfig {
 
     fn dispatch_interval_mills(&self) -> u64;
 
-    fn clean_supervisor_interval_mills(&self) -> u64;
+    fn clean_actor_interval_mills(&self) -> u64;
 }

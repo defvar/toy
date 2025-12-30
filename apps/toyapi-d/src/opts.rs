@@ -53,10 +53,6 @@ pub struct Opts {
     pub thread_name_prefix: String,
     #[clap(long, env = "TOY_API_DISPATCH_INTERVAL", default_value = "3000")]
     pub dispatch_interval_mills: u64,
-    #[clap(
-        long,
-        env = "TOY_API_CLEAN_SUPERVISOR_INTERVAL",
-        default_value = "10000"
-    )]
-    pub clean_supervisor_interval_mills: u64,
+    #[clap(long, env = "TOY_API_CLEAN_ACTOR_INTERVAL", default_value = "10000")]
+    pub clean_actor_interval_mills: u64,
 }

@@ -43,15 +43,15 @@ where
     );
 
     let s = store.clone();
-    let interval = config.clean_supervisor_interval_mills();
+    let interval = config.clean_actor_interval_mills();
     toy_rt::spawn_named(
         async move {
-            tracing::info!("start watch pending supervisor.");
-            if let Err(e) = crate::context::supervisor_cleaner::clean(s, interval).await {
-                tracing::error!(err = ?e, "an error occured; when watch pending supervisor.");
+            tracing::info!("start watch pending actor.");
+            if let Err(e) = crate::context::actor_cleaner::clean(s, interval).await {
+                tracing::error!(err = ?e, "an error occured; when watch pending actor.");
             }
         },
-        "api-serv-supervisor_cleaner",
+        "api-serv-actor_cleaner",
     );
 
     Ok(())

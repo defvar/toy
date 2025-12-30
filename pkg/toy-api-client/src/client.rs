@@ -2,6 +2,7 @@
 
 use crate::error::ApiClientError;
 use async_trait::async_trait;
+use toy_api::actors::{Actor, ActorBeatResponse, ActorList, ActorListOption};
 use toy_api::common;
 use toy_api::common::{CommonPostResponse, CommonPutResponse};
 use toy_api::graph::{Graph, GraphList};
@@ -9,9 +10,6 @@ use toy_api::metrics::Metrics;
 use toy_api::role::{Role, RoleList};
 use toy_api::role_binding::{RoleBinding, RoleBindingList};
 use toy_api::services::{ServiceSpec, ServiceSpecList, ServiceSpecListOption};
-use toy_api::supervisors::{
-    Supervisor, SupervisorBeatResponse, SupervisorList, SupervisorListOption,
-};
 use toy_api::task::{self, FinishResponse, PendingResult, TaskEvent, TaskEventList, TaskList};
 use toy_core::task::TaskId;
 
@@ -19,7 +17,7 @@ use toy_core::task::TaskId;
 pub trait ApiClient: Send + Sync {
     type Graph: GraphClient + 'static;
     type Task: TaskClient + 'static;
-    type Supervisor: SupervisorClient + 'static;
+    type Actor: ActorClient + 'static;
     type Service: ServiceClient + 'static;
     type Rbac: Rbaclient + 'static;
     type Metrics: MetricsClient + 'static;
@@ -28,7 +26,7 @@ pub trait ApiClient: Send + Sync {
 
     fn task(&self) -> &Self::Task;
 
-    fn supervisor(&self) -> &Self::Supervisor;
+    fn actor(&self) -> &Self::Actor;
 
     fn service(&self) -> &Self::Service;
 
@@ -97,25 +95,25 @@ pub trait TaskClient: Send + Sync {
 }
 
 #[async_trait]
-pub trait SupervisorClient: Send + Sync {
-    async fn list(&self, opt: SupervisorListOption) -> Result<SupervisorList, ApiClientError>;
+pub trait ActorClient: Send + Sync {
+    async fn list(&self, opt: ActorListOption) -> Result<ActorList, ApiClientError>;
 
     async fn find(
         &self,
         key: String,
         opt: common::FindOption,
-    ) -> Result<Option<Supervisor>, ApiClientError>;
+    ) -> Result<Option<Actor>, ApiClientError>;
 
     async fn put(
         &self,
         key: String,
-        v: Supervisor,
+        v: Actor,
         opt: common::PutOption,
     ) -> Result<CommonPutResponse, ApiClientError>;
 
     async fn delete(&self, key: String, opt: common::DeleteOption) -> Result<(), ApiClientError>;
 
-    async fn beat(&self, key: &str) -> Result<SupervisorBeatResponse, ApiClientError>;
+    async fn beat(&self, key: &str) -> Result<ActorBeatResponse, ApiClientError>;
 }
 
 #[async_trait]

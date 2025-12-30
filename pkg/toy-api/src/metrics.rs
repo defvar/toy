@@ -7,7 +7,7 @@ use std::fmt::{Debug, Display, Formatter};
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Metrics {
     measurement: String,
-    supervisor: String,
+    actor: String,
     timestamp: DateTime<Utc>,
     tags: Vec<MetricsTag>,
     items: Vec<MetricsEntry>,
@@ -40,14 +40,14 @@ pub struct Gauge {
 impl Metrics {
     pub fn with(
         measurement: impl Into<String>,
-        supervisor: impl Into<String>,
+        actor: impl Into<String>,
         timestamp: DateTime<Utc>,
         tags: Vec<MetricsTag>,
         items: Vec<MetricsEntry>,
     ) -> Self {
         Self {
             measurement: measurement.into(),
-            supervisor: supervisor.into(),
+            actor: actor.into(),
             timestamp,
             tags,
             items,
@@ -58,8 +58,8 @@ impl Metrics {
         &self.measurement
     }
 
-    pub fn supervisor(&self) -> &str {
-        &self.supervisor
+    pub fn actor(&self) -> &str {
+        &self.actor
     }
 
     pub fn timestamp(&self) -> &DateTime<Utc> {

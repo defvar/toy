@@ -83,7 +83,7 @@ pub struct Opts {
 
 #[derive(Debug, Parser)]
 pub enum FindResources {
-    Supervisors(FindResourceCommand),
+    Actors(FindResourceCommand),
     Services(FindResourceCommand),
     Graphs(FindResourceCommand),
 }
@@ -96,7 +96,7 @@ pub struct FindResourceCommand {
 
 #[derive(Debug, Parser)]
 pub enum ListResources {
-    Supervisors(ListResourceCommand),
+    Actors(ListResourceCommand),
     Services(ListResourceCommand),
     Graphs(ListResourceCommand),
     Roles(ListResourceCommand),

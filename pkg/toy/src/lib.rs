@@ -1,9 +1,9 @@
-#[cfg(feature = "supervisor")]
-pub mod supervisor {
-    pub use toy_supervisor::*;
+#[cfg(feature = "actor")]
+pub mod actor {
+    pub use toy_actor::*;
 }
 
-#[cfg(feature = "supervisor")]
+#[cfg(feature = "actor")]
 pub mod executor {
     pub use toy_executor::{Executor, ExecutorFactory};
 }

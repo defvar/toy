@@ -7,7 +7,6 @@ edition = "2021"
 
 [dependencies]
 # common
-log = "0.4"
 tracing = "0.1"
 dotenv = "0.15.0"
 clap = { version = "4.0.32", features = ["derive", "env"] }
@@ -21,6 +20,7 @@ toy-tracing = { path = "../../pkg/toy-tracing" }
 # store
 toy-api-store-etcd = { path = "../../pkg/toy-api-store-etcd" }
 toy-api-store-influxdb = { path = "../../pkg/toy-api-store-influxdb" }
+toy-api-store-pg = { path = "../../pkg/toy-api-store-pg" }
 
 # auth
 toy-api-auth-jwt = { path = "../../pkg/toy-api-auth-jwt" }

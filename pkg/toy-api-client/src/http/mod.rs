@@ -1,16 +1,16 @@
 //! # toy-api-client Implementation for http
 
+mod actor;
 mod graph;
 mod metrics;
 mod role;
 mod role_binding;
 mod service;
-mod supervisor;
 mod task;
 
+pub use actor::HttpActorClient;
 pub use graph::HttpGraphClient;
 pub use service::HttpServiceClient;
-pub use supervisor::HttpSupervisorClient;
 pub use task::HttpTaskClient;
 
 use crate::client::{ApiClient, Rbaclient};
@@ -27,7 +27,7 @@ use toy_h::impl_reqwest::ReqwestClient;
 pub struct HttpApiClient {
     graph: HttpGraphClient<ReqwestClient>,
     task: HttpTaskClient<ReqwestClient>,
-    sv: HttpSupervisorClient<ReqwestClient>,
+    actor: HttpActorClient<ReqwestClient>,
     service: HttpServiceClient<ReqwestClient>,
     rbac: HttpRbacClient,
     metrics: HttpMetricsClient<ReqwestClient>,
@@ -55,7 +55,7 @@ impl HttpApiClient {
         Ok(Self {
             graph: HttpGraphClient::new(root.as_ref(), Arc::clone(&auth), inner.clone()),
             task: HttpTaskClient::new(root.as_ref(), Arc::clone(&auth), inner.clone()),
-            sv: HttpSupervisorClient::new(root.as_ref(), Arc::clone(&auth), inner.clone()),
+            actor: HttpActorClient::new(root.as_ref(), Arc::clone(&auth), inner.clone()),
             service: HttpServiceClient::new(root.as_ref(), Arc::clone(&auth), inner.clone()),
             rbac,
             metrics: HttpMetricsClient::new(root.as_ref(), Arc::clone(&auth), inner.clone()),
@@ -83,7 +83,7 @@ impl HttpRbacClient {
 impl ApiClient for HttpApiClient {
     type Graph = HttpGraphClient<ReqwestClient>;
     type Task = HttpTaskClient<ReqwestClient>;
-    type Supervisor = HttpSupervisorClient<ReqwestClient>;
+    type Actor = HttpActorClient<ReqwestClient>;
     type Service = HttpServiceClient<ReqwestClient>;
     type Rbac = HttpRbacClient;
     type Metrics = HttpMetricsClient<ReqwestClient>;
@@ -96,8 +96,8 @@ impl ApiClient for HttpApiClient {
         &self.task
     }
 
-    fn supervisor(&self) -> &Self::Supervisor {
-        &self.sv
+    fn actor(&self) -> &Self::Actor {
+        &self.actor
     }
 
     fn service(&self) -> &Self::Service {

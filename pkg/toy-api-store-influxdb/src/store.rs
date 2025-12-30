@@ -157,7 +157,7 @@ where
             .filter(name_filter)
             .ungroup()
             .pivot(
-                &["_time", "name", "supervisor", "service_type", "uri"],
+                &["_time", "name", "actor", "service_type", "uri"],
                 &["_field"],
                 "_value",
             )
@@ -192,7 +192,7 @@ where
             .filter(name_filter)
             .ungroup()
             .pivot(
-                &["_time", "name", "supervisor", "service_type", "uri"],
+                &["_time", "name", "actor", "service_type", "uri"],
                 &["_field"],
                 "_value",
             )
@@ -227,7 +227,7 @@ where
             builder
                 .start_record("event", e.timestamp().clone())
                 .tag("name", e.name())
-                .tag("supervisor", e.supervisor())
+                .tag("actor", e.actor())
                 .tag("service_type", e.service_type().full_name())
                 .tag("uri", e.uri().as_ref())
                 .field("event_id", FieldValue::String(e.event_id().to_string()))
@@ -291,7 +291,7 @@ where
         let mut builder = LineProtocolBuilder::new();
         builder
             .start_record(metrics.measurement(), metrics.timestamp().clone())
-            .tag("supervisor", metrics.supervisor());
+            .tag("actor", metrics.actor());
 
         for tag in metrics.tags() {
             builder.tag(tag.key(), tag.value());

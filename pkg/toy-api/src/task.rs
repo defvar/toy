@@ -1,9 +1,9 @@
 //! Model for task api.
 
+use crate::actors::ActorName;
 use crate::common::{Format, ListObject, ListOption, ListOptionLike, SelectionCandidate};
 use crate::graph::Graph;
 use crate::selection::candidate::Candidates;
-use crate::supervisors::SupervisorName;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use toy_core::metrics::EventId;
@@ -22,7 +22,7 @@ pub enum PendingStatus {
 pub struct PendingTask {
     task_id: TaskId,
     status: PendingStatus,
-    allocated_supervisor: Option<SupervisorName>,
+    allocated_actor: Option<ActorName>,
     allocated_on: Option<DateTime<Utc>>,
     graph: Graph,
     created_on: DateTime<Utc>,
@@ -41,7 +41,7 @@ pub struct PendingResult {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AllocateRequest {
-    supervisor: SupervisorName,
+    actor: ActorName,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -76,7 +76,7 @@ pub struct TaskEvent {
     service_type: ServiceType,
     uri: Uri,
     event: String,
-    supervisor: String,
+    actor: String,
     timestamp: DateTime<Utc>,
 }
 
@@ -90,7 +90,7 @@ pub struct TaskList {
 pub struct Task {
     task_id: TaskId,
     name: String,
-    supervisor: String,
+    actor: String,
     event: String,
     timestamp: DateTime<Utc>,
 }
@@ -106,7 +106,7 @@ impl PendingTask {
         Self {
             task_id,
             status: PendingStatus::Created,
-            allocated_supervisor: None,
+            allocated_actor: None,
             allocated_on: None,
             graph,
             created_on: Utc::now(),
@@ -125,23 +125,19 @@ impl PendingTask {
         &self.graph
     }
 
-    pub fn allocate<S: Into<SupervisorName>>(self, name: S, allocated_at: DateTime<Utc>) -> Self {
+    pub fn allocate<S: Into<ActorName>>(self, name: S, allocated_at: DateTime<Utc>) -> Self {
         Self {
             status: PendingStatus::Allocated,
-            allocated_supervisor: Some(name.into()),
+            allocated_actor: Some(name.into()),
             allocated_on: Some(allocated_at),
             ..self
         }
     }
 
-    pub fn allocate_failed<S: Into<SupervisorName>>(
-        self,
-        name: S,
-        allocated_at: DateTime<Utc>,
-    ) -> Self {
+    pub fn allocate_failed<S: Into<ActorName>>(self, name: S, allocated_at: DateTime<Utc>) -> Self {
         Self {
             status: PendingStatus::AllocateFailed,
-            allocated_supervisor: Some(name.into()),
+            allocated_actor: Some(name.into()),
             allocated_on: Some(allocated_at),
             ..self
         }
@@ -183,14 +179,14 @@ impl PendingResult {
 }
 
 impl AllocateRequest {
-    pub fn new(supervisor: impl Into<String>) -> Self {
+    pub fn new(actor: impl Into<String>) -> Self {
         Self {
-            supervisor: supervisor.into(),
+            actor: actor.into(),
         }
     }
 
-    pub fn supervisor(&self) -> &str {
-        &self.supervisor
+    pub fn actor(&self) -> &str {
+        &self.actor
     }
 }
 
@@ -259,7 +255,7 @@ impl TaskEvent {
         service_type: ServiceType,
         uri: Uri,
         event: S,
-        supervisor: S,
+        actor: S,
         timestamp: DateTime<Utc>,
     ) -> Self {
         Self {
@@ -269,7 +265,7 @@ impl TaskEvent {
             service_type,
             uri,
             event: event.into(),
-            supervisor: supervisor.into(),
+            actor: actor.into(),
             timestamp,
         }
     }
@@ -298,8 +294,8 @@ impl TaskEvent {
         &self.event
     }
 
-    pub fn supervisor(&self) -> &str {
-        &self.supervisor
+    pub fn actor(&self) -> &str {
+        &self.actor
     }
 
     pub fn timestamp(&self) -> &DateTime<Utc> {
@@ -309,7 +305,7 @@ impl TaskEvent {
 
 impl SelectionCandidate for TaskEvent {
     fn candidate_fields() -> &'static [&'static str] {
-        &["name", "service_type", "uri", "supervisor", "timestamp"]
+        &["name", "service_type", "uri", "actor", "timestamp"]
     }
 
     fn candidates(&self) -> Candidates {
@@ -340,7 +336,7 @@ impl Task {
     pub fn new<T: AsRef<str>, S: Into<String>>(
         task_id: T,
         name: S,
-        supervisor: S,
+        actor: S,
         event: S,
         timestamp: DateTime<Utc>,
     ) -> Result<Self, ()> {
@@ -351,7 +347,7 @@ impl Task {
         Ok(Self {
             task_id: id,
             name: name.into(),
-            supervisor: supervisor.into(),
+            actor: actor.into(),
             event: event.into(),
             timestamp,
         })
@@ -365,8 +361,8 @@ impl Task {
         &self.name
     }
 
-    pub fn supervisor(&self) -> &str {
-        &self.supervisor
+    pub fn actor(&self) -> &str {
+        &self.actor
     }
 
     pub fn event(&self) -> &str {

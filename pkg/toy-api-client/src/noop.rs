@@ -1,9 +1,10 @@
 use crate::client::{
-    ApiClient, GraphClient, MetricsClient, Rbaclient, RoleBindingClient, RoleClient, ServiceClient,
-    SupervisorClient, TaskClient,
+    ActorClient, ApiClient, GraphClient, MetricsClient, Rbaclient, RoleBindingClient, RoleClient,
+    ServiceClient, TaskClient,
 };
 use crate::error::ApiClientError;
 use async_trait::async_trait;
+use toy_api::actors::{ActorBeatResponse, ActorListOption};
 use toy_api::common::{
     CommonPostResponse, CommonPutResponse, DeleteOption, FindOption, ListOption, PostOption,
     PutOption,
@@ -12,7 +13,6 @@ use toy_api::metrics::Metrics;
 use toy_api::role::{Role, RoleList};
 use toy_api::role_binding::{RoleBinding, RoleBindingList};
 use toy_api::services::{ServiceSpec, ServiceSpecList, ServiceSpecListOption};
-use toy_api::supervisors::{SupervisorBeatResponse, SupervisorListOption};
 use toy_api::task::{FinishResponse, PendingResult, TaskEvent, TaskListOption};
 use toy_core::prelude::TaskId;
 
@@ -25,7 +25,7 @@ pub struct NoopRbacClient;
 impl ApiClient for NoopApiClient {
     type Graph = NoopApiClient;
     type Task = NoopApiClient;
-    type Supervisor = NoopApiClient;
+    type Actor = NoopApiClient;
     type Service = NoopApiClient;
     type Rbac = NoopRbacClient;
     type Metrics = NoopApiClient;
@@ -38,7 +38,7 @@ impl ApiClient for NoopApiClient {
         unimplemented!()
     }
 
-    fn supervisor(&self) -> &Self::Supervisor {
+    fn actor(&self) -> &Self::Actor {
         unimplemented!()
     }
 
@@ -136,11 +136,11 @@ impl TaskClient for NoopApiClient {
 }
 
 #[async_trait]
-impl SupervisorClient for NoopApiClient {
+impl ActorClient for NoopApiClient {
     async fn list(
         &self,
-        _opt: SupervisorListOption,
-    ) -> Result<toy_api::supervisors::SupervisorList, ApiClientError> {
+        _opt: ActorListOption,
+    ) -> Result<toy_api::actors::ActorList, ApiClientError> {
         unimplemented!()
     }
 
@@ -148,14 +148,14 @@ impl SupervisorClient for NoopApiClient {
         &self,
         _key: String,
         _opt: FindOption,
-    ) -> Result<Option<toy_api::supervisors::Supervisor>, ApiClientError> {
+    ) -> Result<Option<toy_api::actors::Actor>, ApiClientError> {
         unimplemented!()
     }
 
     async fn put(
         &self,
         _key: String,
-        _v: toy_api::supervisors::Supervisor,
+        _v: toy_api::actors::Actor,
         _opt: PutOption,
     ) -> Result<CommonPutResponse, ApiClientError> {
         unimplemented!()
@@ -165,7 +165,7 @@ impl SupervisorClient for NoopApiClient {
         unimplemented!()
     }
 
-    async fn beat(&self, _key: &str) -> Result<SupervisorBeatResponse, ApiClientError> {
+    async fn beat(&self, _key: &str) -> Result<ActorBeatResponse, ApiClientError> {
         unimplemented!()
     }
 }

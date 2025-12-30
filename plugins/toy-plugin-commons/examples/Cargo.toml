@@ -13,7 +13,7 @@ toy-tracing = { path = "../../../pkg/toy-tracing" }
 toy-rt = { path = "../../../pkg/toy-rt" }
 
 # core module
-toy = { path = "../../../pkg/toy", features = ["plugin", "supervisor"] }
+toy = { path = "../../../pkg/toy", features = ["plugin", "actor"] }
 
 # config
 toy-pack-yaml = { path = "../../../shared/toy-pack-yaml" }

@@ -5,7 +5,7 @@ members = [
     "toy-core",
     "toy-executor",
     "toy-rt",
-    "toy-supervisor",
+    "toy-actor",
     "toy-api",
     "toy-api-client",
     "toy-api-http-common",
@@ -14,4 +14,5 @@ members = [
     "toy-api-store-influxdb",
     "toy-api-auth-jwt",
     "toy-tracing",
-    "toy-api-store-pg"]
+    "toy-api-store-pg"
+]

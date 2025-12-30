@@ -8,7 +8,7 @@ pub mod constants {
     use toy_core::task::TaskId;
 
     pub static GRAPHS_KEY_PREFIX: &'static str = "/toy/graphs";
-    pub static SUPERVISORS_KEY_PREFIX: &'static str = "/toy/supervisors";
+    pub static ACTORS_KEY_PREFIX: &'static str = "/toy/actors";
     pub static PENDINGS_KEY_PREFIX: &'static str = "/toy/pendings";
     pub static SERVICES_KEY_PREFIX: &'static str = "/toy/services";
     pub static ROLE_KEY_PREFIX: &'static str = "/toy/roles";
