@@ -28,17 +28,17 @@ pub enum MetricsKind {
 impl MetricsKind {
     pub fn as_kind_text(&self) -> &str {
         match self {
-            MetricsKind::StartTask => "StartTask",
-            MetricsKind::FinishTask => "FinishTask",
-            MetricsKind::StartService => "StartService",
-            MetricsKind::FinishService => "FinishService",
-            MetricsKind::SendRequest => "SendRequest",
-            MetricsKind::ReceiveRequest => "ReceiveRequest",
-            MetricsKind::ReceiveError => "ReceiveError",
-            MetricsKind::ReceiveStop => "ReceiveStop",
+            MetricsKind::StartTask => "start_task",
+            MetricsKind::FinishTask => "finish_task",
+            MetricsKind::StartService => "start_service",
+            MetricsKind::FinishService => "finish_service",
+            MetricsKind::SendRequest => "send_request",
+            MetricsKind::ReceiveRequest => "receive_request",
+            MetricsKind::ReceiveError => "receive_error",
+            MetricsKind::ReceiveStop => "receive_stop",
 
-            MetricsKind::RunningTask => "RunningTask",
-            MetricsKind::RunningService => "RunningService",
+            MetricsKind::RunningTask => "running_task",
+            MetricsKind::RunningService => "running_service",
 
             MetricsKind::Custom(v, _) => v,
         }
@@ -82,17 +82,17 @@ pub enum MetricsEventKind {
 impl MetricsEventKind {
     pub fn as_event_text(&self) -> &str {
         match self {
-            MetricsEventKind::StartTask => "StartTask",
-            MetricsEventKind::FinishTask => "FinishTask",
-            MetricsEventKind::StartService => "StartService",
-            MetricsEventKind::FinishService => "FinishService",
-            MetricsEventKind::SendRequest => "SendRequest",
-            MetricsEventKind::ReceiveRequest => "ReceiveRequest",
-            MetricsEventKind::ReceiveError => "ReceiveError",
-            MetricsEventKind::ReceiveStop => "ReceiveStop",
-            MetricsEventKind::ReceiveUpstreamFinish => "ReceiveUpstreamFinish",
-            MetricsEventKind::FinishUpstreamFinish => "FinishUpstreamFinish",
-            MetricsEventKind::FinishUpstreamFinishAll => "FinishUpstreamFinishAll",
+            MetricsEventKind::StartTask => "start_task",
+            MetricsEventKind::FinishTask => "finish_task",
+            MetricsEventKind::StartService => "start_service",
+            MetricsEventKind::FinishService => "finish_service",
+            MetricsEventKind::SendRequest => "send_request",
+            MetricsEventKind::ReceiveRequest => "receive_request",
+            MetricsEventKind::ReceiveError => "receive_error",
+            MetricsEventKind::ReceiveStop => "receive_stop",
+            MetricsEventKind::ReceiveUpstreamFinish => "receive_upstream_finish",
+            MetricsEventKind::FinishUpstreamFinish => "finish_upstream_finish",
+            MetricsEventKind::FinishUpstreamFinishAll => "finish_upstream_finish_all",
             MetricsEventKind::CustomEvent(e) => e,
         }
     }
